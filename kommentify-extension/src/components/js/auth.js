@@ -189,8 +189,8 @@ async function handleClerkLogin() {
         clerkBtn.disabled = true;
         clerkBtn.innerHTML = '<span>⏳</span> Opening login...';
         
-        // Open sign-in page in new tab (redirect back to dashboard after login)
-        const signInUrl = `${apiUrl}/sign-in?redirect_url=${encodeURIComponent(apiUrl + '/dashboard')}`;
+        // Open sign-in page in new tab (redirect to extension-auth page after login)
+        const signInUrl = `${apiUrl}/sign-in?redirect_url=${encodeURIComponent(apiUrl + '/extension-auth')}`;
         console.log('Opening Clerk sign-in URL:', signInUrl);
         
         const tab = await chrome.tabs.create({ url: signInUrl, active: true });
@@ -203,38 +203,20 @@ async function handleClerkLogin() {
             authStatus.innerHTML = '⏳ Waiting for you to sign in...<br><small>This popup will refresh automatically</small>';
         }
         
-        // Poll the extension-token endpoint to check if user logged in
+        // Poll chrome.storage for auth token (set by content script on extension-auth page)
         let pollCount = 0;
-        const maxPolls = 300; // 5 minutes (1 second interval)
+        const maxPolls = 150; // 5 minutes (2 second interval)
         
         const checkAuthInterval = setInterval(async () => {
             pollCount++;
             
             try {
-                // Poll the extension-token endpoint
-                const response = await fetch(`${apiUrl}/api/auth/extension-token`, {
-                    method: 'GET',
-                    credentials: 'include', // Important: include cookies for Clerk session
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
+                // Check if auth token is now in storage (set by authBridge content script)
+                const authStorage = await chrome.storage.local.get(['authToken', 'userData']);
                 
-                const data = await response.json();
-                
-                if (data.success && data.loggedIn && data.authToken) {
-                    console.log('✅ Auth token received from server! User logged in.');
+                if (authStorage.authToken) {
+                    console.log('✅ Auth token found in storage! User logged in.');
                     clearInterval(checkAuthInterval);
-                    
-                    // Store auth data in extension storage
-                    await chrome.storage.local.set({
-                        authToken: data.authToken,
-                        refreshToken: data.refreshToken,
-                        userData: data.userData,
-                        apiBaseUrl: data.apiBaseUrl || apiUrl
-                    });
-                    
-                    console.log('✅ Auth data saved to extension storage');
                     
                     // Try to close the login tab
                     try {
@@ -247,9 +229,8 @@ async function handleClerkLogin() {
                     location.reload();
                     return;
                 }
-            } catch (fetchError) {
-                // Silently continue polling - user might not be logged in yet
-                console.log('Polling for auth...', pollCount);
+            } catch (storageError) {
+                console.log('Checking storage for auth...', pollCount);
             }
             
             // Check if tab was closed

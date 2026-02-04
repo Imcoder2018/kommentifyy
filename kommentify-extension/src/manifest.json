@@ -17,7 +17,9 @@
     "notifications"
   ],
   "host_permissions": [
-    "https://www.linkedin.com/*"
+    "https://www.linkedin.com/*",
+    "https://kommentify.com/*",
+    "https://*.kommentify.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -47,6 +49,16 @@
       "js": [
         "content/loader.js",
         "content/bridge.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://kommentify.com/extension-auth*",
+        "https://*.kommentify.com/extension-auth*"
+      ],
+      "js": [
+        "content/authBridge.js"
       ],
       "run_at": "document_idle"
     }

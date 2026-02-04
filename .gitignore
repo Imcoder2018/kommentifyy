@@ -29,3 +29,63 @@ npm-debug.log*
 
 # Reorganization script (optional - remove this line if you want to keep it in git)
 reorganize-to-src.ps1
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+!.env.example
+
+# Cache
+.cache/
+.eslintcache
+.stylelintcache
+.parcel-cache/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Next.js
+.next/
+out/
+
+# Nuxt
+.nuxt/
+
+# Python (if applicable)
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Build artifacts
+build/
+*.tsbuildinfo
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Secrets
+*.pem
+*.key
+secrets/
+
+# Debug
+debug/
+*.debug
+
+# Local data
+*.sqlite
+*.sqlite3
+data/
+

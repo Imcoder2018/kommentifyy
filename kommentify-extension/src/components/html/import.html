@@ -1,0 +1,285 @@
+<!-- TAB CONTENT: IMPORT -->
+<div id="import-content" class="tab-content">
+    <!-- Live Status Log Bar -->
+    <div id="import-status-bar" style="
+        background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    ">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            <span id="import-status-icon" style="font-size: 16px;"><span class="icon icon-refresh"></span></span>
+            <span id="import-status-text" style="font-weight: 500;">Ready</span>
+        </div>
+        <div id="import-status-timer" style="font-size: 11px; opacity: 0.8; font-family: monospace;"></div>
+    </div>
+    
+    <!-- Import LinkedIn Profiles Section -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h4 style="margin-bottom: 15px;"><span class="icon icon-download"></span> Import LinkedIn Profiles</h4>
+        <p style="margin-bottom: 15px; color: #666; font-size: 13px;">
+            Import LinkedIn profiles for automated engagement. You can either paste profile URLs or upload a CSV file.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Text Input Method -->
+            <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 8px;"><span class="icon icon-edit"></span>️ Paste Profile URLs</label>
+                <textarea id="profile-urls-input" 
+                          placeholder="Paste LinkedIn profile URLs here, each on a new line:
+https://www.linkedin.com/in/john-doe-123456/
+https://www.linkedin.com/in/jane-smith-789012/
+https://www.linkedin.com/in/example-profile/"
+                          style="width: 100%; height: 120px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 13px; font-family: monospace; resize: vertical;"></textarea>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">
+                    Profiles detected: <strong id="profile-count">0</strong>
+                </div>
+            </div>
+            
+            <!-- CSV Upload Method -->
+            <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 8px;"><span class="icon icon-folder"></span> Upload CSV File</label>
+                <div style="border: 2px dashed #e0e0e0; border-radius: 6px; padding: 20px; text-align: center; background: #f8f9fa;">
+                    <input type="file" id="csv-upload" accept=".csv" style="display: none;">
+                    <button id="csv-upload-button"
+                            style="background: #693fe9; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        Choose CSV File
+                    </button>
+                    <div style="margin-top: 8px; font-size: 11px; color: #666;">
+                        CSV should have profile URLs in the first column
+                    </div>
+                    <div id="csv-status" style="margin-top: 8px; font-size: 12px;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile List Display -->
+        <div id="imported-profiles-section" style="margin-top: 20px; display: none;">
+            <h5 style="margin-bottom: 10px;"><span class="icon icon-clipboard"></span> Imported Profiles (<span id="imported-count">0</span>)</h5>
+            <div id="imported-profiles-list" 
+                 style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; background: #f8f9fa;">
+                <!-- Profiles will be listed here -->
+            </div>
+        </div>
+        
+        <!-- Import Credits Display -->
+        <div style="margin-top: 20px; padding: 12px; background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-left: 4px solid #693fe9; border-radius: 4px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <strong style="color: #693fe9; font-size: 13px;"><span class="icon icon-credit-card"></span> Import Credits</strong>
+                <span style="font-size: 11px; color: #693fe9;">Plan: <strong id="import-plan-name">Free</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="flex: 1; text-align: center; padding: 8px; background: white; border-radius: 6px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #693fe9;" id="import-credits-remaining">0</div>
+                    <div style="font-size: 10px; color: #666;">Remaining</div>
+                </div>
+                <div style="flex: 1; text-align: center; padding: 8px; background: white; border-radius: 6px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #7c4dff;" id="import-credits-total">0</div>
+                    <div style="font-size: 10px; color: #666;">Monthly Total</div>
+                </div>
+                <div style="flex: 1; text-align: center; padding: 8px; background: white; border-radius: 6px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #ff9800;" id="import-credits-used">0</div>
+                    <div style="font-size: 10px; color: #666;">Used</div>
+                </div>
+            </div>
+            <small style="display: block; color: #693fe9; font-size: 11px; margin-top: 8px;">
+                <span class="icon icon-lightbulb"></span> Each profile processed uses 1 credit, buy more 500 Credits per 1$
+            </small>
+        </div>
+    </div>
+    
+    <!-- Smart Profile Automation - Redesigned with #693fe9 theme -->
+    <div class="card" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #e0e0e0; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 2px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="icon icon-zap" style="font-size: 20px; color: #693fe9;"></span>
+                <div>
+                    <h4 style="margin: 0; color: #693fe9; font-size: 15px; font-weight: 700;">Smart Profile Automation</h4>
+                    <small style="color: #666; font-size: 11px;">Engage with profiles - connect, like, comment & grow network</small>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666;">
+                <span><span class="icon icon-clock"></span> Auto-Schedule</span>
+                <label class="switch" style="transform: scale(0.7);">
+                    <input type="checkbox" id="import-scheduler-enabled">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Scheduled Times Section - Compact -->
+        <div style="background: #f0f8ff; padding: 8px; border-radius: 6px; margin-bottom: 12px; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <small style="color: #693fe9; font-weight: 600;"><span class="icon icon-clock"></span> Schedules</small>
+                <div style="display: flex; gap: 10px; font-size: 10px; color: #666;">
+                    <span>Next: <strong id="import-next-execution-time">--</strong></span>
+                    <span><strong id="import-countdown-timer">--:--:--</strong></span>
+                </div>
+            </div>
+            <div id="import-schedule-list" style="max-height: 100px; overflow-y: auto; padding-right: 4px;">
+                <small style="color: #999;">No schedules</small>
+            </div>
+        </div>
+
+        <!-- Schedule Controls -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <input type="time" id="import-schedule-time-input"
+                style="padding: 6px 8px; font-size: 11px; width: 100px; border: 2px solid #e0e0e0; border-radius: 4px;">
+            <button type="button" id="add-import-schedule" class="action-button"
+                style="padding: 6px 10px; font-size: 11px; background: #693fe9; white-space: nowrap;"><span class="icon icon-plus"></span> Add Schedule</button>
+            <span style="flex: 1;"></span>
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #666;">
+                <span>Profiles/Day:</span>
+                <select id="import-profiles-per-day" style="padding: 4px 8px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 11px; background: white;">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="70">70</option>
+                    <option value="100">100</option>
+                </select>
+            </label>
+        </div>
+        
+        <!-- Connection Option -->
+        <div style="background: #f0f8ff; border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid #e0e0e0;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="combined-send-connections" checked style="width: 16px; height: 16px; accent-color: #693fe9;">
+                <div>
+                    <span style="color: #666; font-weight: 600; font-size: 12px;"><span class="icon icon-user-plus"></span> Send Connection Requests</span>
+                    <small style="display: block; color: #666; font-size: 10px; margin-top: 2px;">Automatically connect with each profile</small>
+                </div>
+            </label>
+        </div>
+        
+        <!-- Engagement Actions Grid -->
+        <div style="background: white; border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid #e0e0e0;">
+            <div style="font-size: 11px; font-weight: 600; color: #693fe9; margin-bottom: 8px;"><span class="icon icon-heart"></span> Engagement Actions</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                <label style="display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 6px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <input type="checkbox" id="combined-enable-likes" checked style="width: 14px; height: 14px; accent-color: #693fe9;">
+                    <span style="font-size: 10px; color: #333;"><span class="icon icon-thumbs-up"></span> Likes</span>
+                </label>
+                <label style="display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 6px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <input type="checkbox" id="combined-enable-comments" checked style="width: 14px; height: 14px; accent-color: #693fe9;">
+                    <span style="font-size: 10px; color: #333;"><span class="icon icon-bot"></span> AI Comments</span>
+                </label>
+                <label style="display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 6px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <input type="checkbox" id="combined-enable-shares" style="width: 14px; height: 14px; accent-color: #693fe9;">
+                    <span style="font-size: 10px; color: #333;"><span class="icon icon-share"></span> Reshares</span>
+                </label>
+                <label style="display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 6px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <input type="checkbox" id="combined-enable-follows" style="width: 14px; height: 14px; accent-color: #693fe9;">
+                    <span style="font-size: 10px; color: #333;"><span class="icon icon-user-plus"></span> Follow</span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Smart Options Row -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <div style="background: #f8f9fa; border-radius: 6px; padding: 8px; border: 1px solid #e0e0e0;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="combined-enable-random-mode" style="width: 14px; height: 14px; accent-color: #693fe9;">
+                    <div>
+                        <span style="color: #333; font-weight: 600; font-size: 11px;"><span class="icon icon-shuffle"></span> Smart Random</span>
+                        <small style="display: block; color: #666; font-size: 9px;">Pick 1 random action per post</small>
+                    </div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Posts per Profile -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="color: #333; font-size: 11px; font-weight: 500;">Posts per profile:</span>
+            <select id="combined-posts-per-profile" style="padding: 5px 10px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 11px; background: white;">
+                <option value="1">1 post</option>
+                <option value="2" selected>2 posts</option>
+                <option value="3">3 posts</option>
+                <option value="4">4 posts</option>
+                <option value="5">5 posts</option>
+            </select>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 8px;">
+            <button id="start-combined-automation" class="action-button" 
+                    style="flex: 1; padding: 12px; font-size: 13px; background: #693fe9; color: white; border: none; border-radius: 8px; font-weight: 600; box-shadow: 0 3px 10px rgba(105, 63, 233, 0.3);">
+                <span class="icon icon-rocket"></span> Launch Automation
+            </button>
+            <button id="stop-combined-automation" class="action-button" 
+                    style="display: none; padding: 12px; font-size: 13px; background: #dc3545; color: white; border: none; border-radius: 8px; min-width: 80px;">
+                <span class="icon icon-stop"></span> Stop
+            </button>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div id="combined-progress" style="margin-top: 10px; display: none;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 4px;">
+                <span>Processing: <strong id="combined-current">0</strong> / <strong id="combined-total">0</strong></span>
+                <span id="combined-percentage">0%</span>
+            </div>
+            <div style="background: #e0e0e0; height: 6px; border-radius: 3px; overflow: hidden;">
+                <div id="combined-progress-bar" style="width: 0%; height: 100%; background: #693fe9; transition: width 0.3s; border-radius: 3px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action History Section - Redesigned -->
+    <div class="card" style="padding: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="margin: 0; font-size: 13px;"><span class="icon icon-chart"></span> Import Actions History</h4>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); padding: 6px 12px; border-radius: 6px; color: white; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(105, 63, 233, 0.3);">
+                    <input type="checkbox" id="show-post-details" style="width: 14px; height: 14px; accent-color: white;">
+                    <span class="icon icon-eye" style="font-size: 12px;"></span>
+                    <span>Show Posts</span>
+                </label>
+                <button id="export-import-csv" class="action-button" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-download"></span></button>
+                <button id="refresh-import-history" class="action-button secondary" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-refresh"></span></button>
+                <button id="clear-import-history" class="action-button secondary" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-trash"></span></button>
+            </div>
+        </div>
+        
+        <input type="text" id="import-history-search" placeholder="🔍 Search profiles..." style="width: 100%; padding: 6px 10px; font-size: 11px; margin-bottom: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
+        
+        <div style="display: flex; gap: 12px; margin-bottom: 8px; font-size: 11px; color: #6c757d;">
+            <span>Profiles: <strong id="total-import-sessions">0</strong></span>
+            <span>Connections: <strong id="total-connections-sent">0</strong></span>
+            <span>Posts: <strong id="total-posts-engaged">0</strong></span>
+            <span>Comments: <strong id="total-comments-generated">0</strong></span>
+            <span>Rate: <strong id="import-success-rate">0%</strong></span>
+        </div>
+        
+        <div style="max-height: 350px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px;">
+            <table style="width: 100%; font-size: 10px; border-collapse: collapse;">
+                <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; position: sticky; top: 0;">
+                    <tr>
+                        <th style="padding: 6px; text-align: left;">Date</th>
+                        <th style="padding: 6px; text-align: left;">Profile</th>
+                        <th style="padding: 6px; text-align: center;">Link</th>
+                        <th style="padding: 6px; text-align: center;" title="Connection Sent">Connection Sent</th>
+                        <th style="padding: 6px; text-align: center;" title="Likes">Likes</th>
+                        <th style="padding: 6px; text-align: center;" title="Comments">Comments</th>
+                        <th style="padding: 6px; text-align: center;" title="Shares">Shares</th>
+                        <th style="padding: 6px; text-align: center;" title="Follows">Follows</th>
+                        <th style="padding: 6px; text-align: center;">Status</th>
+                        <th style="padding: 6px; text-align: center;">Posts</th>
+                    </tr>
+                </thead>
+                <tbody id="import-history-table-body">
+                    <tr>
+                        <td colspan="10" style="padding: 20px; text-align: center; color: #999;">
+                            No import actions yet. Start automation to see history here.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

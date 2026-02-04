@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Automation - Upgrade Plans</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #693fe9 0%, #1a2340 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .plan-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+        
+        .plan-card.popular {
+            border-color: #28a745;
+            transform: scale(1.05);
+        }
+        
+        .popular-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #28a745;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .plan-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .plan-price {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .plan-period {
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+        
+        .plan-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+        
+        .plan-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .upgrade-btn {
+            width: 100%;
+            padding: 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .upgrade-btn:hover {
+            background: #218838;
+        }
+        
+        .upgrade-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .features-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 50px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .feature {
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature h3 {
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Choose Your Plan</h1>
+            <p>Unlock the full potential of LinkedIn Automation</p>
+        </div>
+        
+        <div id="plans-container" class="plans">
+            <!-- Plans will be loaded dynamically -->
+            <div style="text-align: center; width: 100%; padding: 40px; color: rgba(255,255,255,0.7);">
+                Loading plans...
+            </div>
+        </div>
+        
+        <div class="features-section">
+            <h2 style="text-align: center; margin-bottom: 20px;">✨ All Plans Include</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure & Safe</h3>
+                    <p>Your LinkedIn account is completely safe with our advanced security measures</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered</h3>
+                    <p>Leverage cutting-edge AI to create engaging content and smart interactions</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📈</div>
+                    <h3>Real-time Analytics</h3>
+                    <p>Track your growth and engagement with detailed analytics and insights</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Automated actions happen in real-time without slowing down your workflow</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>30-day money-back guarantee • No setup fees • Cancel anytime</p>
+        </div>
+    </div>
+
+    <script>
+        // Load plans from API
+        async function loadPlans() {
+            try {
+                const response = await fetch('/api/plans');
+                const data = await response.json();
+                
+                if (data.success && data.plans) {
+                    renderPlans(data.plans);
+                } else {
+                    showError('Failed to load plans');
+                }
+            } catch (error) {
+                console.error('Error loading plans:', error);
+                showError('Failed to load plans. Please refresh the page.');
+            }
+        }
+        
+        function renderPlans(plans) {
+            const container = document.getElementById('plans-container');
+            container.innerHTML = '';
+            
+            console.log('Rendering plans:', plans);
+            
+            // Sort plans by price
+            plans.sort((a, b) => a.price - b.price);
+            
+            plans.forEach((plan, index) => {
+                const isPopular = index === 1; // Make second plan popular
+                const isCurrent = false; // Will be set based on user's plan
+                
+                console.log('Plan data:', plan);
+                console.log('Limits:', plan.limits);
+                console.log('Features:', plan.features);
+                
+                const planCard = document.createElement('div');
+                planCard.className = 'plan-card' + (isPopular ? ' popular' : '');
+                
+                // Ensure limits exist with fallback values
+                const limits = plan.limits || {};
+                const features = plan.features || {};
+                
+                planCard.innerHTML = `
+                    ${isPopular ? '<div class="popular-badge">✓ CURRENT PLAN</div>' : ''}
+                    <div class="plan-name">${plan.name || 'Unknown'}</div>
+                    <div class="plan-price">$${plan.price || 0}</div>
+                    <div class="plan-period">/month</div>
+                    <ul class="plan-features">
+                        <li style="font-weight: 700; color: #693fe9; margin-top: 10px; padding-top: 10px; border-top: 2px solid #e0e6ed;">Daily Limits:</li>
+                        <li>💬 ${limits.dailyComments || 0} Comments/day</li>
+                        <li>❤️ ${limits.dailyLikes || 0} Likes/day</li>
+                        <li>📤 ${limits.dailyShares || 0} Shares/day</li>
+                        <li>👥 ${limits.dailyFollows || 0} Follows/day</li>
+                        <li>🔗 ${limits.dailyConnections || 0} Connections/day</li>
+                        <li>🤖 ${limits.aiPostsDaily || 0} AI Posts/day</li>
+                        <li>💭 ${limits.aiCommentsDaily || 0} AI Comments/day</li>
+                        <li>💡 ${limits.aiTopicLinesDaily || 0} AI Topics/day</li>
+                        <li style="font-weight: 700; color: #693fe9; margin-top: 15px; padding-top: 15px; border-top: 2px solid #e0e6ed;">Features:</li>
+                        ${features.autoLike ? '<li>✅ Basic Automation</li>' : ''}
+                        ${features.autoComment ? '<li>✅ AI Comments</li>' : ''}
+                        ${features.autoFollow ? '<li>✅ Auto Follow</li>' : ''}
+                        ${features.aiContent ? '<li>✅ AI Content</li>' : ''}
+                        ${features.scheduling ? '<li>✅ Post Scheduling</li>' : ''}
+                        ${features.analytics ? '<li>✅ Advanced Analytics</li>' : ''}
+                    </ul>
+                    ${plan.stripeLink && plan.price > 0 ? 
+                        `<button class="upgrade-btn" onclick="upgradeToPlan('${plan.stripeLink}')">Upgrade Now</button>` :
+                        `<button class="upgrade-btn" disabled>Current Plan</button>`
+                    }
+                `;
+                
+                container.appendChild(planCard);
+            });
+            
+            console.log('Plans rendered successfully');
+        }
+        
+        function showError(message) {
+            const container = document.getElementById('plans-container');
+            container.innerHTML = `
+                <div style="text-align: center; width: 100%; padding: 40px; color: #ff6b6b;">
+                    ⚠️ ${message}
+                </div>
+            `;
+        }
+        
+        function upgradeToPlan(stripeLink) {
+            if (stripeLink && stripeLink.startsWith('http')) {
+                // Redirect to Stripe payment page
+                window.location.href = stripeLink;
+            } else {
+                alert('🚀 Upgrading to plan!\n\nStripe payment link will be configured by admin.');
+            }
+        }
+        
+        // Load plans on page load
+        document.addEventListener('DOMContentLoaded', loadPlans);
+        
+        // Check if user is coming from extension
+        if (window.location.search.includes('from=extension')) {
+            console.log('User came from extension upgrade button');
+        }
+    </script>
+</body>
+</html>

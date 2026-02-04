@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kommentify - Lifetime Deals</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a3e 50%, #0a0a0a 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p { font-size: 1.1rem; opacity: 0.8; }
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            padding: 10px 24px;
+            border-radius: 30px;
+            margin-bottom: 20px;
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        .plan-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .plan-card.popular {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.05));
+            transform: scale(1.05);
+            box-shadow: 0 20px 60px rgba(245, 158, 11, 0.2);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .plan-name { font-size: 1.6rem; font-weight: bold; margin-bottom: 8px; margin-top: 10px; }
+        .plan-type { font-size: 0.85rem; opacity: 0.6; margin-bottom: 15px; }
+        .original-price { font-size: 0.9rem; text-decoration: line-through; opacity: 0.5; margin-bottom: 5px; }
+        .plan-price { font-size: 3.5rem; font-weight: 800; margin-bottom: 5px; }
+        .plan-card.popular .plan-price { color: #fbbf24; }
+        .plan-period { opacity: 0.7; margin-bottom: 8px; font-size: 0.95rem; }
+        .savings-badge {
+            display: inline-block;
+            background: #22c55e;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .plan-features { list-style: none; margin-bottom: 25px; text-align: left; }
+        .plan-features li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        .plan-features li:last-child { border-bottom: none; }
+        .upgrade-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #693fe9, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .plan-card.popular .upgrade-btn { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        .upgrade-btn:hover { transform: translateY(-2px); }
+        .footer { text-align: center; padding: 20px; }
+        .footer-badges { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; }
+        .footer-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="badge">🔥 LIMITED TIME — Pay Once, Use Forever</div>
+            <h1>🚀 Lifetime Deals</h1>
+            <p>One-time payment. Lifetime access. No recurring fees ever.</p>
+        </div>
+        
+        <div class="plans">
+            <div class="plan-card">
+                <div class="plan-name">Starter LTD</div>
+                <div class="plan-type">One-time payment</div>
+                <div class="original-price">$348/year</div>
+                <div class="plan-price">$29</div>
+                <div class="plan-period">once</div>
+                <div class="savings-badge">Save $319</div>
+                <ul class="plan-features">
+                    <li>💭 200 AI Comments/month</li>
+                    <li>🤖 15 AI Posts/month</li>
+                    <li>❤️ 500 Auto Likes</li>
+                    <li>📤 500 Auto Shares</li>
+                    <li>👥 500 Auto Follows</li>
+                    <li>🔗 100 Connections</li>
+                    <li>📥 50 Profile Imports</li>
+                    <li>🚀 Lifetime Updates</li>
+                    <li>🛡️ Priority Support</li>
+                </ul>
+                <button class="upgrade-btn" onclick="upgradeToPlan('starter-ltd')">🚀 Get Lifetime Access</button>
+            </div>
+            
+            <div class="plan-card popular">
+                <div class="popular-badge">🔥 MOST POPULAR</div>
+                <div class="plan-name">Growth LTD</div>
+                <div class="plan-type">One-time payment</div>
+                <div class="original-price">$828/year</div>
+                <div class="plan-price">$69</div>
+                <div class="plan-period">once</div>
+                <div class="savings-badge">Save $759</div>
+                <ul class="plan-features">
+                    <li>💭 500 AI Comments/month</li>
+                    <li>🤖 40 AI Posts/month</li>
+                    <li>❤️ 1,000 Auto Likes</li>
+                    <li>📤 1,000 Auto Shares</li>
+                    <li>👥 1,000 Auto Follows</li>
+                    <li>🔗 250 Connections</li>
+                    <li>📥 500 Profile Imports</li>
+                    <li>🚀 Lifetime Updates</li>
+                    <li>🛡️ Priority Support</li>
+                </ul>
+                <button class="upgrade-btn" onclick="upgradeToPlan('growth-ltd')">🚀 Get Lifetime Access</button>
+            </div>
+            
+            <div class="plan-card">
+                <div class="plan-name">Pro LTD</div>
+                <div class="plan-type">One-time payment</div>
+                <div class="original-price">$1,188/year</div>
+                <div class="plan-price">$99</div>
+                <div class="plan-period">once</div>
+                <div class="savings-badge">Save $1,089</div>
+                <ul class="plan-features">
+                    <li>💭 1,000 AI Comments/month</li>
+                    <li>🤖 100 AI Posts/month</li>
+                    <li>❤️ 3,000 Auto Likes</li>
+                    <li>📤 3,000 Auto Shares</li>
+                    <li>👥 3,000 Auto Follows</li>
+                    <li>🔗 3,000 Connections</li>
+                    <li>📥 1,500 Profile Imports</li>
+                    <li>🚀 Lifetime Updates</li>
+                    <li>🛡️ Priority Support</li>
+                </ul>
+                <button class="upgrade-btn" onclick="upgradeToPlan('pro-ltd')">🚀 Get Lifetime Access</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-badges">
+                <span class="footer-badge">✅ 30-Day Money-Back</span>
+                <span class="footer-badge">✅ One-Time Payment</span>
+                <span class="footer-badge">✅ Lifetime Updates</span>
+                <span class="footer-badge">✅ Priority Support</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function upgradeToPlan(planType) {
+            // Redirect to the plans page on the website
+            window.open('https://kommentify.com/plans', '_blank');
+        }
+    </script>
+</body>
+</html>

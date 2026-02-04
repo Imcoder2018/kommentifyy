@@ -1,0 +1,19 @@
+<div id="loading-overlay"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f5f7fb; z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <div style="font-size: 40px; margin-bottom: 20px; animation: bounce 2s infinite;"><span class="icon icon-rocket"></span></div>
+    <div style="color: #693fe9; font-size: 18px; font-weight: 600;">LinkedIn Automation</div>
+    <div id="loading-status" style="color: #666; font-size: 14px; margin-top: 10px;">Initializing...</div>
+    
+    <!-- Progress bar -->
+    <div style="width: 200px; height: 4px; background: #e0e0e0; border-radius: 2px; margin-top: 20px; overflow: hidden;">
+        <div id="loading-progress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #693fe9, #693fe9); border-radius: 2px; transition: width 0.3s ease;"></div>
+    </div>
+    
+    <style>
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+    </style>
+</div>

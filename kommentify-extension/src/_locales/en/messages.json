@@ -1,0 +1,46 @@
+{
+    "appName": {
+        "message": "Kommentify - LinkedIn Auto Comment & Growth",
+        "description": "The name of the extension"
+    },
+    "appShortName": {
+        "message": "Kommentify",
+        "description": "Short name for the extension"
+    },
+    "appDescription": {
+        "message": "AI-powered LinkedIn automation: auto-comment, smart networking, connection requests, post scheduling & analytics. Grow your LinkedIn presence effortlessly.",
+        "description": "The description of the extension"
+    },
+    "actionTitle": {
+        "message": "Kommentify - LinkedIn Growth Tool",
+        "description": "Tooltip shown when hovering over the extension icon"
+    },
+    "welcomeMessage": {
+        "message": "Welcome to Kommentify!",
+        "description": "Welcome message shown to new users"
+    },
+    "loginRequired": {
+        "message": "Please log in to continue",
+        "description": "Message shown when login is required"
+    },
+    "automationRunning": {
+        "message": "Automation is running...",
+        "description": "Status message when automation is active"
+    },
+    "automationStopped": {
+        "message": "Automation stopped",
+        "description": "Status message when automation is stopped"
+    },
+    "settingsSaved": {
+        "message": "Settings saved successfully!",
+        "description": "Confirmation message after saving settings"
+    },
+    "errorOccurred": {
+        "message": "An error occurred. Please try again.",
+        "description": "Generic error message"
+    },
+    "upgradeRequired": {
+        "message": "Upgrade your plan to unlock this feature",
+        "description": "Message shown when a premium feature is accessed"
+    }
+}

@@ -1,0 +1,192 @@
+<!-- TAB CONTENT: ANALYTICS -->
+<div id="analytics-content" class="tab-content">
+    <!-- Combined Engagement Analytics Card -->
+    <div class="card" style="padding: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: #693fe9;"><span class="icon icon-chart"></span> Engagement Analytics</h4>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <select id="analytics-period" style="padding: 5px 8px; font-size: 11px; border: 1.5px solid #e0e0e0; border-radius: 4px; min-width: 110px;">
+                    <option value="0" selected>Today</option>
+                    <option value="1">Yesterday</option>
+                    <option value="3">Last 3 Days</option>
+                    <option value="7">Last 7 Days</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                </select>
+                <button class="action-button" id="refresh-analytics" style="padding: 5px 10px; font-size: 11px; min-width: auto;"><span class="icon icon-refresh"></span></button>
+            </div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns: repeat(5, 1fr); gap: 8px;">
+            <div class="stat-item" style="padding: 10px; text-align: center; background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); border-radius: 8px; box-shadow: 0 2px 8px rgba(105, 63, 233, 0.3);">
+                <span class="stat-value" id="total-engagements" style="font-size: 22px; color: white; font-weight: 700;">0</span>
+                <span class="stat-label" style="font-size: 10px; color: rgba(255,255,255,0.9);">Total</span>
+            </div>
+            <div class="stat-item" style="padding: 10px; text-align: center; background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%); border-radius: 8px; box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);">
+                <span class="stat-value" id="total-comments" style="font-size: 18px; color: white; font-weight: 600;">0</span>
+                <span class="stat-label" style="font-size: 10px; color: rgba(255,255,255,0.9);">Comments</span>
+            </div>
+            <div class="stat-item" style="padding: 10px; text-align: center; background: linear-gradient(135deg, #2196F3 0%, #42A5F5 100%); border-radius: 8px; box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);">
+                <span class="stat-value" id="total-likes" style="font-size: 18px; color: white; font-weight: 600;">0</span>
+                <span class="stat-label" style="font-size: 10px; color: rgba(255,255,255,0.9);">Likes</span>
+            </div>
+            <div class="stat-item" style="padding: 10px; text-align: center; background: linear-gradient(135deg, #FF9800 0%, #FFB74D 100%); border-radius: 8px; box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);">
+                <span class="stat-value" id="total-shares" style="font-size: 18px; color: white; font-weight: 600;">0</span>
+                <span class="stat-label" style="font-size: 10px; color: rgba(255,255,255,0.9);">Shares</span>
+            </div>
+            <div class="stat-item" style="padding: 10px; text-align: center; background: linear-gradient(135deg, #E91E63 0%, #F06292 100%); border-radius: 8px; box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);">
+                <span class="stat-value" id="total-follows" style="font-size: 18px; color: white; font-weight: 600;">0</span>
+                <span class="stat-label" style="font-size: 10px; color: rgba(255,255,255,0.9);">Follows</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leads Database Section -->
+    <div class="card" style="padding: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <h4 style="margin: 0; font-size: 13px;"><span class="icon icon-users"></span> Leads Database</h4>
+            <div style="display: flex; gap: 4px;">
+                <button class="action-button" id="refresh-leads" style="padding: 5px 10px; font-size: 11px;" title="Refresh"><span class="icon icon-refresh"></span></button>
+                <button class="action-button secondary" id="export-leads" style="padding: 5px 10px; font-size: 11px;" title="Export CSV"><span class="icon icon-download"></span></button>
+                <button class="action-button" id="clear-all-leads" style="padding: 5px 10px; font-size: 11px; background: #dc3545; border-color: #dc3545;" title="Clear All"><span class="icon icon-trash"></span></button>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer;">
+                <input type="checkbox" id="show-contact-info" style="cursor: pointer;">
+                <span>Show Email & Phone</span>
+            </label>
+        </div>
+        <input type="text" id="leads-search" placeholder="🔍 Search leads..." style="width: 100%; padding: 6px 10px; font-size: 11px; margin-bottom: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
+        <div id="leads-stats" style="display: flex; gap: 12px; margin-bottom: 8px; font-size: 11px; color: #6c757d;">
+            <span>Total: <strong id="total-leads-count">0</strong></span>
+            <span>Email: <strong id="leads-with-email">0</strong></span>
+            <span>Phone: <strong id="leads-with-phone">0</strong></span>
+            <span>Connected: <strong id="leads-connected">0</strong></span>
+        </div>
+        <div id="leads-table"
+            style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px;">
+            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                <thead style="background: #693fe9; color: white; position: sticky; top: 0;">
+                    <tr>
+                        <th style="padding: 8px; text-align: left;">Name</th>
+                        <th style="padding: 8px; text-align: left;">Headline</th>
+                        <th style="padding: 8px; text-align: left;">Location</th>
+                        <th class="contact-column" style="padding: 8px; text-align: left; display: none;">Email</th>
+                        <th class="contact-column" style="padding: 8px; text-align: left; display: none;">Phone</th>
+                        <th style="padding: 8px; text-align: left;">Query</th>
+                        <th style="padding: 8px; text-align: left;">Date</th>
+                        <th style="padding: 8px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-table-body">
+                    <tr>
+                        <td colspan="8" style="padding: 20px; text-align: center; color: #6c757d;">
+                            No leads
+                            found. Start a People Search to collect leads.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Automation History Section -->
+    <div class="card" style="padding: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="margin: 0; font-size: 13px;"><span class="icon icon-bot"></span> Automation History</h4>
+            <div style="display: flex; gap: 6px;">
+                <select id="automation-history-filter-status" style="padding: 4px 8px; font-size: 11px;">
+                    <option value="all">All</option>
+                    <option value="success">Success</option>
+                    <option value="failed">Failed</option>
+                </select>
+                <button class="action-button" id="refresh-automation-history" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-refresh"></span></button>
+                <button class="action-button secondary" id="export-automation-history" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-download"></span></button>
+                <button class="action-button secondary" id="clear-automation-history" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-trash"></span></button>
+            </div>
+        </div>
+        <input type="text" id="automation-search" placeholder="🔍 Search by keyword, author..." style="width: 100%; padding: 6px 10px; font-size: 11px; margin-bottom: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
+        <div id="automation-history-stats" style="display: flex; gap: 12px; margin-bottom: 8px; font-size: 11px; color: #6c757d;">
+            <span>Sessions: <strong id="automation-total-sessions">0</strong></span>
+            <span>Posts: <strong id="automation-posts-processed">0</strong></span>
+            <span>Comments: <strong id="automation-comments-generated">0</strong></span>
+            <span>Rate: <strong id="automation-success-rate">0%</strong></span>
+        </div>
+        
+        <div id="automation-history-table" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px;">
+            <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+                <thead style="background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); color: white; position: sticky; top: 0;">
+                    <tr>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Keywords</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Author</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6; max-width: 200px;">Post Content</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6; max-width: 200px;">Generated Comment</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Actions</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Status</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Date</th>
+                    </tr>
+                </thead>
+                <tbody id="automation-history-table-body">
+                    <tr>
+                        <td colspan="7" style="padding: 20px; text-align: center; color: #6c757d;">
+                            No automation history found. Start Bulk Processing to see post details here.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Networking History Section -->
+    <div class="card" style="padding: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="margin: 0; font-size: 13px;"><span class="icon icon-users"></span> Networking History</h4>
+            <div style="display: flex; gap: 6px;">
+                <select id="networking-history-filter-status" style="padding: 4px 8px; font-size: 11px;">
+                    <option value="all">All</option>
+                    <option value="completed">Done</option>
+                    <option value="stopped">Stopped</option>
+                    <option value="failed">Failed</option>
+                </select>
+                <button class="action-button" id="refresh-networking-history" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-refresh"></span></button>
+                <button class="action-button secondary" id="export-networking-history" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-download"></span></button>
+                <button class="action-button secondary" id="clear-networking-history" style="padding: 4px 10px; font-size: 11px;"><span class="icon icon-trash"></span></button>
+            </div>
+        </div>
+        <input type="text" id="networking-search" placeholder="🔍 Search by query..." style="width: 100%; padding: 6px 10px; font-size: 11px; margin-bottom: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
+        <div id="networking-history-stats" style="display: flex; gap: 12px; margin-bottom: 8px; font-size: 11px; color: #6c757d;">
+            <span>Sessions: <strong id="networking-total-sessions">0</strong></span>
+            <span>Sent: <strong id="networking-connections-sent">0</strong></span>
+            <span>Found: <strong id="networking-profiles-found">0</strong></span>
+            <span>Rate: <strong id="networking-success-rate">0%</strong></span>
+        </div>
+        
+        <div id="networking-history-table" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px;">
+            <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+                <thead style="background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); color: white; position: sticky; top: 0;">
+                    <tr>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Search Query</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Target</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Found</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Sent</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Success Rate</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Duration</th>
+                        <th style="padding: 8px; text-align: center; border-bottom: 2px solid #dee2e6;">Status</th>
+                        <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Date</th>
+                    </tr>
+                </thead>
+                <tbody id="networking-history-table-body">
+                    <tr>
+                        <td colspan="8" style="padding: 20px; text-align: center; color: #6c757d;">
+                            No networking history found. Start People Search to see history here.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <button class="action-button" id="export-stats"><span class="icon icon-download"></span> Export Statistics</button>
+        <button class="action-button secondary" id="clear-stats"><span class="icon icon-trash"></span>️ Clear All Data</button>
+    </div>
+</div>

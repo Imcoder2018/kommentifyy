@@ -1,0 +1,533 @@
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { createKommentifyEmail, createButton, createCheckList, createNumberList, createHighlight, createAlert } from '@/lib/kommentify-email-html';
+
+export const dynamic = 'force-dynamic';
+
+function verifyAdminToken(token: string): boolean {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    return payload.role === 'admin' || payload.isAdmin;
+  } catch {
+    return false;
+  }
+}
+
+const sequences = [
+  {
+    name: 'New User Onboarding',
+    type: 'onboarding',
+    description: '5-email welcome sequence for new trial users',
+    trigger: 'signup',
+    emails: [
+      {
+        subject: 'Welcome to Kommentify! Your LinkedIn growth starts now',
+        delayHours: 0,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px;font-weight:700">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 15px;color:#495057;font-size:16px">Welcome to Kommentify!</p>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Your account is now active with our <strong style="color:#667eea">30-Day Money-Back Guarantee</strong>, and you are about to save <strong style="color:#667eea">20+ hours every week</strong> on LinkedIn.</p>` +
+          `<div style="background:linear-gradient(135deg,#e7f3ff 0%,#f0e7ff 100%);padding:25px;border-radius:12px;margin:25px 0">` +
+          `<h3 style="margin:0 0 15px;color:#667eea;font-size:18px;font-weight:700">Here is how to get started in 2 minutes:</h3>` +
+          createNumberList([
+            'Install the Chrome Extension',
+            'Connect your LinkedIn account',
+            'Set your daily limits (we recommend starting slow)',
+            'Add keywords for your industry',
+            'Watch Kommentify work its magic!'
+          ]) +
+          `</div>` +
+          createButton('Watch Quick Start Video (2 min)', 'https://www.loom.com/share/0f5fd7b490e840609f') +
+          `<h3 style="margin:30px 0 15px;color:#212529;font-size:18px;font-weight:700">Your trial includes FULL access to:</h3>` +
+          createCheckList([
+            'AI Comment Generation',
+            'Smart Connection Requests',
+            'Post Scheduling',
+            'CSV Import & Bulk Actions',
+            'Advanced Analytics'
+          ]) +
+          createAlert('Need help? Just reply to this email or WhatsApp us: {{whatsappNumber}}', 'warning') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">` +
+          `Let us grow your LinkedIn!<br>` +
+          `<strong style="color:#667eea">Team Kommentify</strong>` +
+          `</p>`
+        )
+      },
+      {
+        subject: 'Setup guide - Let me help you get started',
+        delayHours: 2,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px;font-weight:700">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">I noticed you just joined Kommentify! Let me make sure you get maximum value from Day 1.</p>` +
+          `<h3 style="margin:25px 0 15px;color:#212529;font-size:20px;font-weight:700">Here is your personalized setup checklist:</h3>` +
+          createHighlight('<strong>Step 1: Safety First</strong><br>Set conservative daily limits:<ul style="margin:10px 0 0;padding-left:20px"><li>Comments: 10-20/day</li><li>Connections: 10-15/day</li><li>Likes: 20-30/day</li></ul><em>(You can increase these after 1 week)</em>') +
+          createHighlight('<strong>Step 2: Target Your Audience</strong><br>Add 3-5 keywords like:<ul style="margin:10px 0 0;padding-left:20px"><li>Your industry (e.g., "SaaS", "Real Estate")</li><li>Your target role (e.g., "CEO", "Founder")</li><li>Your location (e.g., "Mumbai", "Karachi")</li></ul>') +
+          createHighlight('<strong>Step 3: Import Your Prospects</strong><br>Have a list of ideal connections?<br><br><strong>Upload CSV and Kommentify will engage with each profile automatically</strong>') +
+          createButton('Watch 3-Minute Setup Tutorial', '{{tutorialUrl}}') +
+          createAlert('<strong>Pro Tip:</strong> Start with commenting only for first 2 days. This is the safest way to test and see immediate engagement!', 'success') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">` +
+          `Questions? Just hit reply!<br><br>` +
+          `Happy automating,<br>` +
+          `<strong style="color:#667eea">Team Kommentify</strong>` +
+          `</p>`
+        )
+      },
+      {
+        subject: 'Best practices and insider tips',
+        delayHours: 22,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px;font-weight:700">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Day 2 with Kommentify! Here are insider tips our power users swear by:</p>` +
+          createHighlight(
+            '<strong style="font-size:16px;color:#667eea">The Influence Targeting Strategy</strong><br>Instead of random connections, target:<br><br>' +
+            createNumberList([
+              'People who comment on influencer posts',
+              'Active members in your industry groups',
+              'Second-degree connections of your ideal clients'
+            ])
+          ) +
+          createHighlight('<strong style="font-size:16px;color:#667eea">AI Comment Settings That Work</strong><br><ul style="margin:10px 0 0;padding-left:20px"><li>Turn ON "Contextual Comments"</li><li>Set comment length to "Medium"</li><li>Enable "Question Mode" for 30% of comments</li><li>This gets 3x more replies!</li></ul>') +
+          createHighlight('<strong style="font-size:16px;color:#667eea">The CSV Import Secret</strong><br>Upload your Sales Navigator exports directly!<br><br>Kommentify will:<ul style="margin:10px 0 0;padding-left:20px"><li>Visit each profile</li><li>Read their recent posts</li><li>Like, comment, and connect</li><li>All with natural delays</li></ul>') +
+          createAlert('<strong>Quick Win for Today:</strong> Import 50 target profiles and let Kommentify engage with them throughout the day.', 'info') +
+          createButton('See Full Strategy Guide', '{{strategyGuideUrl}}') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">` +
+          `Your trial ends tomorrow - ready to continue growing?<br><br>` +
+          `Best,<br>` +
+          `<strong style="color:#667eea">Team Kommentify</strong>` +
+          `</p>`
+        )
+      },
+      {
+        subject: 'Your trial ends in 12 hours',
+        delayHours: 24,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px;font-weight:700">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Your Kommentify trial ends tonight at midnight.</p>` +
+          `<div style="background:linear-gradient(135deg,#e7f3ff 0%,#f0e7ff 100%);padding:25px;border-radius:12px;margin:25px 0">` +
+          `<h3 style="margin:0 0 15px;color:#667eea">During your trial, you have:</h3>` +
+          createCheckList([
+            'Saved approximately 6 hours',
+            'Automated engagements',
+            'Grown your network'
+          ]) +
+          `</div>` +
+          `<p style="margin:20px 0;color:#495057;font-size:16px"><strong>Do not lose momentum!</strong></p>` +
+          `<p style="margin:15px 0;color:#495057;font-size:15px"><strong>Choose your plan:</strong></p>` +
+          `<ul style="margin:10px 0 0;padding-left:20px;color:#495057">` +
+          `<li>Starter ($4.99/mo) - Perfect for individuals</li>` +
+          `<li>Pro ($9.99/mo) - For serious networkers</li>` +
+          `<li>Scale ($19.99/mo) - For agencies & teams</li>` +
+          `</ul>` +
+          `<div style="background:#fff3cd;border:2px dashed #ffc107;padding:25px;border-radius:12px;margin:25px 0">` +
+          `<p style="margin:0 0 10px;color:#856404;font-size:18px;font-weight:700">Launch Week Special:</p>` +
+          `<p style="margin:0;color:#856404;font-size:14px">Get LIFETIME access (no monthly fees ever!)</p>` +
+          `<ul style="margin:10px 0 0;padding-left:20px;color:#856404">` +
+          `<li>Starter Lifetime: $39 (save $60/year)</li>` +
+          `<li>Pro Lifetime: $79 (save $120/year)</li>` +
+          `<li>Scale Lifetime: $139 (save $240/year)</li>` +
+          `</ul>` +
+          `</div>` +
+          createButton('UPGRADE NOW - KEEP GROWING', '{{upgradeUrl}}') +
+          createAlert('Questions? Reply to this email or WhatsApp: {{whatsappNumber}}', 'info') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">` +
+          `Do not let your LinkedIn growth stop,<br>` +
+          `<strong style="color:#667eea">Team Kommentify</strong>` +
+          `</p>`
+        )
+      },
+      {
+        subject: 'Last chance - trial ends in 2 hours',
+        delayHours: 10,
+        body: createKommentifyEmail(
+          `<div style="text-align:center;padding:20px 0">` +
+          `<h2 style="margin:0 0 15px;color:#dc3545;font-size:28px;font-weight:700">FINAL REMINDER</h2>` +
+          `</div>` +
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px;font-weight:700">{{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Quick reminder - your Kommentify trial expires in 2 hours.</p>` +
+          `<div style="background:#fee;border:2px solid #dc3545;padding:25px;border-radius:12px;margin:25px 0">` +
+          `<h3 style="margin:0 0 15px;color:#dc3545">After that:</h3>` +
+          `<ul style="margin:0;padding-left:20px;color:#721c24">` +
+          `<li>Automation stops</li>` +
+          `<li>You are back to manual work</li>` +
+          `<li>3+ hours daily on LinkedIn</li>` +
+          `</ul>` +
+          `</div>` +
+          `<p style="margin:20px 0;color:#495057;font-size:16px"><strong>Continue your growth for less than a coffee/day:</strong></p>` +
+          createButton('ACTIVATE SUBSCRIPTION', '{{subscribeUrl}}') +
+          createButton('GET LIFETIME DEAL', '{{lifetimeUrl}}') +
+          createAlert('<strong>This is your last reminder.</strong>', 'warning') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px;text-align:center">` +
+          `P.S. Join 100+ professionals already growing with Kommentify` +
+          `</p>` +
+          `<p style="margin:15px 0 0;color:#495057;font-size:16px;text-align:center">` +
+          `<strong style="color:#667eea">Team Kommentify</strong>` +
+          `</p>`
+        )
+      }
+    ]
+  },
+  // SEQUENCE 2: EXPIRED TRIAL RECOVERY
+  {
+    name: 'Expired Trial Recovery',
+    type: 'expired_trial',
+    description: '4-email win-back sequence for expired trials',
+    trigger: 'trial_expired',
+    emails: [
+      {
+        subject: 'Your LinkedIn automation has stopped',
+        delayHours: 24,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Your Kommentify trial ended yesterday, and your automation has paused.</p>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">We understand monthly subscriptions can add up. That is why we created something special...</p>` +
+          `<div style="background:#fff3cd;border:2px dashed #ffc107;padding:25px;border-radius:12px;margin:25px 0">` +
+          `<p style="margin:0 0 10px;color:#856404;font-size:18px;font-weight:700">One-Time Offer (24 hours only):</p>` +
+          `<p style="margin:0;color:#856404;font-size:16px"><strong>Get 50% OFF your first month</strong><br>Use code: <strong>COMEBACK50</strong></p>` +
+          `</div>` +
+          createButton('CLAIM YOUR DISCOUNT', '{{discountUrl}}') +
+          createHighlight('<strong>Or go lifetime and never pay monthly:</strong><ul style="margin:10px 0 0;padding-left:20px"><li>Lifetime access from just $39</li><li>No recurring fees ever</li><li>All future updates included</li></ul>') +
+          createButton('VIEW LIFETIME OPTIONS', '{{lifetimeUrl}}') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">Your LinkedIn growth should not stop here.<br><br>Best,<br><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      },
+      {
+        subject: 'How Raj got 47 clients using Kommentify',
+        delayHours: 48,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px">{{firstName}},</h2>` +
+          `<p style="margin:0 0 15px;color:#495057;font-size:16px;font-weight:600">Quick story:</p>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Raj from Mumbai was spending 3 hours daily on LinkedIn. Zero results.</p>` +
+          `<p style="margin:0 0 15px;color:#495057;font-size:16px"><strong>Then he tried Kommentify:</strong></p>` +
+          `<table style="width:100%;margin:20px 0">` +
+          `<tr><td style="padding:10px;background:#f8f9fa;border-left:4px solid #667eea"><strong>Week 1:</strong> 200 targeted comments</td></tr>` +
+          `<tr><td style="padding:10px;background:#f8f9fa;border-left:4px solid #667eea"><strong>Week 2:</strong> 50 quality connections</td></tr>` +
+          `<tr><td style="padding:10px;background:#f8f9fa;border-left:4px solid #667eea"><strong>Week 3:</strong> 12 inbound inquiries</td></tr>` +
+          `<tr><td style="padding:10px;background:#f8f9fa;border-left:4px solid #667eea"><strong>Week 4:</strong> 3 new clients</td></tr>` +
+          `</table>` +
+          `<div style="background:linear-gradient(135deg,#d4edda 0%,#c3e6cb 100%);padding:25px;border-radius:12px;margin:25px 0;text-align:center">` +
+          `<p style="margin:0;color:#155724;font-size:16px"><strong>Investment:</strong> $79 lifetime<br><strong style="font-size:20px">Return: $4,000 in new business</strong></p>` +
+          `</div>` +
+          `<p style="margin:20px 0;color:#495057;font-size:16px;text-align:center"><strong>Ready to write your success story?</strong></p>` +
+          createButton('START AGAIN WITH 30% OFF', '{{restartUrl}}') +
+          `<p style="margin:15px 0 0;color:#868e96;font-size:14px;text-align:center">Limited time offer ends tomorrow.</p>` +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px;text-align:center"><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      },
+      {
+        subject: 'The feature you missed that could 10x your LinkedIn',
+        delayHours: 240,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Did you know CSV Import feature is basically like hiring a VA for $39?</p>` +
+          createHighlight('<strong style="color:#667eea">What you missed:</strong><br><br>1. Upload any LinkedIn profile list<br>2. Kommentify visits each profile<br>3. Reads their recent content<br>4. Engages intelligently<br>5. Builds relationships on autopilot') +
+          createAlert('Our users call this the Secret Weapon feature.', 'info') +
+          `<p style="margin:20px 0;color:#495057;font-size:16px">Want to try it again?</p>` +
+          `<div style="background:#fff3cd;border:2px dashed #ffc107;padding:20px;border-radius:12px;margin:20px 0;text-align:center">` +
+          `<p style="margin:0;color:#856404;font-size:18px;font-weight:700">Special offer: Lifetime access $39 <span style="text-decoration:line-through">$79</span></p>` +
+          `</div>` +
+          createButton('GRAB LIFETIME DEAL', '{{lifetimeUrl}}') +
+          `<p style="margin:15px 0 0;color:#868e96;font-size:14px;text-align:center">Offer expires in 48 hours.</p>` +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px;text-align:center">Best,<br><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      },
+      {
+        subject: 'We are removing you from Kommentify',
+        delayHours: 168,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 15px;color:#495057;font-size:16px"><strong>This is our final email.</strong></p>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">We are cleaning up inactive accounts next week.</p>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">Before we remove your account, here is one last offer:</p>` +
+          `<div style="background:#dc3545;color:#fff;padding:30px;border-radius:12px;margin:25px 0;text-align:center">` +
+          `<p style="margin:0 0 10px;font-size:24px;font-weight:700">Lifetime Access: Just $29</p>` +
+          `<p style="margin:0;font-size:16px">(lowest price ever)</p>` +
+          `</div>` +
+          `<p style="margin:20px 0;color:#495057;font-size:14px;text-align:center">Valid for next 24 hours only.</p>` +
+          createButton('ACTIVATE LIFETIME - $29', '{{finalOfferUrl}}') +
+          `<p style="margin:20px 0;color:#868e96;font-size:14px;text-align:center">After this, you will need to sign up again at regular prices.</p>` +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">If LinkedIn growth is not your priority right now, we understand.<br><br>Wishing you success,<br><strong style="color:#667eea">Team Kommentify</strong></p>` +
+          `<p style="margin:15px 0 0;color:#868e96;font-size:12px;font-style:italic">P.S. This truly is the last email. We will not bother you again.</p>`
+        )
+      }
+    ]
+  },
+  // SEQUENCE 3: PAID CUSTOMER WELCOME
+  {
+    name: 'Paid Customer Welcome',
+    type: 'paid_customer',
+    description: '3-email VIP onboarding for paying customers',
+    trigger: 'payment_received',
+    emails: [
+      {
+        subject: 'Welcome to Kommentify Pro! Your VIP onboarding',
+        delayHours: 0,
+        body: createKommentifyEmail(
+          `<div style="text-align:center;padding:20px 0">` +
+          `<h2 style="margin:0;color:#667eea;font-size:32px;font-weight:700">{{firstName}}, you are in!</h2>` +
+          `</div>` +
+          `<p style="margin:20px 0;color:#495057;font-size:16px;text-align:center">Welcome to the Kommentify family!<br>Your <strong style="color:#667eea">{{planName}}</strong> is now active.</p>` +
+          `<div style="background:linear-gradient(135deg,#e7f3ff 0%,#f0e7ff 100%);padding:25px;border-radius:12px;margin:25px 0">` +
+          `<h3 style="margin:0 0 15px;color:#667eea;font-size:18px;font-weight:700">VIP Resources for You:</h3>` +
+          `<ul style="margin:0;padding-left:20px;color:#495057;line-height:2">` +
+          `<li><strong>Advanced Strategies Masterclass:</strong> <a href="{{masterclassUrl}}" style="color:#667eea">Watch Now</a></li>` +
+          `<li><strong>LinkedIn Growth Playbook (PDF):</strong> <a href="{{playbookUrl}}" style="color:#667eea">Download</a></li>` +
+          `<li><strong>Private Telegram Community:</strong> <a href="{{telegramUrl}}" style="color:#667eea">Join 500+ Members</a></li>` +
+          `<li><strong>Priority WhatsApp Support:</strong> {{whatsappNumber}}</li>` +
+          `</ul>` +
+          `</div>` +
+          `<div style="background:#f8f9fa;padding:20px;border-radius:8px;margin:20px 0">` +
+          `<p style="margin:0 0 10px;color:#495057;font-size:14px;font-weight:700">Your Account Details:</p>` +
+          `<ul style="margin:0;padding-left:20px;color:#6c757d;font-size:14px;line-height:1.8">` +
+          `<li><strong>Plan:</strong> {{planName}}</li>` +
+          `<li><strong>Status:</strong> Active</li>` +
+          `<li><strong>Billing:</strong> {{billingType}}</li>` +
+          `</ul>` +
+          `</div>` +
+          `<h3 style="margin:25px 0 15px;color:#212529;font-size:18px;font-weight:700">Quick Start Actions:</h3>` +
+          createNumberList([
+            'Join our Telegram community (500+ members)',
+            'Watch the Advanced Strategies video',
+            'Set up your first campaign',
+            'Introduce yourself in the community!'
+          ]) +
+          createAlert('Need anything? Just reply to this email for priority support.', 'success') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px;text-align:center">Let us grow together!<br><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      },
+      {
+        subject: 'How is your first week going?',
+        delayHours: 168,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">You have been using Kommentify for a week now!</p>` +
+          `<h3 style="margin:20px 0 15px;color:#667eea;font-size:18px">Quick check-in:</h3>` +
+          createCheckList([
+            'Is automation running smoothly?',
+            'Any features you need help with?',
+            'Getting good engagement?'
+          ]) +
+          createHighlight('<strong style="color:#667eea">Pro Tips for Week 2:</strong><br><br>- Increase daily limits by 20%<br>- Try the CSV import feature<br>- Test different comment styles<br>- Join our weekly growth workshop (Thursdays 3 PM IST)') +
+          createAlert('If you have not already, join our community:<br><strong><a href="{{telegramUrl}}" style="color:#17a2b8">Telegram Group Link</a></strong><br>500+ members sharing strategies daily!', 'info') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">Happy growing,<br><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      },
+      {
+        subject: 'Your monthly LinkedIn growth report + tips',
+        delayHours: 720,
+        body: createKommentifyEmail(
+          `<h2 style="margin:0 0 20px;color:#212529;font-size:24px">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:18px;font-weight:600">Monthly Kommentify Update!</p>` +
+          `<div style="background:linear-gradient(135deg,#e7f3ff 0%,#f0e7ff 100%);padding:25px;border-radius:12px;margin:25px 0">` +
+          `<h3 style="margin:0 0 15px;color:#667eea;font-size:18px">New Features This Month:</h3>` +
+          `<ul style="margin:0;padding-left:20px;color:#495057;line-height:1.8">` +
+          `<li>Advanced boolean search</li>` +
+          `<li>Emoji support in comments</li>` +
+          `<li>Bulk message templates</li>` +
+          `</ul>` +
+          `</div>` +
+          createHighlight('<strong style="color:#667eea">Top Strategy This Month: Conference Attendee Hack</strong><br><br>1. Find recent conference in your industry<br>2. Search attendee list on LinkedIn<br>3. Import to Kommentify<br>4. Engage with personalized comments about the event<br>5. <strong>70% connection acceptance rate!</strong>') +
+          createAlert('Community Highlight:<br>Sarah from Delhi: Got 3 new clients this month!', 'success') +
+          `<div style="background:#f8f9fa;padding:20px;border-radius:8px;margin:20px 0">` +
+          `<p style="margin:0 0 10px;color:#495057;font-size:14px;font-weight:700">Upcoming:</p>` +
+          `<ul style="margin:0;padding-left:20px;color:#6c757d;font-size:14px;line-height:1.8">` +
+          `<li>Live Workshop: Thursday 3 PM IST</li>` +
+          `<li>New feature launch next week</li>` +
+          `</ul>` +
+          `</div>` +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">Keep growing!<br><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      }
+    ]
+  },
+  // SEQUENCE 4: LTD (LIFETIME DEAL CUSTOMERS)
+  {
+    name: 'LTD',
+    type: 'ltd',
+    description: 'Welcome sequence for lifetime deal customers',
+    trigger: 'payment',
+    emails: [
+      {
+        subject: 'Welcome to the Kommentify Family - Lifetime Member! 🎉',
+        delayHours: 0,
+        body: createKommentifyEmail(
+          `<div style="text-align:center;padding:20px 0">` +
+          `<h2 style="margin:0;color:#667eea;font-size:32px;font-weight:700">🎉 Congratulations {{firstName}}!</h2>` +
+          `<p style="margin:10px 0 0;color:#495057;font-size:18px">You're now a Lifetime Member</p>` +
+          `</div>` +
+          `<p style="margin:20px 0;color:#495057;font-size:16px">Welcome to the Kommentify family! Your lifetime deal purchase is confirmed and your account has been upgraded.</p>` +
+          `<div style="background:linear-gradient(135deg,#d4edda 0%,#c3e6cb 100%);padding:25px;border-radius:12px;margin:25px 0;text-align:center">` +
+          `<p style="margin:0;color:#155724;font-size:18px;font-weight:700">✅ Lifetime Access Activated</p>` +
+          `<p style="margin:10px 0 0;color:#155724;font-size:14px">No monthly fees. Ever.</p>` +
+          `</div>` +
+          `<h3 style="margin:25px 0 15px;color:#212529;font-size:18px;font-weight:700">What You Get:</h3>` +
+          createCheckList([
+            'Unlimited access to all current features',
+            'All future updates and new features',
+            'Priority customer support',
+            'VIP community access',
+            'Early access to beta features'
+          ]) +
+          createButton('Access Your Dashboard', '{{dashboardUrl}}') +
+          `<div style="background:#f8f9fa;padding:20px;border-radius:8px;margin:25px 0">` +
+          `<p style="margin:0 0 10px;color:#495057;font-size:14px;font-weight:700">Your VIP Resources:</p>` +
+          `<ul style="margin:0;padding-left:20px;color:#6c757d;font-size:14px;line-height:1.8">` +
+          `<li><strong>Masterclass:</strong> <a href="{{masterclassUrl}}" style="color:#667eea">Watch Advanced Strategies</a></li>` +
+          `<li><strong>Community:</strong> <a href="{{telegramUrl}}" style="color:#667eea">Join VIP Telegram Group</a></li>` +
+          `<li><strong>Support:</strong> Priority WhatsApp: {{whatsappNumber}}</li>` +
+          `</ul>` +
+          `</div>` +
+          createAlert('Thank you for believing in Kommentify. We are honored to have you as a lifetime member!', 'success') +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px;text-align:center">` +
+          `Welcome aboard!<br>` +
+          `<strong style="color:#667eea">Team Kommentify</strong>` +
+          `</p>`
+        )
+      }
+    ]
+  },
+  // SEQUENCE 5: SPECIAL CAMPAIGNS
+  {
+    name: 'Special Campaigns',
+    type: 'special_campaigns',
+    description: 'Lifetime deals and feature announcements',
+    trigger: 'manual',
+    emails: [
+      {
+        subject: '48-Hour Flash Sale: Lifetime Deal Returns!',
+        delayHours: 0,
+        body: createKommentifyEmail(
+          `<div style="text-align:center;padding:20px 0">` +
+          `<h2 style="margin:0;color:#dc3545;font-size:32px;font-weight:700">FLASH SALE</h2>` +
+          `<p style="margin:10px 0 0;color:#495057;font-size:18px">48 Hours Only!</p>` +
+          `</div>` +
+          `<h2 style="margin:20px 0;color:#212529;font-size:24px">{{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px">By popular demand, <strong>lifetime deals are BACK!</strong><br>But only for 48 hours.</p>` +
+          `<div style="background:#fff3cd;border:3px solid #ffc107;padding:25px;border-radius:12px;margin:25px 0">` +
+          `<h3 style="margin:0 0 15px;color:#856404;font-size:20px;font-weight:700">Regular Price to Flash Sale:</h3>` +
+          `<table style="width:100%">` +
+          `<tr><td style="padding:10px;color:#856404;font-size:16px"><strong>Starter:</strong> <span style="text-decoration:line-through">$79</span> to <strong style="color:#dc3545;font-size:20px">$39</strong> (save $40)</td></tr>` +
+          `<tr><td style="padding:10px;color:#856404;font-size:16px"><strong>Pro:</strong> <span style="text-decoration:line-through">$159</span> to <strong style="color:#dc3545;font-size:20px">$79</strong> (save $80)</td></tr>` +
+          `<tr><td style="padding:10px;color:#856404;font-size:16px"><strong>Scale:</strong> <span style="text-decoration:line-through">$279</span> to <strong style="color:#dc3545;font-size:20px">$139</strong> (save $140)</td></tr>` +
+          `</table>` +
+          `</div>` +
+          `<h3 style="margin:25px 0 15px;color:#212529;font-size:18px">Why lifetime?</h3>` +
+          createCheckList([
+            'Never pay monthly again',
+            'All future updates included',
+            'Grandfather pricing forever',
+            'Transfer to team members'
+          ]) +
+          createButton('GRAB LIFETIME ACCESS', '{{lifetimeUrl}}') +
+          `<div style="background:#dc3545;color:#fff;padding:20px;border-radius:8px;margin:20px 0;text-align:center">` +
+          `<p style="margin:0;font-size:24px;font-weight:700">Timer: 47:59:58 remaining</p>` +
+          `</div>` +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px;text-align:center">Do not miss out again!<br><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      },
+      {
+        subject: 'NEW: AI Post Writer is here!',
+        delayHours: 0,
+        body: createKommentifyEmail(
+          `<div style="text-align:center;padding:20px 0">` +
+          `<h2 style="margin:0;color:#667eea;font-size:32px;font-weight:700">BIG UPDATE</h2>` +
+          `</div>` +
+          `<h2 style="margin:20px 0;color:#212529;font-size:24px">Hi {{firstName}},</h2>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:18px;font-weight:600">Big update for you!</p>` +
+          `<p style="margin:0 0 20px;color:#495057;font-size:16px"><strong style="color:#667eea;font-size:20px">Kommentify now writes viral LinkedIn posts!</strong></p>` +
+          createHighlight('<strong style="color:#667eea">How it works:</strong><br><br>1. Enter a topic<br>2. Choose tone (Professional/Story/Educational)<br>3. Get 10 variations instantly<br>4. Schedule or post immediately') +
+          createAlert('This feature alone is worth <strong>$50/month</strong> elsewhere.<br><strong style="font-size:18px">You get it FREE with your plan!</strong>', 'success') +
+          createButton('Try It Now - Login to Kommentify', '{{loginUrl}}') +
+          `<div style="background:#f8f9fa;padding:20px;border-radius:8px;margin:20px 0">` +
+          `<p style="margin:0 0 10px;color:#495057;font-size:14px;font-weight:700">What is next:</p>` +
+          `<ul style="margin:0;padding-left:20px;color:#6c757d;font-size:14px;line-height:1.8">` +
+          `<li>Voice message automation</li>` +
+          `<li>InMail templates</li>` +
+          `<li>Analytics dashboard v2</li>` +
+          `</ul>` +
+          `</div>` +
+          `<p style="margin:25px 0 0;color:#495057;font-size:16px">Your feedback shapes Kommentify!<br><br>Best,<br><strong style="color:#667eea">Team Kommentify</strong></p>`
+        )
+      }
+    ]
+  }
+];
+
+export async function POST(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    if (!verifyAdminToken(token)) {
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+    }
+
+    const created = [];
+
+    for (const seq of sequences) {
+      const existing = await prisma.emailSequence.findFirst({
+        where: { type: seq.type }
+      });
+
+      if (existing) {
+        console.log(`Sequence ${seq.type} already exists, skipping`);
+        continue;
+      }
+
+      const sequenceData = await prisma.emailSequence.create({
+        data: {
+          name: seq.name,
+          type: seq.type,
+          description: seq.description,
+          trigger: seq.trigger,
+          isActive: true,
+          nodes: JSON.stringify([]),
+          edges: JSON.stringify([])
+        }
+      });
+
+      await prisma.emailTemplateNode.createMany({
+        data: seq.emails.map((email, index) => ({
+          sequenceId: sequenceData.id,
+          nodeId: `email_${index}`,
+          position: index,
+          subject: email.subject,
+          body: email.body,
+          delayHours: email.delayHours,
+          delayMinutes: 0,
+          isActive: true
+        }))
+      });
+
+      created.push(seq.type);
+    }
+
+    let settings = await prisma.emailAutomationSettings.findFirst();
+    if (!settings) {
+      settings = await prisma.emailAutomationSettings.create({
+        data: {
+          batchSize: 50,
+          cronIntervalMins: 1,
+          maxRetriesPerEmail: 3,
+          retryDelayMins: 30,
+          isEnabled: true
+        }
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Seeded ${created.length} sequences`,
+      created,
+      settings
+    });
+  } catch (error: any) {
+    console.error('Seed error:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to seed sequences' },
+      { status: 500 }
+    );
+  }
+}

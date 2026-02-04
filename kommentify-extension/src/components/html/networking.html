@@ -1,0 +1,236 @@
+<!-- TAB CONTENT: NETWORKING -->
+<div id="networking-content" class="tab-content">
+    <!-- Live Status Log Bar -->
+    <div id="networking-status-bar" style="
+        background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 2px 8px rgba(105, 63, 233, 0.3);
+    ">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            <span id="networking-status-icon" style="font-size: 16px;"><span class="icon icon-refresh"></span></span>
+            <span id="networking-status-text" style="font-weight: 500;">Ready</span>
+        </div>
+        <div id="networking-status-timer" style="font-size: 11px; opacity: 0.8; font-family: monospace;"></div>
+    </div>
+
+    <div class="card" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);">
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 2px solid #e0e0e0;">
+            <div>
+                <h4 style="margin: 0 0 4px 0;"><span class="icon icon-search"></span> Auto Search & Connect</h4>
+                <small style="color: #666;">Search LinkedIn and auto-send connection requests</small>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666;">
+                <span><span class="icon icon-clock"></span> Auto-Schedule</span>
+                <label class="switch" style="transform: scale(0.7);">
+                    <input type="checkbox" id="people-scheduler-enabled" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Scheduled Times Section - Compact -->
+        <div style="background: #f0f8ff; padding: 8px; border-radius: 6px; margin-bottom: 12px; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <small style="color: #693fe9; font-weight: 600;"><span class="icon icon-clock"></span> Schedules</small>
+                <div style="display: flex; gap: 10px; font-size: 10px; color: #666;">
+                    <span>Next: <strong id="people-next-execution-time">--</strong></span>
+                    <span><strong id="people-countdown-timer">--:--:--</strong></span>
+                </div>
+            </div>
+            <div id="people-schedule-list" style="max-height: 100px; overflow-y: auto; padding-right: 4px;">
+                <small style="color: #999;">No schedules</small>
+            </div>
+        </div>
+
+        <!-- Search Configuration Card -->
+        <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 2px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-size: 16px;"><span class="icon icon-target"></span></span>
+                <strong style="color: #693fe9; font-size: 13px;">Search Configuration</strong>
+            </div>
+            
+            <!-- Search Source Toggle -->
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <label style="flex: 1; display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #f0f8ff; border: 2px solid #693fe9; border-radius: 6px; cursor: pointer;">
+                    <input type="radio" name="search-source" id="search-by-keyword" value="keyword" checked style="accent-color: #693fe9;">
+                    <span style="font-size: 11px; font-weight: 600; color: #693fe9;"><span class="icon icon-search"></span> Keyword</span>
+                </label>
+                <label style="flex: 1; display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer;" id="search-by-url-label">
+                    <input type="radio" name="search-source" id="search-by-url" value="url" style="accent-color: #693fe9;">
+                    <span style="font-size: 11px; font-weight: 600; color: #666;"><span class="icon icon-link"></span> Search URL</span>
+                </label>
+            </div>
+            
+            <!-- Keyword Input -->
+            <div id="keyword-input-section" style="margin-bottom: 10px;">
+                <label for="search-keyword" style="display: block; margin-bottom: 4px; font-size: 11px; color: #666; font-weight: 600;">Search Keyword:</label>
+                <input type="text" id="search-keyword" placeholder="e.g., VP of Sales, Growth Hacker, Marketing Director"
+                    style="width: 100%; padding: 8px; font-size: 12px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                <small style="display: block; margin-top: 3px; color: #999; font-size: 10px;">
+                    <span class="icon icon-lightbulb"></span> Supports Boolean: "VP OR Vice President" AND Sales NOT Intern
+                </small>
+            </div>
+            
+            <!-- URL Input (Hidden by default) -->
+            <div id="url-input-section" style="margin-bottom: 10px; display: none;">
+                <label for="people-search-url" style="display: block; margin-bottom: 4px; font-size: 11px; color: #666; font-weight: 600;">LinkedIn People Search URL:</label>
+                <input type="text" id="people-search-url" placeholder="https://www.linkedin.com/search/results/people/?keywords=..."
+                    style="width: 100%; padding: 8px; font-size: 12px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                <small style="display: block; margin-top: 3px; color: #999; font-size: 10px;">
+                    <span class="icon icon-lightbulb"></span> Paste a LinkedIn people search URL with your filters already applied
+                </small>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <input type="time" id="people-schedule-time-input"
+                    style="padding: 6px 8px; font-size: 11px; width: 85px; border: 2px solid #e0e0e0; border-radius: 4px;">
+                <button type="button" id="add-people-schedule" class="action-button"
+                    style="padding: 6px 10px; font-size: 11px; background: #693fe9; white-space: nowrap;"><span class="icon icon-plus"></span> Add Schedule</button>
+            </div>
+            <button class="start-button" id="start-people-search" 
+                    style="width: 100%; padding: 10px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #693fe9 0%, #693fe9 100%); margin-bottom: 0;">
+                <span class="icon icon-rocket"></span>   Start Networking
+            </button>
+            <button class="start-button secondary" id="stop-people-search"
+                    style="display: none; width: 100%; padding: 10px; font-size: 13px; font-weight: 600; background: #dc3545; margin-top: 0;">
+                <span class="icon icon-stop"></span> Stop People Search
+            </button>
+        </div>
+
+        <!-- 2-Column Layout: Settings (Left) + Filters (Right) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            
+            <!-- Left Column: Connection Settings -->
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <span style="font-size: 16px;"><span class="icon icon-chart"></span></span>
+                    <strong style="color: #693fe9; font-size: 13px;">Connection Settings</strong>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; font-size: 11px;">
+                        <span>Connections:</span>
+                        <strong id="connect-quota-display" style="color: #693fe9;">10</strong>
+                    </label>
+                    <input type="range" id="connect-quota" min="1" max="50" value="10" style="width: 100%;">
+                    <small style="display: block; margin-top: 2px; color: #999; font-size: 10px;">Max per session (50/day recommended)</small>
+                </div>
+                <div>
+                    <label for="exclude-headline-terms" style="display: block; margin-bottom: 4px; font-size: 11px; color: #666; font-weight: 600;"><span class="icon icon-x"></span> Exclude Headline Terms:</label>
+                    <input type="text" id="exclude-headline-terms" placeholder="e.g., Aspiring, Former, Student"
+                        style="width: 100%; padding: 6px; font-size: 11px; border: 2px solid #e0e0e0; border-radius: 4px;">
+                    <small style="display: block; margin-top: 2px; color: #999; font-size: 10px;">Comma-separated terms to skip</small>
+                </div>
+            </div>
+
+            <!-- Right Column: Search Filters -->
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <span style="font-size: 16px;"><span class="icon icon-search"></span></span>
+                    <strong style="color: #693fe9; font-size: 13px;">Search Filters</strong>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="use-boolean-search" checked style="width: 16px; height: 16px;">
+                        <span>Use Boolean Logic</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="filter-network" checked style="width: 16px; height: 16px;">
+                        <span>2nd/3rd Degree Only</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="send-with-note" style="width: 16px; height: 16px;">
+                        <span>Send with Note</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="send-connection-request" style="width: 16px; height: 16px;" checked>
+                        <span><span class="icon icon-mail"></span> Send Connection Request</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="extract-contact-info" style="width: 16px; height: 16px;">
+                        <span><span class="icon icon-mail"></span> Extract Contact Info</span>
+                    </label>
+                </div>
+                <small style="display: block; color: #999; margin-top: 8px; font-size: 10px;">
+                    <span class="icon icon-lightbulb"></span> Check at least one action: Send Request or Extract Contact Info
+                </small>
+            </div>
+        </div>
+
+        <!-- Connection Message Card -->
+        <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 2px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;"><span class="icon icon-mail"></span>️</span>
+                    <strong style="color: #693fe9; font-size: 13px;">Connection Message (Optional)</strong>
+                </div>
+                <small id="message-char-count" style="color: #693fe9; font-weight: bold; font-size: 11px;">0/300</small>
+            </div>
+            <textarea id="connection-message" rows="3"
+                placeholder="Hi [Name],&#10;&#10;I just saw your profile, and I'm amazed with your experience and would love to connect with you."
+                maxlength="300"
+                style="width: 100%; padding: 10px; font-size: 12px; border: 2px solid #e0e0e0; border-radius: 6px; resize: vertical; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">Hi, [Name]
+
+I just saw your profile, and I'm amazed with your experience and would love to connect with you.</textarea>
+            <small style="display: block; margin-top: 3px; color: #999; font-size: 10px;">
+                Use [Name] for personalization
+            </small>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div id="people-search-progress"
+            style="display: none; margin-bottom: 12px; padding: 12px; background: #f0f8ff; border-radius: 6px; border-left: 4px solid #693fe9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: 600; color: #693fe9; font-size: 12px;">Processing...</span>
+                <span id="people-progress-count" style="font-size: 11px; color: #666;">0/0</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden;">
+                <div id="people-progress-bar"
+                    style="height: 100%; background: linear-gradient(90deg, #693fe9, #693fe9); width: 0%; transition: width 0.3s ease;">
+                </div>
+            </div>
+            <div id="people-progress-status" style="font-size: 10px; color: #666; margin-top: 6px;">
+                Initializing...</div>
+        </div>
+
+        <!-- Status Display -->
+        <div id="people-search-status" style="display: none; background: white; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0; margin-bottom: 12px;">
+            <div style="font-size: 11px; line-height: 1.8;">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Status:</strong>
+                    <span id="search-status-text">Ready</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Profiles Found:</strong>
+                    <span id="profiles-found">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Connections Sent:</strong>
+                    <span id="connections-sent">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Success Rate:</strong>
+                    <span id="success-rate">0%</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Start Button Copy -->
+        <div>
+            <button class="start-button" id="start-people-search-bottom" 
+                    style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600; background: linear-gradient(135deg, #693fe9 0%, #693fe9 100%);">
+                <span class="icon icon-rocket"></span>   Start Networking
+            </button>
+            <button class="start-button secondary" id="stop-people-search-bottom"
+                    style="display: none; width: 100%; padding: 12px; font-size: 14px; font-weight: 600; background: #dc3545; margin-top: 8px;">
+                <span class="icon icon-stop"></span> Stop People Search
+            </button>
+        </div>
+    </div>
+</div>

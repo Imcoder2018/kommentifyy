@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "Kommentify - LinkedIn Auto Comment & Growth",
+  "short_name": "Kommentify",
+  "description": "AI-powered LinkedIn automation: auto-comment, smart networking, post scheduling & analytics. Grow effortlessly!",
+  "version": "1.3.20",
+  "author": "Kommentify",
+  "homepage_url": "https://kommentify.com",
+  "minimum_chrome_version": "102",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "scripting",
+    "activeTab",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://www.linkedin.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Kommentify - LinkedIn Growth Tool",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background/index.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.linkedin.com/*"
+      ],
+      "js": [
+        "content/loader.js",
+        "content/bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/images/*",
+        "assets/lib/*",
+        "assets/css/*",
+        "content/*.js",
+        "shared/api/*.js",
+        "shared/dom/*.js",
+        "shared/storage/*.js",
+        "shared/utils/*.js"
+      ],
+      "matches": [
+        "https://www.linkedin.com/*"
+      ]
+    }
+  ]
+}

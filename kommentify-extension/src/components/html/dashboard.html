@@ -1,0 +1,349 @@
+<!-- TAB CONTENT: DASHBOARD -->
+<div id="dashboard-content" class="tab-content active">
+    <!-- Progress Bar -->
+    <div id="progress-container" class="card" style="display: none; margin-bottom: 15px;">
+        <h4><span class="icon icon-rocket"></span> Bulk Processing Progress</h4>
+        <div class="progress-info"
+            style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+            <span id="progress-text">Processing keywords...</span>
+            <span id="progress-stats">0/0 posts</span>
+        </div>
+        <div class="progress-bar-container"
+            style="width: 100%; height: 20px; background-color: #f0f2f5; border-radius: 10px; overflow: hidden;">
+            <div id="progress-bar" style="height: 100%; background: #693fe9; width: 0%; transition: width 0.3s ease;">
+            </div>
+        </div>
+        <div class="progress-details" style="margin-top: 8px; font-size: 11px; color: #666;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Keywords: <span id="progress-keywords">0/0</span></span>
+                <span>Actions: <span id="progress-actions">0 completed</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Local Activity (Simple Boxes) -->
+    <div class="card" style="margin-bottom: 15px;">
+        <h4><span class="icon icon-chart"></span> Today's Activity & Live Progress</h4>
+
+        <!-- Local Activity Boxes (Redesigned) -->
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px;">
+            <div style="background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); padding: 14px 8px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(105, 63, 233, 0.3);">
+                <div style="font-size: 18px; font-weight: 700; color: white; margin-bottom: 2px;">
+                    <span id="local-comments">0</span><span style="font-size: 12px; opacity: 0.8;">/<span id="daily-comments-limit">30</span></span>
+                </div>
+                <div style="font-size: 9px; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Comments</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%); padding: 14px 8px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);">
+                <div style="font-size: 18px; font-weight: 700; color: white; margin-bottom: 2px;">
+                    <span id="local-likes">0</span><span style="font-size: 12px; opacity: 0.8;">/<span id="daily-likes-limit">60</span></span>
+                </div>
+                <div style="font-size: 9px; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Likes</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); padding: 14px 8px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">
+                <div style="font-size: 18px; font-weight: 700; color: white; margin-bottom: 2px;">
+                    <span id="local-shares">0</span><span style="font-size: 12px; opacity: 0.8;">/<span id="daily-shares-limit">15</span></span>
+                </div>
+                <div style="font-size: 9px; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Shares</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #693fe9 0%, #5835c7 100%); padding: 14px 8px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(105, 63, 233, 0.3);">
+                <div style="font-size: 18px; font-weight: 700; color: white; margin-bottom: 2px;">
+                    <span id="local-follows">0</span><span style="font-size: 12px; opacity: 0.8;">/<span id="daily-follows-limit">30</span></span>
+                </div>
+                <div style="font-size: 9px; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Follows</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 14px 8px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                <div style="font-size: 18px; font-weight: 700; color: white; margin-bottom: 2px;">
+                    <span id="local-connections">0</span><span style="font-size: 12px; opacity: 0.8;">/<span id="daily-connections-limit">50</span></span>
+                </div>
+                <div style="font-size: 9px; color: rgba(255, 255, 255, 0.95); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Connections</div>
+            </div>
+        </div>
+
+        <!-- Active Workings Section (Shows all active automations) -->
+        <div id="active-workings-section" style="display: none; padding-top: 15px; border-top: 1px solid #e0e0e0; margin-top: 15px;">
+            <strong style="font-size: 13px; display: block; margin-bottom: 10px;"><span class="icon icon-zap"></span> Active Workings:</strong>
+            
+            <!-- Commenter Active -->
+            <div id="active-commenter" style="display: none; background: linear-gradient(135deg, #f0f8ff 0%, #e6f0ff 100%); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #693fe9;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="icon icon-message" style="color: #693fe9;"></span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 12px; color: #693fe9;">Bulk Commenting</div>
+                            <div id="active-commenter-status" style="font-size: 10px; color: #666;">Processing...</div>
+                        </div>
+                    </div>
+                    <button id="stop-commenter-dashboard" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600;">
+                        <span class="icon icon-stop"></span> Stop
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Networking Active -->
+            <div id="active-networking" style="display: none; background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #f59e0b;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="icon icon-users" style="color: #f59e0b;"></span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 12px; color: #f59e0b;">Networking</div>
+                            <div id="active-networking-status" style="font-size: 10px; color: #666;">Processing...</div>
+                        </div>
+                    </div>
+                    <button id="stop-networking-dashboard" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600;">
+                        <span class="icon icon-stop"></span> Stop
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Import Active -->
+            <div id="active-import" style="display: none; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #22c55e;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="icon icon-download" style="color: #22c55e;"></span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 12px; color: #22c55e;">Import Automation</div>
+                            <div id="active-import-status" style="font-size: 10px; color: #666;">Processing...</div>
+                        </div>
+                    </div>
+                    <button id="stop-import-dashboard" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600;">
+                        <span class="icon icon-stop"></span> Stop
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Post Scheduler Active -->
+            <div id="active-post-scheduler" style="display: none; background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #a855f7;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="icon icon-edit" style="color: #a855f7;"></span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 12px; color: #a855f7;">Publishing Post...</div>
+                            <div id="active-post-scheduler-status" style="font-size: 10px; color: #666;">Posting to LinkedIn...</div>
+                        </div>
+                    </div>
+                    <div class="spinner" style="width: 20px; height: 20px; border: 2px solid #e0e0e0; border-top-color: #a855f7; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scheduled Posts Section -->
+        <div id="scheduled-posts-section" style="padding-top: 15px; border-top: 1px solid #e0e0e0; margin-top: 15px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <strong style="font-size: 13px;"><span class="icon icon-calendar"></span> Scheduled Posts</strong>
+                <span id="scheduled-posts-count" style="font-size: 11px; color: #666; background: #f0f0f0; padding: 2px 8px; border-radius: 10px;">0</span>
+            </div>
+            <div id="scheduled-posts-list" style="max-height: 200px; overflow-y: auto;">
+                <!-- Posts will be dynamically inserted here -->
+            </div>
+        </div>
+        
+        <!-- Business Hours Warning -->
+        <div id="business-hours-warning" style="display: none; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); padding: 10px 12px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #f59e0b;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="icon icon-clock" style="color: #f59e0b; font-size: 16px;"></span>
+                <div>
+                    <div style="font-weight: 600; font-size: 11px; color: #f59e0b;">Outside Business Hours</div>
+                    <div id="business-hours-message" style="font-size: 10px; color: #666;">Scheduled tasks will run during active hours</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Progress Section (Shows when automation is running) -->
+        <div id="live-progress-section" style="display: none; padding-top: 15px; border-top: 1px solid #e0e0e0; position: relative; z-index: 1000; background: white; margin-top: 15px;">
+            <!-- Header with Stop Button -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <strong style="font-size: 13px;"><span class="icon icon-refresh"></span> Live Progress:</strong>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="live-status-text" style="color: #693fe9; font-weight: 600; font-size: 12px;">Idle</span>
+                    <button id="dashboard-stop-btn" style="
+                        display: none;
+                        background: #ff4444; 
+                        color: white; 
+                        border: none; 
+                        padding: 4px 8px; 
+                        border-radius: 4px; 
+                        font-size: 10px; 
+                        cursor: pointer;
+                        font-weight: 600;
+                    "><span class="icon icon-stop"></span> Stop</button>
+                </div>
+            </div>
+            
+            <!-- Current Step -->
+            <div style="margin-bottom: 8px;">
+                <span id="live-current-step" style="font-size: 12px; color: #666;">-</span>
+            </div>
+            
+            <!-- Main Progress Bar -->
+            <div style="width: 100%; height: 28px; background: #e0e0e0; border-radius: 14px; overflow: hidden; margin-bottom: 6px;">
+                <div id="live-progress-bar" style="
+                    height: 100%; 
+                    background: linear-gradient(90deg, #693fe9, #693fe9); 
+                    width: 0%; 
+                    transition: width 0.3s ease; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    color: white; 
+                    font-weight: bold; 
+                    font-size: 12px;
+                ">
+                    <span id="live-progress-percentage">0%</span>
+                </div>
+            </div>
+            
+            <!-- Detailed Progress Info -->
+            <div style="font-size: 11px; color: #666; text-align: center; margin-bottom: 10px;">
+                <span id="live-progress-detail">0/0 completed</span>
+            </div>
+            
+            <!-- Automation Details (hidden by default) -->
+            <div id="automation-details" style="display: none; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 6px; color: #693fe9;"><span class="icon icon-bot"></span> Automation Details:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
+                    <div><span class="icon icon-file-text"></span> Posts Scraped: <span id="posts-scraped">0</span></div>
+                    <div><span class="icon icon-check"></span> Posts Selected: <span id="posts-selected">0</span></div>
+                    <div><span class="icon icon-x"></span> Posts Ignored: <span id="posts-ignored">0</span></div>
+                    <div><span class="icon icon-map-pin"></span> Current Post: <span id="current-post-number">-</span></div>
+                </div>
+                <div style="margin-top: 6px; font-size: 10px; color: #666;">
+                    <span id="current-post-actions">Actions: -</span>
+                </div>
+            </div>
+            
+            <!-- Networking Details (hidden by default) -->
+            <div id="networking-details" style="display: none; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="font-size: 11px; font-weight: 600; margin-bottom: 6px; color: #693fe9;"><span class="icon icon-globe"></span> Networking Details:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
+                    <div><span class="icon icon-users"></span> Profiles Found: <span id="profiles-found">0</span></div>
+                    <div><span class="icon icon-check"></span> Profiles Matched: <span id="profiles-matched">0</span></div>
+                    <div><span class="icon icon-x"></span> Profiles Ignored: <span id="profiles-ignored">0</span></div>
+                    <div><span class="icon icon-user-plus"></span> Connections Sent: <span id="connections-sent">0</span></div>
+                </div>
+                <div style="margin-top: 6px; font-size: 10px; color: #666;">
+                    <span id="current-profile-action">Current: -</span>
+                </div>
+            </div>
+            
+            <!-- Real-time Action Steps -->
+            <div id="action-steps" style="display: none; font-size: 10px; color: #666;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span><span class="icon icon-thumbs-up"></span> Liking:</span>
+                    <span id="step-liking" style="color: #ccc;"><span class="icon icon-hourglass"></span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span><span class="icon icon-message"></span> Commenting:</span>
+                    <span id="step-commenting" style="color: #ccc;"><span class="icon icon-hourglass"></span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span><span class="icon icon-refresh"></span> Sharing:</span>
+                    <span id="step-sharing" style="color: #ccc;"><span class="icon icon-hourglass"></span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span><span class="icon icon-plus"></span> Following:</span>
+                    <span id="step-following" style="color: #ccc;"><span class="icon icon-hourglass"></span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <h4><span class="icon icon-zap"></span> Quick Actions</h4>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            <button class="action-button" id="quick-post-writer"><span class="icon icon-edit icon-white"></span> AI Writer</button>
+            <button class="action-button" id="quick-automation"><span class="icon icon-message icon-white"></span> Auto Comment</button>
+            <button class="action-button" id="quick-networking"><span class="icon icon-users icon-white"></span> Connect</button>
+            <button class="action-button" id="quick-import"><span class="icon icon-download icon-white"></span> Import CSV</button>
+        </div>
+    </div>
+    <div class="card">
+        <h4><span class="icon icon-chart"></span> Monthly Usage & Limits</h4>
+        
+        <!-- Likes -->
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-thumbs-up"></span> Likes</span>
+                <span id="api-likes-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-likes-bar" style="background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Shares -->
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-share"></span> Shares</span>
+                <span id="api-shares-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-shares-bar" style="background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Follows -->
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-plus"></span> Follows</span>
+                <span id="api-follows-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-follows-bar" style="background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Connections -->
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-user-plus"></span> Connections</span>
+                <span id="api-connections-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-connections-bar" style="background: linear-gradient(90deg, #fa709a 0%, #fee140 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- AI Posts -->
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-sparkles"></span> AI Posts</span>
+                <span id="api-ai-posts-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-ai-posts-bar" style="background: linear-gradient(90deg, #fbc2eb 0%, #a18cd1 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- AI Comments -->
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-bot"></span> AI Comments</span>
+                <span id="api-ai-comments-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-ai-comments-bar" style="background: linear-gradient(90deg, #ff9a9e 0%, #ff6b6b 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- AI Topics -->
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-lightbulb"></span> AI Topics</span>
+                <span id="api-ai-topics-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-ai-topics-bar" style="background: linear-gradient(90deg, #ffeaa7 0%, #ffd93d 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Import Profiles -->
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-download"></span> Import Profiles</span>
+                <span id="api-import-profiles-progress" style="font-size: 11px; font-weight: 700; color: #693fe9;">Loading...</span>
+            </div>
+            <div style="background: #f0f2f5; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div id="api-import-profiles-bar" style="background: linear-gradient(90deg, #38d9a9 0%, #20c997 100%); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+    </div>
+</div>

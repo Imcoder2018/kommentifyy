@@ -1,0 +1,32 @@
+# Commit Message Template
+# =====================
+# 
+# Format: <type>(<scope>): <subject>
+#
+# Types:
+#   feat     - A new feature
+#   fix      - A bug fix
+#   docs     - Documentation only changes
+#   style    - Code style changes (formatting, etc)
+#   refactor - Code refactoring
+#   perf     - Performance improvement
+#   test     - Adding tests
+#   build    - Build system changes
+#   ci       - CI configuration changes
+#   chore    - Other changes
+#
+# Scope: Optional, describes the part of codebase
+#
+# Subject: Short description (50 chars or less)
+#
+# Body: Detailed description (wrap at 72 chars)
+#
+# Footer: References to issues, breaking changes
+#
+# Example:
+# feat(auth): add login with Google
+#
+# Implemented OAuth2 flow for Google authentication.
+# Users can now sign in with their Google accounts.
+#
+# Closes #123

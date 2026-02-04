@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate K Icons</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #333; }
+        .icon-row { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+        .icon-item { text-align: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .icon-item canvas { display: block; margin: 0 auto 10px; }
+        .icon-item a { display: inline-block; margin-top: 5px; padding: 5px 10px; background: #693fe9; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; }
+        .icon-item a:hover { background: #5835c7; }
+        h2 { margin-top: 30px; border-bottom: 2px solid #693fe9; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 K Icon Generator</h1>
+        <p>Click the download links to save each icon.</p>
+        
+        <h2>Active Icons (Theme Color: #693fe9)</h2>
+        <div class="icon-row" id="active-icons"></div>
+        
+        <h2>Inactive Icons (Grey: #9ca3af)</h2>
+        <div class="icon-row" id="inactive-icons"></div>
+    </div>
+
+    <script>
+        const sizes = [16, 32, 48, 64, 128];
+        const activeColor = '#693fe9';
+        const inactiveColor = '#9ca3af';
+        
+        function createIcon(size, bgColor, textColor = 'white') {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw rounded rectangle background
+            const radius = size * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+            
+            // Draw K letter
+            const fontSize = size * 0.7;
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('K', size / 2, size / 2 + size * 0.02);
+            
+            return canvas;
+        }
+        
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Generate active icons
+        const activeContainer = document.getElementById('active-icons');
+        sizes.forEach(size => {
+            const canvas = createIcon(size, activeColor);
+            const item = document.createElement('div');
+            item.className = 'icon-item';
+            item.appendChild(canvas);
+            
+            const label = document.createElement('div');
+            label.textContent = `${size}x${size}`;
+            item.appendChild(label);
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.textContent = 'Download';
+            downloadLink.href = '#';
+            downloadLink.onclick = (e) => {
+                e.preventDefault();
+                downloadCanvas(canvas, `icon${size}.png`);
+            };
+            item.appendChild(downloadLink);
+            
+            activeContainer.appendChild(item);
+        });
+        
+        // Add main icon.png (48px)
+        const mainActiveCanvas = createIcon(48, activeColor);
+        const mainActiveItem = document.createElement('div');
+        mainActiveItem.className = 'icon-item';
+        mainActiveItem.appendChild(mainActiveCanvas);
+        const mainActiveLabel = document.createElement('div');
+        mainActiveLabel.textContent = 'icon.png (48x48)';
+        mainActiveItem.appendChild(mainActiveLabel);
+        const mainActiveLink = document.createElement('a');
+        mainActiveLink.textContent = 'Download';
+        mainActiveLink.href = '#';
+        mainActiveLink.onclick = (e) => {
+            e.preventDefault();
+            downloadCanvas(mainActiveCanvas, 'icon.png');
+        };
+        mainActiveItem.appendChild(mainActiveLink);
+        activeContainer.appendChild(mainActiveItem);
+        
+        // Generate inactive icons
+        const inactiveContainer = document.getElementById('inactive-icons');
+        sizes.forEach(size => {
+            const canvas = createIcon(size, inactiveColor);
+            const item = document.createElement('div');
+            item.className = 'icon-item';
+            item.appendChild(canvas);
+            
+            const label = document.createElement('div');
+            label.textContent = `${size}x${size}`;
+            item.appendChild(label);
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.textContent = 'Download';
+            downloadLink.href = '#';
+            downloadLink.onclick = (e) => {
+                e.preventDefault();
+                downloadCanvas(canvas, `icon-inactive${size === 48 ? '' : size}.png`);
+            };
+            item.appendChild(downloadLink);
+            
+            inactiveContainer.appendChild(item);
+        });
+        
+        // Add main icon-inactive.png (48px)
+        const mainInactiveCanvas = createIcon(48, inactiveColor);
+        const mainInactiveItem = document.createElement('div');
+        mainInactiveItem.className = 'icon-item';
+        mainInactiveItem.appendChild(mainInactiveCanvas);
+        const mainInactiveLabel = document.createElement('div');
+        mainInactiveLabel.textContent = 'icon-inactive.png (48x48)';
+        mainInactiveItem.appendChild(mainInactiveLabel);
+        const mainInactiveLink = document.createElement('a');
+        mainInactiveLink.textContent = 'Download';
+        mainInactiveLink.href = '#';
+        mainInactiveLink.onclick = (e) => {
+            e.preventDefault();
+            downloadCanvas(mainInactiveCanvas, 'icon-inactive.png');
+        };
+        mainInactiveItem.appendChild(mainInactiveLink);
+        inactiveContainer.appendChild(mainInactiveItem);
+        
+        // Auto-download all button
+        const downloadAllBtn = document.createElement('button');
+        downloadAllBtn.textContent = '📥 Download All Icons';
+        downloadAllBtn.style.cssText = 'margin: 20px 0; padding: 15px 30px; background: #693fe9; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;';
+        downloadAllBtn.onclick = () => {
+            // Active icons
+            sizes.forEach(size => {
+                const canvas = createIcon(size, activeColor);
+                downloadCanvas(canvas, `icon${size}.png`);
+            });
+            downloadCanvas(createIcon(48, activeColor), 'icon.png');
+            
+            // Inactive icons
+            sizes.forEach(size => {
+                const canvas = createIcon(size, inactiveColor);
+                downloadCanvas(canvas, `icon-inactive${size === 48 ? '' : size}.png`);
+            });
+            downloadCanvas(createIcon(48, inactiveColor), 'icon-inactive.png');
+        };
+        document.querySelector('.container').insertBefore(downloadAllBtn, document.querySelector('h2'));
+    </script>
+</body>
+</html>

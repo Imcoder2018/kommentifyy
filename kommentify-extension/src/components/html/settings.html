@@ -1,0 +1,397 @@
+<!-- TAB CONTENT: SETTINGS -->
+<div id="settings-content" class="tab-content">
+    <!-- Account Info -->
+    <div class="card">
+        <div class="accordion-header" data-accordion="account-settings">
+            <span><span class="icon icon-user"></span> Account Info</span>
+            <span class="arrow"></span>
+        </div>
+        <div id="account-settings-content" class="accordion-content">
+            <div style="background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); padding: 12px; border-radius: 10px; margin-bottom: 12px; color: white;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                        <div style="width: 36px; height: 36px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <span class="icon icon-user" style="font-size: 18px;"></span>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 600;" id="account-email">Not logged in</div>
+                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                <span style="background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;" id="account-plan">Free</span>
+                                <span style="font-size: 10px; opacity: 0.8;" id="account-status">●</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="auth-section" style="margin-bottom: 12px;">
+                <div id="login-section" style="display: block;">
+                    <button class="action-button" id="login-btn" style="width: 100%; padding: 10px; background: #693fe9; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px;"><span class="icon icon-key"></span> Login to Account</button>
+                </div>
+                <div id="logout-section" style="display: none;">
+                    <div style="display: flex; gap: 8px;">
+                        <button class="action-button primary" id="upgrade-plan-btn" style="flex: 1; padding: 8px 12px; background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 11px;">⬆️ Upgrade</button>
+                        <button class="action-button" id="logout-btn" style="padding: 8px 14px; background: #dc3545; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 11px;"><span class="icon icon-log-out"></span></button>
+                    </div>
+                </div>
+            </div>
+            <div id="plan-limits-info" style="padding: 15px; background: white; border: 1px solid #e0e0e0; border-radius: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0;">
+                    <span style="font-size: 20px;"><span class="icon icon-chart"></span></span>
+                    <strong style="font-size: 14px; color: #693fe9;">Your Monthly Limits</strong>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 4px;"><span class="icon icon-heart"></span>️ Likes</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #693fe9;"><span id="plan-limit-likes">--</span><span style="font-size: 11px; font-weight: normal; color: #999;">/month</span></div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 4px;"><span class="icon icon-share"></span> Shares</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #693fe9;"><span id="plan-limit-shares">--</span><span style="font-size: 11px; font-weight: normal; color: #999;">/month</span></div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 4px;"><span class="icon icon-users"></span> Follows</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #693fe9;"><span id="plan-limit-follows">--</span><span style="font-size: 11px; font-weight: normal; color: #999;">/month</span></div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 4px;"><span class="icon icon-link"></span> Connections</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #693fe9;"><span id="plan-limit-connections">--</span><span style="font-size: 11px; font-weight: normal; color: #999;">/month</span></div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 4px;"><span class="icon icon-bot"></span> AI Posts</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #693fe9;"><span id="plan-limit-ai-posts">--</span><span style="font-size: 11px; font-weight: normal; color: #999;">/month</span></div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 4px;"><span class="icon icon-thought"></span> AI Comments</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #693fe9;"><span id="plan-limit-ai-comments">--</span><span style="font-size: 11px; font-weight: normal; color: #999;">/month</span></div>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 4px;"><span class="icon icon-lightbulb"></span> AI Topics</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #693fe9;"><span id="plan-limit-ai-topics">--</span><span style="font-size: 11px; font-weight: normal; color: #999;">/month</span></div>
+                    </div>
+                </div>
+            </div>
+            <div id="plan-features-info" style="padding: 15px; background: white; border: 1px solid #e0e0e0; border-radius: 10px; margin-top: 15px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0;">
+                    <span style="font-size: 20px;"><span class="icon icon-sparkles"></span></span>
+                    <strong style="font-size: 14px; color: #693fe9;">Your Plan Features</strong>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <h4 style="font-size: 13px; color: #28a745; margin-bottom: 8px; font-weight: 600;"><span class="icon icon-check"></span> Features Included</h4>
+                    <div id="features-included" style="font-size: 12px; color: #693fe9;">
+                        <div style="padding: 8px; background: #f8f9fa; border-radius: 6px; color: #999;">Loading...</div>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-size: 13px; color: #dc3545; margin-bottom: 8px; font-weight: 600;"><span class="icon icon-alert"></span>️ Not Included</h4>
+                    <div id="features-not-included" style="font-size: 12px; color: #999;">
+                        <div style="padding: 8px; background: #f8f9fa; border-radius: 6px;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help & Guides -->
+    <div class="card">
+        <div class="accordion-header" data-accordion="walkthrough-settings">
+            <span><span class="icon icon-book"></span> Help & Guides</span>
+            <span class="arrow"></span>
+        </div>
+        <div id="walkthrough-settings-content" class="accordion-content">
+            <div style="background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); padding: 12px 15px; border-radius: 10px; color: white; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 13px; font-weight: 700;"><span class="icon icon-award"></span> Quick Tour</div>
+                    <div style="font-size: 11px; opacity: 0.9;">New to the extension?</div>
+                </div>
+                <button id="start-walkthrough-btn" style="background: white; color: #693fe9; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Start</button>
+            </div>
+            <div style="font-size: 11px; color: #666; margin-bottom: 8px;">Quick feature overviews. For detailed guides, see the section below.</div>
+        </div>
+    </div>
+
+    <!-- Detailed Feature Guides -->
+    <div class="card">
+        <div class="accordion-header" data-accordion="detailed-guides">
+            <span><span class="icon icon-book"></span> Detailed Feature Guides</span>
+            <span class="arrow"></span>
+        </div>
+        <div id="detailed-guides-content" class="accordion-content">
+            <!-- Dashboard Guide -->
+            <details style="background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #693fe9;">
+                <summary style="padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-chart"></span> Dashboard - Your Command Center</summary>
+                <div style="padding: 10px 12px; font-size: 11px; color: #555; line-height: 1.6; border-top: 1px solid #e0e0e0;">
+                    <p><strong><span class="icon icon-target"></span> Purpose:</strong> Monitor all your LinkedIn automation activities in one place.</p>
+                    <p><strong><span class="icon icon-trending-up"></span> What you'll see:</strong></p>
+                    <ul style="margin: 5px 0; padding-left: 18px;">
+                        <li>Daily/Weekly engagement stats (likes, comments, connections)</li>
+                        <li>Monthly usage vs plan limits</li>
+                        <li>Live processing progress for active automations</li>
+                        <li>Quick action buttons to jump to any feature</li>
+                    </ul>
+                    <p><strong><span class="icon icon-lightbulb"></span> Why it matters:</strong> Stay informed about your activity levels to avoid LinkedIn restrictions and maximize your networking ROI.</p>
+                </div>
+            </details>
+
+            <!-- AI Writer Guide -->
+            <details style="background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #4caf50;">
+                <summary style="padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-edit"></span>️ AI Writer - Create Viral Content</summary>
+                <div style="padding: 10px 12px; font-size: 11px; color: #555; line-height: 1.6; border-top: 1px solid #e0e0e0;">
+                    <p><strong><span class="icon icon-target"></span> Purpose:</strong> Generate engaging LinkedIn posts using AI without writer's block.</p>
+                    <p><strong><span class="icon icon-edit"></span> How to use:</strong></p>
+                    <ol style="margin: 5px 0; padding-left: 18px;">
+                        <li>Enter your topic or industry keyword</li>
+                        <li>Click "Generate Topics" to get 5 viral topic ideas</li>
+                        <li>Select a topic that resonates with you</li>
+                        <li>Click "Generate Post" - AI creates a full post</li>
+                        <li>Edit, copy, or schedule for later</li>
+                    </ol>
+                    <p><strong><span class="icon icon-settings"></span>️ Customize:</strong> Adjust tone (professional/casual), length, hashtags, and emojis.</p>
+                    <p><strong><span class="icon icon-lightbulb"></span> Why it matters:</strong> Consistent posting builds your personal brand. AI helps you post daily without spending hours writing.</p>
+                </div>
+            </details>
+
+            <!-- Automation Guide -->
+            <details style="background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #ff9800;">
+                <summary style="padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-bot"></span> Automation - Engage at Scale</summary>
+                <div style="padding: 10px 12px; font-size: 11px; color: #555; line-height: 1.6; border-top: 1px solid #e0e0e0;">
+                    <p><strong><span class="icon icon-target"></span> Purpose:</strong> Automatically like, comment, share, and follow based on keywords.</p>
+                    <p><strong><span class="icon icon-edit"></span> How to use:</strong></p>
+                    <ol style="margin: 5px 0; padding-left: 18px;">
+                        <li>Add keywords related to your industry (e.g., "AI", "startup", "marketing")</li>
+                        <li>Set daily quota (start with 10-20 for new accounts)</li>
+                        <li>Choose actions: Like, Comment (AI-generated), Share, Follow</li>
+                        <li>Click Start - works in background on LinkedIn tab</li>
+                    </ol>
+                    <p><strong><span class="icon icon-alert"></span>️ Important:</strong> Keep LinkedIn open in a tab. Use business hours for natural activity patterns.</p>
+                    <p><strong><span class="icon icon-lightbulb"></span> Why it matters:</strong> Engaging with relevant content puts you on people's radar, leading to profile views, connection requests, and opportunities.</p>
+                </div>
+            </details>
+
+            <!-- Networking Guide -->
+            <details style="background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #2196f3;">
+                <summary style="padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-user-plus"></span> Networking - Grow Your Network</summary>
+                <div style="padding: 10px 12px; font-size: 11px; color: #555; line-height: 1.6; border-top: 1px solid #e0e0e0;">
+                    <p><strong><span class="icon icon-target"></span> Purpose:</strong> Automatically find and connect with your ideal prospects.</p>
+                    <p><strong><span class="icon icon-edit"></span> How to use:</strong></p>
+                    <ol style="margin: 5px 0; padding-left: 18px;">
+                        <li>Enter search keyword (job title, skill, company)</li>
+                        <li>Set filters: 2nd/3rd connections, exclude terms</li>
+                        <li>Set quota (5-15 per day recommended)</li>
+                        <li>Optional: Add personalized connection note</li>
+                        <li>Click Start - finds people and sends requests</li>
+                    </ol>
+                    <p><strong><span class="icon icon-gift"></span> Bonus:</strong> Enable "Extract Contact Info" to save emails/phones to Leads tab.</p>
+                    <p><strong><span class="icon icon-lightbulb"></span> Why it matters:</strong> A targeted network opens doors to jobs, clients, partnerships, and industry insights.</p>
+                </div>
+            </details>
+
+            <!-- Import Guide -->
+            <details style="background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #9c27b0;">
+                <summary style="padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-download"></span> Import - Target Specific Profiles</summary>
+                <div style="padding: 10px 12px; font-size: 11px; color: #555; line-height: 1.6; border-top: 1px solid #e0e0e0;">
+                    <p><strong><span class="icon icon-target"></span> Purpose:</strong> Import a list of LinkedIn profiles and auto-engage with them.</p>
+                    <p><strong><span class="icon icon-edit"></span> How to use:</strong></p>
+                    <ol style="margin: 5px 0; padding-left: 18px;">
+                        <li>Prepare CSV file with LinkedIn profile URLs</li>
+                        <li>Upload or paste URLs directly</li>
+                        <li>Choose action: Connection requests or Post engagement</li>
+                        <li>Click Start - processes each profile</li>
+                    </ol>
+                    <p><strong><span class="icon icon-target"></span> Use cases:</strong> Event attendees, competitor followers, group members, webinar registrants.</p>
+                    <p><strong><span class="icon icon-lightbulb"></span> Why it matters:</strong> Target specific high-value prospects you've identified through research or events.</p>
+                </div>
+            </details>
+
+            <!-- Limits Guide -->
+            <details style="background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #f44336;">
+                <summary style="padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-ruler"></span> Limits - Stay Safe</summary>
+                <div style="padding: 10px 12px; font-size: 11px; color: #555; line-height: 1.6; border-top: 1px solid #e0e0e0;">
+                    <p><strong><span class="icon icon-target"></span> Purpose:</strong> Control daily activity to avoid LinkedIn restrictions.</p>
+                    <p><strong><span class="icon icon-alert"></span>️ Recommended limits:</strong></p>
+                    <ul style="margin: 5px 0; padding-left: 18px;">
+                        <li><strong>New accounts (&lt;6 months):</strong> 10-15 actions/day</li>
+                        <li><strong>Established accounts:</strong> 30-50 actions/day</li>
+                        <li><strong>Premium accounts:</strong> 50-80 actions/day</li>
+                    </ul>
+                    <p><strong><span class="icon icon-timer"></span>️ Delays:</strong> Set 30-60 second delays between actions for natural behavior.</p>
+                    <p><strong><span class="icon icon-lightbulb"></span> Why it matters:</strong> LinkedIn monitors unusual activity. Gradual, consistent engagement is safer than aggressive bursts.</p>
+                </div>
+            </details>
+
+            <!-- Best Practices -->
+            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 12px; border-radius: 8px; margin-top: 10px;">
+                <div style="font-size: 12px; font-weight: 700; color: #2e7d32; margin-bottom: 8px;"><span class="icon icon-award"></span> Best Practices for Success</div>
+                <ul style="margin: 0; padding-left: 18px; font-size: 11px; color: #1b5e20; line-height: 1.7;">
+                    <li><strong>Start slow:</strong> Begin with 10-15 daily actions, increase gradually</li>
+                    <li><strong>Use business hours:</strong> 9 AM - 6 PM looks more natural</li>
+                    <li><strong>AI comments &gt; likes:</strong> Comments drive more engagement back to you</li>
+                    <li><strong>Be consistent:</strong> Daily small actions beat weekly big bursts</li>
+                    <li><strong>Monitor your profile:</strong> Check for warnings or restrictions</li>
+                    <li><strong>Quality over quantity:</strong> Relevant connections matter more than numbers</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Business Hours -->
+    <div class="card">
+        <div class="accordion-header" data-accordion="business-hours-settings">
+            <span><span class="icon icon-clock"></span> Business Hours</span>
+            <span class="arrow"></span>
+        </div>
+        <div id="business-hours-settings-content" class="accordion-content">
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0; margin-bottom: 12px;">
+                <div style="margin-bottom: 10px;">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                        <input type="checkbox" id="business-hours-enabled" checked style="width: 16px; height: 16px;">
+                        <span>Enable Business Hours</span>
+                    </label>
+                </div>
+                <div style="display: flex; gap: 12px; font-size: 12px;">
+                    <label style="display: flex; align-items: center; gap: 4px;">
+                        Start:
+                        <select id="business-start-hour" style="padding: 4px; font-size: 11px; border: 1px solid #e0e0e0; border-radius: 4px;">
+                            <option value="6">6 AM</option>
+                            <option value="7">7 AM</option>
+                            <option value="8">8 AM</option>
+                            <option value="9" selected>9 AM</option>
+                            <option value="10">10 AM</option>
+                        </select>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px;">
+                        End:
+                        <select id="business-end-hour" style="padding: 4px; font-size: 11px; border: 1px solid #e0e0e0; border-radius: 4px;">
+                            <option value="17">5 PM</option>
+                            <option value="18" selected>6 PM</option>
+                            <option value="19">7 PM</option>
+                            <option value="20">8 PM</option>
+                        </select>
+                    </label>
+                </div>
+                <div id="business-hours-status" style="font-size: 10px; color: #666; margin-top: 8px;"></div>
+            </div>
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                <div style="font-size: 12px; font-weight: 600; color: #693fe9; margin-bottom: 8px;"><span class="icon icon-calendar"></span> Active Days</div>
+                <div style="margin-bottom: 8px;">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer;">
+                        <input type="checkbox" id="allow-weekends" style="width: 14px; height: 14px;">
+                        <span>Allow Weekends</span>
+                    </label>
+                </div>
+                <div style="display: flex; gap: 4px; font-size: 10px;">
+                    <label style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <input type="checkbox" id="daily-mon" checked style="width: 12px; height: 12px;"><span>M</span>
+                    </label>
+                    <label style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <input type="checkbox" id="daily-tue" checked style="width: 12px; height: 12px;"><span>T</span>
+                    </label>
+                    <label style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <input type="checkbox" id="daily-wed" checked style="width: 12px; height: 12px;"><span>W</span>
+                    </label>
+                    <label style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <input type="checkbox" id="daily-thu" checked style="width: 12px; height: 12px;"><span>T</span>
+                    </label>
+                    <label style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <input type="checkbox" id="daily-fri" checked style="width: 12px; height: 12px;"><span>F</span>
+                    </label>
+                    <label style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <input type="checkbox" id="daily-sat" style="width: 12px; height: 12px;"><span>S</span>
+                    </label>
+                    <label style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; background: #f8f9fa; border-radius: 4px; cursor: pointer;">
+                        <input type="checkbox" id="daily-sun" style="width: 12px; height: 12px;"><span>S</span>
+                    </label>
+                </div>
+                <div id="daily-schedule-info" style="font-size: 9px; color: #999; margin-top: 6px;">Auto-saves</div>
+            </div>
+            
+            <!-- Missed Post Behavior Setting -->
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0; margin-top: 12px;">
+                <div style="font-size: 12px; font-weight: 600; color: #693fe9; margin-bottom: 8px;"><span class="icon icon-clock"></span> Missed Scheduled Posts</div>
+                <p style="font-size: 10px; color: #666; margin-bottom: 10px;">What should happen if a scheduled post's time passes while your system is offline?</p>
+                <select id="missed-post-behavior" style="width: 100%; padding: 8px; font-size: 11px; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer;">
+                    <option value="wait_manual">Wait for Manual Action (default)</option>
+                    <option value="auto_post">Auto-Post When Back Online</option>
+                    <option value="reschedule">Auto-Reschedule to Next Hour</option>
+                </select>
+                <div style="font-size: 9px; color: #999; margin-top: 6px;">
+                    <strong>Wait:</strong> Shows missed posts for you to post/reschedule manually<br>
+                    <strong>Auto-Post:</strong> Automatically posts when system comes online<br>
+                    <strong>Reschedule:</strong> Moves to next available hour slot
+                </div>
+            </div>
+            
+            <!-- Scheduler Debug Logs -->
+            <div style="background: white; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0; margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 12px; font-weight: 600; color: #693fe9;"><span class="icon icon-file-text"></span> Scheduler Logs</div>
+                    <button id="view-scheduler-logs" style="padding: 4px 10px; font-size: 10px; background: #693fe9; color: white; border: none; border-radius: 4px; cursor: pointer;">View Logs</button>
+                </div>
+                <div id="scheduler-logs-container" style="display: none; max-height: 200px; overflow-y: auto; background: #1a1a2e; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 10px; color: #00ff00;">
+                    <!-- Logs will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extension Update Section -->
+    <div class="card">
+        <div class="accordion-header" data-accordion="extension-update">
+            <span><span class="icon icon-download"></span> Extension Update</span>
+            <span class="arrow"></span>
+        </div>
+        <div id="extension-update-content" class="accordion-content">
+            <!-- Current Version Info -->
+            <div style="background: linear-gradient(135deg, #693fe9 0%, #7c4dff 100%); padding: 15px; border-radius: 10px; color: white; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="assets/icons/icon48.png" alt="Kommentify" style="width: 40px; height: 40px; border-radius: 10px;">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 700;">Kommentify Extension</div>
+                            <div style="font-size: 11px; opacity: 0.9;">Current Version: <span id="current-version-display">v1.3.5</span></div>
+                        </div>
+                    </div>
+                    <div id="version-status-badge" style="padding: 4px 10px; background: rgba(255,255,255,0.2); border-radius: 8px; font-size: 10px; font-weight: 600;">
+                        ✓ Up to date
+                    </div>
+                </div>
+                <div id="last-check-time" style="font-size: 10px; opacity: 0.7;">Last checked: Never</div>
+            </div>
+            
+            <!-- Check for Updates Button -->
+            <button id="check-updates-btn" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                <span class="icon icon-refresh"></span> Check for Updates
+            </button>
+            
+            <!-- Update Available Section (hidden by default) -->
+            <div id="update-available-section" style="display: none; background: linear-gradient(135deg, #fef3c7, #fef9c3); padding: 15px; border-radius: 10px; border: 2px solid #f59e0b; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <span style="font-size: 20px;">🚀</span>
+                    <div>
+                        <div style="font-size: 14px; font-weight: 700; color: #92400e;">New Version Available!</div>
+                        <div style="font-size: 12px; color: #a16207;">Version <span id="new-version-number">--</span> is ready to download</div>
+                    </div>
+                </div>
+                
+                <!-- New Features List -->
+                <div id="update-features-list" style="margin-bottom: 12px;">
+                    <div style="font-size: 11px; font-weight: 600; color: #92400e; margin-bottom: 6px;">✨ What's New:</div>
+                    <ul id="new-features-ul" style="margin: 0; padding-left: 18px; font-size: 11px; color: #78350f; line-height: 1.6;">
+                        <!-- Features will be loaded dynamically -->
+                    </ul>
+                </div>
+                
+                <!-- Download Button -->
+                <button id="download-update-btn" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                    <span class="icon icon-download"></span> Download Update
+                </button>
+            </div>
+            
+            <!-- Auto-Update Info -->
+            <div style="background: #f8f9fa; padding: 10px 12px; border-radius: 8px; border-left: 3px solid #693fe9;">
+                <div style="font-size: 11px; color: #666; line-height: 1.5;">
+                    <strong style="color: #693fe9;">💡 Auto-Check:</strong> The extension automatically checks for updates when it loads. You'll see a notification if a new version is available.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

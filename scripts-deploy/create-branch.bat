@@ -1,0 +1,188 @@
+@echo off
+setlocal enabledelayedexpansion
+
+echo ========================================
+echo    Create New Branch
+echo ========================================
+echo.
+
+REM Navigate to project root
+cd /d "%~dp0.."
+
+REM Check if git is initialized
+if not exist ".git" (
+    echo ERROR: Git repository not initialized
+    echo Please run init-repo.bat first
+    pause
+    exit /b 1
+)
+
+REM Get current branch
+for /f "delims=" %%i in ('git branch --show-current 2^>nul') do set "CURRENT_BRANCH=%%i"
+
+echo Current branch: %CURRENT_BRANCH%
+echo.
+
+REM Show existing branches
+echo Existing branches:
+git branch
+echo.
+
+REM Branch naming templates
+echo Branch naming suggestions:
+echo   feature/your-feature-name
+echo   bugfix/issue-description
+echo   hotfix/urgent-fix
+echo   release/v1.0.0
+echo.
+
+REM Get new branch name
+:get_branch_name
+set /p "BRANCH_NAME=Enter new branch name: "
+
+if "%BRANCH_NAME%"=="" (
+    echo ERROR: Branch name cannot be empty
+    goto :get_branch_name
+)
+
+REM Validate branch name - no spaces
+echo %BRANCH_NAME% | findstr " " >nul
+if not errorlevel 1 (
+    echo ERROR: Branch name cannot contain spaces
+    echo Use hyphens (-) or underscores (_) instead
+    goto :get_branch_name
+)
+
+REM Validate branch name - no invalid characters
+echo %BRANCH_NAME% | findstr /r "[~^:?*\[\]@{}\\]" >nul
+if not errorlevel 1 (
+    echo ERROR: Branch name contains invalid characters
+    echo Avoid: ~ ^ : ? * [ ] @ { } \
+    goto :get_branch_name
+)
+
+REM Check reserved names
+if /i "%BRANCH_NAME%"=="HEAD" (
+    echo ERROR: HEAD is a reserved name
+    goto :get_branch_name
+)
+
+REM Check if branch already exists
+git show-ref --verify --quiet refs/heads/%BRANCH_NAME%
+if not errorlevel 1 (
+    echo ERROR: Branch '%BRANCH_NAME%' already exists
+    echo.
+    set /p "SWITCH_TO=Switch to existing branch? (Y/N): "
+    if /i "!SWITCH_TO!"=="Y" (
+        git checkout %BRANCH_NAME%
+        if errorlevel 1 (
+            echo ERROR: Failed to switch branch
+            pause
+            exit /b 1
+        )
+        echo Switched to branch: %BRANCH_NAME%
+    )
+    pause
+    exit /b 0
+)
+
+REM Ask which branch to create from
+echo.
+echo Create branch from:
+echo [1] Current branch (%CURRENT_BRANCH%)
+echo [2] Main/Master branch
+echo [3] Specific commit
+echo [4] Remote branch
+echo.
+set /p "SOURCE_CHOICE=Enter choice (1-4): "
+
+if "%SOURCE_CHOICE%"=="2" (
+    REM Try main first, then master
+    git show-ref --verify --quiet refs/heads/main
+    if not errorlevel 1 (
+        set "SOURCE_BRANCH=main"
+    ) else (
+        git show-ref --verify --quiet refs/heads/master
+        if not errorlevel 1 (
+            set "SOURCE_BRANCH=master"
+        ) else (
+            echo ERROR: Neither main nor master branch exists
+            pause
+            exit /b 1
+        )
+    )
+    echo Creating branch from: !SOURCE_BRANCH!
+    git checkout !SOURCE_BRANCH!
+    git checkout -b %BRANCH_NAME%
+    
+) else if "%SOURCE_CHOICE%"=="3" (
+    echo.
+    echo Recent commits:
+    git log --oneline -15
+    echo.
+    set /p "COMMIT_HASH=Enter commit hash: "
+    if "!COMMIT_HASH!"=="" (
+        echo ERROR: Commit hash cannot be empty
+        pause
+        exit /b 1
+    )
+    echo Creating branch from commit: !COMMIT_HASH!
+    git checkout -b %BRANCH_NAME% !COMMIT_HASH!
+    
+) else if "%SOURCE_CHOICE%"=="4" (
+    echo.
+    echo Fetching remote branches...
+    git fetch origin
+    echo.
+    echo Remote branches:
+    git branch -r
+    echo.
+    set /p "REMOTE_BRANCH=Enter remote branch (e.g., origin/develop): "
+    if "!REMOTE_BRANCH!"=="" (
+        echo ERROR: Remote branch cannot be empty
+        pause
+        exit /b 1
+    )
+    echo Creating branch from: !REMOTE_BRANCH!
+    git checkout -b %BRANCH_NAME% !REMOTE_BRANCH!
+    
+) else (
+    echo Creating branch from current branch...
+    git checkout -b %BRANCH_NAME%
+)
+
+if errorlevel 1 (
+    echo ERROR: Failed to create branch
+    pause
+    exit /b 1
+)
+
+echo.
+echo Branch '%BRANCH_NAME%' created successfully!
+echo.
+
+REM Log the operation
+for /f "delims=" %%a in ('powershell -Command "Get-Date -Format \"yyyy-MM-dd HH:mm:ss\""') do set "DATETIME=%%a"
+set "LOG_DIR=%~dp0logs"
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+echo [%DATETIME%] Create-Branch: %BRANCH_NAME% from %CURRENT_BRANCH% >> "%LOG_DIR%\operations.log"
+
+REM Ask if user wants to push to remote
+set /p "PUSH_REMOTE=Push new branch to remote? (Y/N): "
+if /i "%PUSH_REMOTE%"=="Y" (
+    echo Pushing to remote...
+    git push -u origin %BRANCH_NAME%
+    if errorlevel 1 (
+        echo WARNING: Failed to push to remote
+        echo You can push later using: git push -u origin %BRANCH_NAME%
+    ) else (
+        echo Branch pushed to remote successfully!
+    )
+)
+
+echo.
+echo ========================================
+echo Current branch: %BRANCH_NAME%
+echo ========================================
+echo.
+pause

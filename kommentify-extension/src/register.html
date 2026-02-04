@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Kommentify</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #693fe9 0%, #1a2340 100%);
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .register-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .logo-icon span:first-child {
+            background: linear-gradient(135deg, #693fe9, #5835c7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .logo-icon span:last-child {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .progress-step {
+            width: 60px;
+            height: 4px;
+            border-radius: 2px;
+            background: #e5e7eb;
+        }
+
+        .progress-step.active {
+            background: #693fe9;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #693fe9;
+        }
+
+        input.otp-input {
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 8px;
+        }
+
+        input:disabled {
+            background: #f0fdf4;
+            border-color: #d1fae5;
+            color: #16a34a;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #693fe9, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 14px rgba(105, 63, 233, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(105, 63, 233, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: none;
+            border: none;
+            color: #693fe9;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        .btn-secondary:disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            border: 1px solid #fecaca;
+        }
+
+        .success {
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            border: 1px solid #bbf7d0;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .links a {
+            color: #693fe9;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .plan-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .plan-info strong {
+            color: #693fe9;
+        }
+
+        /* Step visibility */
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="logo">
+            <div class="logo-icon">
+                <span>K</span>
+                <span>Kommentify</span>
+            </div>
+            <p id="step-subtitle">Enter your email to get started</p>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="progress-steps">
+            <div class="progress-step active" id="step-indicator-1"></div>
+            <div class="progress-step" id="step-indicator-2"></div>
+            <div class="progress-step" id="step-indicator-3"></div>
+        </div>
+
+        <div id="error-message" class="error"></div>
+        <div id="success-message" class="success"></div>
+
+        <!-- Step 1: Email -->
+        <div id="step-email" class="step active">
+            <form id="email-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="you@example.com" required>
+                </div>
+                <button type="submit" class="btn" id="send-otp-btn">Send Verification Code</button>
+            </form>
+        </div>
+
+        <!-- Step 2: OTP Verification -->
+        <div id="step-otp" class="step">
+            <form id="otp-form">
+                <div class="form-group">
+                    <label for="otp">Verification Code</label>
+                    <input type="text" id="otp" class="otp-input" placeholder="000000" maxlength="6" pattern="\d{6}" required>
+                </div>
+                <button type="submit" class="btn" id="verify-otp-btn">Verify Code</button>
+                <div class="text-center">
+                    <button type="button" class="btn-secondary" id="resend-btn" disabled>Resend code in 60s</button>
+                </div>
+                <div class="text-center">
+                    <button type="button" class="btn-link" id="change-email-btn">← Change email</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Step 3: Complete Registration -->
+        <div id="step-details" class="step">
+            <div class="plan-info">
+                <strong>Free Plan Includes:</strong><br>
+                • 10 comments/day<br>
+                • 20 likes/day<br>
+                • 2 AI posts/day<br>
+                • Basic automation
+            </div>
+
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" placeholder="John Doe" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="verified-email">Email (Verified ✓)</label>
+                    <input type="email" id="verified-email" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Min. 8 characters" minlength="8" required>
+                </div>
+
+                <button type="submit" class="btn" id="register-btn">Create Account</button>
+            </form>
+        </div>
+
+        <div class="links">
+            <a href="login.html">Already have an account? Sign In</a>
+        </div>
+    </div>
+
+    <script src="register.js"></script>
+</body>
+</html>

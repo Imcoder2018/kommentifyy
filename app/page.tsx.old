@@ -1,0 +1,884 @@
+'use client';
+
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { DashboardTab, WriterTab, AutomationTab, NetworkTab, ImportTab, AnalyticsTab, LimitsTab, SettingsTab } from './components/tabs';
+
+// SVG Icon Components for Website
+const IconFire = ({ size = 16, color = '#f59e0b' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+        <path d="M12 23c-3.866 0-7-2.686-7-6 0-2.5 1.5-4.5 3-6 .5 2.5 2 3 2 3s-1-3 1-6c0 0 3 1 4 4 .5-1 1-2 1-2s2.5 3.5 2.5 7c0 3.314-2.634 6-6.5 6z"/>
+    </svg>
+);
+
+const IconRocket = ({ size = 16, color = '#693fe9' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+    </svg>
+);
+
+const IconCreditCard = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="20" height="14" x="2" y="5" rx="2"/>
+        <line x1="2" x2="22" y1="10" y2="10"/>
+    </svg>
+);
+
+const IconClock = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+    </svg>
+);
+
+const IconX = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+    </svg>
+);
+
+const IconChart = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+    </svg>
+);
+
+const IconEdit = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+    </svg>
+);
+
+const IconBot = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+    </svg>
+);
+
+const IconUsers = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+);
+
+const IconPlug = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>
+    </svg>
+);
+
+const IconSettings = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+    </svg>
+);
+
+const IconMessage = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+    </svg>
+);
+
+const IconSearch = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+    </svg>
+);
+
+const IconHandshake = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88"/><path d="m16 16 2 2"/><path d="M4 6h16v10H4V6z"/>
+    </svg>
+);
+
+const IconDownload = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+    </svg>
+);
+
+const IconShield = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+    </svg>
+);
+
+const IconCalendar = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+    </svg>
+);
+
+const IconAlert = ({ size = 16, color = '#ef4444' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+    </svg>
+);
+
+const IconStar = ({ size = 16, color = '#f59e0b' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+);
+
+const IconCheck = ({ size = 16, color = '#10b981' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 6 9 17l-5-5"/>
+    </svg>
+);
+
+const IconBan = ({ size = 16, color = '#ef4444' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>
+    </svg>
+);
+
+interface Plan {
+    id: string;
+    name: string;
+    price: number;
+    period: 'monthly' | 'annual' | 'lifetime';
+    isLifetime: boolean;
+    isTrialPlan: boolean;
+    isDefaultFreePlan: boolean;
+    trialDurationDays: number;
+    lifetimeMaxSpots: number;
+    lifetimeSoldSpots: number;
+    lifetimeSpotsRemaining: number | null;
+    lifetimeExpiresAt: string | null;
+    stripeLink: string;
+    displayOrder: number;
+    limits: {
+        monthlyComments: number;
+        monthlyLikes: number;
+        monthlyShares: number;
+        monthlyFollows: number;
+        monthlyConnections: number;
+        aiPostsPerMonth: number;
+        aiCommentsPerMonth: number;
+        aiTopicLinesPerMonth: number;
+    };
+    monthlyImportCredits: number;
+    features: {
+        autoLike: boolean;
+        autoComment: boolean;
+        autoFollow: boolean;
+        aiContent: boolean;
+        aiTopicLines: boolean;
+        scheduling: boolean;
+        automationScheduling: boolean;
+        networkScheduling: boolean;
+        analytics: boolean;
+        importProfiles: boolean;
+    };
+}
+
+// Extension Preview Component - Exact replica of the actual extension (850px width like real popup)
+function ExtensionPreview() {
+    const [activeTab, setActiveTab] = useState('dashboard');
+    
+    const tabs = ['Dashboard', 'Writer', 'Automation', 'Network', 'Import', 'Analytics', 'Limits', 'Settings'];
+    
+    const primaryGradient = 'linear-gradient(135deg, #693fe9 0%, #7c4dff 100%)';
+
+    const renderContent = () => {
+        switch(activeTab) {
+            case 'dashboard':
+                return <DashboardTab />;
+            case 'writer':
+                return <WriterTab />;
+            case 'automation':
+                return <AutomationTab />;
+            case 'network':
+                return <NetworkTab />;
+            case 'import':
+                return <ImportTab />;
+            case 'analytics':
+                return <AnalyticsTab />;
+            case 'limits':
+                return <LimitsTab />;
+            case 'settings':
+                return <SettingsTab />;
+            default:
+                return <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>Select a tab</div>;
+        }
+    };
+
+    return (
+        <div style={{ 
+            width: '580px', 
+            background: 'white', 
+            borderRadius: '16px', 
+            boxShadow: '0 25px 80px rgba(0,0,0,0.4)', 
+            overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0
+        }}>
+            {/* Extension Header - Modern Design */}
+            <div style={{ 
+                background: primaryGradient, 
+                padding: '18px 22px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                borderRadius: '14px',
+                margin: '12px',
+                boxShadow: '0 8px 24px rgba(105, 63, 233, 0.35)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' }}>
+                        <span style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff' }}>K</span>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#ffffff' }}>Kommentify</div>
+                        <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.85)', fontWeight: '500', letterSpacing: '0.5px', textTransform: 'uppercase' }}>AI-Powered LinkedIn Suite</div>
+                    </div>
+                </div>
+                <div style={{ padding: '6px 14px', background: 'rgba(255, 255, 255, 0.2)', borderRadius: '20px', fontSize: '11px', fontWeight: '600', color: '#ffffff', backdropFilter: 'blur(10px)' }}>
+                    <span style={{ opacity: 0.8, marginRight: '4px' }}>Plan:</span>Starters
+                </div>
+            </div>
+            
+            {/* Tabs - Modern Design */}
+            <div style={{ display: 'flex', gap: '4px', padding: '8px 12px', background: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
+                {tabs.map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab.toLowerCase())}
+                        style={{
+                            flex: 1,
+                            padding: '10px 10px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            background: activeTab === tab.toLowerCase() ? primaryGradient : 'transparent',
+                            color: activeTab === tab.toLowerCase() ? 'white' : '#64748B',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            textAlign: 'center',
+                            boxShadow: activeTab === tab.toLowerCase() ? '0 4px 12px rgba(105, 63, 233, 0.35)' : 'none'
+                        }}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
+            
+            {/* Tab Content */}
+            <div style={{ minHeight: '400px', maxHeight: '500px', overflowY: 'auto' }}>
+                {renderContent()}
+            </div>
+        </div>
+    );
+}
+
+export default function LandingPage() {
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [lifetimeDeals, setLifetimeDeals] = useState<Plan[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [totalLifetimeSpots, setTotalLifetimeSpots] = useState(200);
+    const [soldLifetimeSpots, setSoldLifetimeSpots] = useState(0);
+
+    useEffect(() => {
+        fetch('/api/plans')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Filter regular plans - exclude plans with lifetime/life time in name or isLifetime flag
+                    const allPlans = data.plans || [];
+                    const isLifetimePlan = (p: Plan) => {
+                        const nameLower = p.name.toLowerCase();
+                        return p.isLifetime || nameLower.includes('lifetime') || nameLower.includes('life time');
+                    };
+                    const regularPlans = allPlans.filter((p: Plan) => !isLifetimePlan(p));
+                    setPlans(regularPlans);
+                    
+                    // Combine API lifetime deals with any plans containing 'lifetime' or 'life time' in name
+                    const apiLifetimeDeals = data.lifetimeDeals || [];
+                    const nameBasedLifetimeDeals = allPlans.filter((p: Plan) => isLifetimePlan(p));
+                    const allLifetimeDeals = [...apiLifetimeDeals, ...nameBasedLifetimeDeals.filter((p: Plan) => !apiLifetimeDeals.find((d: Plan) => d.id === p.id))];
+                    setLifetimeDeals(allLifetimeDeals);
+                    
+                    const totalSpots = allLifetimeDeals.reduce((sum: number, p: Plan) => sum + (p.lifetimeMaxSpots || 100), 0);
+                    const soldSpots = allLifetimeDeals.reduce((sum: number, p: Plan) => sum + (p.lifetimeSoldSpots || 0), 0);
+                    setTotalLifetimeSpots(totalSpots || 200);
+                    setSoldLifetimeSpots(soldSpots);
+                }
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, []);
+
+    return (
+        <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif', background: '#0a0a0a', color: 'white' }}>
+            {/* Dark Navbar */}
+            <nav style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 60px',
+                background: 'rgba(10, 10, 10, 0.95)',
+                backdropFilter: 'blur(10px)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
+                borderBottom: '1px solid rgba(255,255,255,0.1)'
+            }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ background: 'linear-gradient(135deg, #693fe9, #5835c7)', padding: '6px 10px', borderRadius: '6px', fontSize: '18px' }}>K</span>
+                    Kommentify
+                </div>
+                <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
+                    <Link href="#features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Features</Link>
+                    <Link href="#how-it-works" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>How It Works</Link>
+                    <Link href="#pricing" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Pricing</Link>
+                    <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><IconFire size={14} /> Lifetime Deal</Link>
+                    <Link href="#faq" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>FAQ</Link>
+                    <Link href="/login" style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Login</Link>
+                    <Link href="/signup" style={{
+                        padding: '10px 20px',
+                        background: 'white',
+                        color: '#0a0a0a',
+                        textDecoration: 'none',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}>
+                        Get Started <span>→</span>
+                    </Link>
+                </div>
+            </nav>
+
+            {/* Hero Section - Dark Theme */}
+            <header style={{
+                background: 'linear-gradient(180deg, #0a0a0a 0%, #111111 100%)',
+                padding: '100px 60px 120px',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                {/* Background Gradient Orbs */}
+                <div style={{ position: 'absolute', top: '10%', left: '10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(105, 63, 233, 0.15) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }}></div>
+                <div style={{ position: 'absolute', bottom: '20%', right: '15%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }}></div>
+                
+                <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                    <div style={{ display: 'inline-block', background: 'rgba(105, 63, 233, 0.1)', border: '1px solid rgba(105, 63, 233, 0.3)', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', marginBottom: '30px', color: '#693fe9' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IconRocket size={14} color="#693fe9" /> AI-Powered LinkedIn Automation · 3-day free trial · Cancel anytime</span>
+                    </div>
+                    
+                    <h1 style={{ fontSize: '64px', fontWeight: '700', lineHeight: '1.1', marginBottom: '24px', letterSpacing: '-2px' }}>
+                        LinkedIn Growth Engine<br/>
+                        <span style={{ color: '#693fe9' }}>For Ambitious Professionals</span>
+                    </h1>
+                    
+                    <p style={{ fontSize: '20px', color: 'rgba(255,255,255,0.6)', maxWidth: '700px', margin: '0 auto 40px', lineHeight: '1.7' }}>
+                        Automate comments, likes, connections, and AI-powered posts with human-like behavior. 
+                        No API needed, 100% browser-based, completely safe.
+                    </p>
+                    
+                    {/* Star Rating */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '32px' }}>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                            {[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '18px' }}>★</span>)}
+                        </div>
+                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Rated 4.8/5.0 by 2,500+ users</span>
+                    </div>
+                    
+                    {/* CTA Buttons */}
+                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '40px' }}>
+                        <Link href="/signup" style={{
+                            padding: '16px 32px',
+                            background: 'white',
+                            color: '#0a0a0a',
+                            textDecoration: 'none',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            Start Your Free Trial <span>→</span>
+                        </Link>
+                        <Link href="#demo" style={{
+                            padding: '16px 32px',
+                            background: 'transparent',
+                            color: 'white',
+                            textDecoration: 'none',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            fontWeight: '500',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            View Live Demo <span>→</span>
+                        </Link>
+                    </div>
+                    
+                    {/* Trust Badges */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', flexWrap: 'wrap' }}>
+                        {[
+                            { icon: <IconCreditCard size={14} color="rgba(255,255,255,0.5)" />, text: 'No credit card required' },
+                            { icon: <IconClock size={14} color="rgba(255,255,255,0.5)" />, text: '3-day free trial' },
+                            { icon: <IconX size={14} color="rgba(255,255,255,0.5)" />, text: 'Cancel anytime' }
+                        ].map((badge, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
+                                <span>{badge.icon}</span> {badge.text}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {/* Scroll indicator */}
+                    <div style={{ marginTop: '60px', color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
+                        Scroll to explore ↓
+                    </div>
+                </div>
+            </header>
+
+            {/* Live Extension Preview Section */}
+            <section id="demo" style={{ background: '#0a0a0a', padding: '100px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center' }}>
+                        <div>
+                            <div style={{ display: 'inline-block', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', marginBottom: '20px', color: '#818cf8' }}>
+                                Live Preview · Interactive Demo
+                            </div>
+                            <h2 style={{ fontSize: '42px', fontWeight: '700', marginBottom: '20px', lineHeight: '1.2' }}>
+                                See the Extension<br/>
+                                <span style={{ color: '#693fe9' }}>In Action</span>
+                            </h2>
+                            <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.6)', marginBottom: '30px', lineHeight: '1.7' }}>
+                                Try our live interactive preview. Click through tabs, explore features, and see exactly how Kommentify helps you grow on LinkedIn.
+                            </p>
+                            
+                            {/* Feature Cards */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                {[
+                                    { icon: <IconChart size={24} color="#693fe9" />, title: 'Dashboard', desc: 'Track all your activity' },
+                                    { icon: <IconEdit size={24} color="#693fe9" />, title: 'AI Writer', desc: 'Generate viral posts' },
+                                    { icon: <IconBot size={24} color="#693fe9" />, title: 'Automation', desc: 'Set it and forget it' },
+                                    { icon: <IconUsers size={24} color="#693fe9" />, title: 'Networking', desc: 'Connect with ideal profiles' },
+                                ].map((f, i) => (
+                                    <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px', borderRadius: '12px' }}>
+                                        <div style={{ marginBottom: '8px' }}>{f.icon}</div>
+                                        <div style={{ fontWeight: '600', marginBottom: '4px' }}>{f.title}</div>
+                                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>{f.desc}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Extension Preview */}
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <ExtensionPreview />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* How It Works - Dark Theme */}
+            <section id="how-it-works" style={{ background: '#0a0a0a', padding: '100px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                        <div style={{ display: 'inline-block', background: 'rgba(105, 63, 233, 0.1)', border: '1px solid rgba(105, 63, 233, 0.3)', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', marginBottom: '20px', color: '#693fe9' }}>
+                            Simple Setup · Powerful Results
+                        </div>
+                        <h2 style={{ fontSize: '42px', fontWeight: '700', marginBottom: '16px' }}>
+                            How Kommentify<br/>
+                            <span style={{ color: '#693fe9' }}>Works For You</span>
+                        </h2>
+                        <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.5)', maxWidth: '600px', margin: '0 auto' }}>
+                            Get started in minutes with our simple 3-step process.
+                        </p>
+                    </div>
+                    
+                    <div style={{ position: 'relative' }}>
+                        {/* Vertical Line */}
+                        <div style={{ position: 'absolute', left: '30px', top: '30px', bottom: '30px', width: '2px', background: 'linear-gradient(180deg, #693fe9, rgba(34,197,94,0.2))', borderRadius: '2px' }}></div>
+                        
+                        {[
+                            { step: '1', icon: <IconPlug size={28} color="white" />, title: 'Install Extension', desc: 'Add our Chrome extension in 30 seconds. No API keys, no complex setup. Just install and go.' },
+                            { step: '2', icon: <IconSettings size={28} color="white" />, title: 'Configure Settings', desc: 'Set your target keywords, engagement limits, and automation preferences. Our AI learns your style.' },
+                            { step: '3', icon: <IconRocket size={28} color="white" />, title: 'Watch Growth Happen', desc: 'Sit back as Kommentify engages, comments, connects, and grows your network on autopilot.' }
+                        ].map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '30px', marginBottom: i < 2 ? '40px' : 0, position: 'relative' }}>
+                                <div style={{ width: '60px', height: '60px', background: '#693fe9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '700', color: '#0a0a0a', flexShrink: 0, zIndex: 1 }}>
+                                    {item.step}
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                        <span>{item.icon}</span>
+                                        <h3 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>{item.title}</h3>
+                                    </div>
+                                    <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: '1.6' }}>{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Features - Dark Theme */}
+            <section id="features" style={{ background: '#111111', padding: '100px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                        <div style={{ display: 'inline-block', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', marginBottom: '20px', color: '#818cf8' }}>
+                            Powerful Features · Built for Growth
+                        </div>
+                        <h2 style={{ fontSize: '42px', fontWeight: '700', marginBottom: '16px' }}>
+                            Everything You Need to<br/>
+                            <span style={{ color: '#693fe9' }}>Dominate LinkedIn</span>
+                        </h2>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+                        {[
+                            { icon: <IconEdit size={24} color="#693fe9" />, title: 'AI Post Writer', desc: 'Generate viral posts with AI. Enter a topic, choose your tone, get polished content instantly.' },
+                            { icon: <IconMessage size={24} color="#693fe9" />, title: 'Smart Comments', desc: 'AI reads posts and generates thoughtful, personalized comments that drive engagement.' },
+                            { icon: <IconSearch size={24} color="#693fe9" />, title: 'Keyword Discovery', desc: 'Find relevant posts by keyword and engage automatically with your target audience.' },
+                            { icon: <IconHandshake size={24} color="#693fe9" />, title: 'Auto Networking', desc: 'Send personalized connection requests with Boolean search and smart filtering.' },
+                            { icon: <IconDownload size={24} color="#693fe9" />, title: 'Profile Import', desc: 'Upload target profiles, auto-engage with their posts, build real relationships at scale.' },
+                            { icon: <IconChart size={24} color="#693fe9" />, title: 'Analytics Dashboard', desc: 'Track all activity: comments, likes, follows, connections, and growth metrics.' },
+                            { icon: <IconShield size={24} color="#693fe9" />, title: 'Safe Limits', desc: 'Pre-configured limits for account age. Stay safe with human-like behavior patterns.' },
+                            { icon: <IconCalendar size={24} color="#693fe9" />, title: 'Smart Scheduling', desc: 'Schedule posts and automation with human-like delays and optimal timing.' },
+                        ].map((feature, i) => (
+                            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '28px', display: 'flex', gap: '16px' }}>
+                                <div style={{ width: '48px', height: '48px', background: 'rgba(105, 63, 233, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    {feature.icon}
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>{feature.title}</h3>
+                                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: '1.5' }}>{feature.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Pricing - Dark Theme */}
+            <section id="pricing" style={{ background: '#0a0a0a', padding: '100px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                        <div style={{ display: 'inline-block', background: 'rgba(105, 63, 233, 0.1)', border: '1px solid rgba(105, 63, 233, 0.3)', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', marginBottom: '20px', color: '#693fe9' }}>
+                            Flexible Pricing · 3-day free trial · Cancel anytime
+                        </div>
+                    </div>
+                    <h2 style={{ fontSize: '48px', fontWeight: '700', textAlign: 'center', marginBottom: '16px' }}>
+                        Simple, Transparent Pricing<br/>
+                        <span style={{ color: '#693fe9' }}>For Every Business Size</span>
+                    </h2>
+                    <p style={{ textAlign: 'center', fontSize: '18px', color: 'rgba(255,255,255,0.5)', marginBottom: '60px' }}>
+                        Choose the perfect plan for your LinkedIn growth needs with no hidden fees.
+                    </p>
+                    
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '60px' }}>
+                            <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)' }}>Loading plans...</div>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(plans.length, 4)}, 1fr)`, gap: '24px', marginBottom: '40px' }}>
+                            {plans.sort((a, b) => a.price - b.price).map((plan, index) => {
+                                const isPopular = plan.name.toLowerCase().includes('gold') || plan.name.toLowerCase().includes('pro') || index === Math.floor(plans.filter(p => !p.isLifetime).length / 2);
+                                const isFree = plan.price === 0 && !plan.isTrialPlan;
+                                const isTrial = plan.isTrialPlan;
+                                
+                                const features = [
+                                    `${plan.limits.aiCommentsPerMonth} AI Comments`,
+                                    `${plan.limits.monthlyLikes} Likes`,
+                                    `${plan.limits.aiPostsPerMonth} AI Posts`,
+                                    `${plan.limits.monthlyConnections} Connections`,
+                                    plan.features.scheduling ? 'Post Scheduling' : null,
+                                    plan.features.importProfiles ? 'Import Profiles' : null,
+                                ].filter(Boolean);
+                                
+                                return (
+                                    <div key={plan.id} style={{ 
+                                        padding: '32px', 
+                                        background: isPopular ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)', 
+                                        border: isPopular ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.08)', 
+                                        borderRadius: '16px', 
+                                        position: 'relative'
+                                    }}>
+                                        {isPopular && (
+                                            <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'white', color: '#0a0a0a', padding: '4px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: '600' }}>
+                                                Most Popular
+                                            </div>
+                                        )}
+                                        <div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>{plan.name}</div>
+                                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', minHeight: '40px' }}>
+                                            {isFree ? 'Perfect for getting started' : isTrial ? 'Try all features free' : 'For growing professionals'}
+                                        </p>
+                                        <div style={{ marginBottom: '8px' }}>
+                                            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>${Math.round(plan.price * 1.5)}</span>
+                                        </div>
+                                        <div style={{ fontSize: '42px', fontWeight: '700', marginBottom: '4px' }}>
+                                            ${plan.price}<span style={{ fontSize: '16px', fontWeight: '400', color: 'rgba(255,255,255,0.5)' }}>/mo</span>
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '24px' }}>
+                                            ${(plan.price / 30).toFixed(2)} per session
+                                        </div>
+                                        <ul style={{ listStyle: 'none', padding: 0, marginBottom: '24px' }}>
+                                            {features.slice(0, 6).map((item, i) => (
+                                                <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>
+                                                    <span style={{ color: '#693fe9' }}>✓</span> {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <Link href={plan.stripeLink || '/signup'} style={{
+                                            display: 'block',
+                                            textAlign: 'center',
+                                            padding: '14px',
+                                            background: isPopular ? 'white' : 'transparent',
+                                            color: isPopular ? '#0a0a0a' : 'white',
+                                            textDecoration: 'none',
+                                            borderRadius: '8px',
+                                            fontWeight: '600',
+                                            fontSize: '14px',
+                                            border: isPopular ? 'none' : '1px solid rgba(255,255,255,0.2)'
+                                        }}>
+                                            {isFree ? 'Start Free' : isTrial ? 'Start Trial' : 'Get Started'}
+                                        </Link>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Trust Badges */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginTop: '40px', flexWrap: 'wrap' }}>
+                        {['30-Day Money-Back', 'No Credit Card', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
+                            <div key={i} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#693fe9' }}>✓</span> {badge}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* LIFETIME DEAL SECTION - Dynamic from API */}
+            {lifetimeDeals.length > 0 && (
+                <section id="lifetime-deal" style={{ padding: '100px 60px', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: 'white' }}>
+                    <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '20px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><IconAlert size={28} /> Kommentify Lifetime Deal — Only {totalLifetimeSpots - soldLifetimeSpots} Spots Left!</span>
+                        </h2>
+                        <p style={{ fontSize: '24px', opacity: 0.9, marginBottom: '20px' }}>
+                            Pay once. Use forever. No monthly fees. No renewals.
+                        </p>
+                        <p style={{ fontSize: '18px', opacity: 0.8, marginBottom: '40px', lineHeight: '1.6' }}>
+                            This is a <strong>one-time launch offer</strong> for early supporters.<br/>
+                            Once {totalLifetimeSpots} licences are sold → <strong>Lifetime Deal will never return.</strong>
+                        </p>
+                        
+                        {/* Progress Bar */}
+                        <div style={{ maxWidth: '500px', margin: '0 auto 60px auto' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
+                                <span>{soldLifetimeSpots} sold</span>
+                                <span>{totalLifetimeSpots - soldLifetimeSpots} remaining</span>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '10px', height: '12px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                    background: 'linear-gradient(90deg, #f59e0b, #ef4444)', 
+                                    height: '100%', 
+                                    width: `${(soldLifetimeSpots / totalLifetimeSpots) * 100}%`,
+                                    borderRadius: '10px',
+                                    transition: 'width 0.5s ease'
+                                }}></div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '60px' }}>
+                            {lifetimeDeals.sort((a, b) => a.price - b.price).map((plan, index) => {
+                                const isPopular = index === Math.floor(lifetimeDeals.length / 2) || plan.name.toLowerCase().includes('growth');
+                                const spotsLeft = plan.lifetimeSpotsRemaining ?? (plan.lifetimeMaxSpots - plan.lifetimeSoldSpots);
+                                
+                                // Build feature list from plan data
+                                const features = [
+                                    plan.features.aiContent ? 'AI post writer' : null,
+                                    `${plan.limits.aiPostsPerMonth} posts/month forever`,
+                                    `${plan.limits.aiTopicLinesPerMonth} topics`,
+                                    `${plan.limits.aiCommentsPerMonth} comments`,
+                                    plan.limits.monthlyLikes >= 100000 ? 'Unlimited likes' : `${plan.limits.monthlyLikes} likes`,
+                                    plan.limits.monthlyShares >= 100000 ? 'Unlimited shares' : `${plan.limits.monthlyShares} shares`,
+                                    plan.limits.monthlyFollows >= 100000 ? 'Unlimited follows' : `${plan.limits.monthlyFollows} follows`,
+                                    plan.limits.monthlyConnections >= 100000 ? 'Unlimited connections' : `${plan.limits.monthlyConnections} connection requests`,
+                                    plan.monthlyImportCredits >= 100000 ? 'Unlimited imports' : plan.monthlyImportCredits > 0 ? `${plan.monthlyImportCredits} profile imports` : null,
+                                    plan.features.scheduling ? 'Post scheduling' : null,
+                                    plan.features.automationScheduling ? 'Automation scheduling' : null,
+                                    plan.features.networkScheduling ? 'Network automation' : null,
+                                    'Dashboard + analytics',
+                                    plan.features.analytics ? 'CSV Export' : null,
+                                ].filter(Boolean);
+                                
+                                return (
+                                    <div key={plan.id} style={{ 
+                                        padding: '40px', 
+                                        background: isPopular ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(99, 102, 241, 0.05))' : 'rgba(255,255,255,0.05)', 
+                                        border: isPopular ? '2px solid #f59e0b' : '2px solid rgba(255,255,255,0.1)', 
+                                        borderRadius: '20px', 
+                                        position: 'relative' 
+                                    }}>
+                                        {isPopular && (
+                                            <div style={{ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', background: '#f59e0b', padding: '6px 20px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><IconStar size={12} color="#000" /> Most Popular</span>
+                                            </div>
+                                        )}
+                                        {plan.lifetimeMaxSpots > 0 && (
+                                            <div style={{ position: 'absolute', top: '15px', right: '15px', background: spotsLeft < 20 ? '#ef4444' : '#693fe9', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                                                {spotsLeft} left
+                                            </div>
+                                        )}
+                                        <h3 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>{plan.name}</h3>
+                                        <div style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '10px' }}>${plan.price}</div>
+                                        <div style={{ fontSize: '14px', opacity: 0.8, marginBottom: '30px' }}>One-Time Payment</div>
+                                        <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left', marginBottom: '30px', maxHeight: '280px', overflowY: 'auto' }}>
+                                            {features.slice(0, 12).map((f, j) => (
+                                                <li key={j} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '13px' }}>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><IconCheck size={14} /> {f}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <Link href={plan.stripeLink || '/signup'} style={{
+                                            display: 'block',
+                                            textAlign: 'center',
+                                            padding: '16px',
+                                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                            color: 'white',
+                                            textDecoration: 'none',
+                                            borderRadius: '12px',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            Grab {plan.name}
+                                        </Link>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '2px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', padding: '30px' }}>
+                            <h3 style={{ fontSize: '24px', marginBottom: '15px', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}><IconBan size={24} /> This deal disappears after:</h3>
+                            <p style={{ fontSize: '18px', marginBottom: '10px' }}>
+                                <strong>{totalLifetimeSpots} lifetime users</strong> OR <strong>limited time offer</strong>
+                            </p>
+                            <p style={{ fontSize: '14px', opacity: 0.8, margin: 0 }}>
+                                After this: <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><IconCheck size={12} /> Only monthly</span> | <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><IconCheck size={12} /> Only annual</span> | <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><IconBan size={12} /> No lifetime forever</span>
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* FAQ - Dark Theme */}
+            <section id="faq" style={{ background: '#111111', padding: '100px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                        <h2 style={{ fontSize: '42px', fontWeight: '700', marginBottom: '16px' }}>
+                            Frequently Asked<br/>
+                            <span style={{ color: '#693fe9' }}>Questions</span>
+                        </h2>
+                    </div>
+                    <div>
+                        {[
+                            { q: 'Is my LinkedIn password required?', a: 'No. Kommentify works completely through the browser extension. No login sharing needed.' },
+                            { q: 'Is automation safe for my account?', a: 'Yes — Kommentify uses human-like delays, scrolling, interval variations, and randomized timing to mimic natural behavior.' },
+                            { q: 'Do I need to keep my laptop open?', a: 'Yes, the browser must be open for the extension to work. Consider using a VPS for 24/7 operation.' },
+                            { q: 'Can I set my own limits?', a: 'Yes — you can customize every limit manually or choose from safe presets based on your account age.' },
+                            { q: 'What is the profile import feature?', a: 'Upload your target profiles list — Kommentify automatically engages with their posts to build real relationships.' },
+                            { q: 'Can I cancel anytime?', a: 'Yes — no lock-in contracts. Cancel your subscription anytime from your dashboard.' },
+                        ].map((faq, i) => (
+                            <div key={i} style={{ marginBottom: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                                <button
+                                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '20px 24px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        fontSize: '16px',
+                                        fontWeight: '500',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    {faq.q}
+                                    <span style={{ fontSize: '20px', color: '#693fe9', transition: 'transform 0.3s', transform: openFaq === i ? 'rotate(45deg)' : 'none' }}>+</span>
+                                </button>
+                                {openFaq === i && (
+                                    <div style={{ padding: '0 24px 20px', fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.6' }}>
+                                        {faq.a}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA - Dark Theme */}
+            <section style={{ background: '#0a0a0a', padding: '100px 60px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+                    <h2 style={{ fontSize: '42px', fontWeight: '700', marginBottom: '20px' }}>
+                        Ready to Grow Your<br/>
+                        <span style={{ color: '#693fe9' }}>LinkedIn Presence?</span>
+                    </h2>
+                    <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.5)', marginBottom: '40px', lineHeight: '1.7' }}>
+                        Join thousands of professionals who&apos;ve automated their way to industry authority. Start free today.
+                    </p>
+                    <Link href="/signup" style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '16px 32px',
+                        background: 'white',
+                        color: '#0a0a0a',
+                        textDecoration: 'none',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        fontWeight: '600'
+                    }}>
+                        Start Your Free Trial <span>→</span>
+                    </Link>
+                    <div style={{ marginTop: '20px', fontSize: '14px', opacity: 0.8 }}>
+                        Already have an account? <Link href="/login" style={{ color: '#5b7dff', textDecoration: 'underline' }}>Sign In</Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer - Dark Theme */}
+            <footer style={{ padding: '60px 60px 40px', background: '#050505', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ background: 'linear-gradient(135deg, #693fe9, #5835c7)', padding: '6px 10px', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold' }}>K</span>
+                            <span style={{ fontSize: '20px', fontWeight: '600' }}>Kommentify</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+                            <Link href="#features" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '14px' }}>Features</Link>
+                            <Link href="#pricing" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '14px' }}>Pricing</Link>
+                            <Link href="#faq" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '14px' }}>FAQ</Link>
+                            <Link href="/login" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '14px' }}>Login</Link>
+                            <Link href="/signup" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '14px' }}>Sign Up</Link>
+                        </div>
+                    </div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '20px', textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>
+                        © 2025 Kommentify. All rights reserved. | LinkedIn is a trademark of LinkedIn Corporation.
+                    </div>
+                </div>
+            </footer>
+        </div>
+    );
+}

@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  password         String
+  name             String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  planId           String?
+  trialEndsAt      DateTime?
+  stripeCustomerId String?    @unique
+  
+  // Auth provider fields
+  authProvider     String     @default("legacy")  // legacy, clerk, admin
+  clerkUserId      String?    @unique             // Clerk user ID for Clerk-authenticated users
+  
+  // Referral fields
+  referralCode     String?    @unique  // User's unique referral code
+  referredById     String?              // Who referred this user
+  referredBy       User?      @relation("Referrals", fields: [referredById], references: [id])
+  referrals        User[]     @relation("Referrals")  // Users this person referred
+  hasPaid          Boolean    @default(false)  // Has this user ever made a payment
+  totalPaid        Float      @default(0)       // Total amount user has paid
+  
+  activities       Activity[]
+  apiUsage         ApiUsage[]
+  plan             Plan?      @relation(fields: [planId], references: [id])
+
+  @@index([email])
+  @@index([planId])
+  @@index([referralCode])
+  @@index([referredById])
+  @@index([clerkUserId])
+}
+
+model Plan {
+  id                        String   @id @default(cuid())
+  name                      String   @unique
+  price                     Float
+  yearlyPrice               Float?
+  stripePaymentLink         String?
+  stripeYearlyPaymentLink   String?
+  stripePriceId             String?
+  stripeYearlyPriceId       String?
+  isTrialPlan               Boolean  @default(false)
+  isDefaultFreePlan         Boolean  @default(false)
+  isLifetime                Boolean  @default(false)
+  lifetimeMaxSpots          Int      @default(0)
+  lifetimeSoldSpots         Int      @default(0)
+  lifetimeExpiresAt         DateTime?
+  trialDurationDays         Int      @default(3)
+  allowAiPostGeneration     Boolean  @default(true)
+  allowAiCommentGeneration  Boolean  @default(true)
+  allowAiTopicLines         Boolean  @default(true)
+  allowGeneralAutomation    Boolean  @default(true)
+  allowPostScheduling       Boolean  @default(true)
+  allowAutomation           Boolean  @default(true)
+  allowAutomationScheduling Boolean  @default(true)
+  allowNetworking           Boolean  @default(true)
+  allowNetworkScheduling    Boolean  @default(true)
+  allowCsvExport            Boolean  @default(true)
+  allowImportProfiles       Boolean  @default(true)
+  monthlyImportCredits      Int      @default(100)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  aiCommentsPerMonth        Int      @default(1500)
+  aiPostsPerMonth           Int      @default(300)
+  aiTopicLinesPerMonth      Int      @default(300)
+  monthlyComments           Int      @default(1500)
+  monthlyConnections        Int      @default(900)
+  monthlyFollows            Int      @default(1500)
+  monthlyLikes              Int      @default(3000)
+  monthlyShares             Int      @default(600)
+  displayOrder              Int      @default(0)
+  users                     User[]
+}
+
+model ApiUsage {
+  id             String   @id @default(cuid())
+  userId         String
+  date           DateTime @default(now())
+  comments       Int      @default(0)
+  likes          Int      @default(0)
+  shares         Int      @default(0)
+  follows        Int      @default(0)
+  connections    Int      @default(0)
+  importProfiles Int      @default(0)
+  aiPosts        Int      @default(0)
+  aiComments     Int      @default(0)
+  bonusAiComments Int     @default(0)
+  aiTopicLines   Int      @default(0)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  timestamp DateTime @default(now())
+  metadata  Json?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model ExtensionVersion {
+  id           String   @id @default(cuid())
+  version      String   @unique
+  features     String[] @default([])
+  bug_fixes    String[] @default([])
+  download_url String?
+  release_notes String?
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([version])
+  @@index([created_at(sort: Desc)])
+}
+
+// Referral settings configured by admin
+model ReferralSettings {
+  id                    String   @id @default(cuid())
+  commissionPercentage  Float    @default(20)     // Percentage of sale as commission (e.g., 20%)
+  commissionFlat        Float    @default(0)      // Flat amount per referral (alternative to percentage)
+  usePercentage         Boolean  @default(true)   // If true, use percentage; if false, use flat amount
+  minPayoutAmount       Float    @default(50)     // Minimum amount before payout
+  isActive              Boolean  @default(true)   // Is referral program active
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Track commission payouts
+model CommissionPayout {
+  id          String   @id @default(cuid())
+  userId      String               // User receiving the payout
+  amount      Float                // Payout amount
+  status      String   @default("pending")  // pending, paid, cancelled
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([status])
+}
+
+// Email queue for automated sequences
+model EmailQueue {
+  id            String   @id @default(cuid())
+  userId        String               // User to send email to
+  sequenceType  String               // onboarding, expired_trial, paid_customer, special
+  emailNumber   Int                  // Which email in the sequence (1, 2, 3, etc.)
+  templateId    String               // Template identifier
+  scheduledFor  DateTime             // When to send
+  status        String   @default("pending")  // pending, sent, failed, cancelled
+  sentAt        DateTime?
+  error         String?
+  metadata      String?              // JSON string for extra data
+  createdAt     DateTime @default(now())
+  
+  @@index([status, scheduledFor])
+  @@index([userId])
+  @@index([sequenceType])
+}
+
+// Track email sequence state per user
+model UserEmailState {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  onboardingStarted     DateTime?
+  onboardingCompleted   Boolean  @default(false)
+  expiredTrialStarted   DateTime?
+  expiredTrialCompleted Boolean  @default(false)
+  paidSequenceStarted   DateTime?
+  paidSequenceCompleted Boolean  @default(false)
+  lastEmailSent         DateTime?
+  unsubscribed          Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// Email Sequence - configurable sequences
+model EmailSequence {
+  id          String   @id @default(cuid())
+  name        String               // e.g., "Onboarding", "Expired Trial"
+  type        String   @unique     // onboarding, expired_trial, paid_customer, special
+  description String?
+  isActive    Boolean  @default(true)
+  trigger     String               // signup, trial_expired, payment, manual
+  nodes       String               // JSON - ReactFlow nodes data
+  edges       String               // JSON - ReactFlow edges data
+  emails      EmailTemplateNode[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([type])
+  @@index([isActive])
+}
+
+// Email Template Node - individual emails in sequence
+model EmailTemplateNode {
+  id            String   @id @default(cuid())
+  sequenceId    String
+  sequence      EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  nodeId        String               // ReactFlow node ID
+  position      Int                  // Order in sequence
+  subject       String
+  body          String   @db.Text    // Email body (HTML or text)
+  delayHours    Int      @default(0) // Delay from previous email
+  delayMinutes  Int      @default(0) // Additional minutes delay
+  isActive      Boolean  @default(true)
+  conditions    String?              // JSON - conditions for sending
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([sequenceId, nodeId])
+  @@index([sequenceId])
+}
+
+// Email automation settings
+model EmailAutomationSettings {
+  id                String   @id @default(cuid())
+  batchSize         Int      @default(50)   // Emails per cron run
+  cronIntervalMins  Int      @default(1)    // How often cron runs
+  maxRetriesPerEmail Int     @default(3)    // Max retries for failed emails
+  retryDelayMins    Int      @default(30)   // Delay between retries
+  isEnabled         Boolean  @default(true) // Global on/off switch
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Global settings for admin-configurable values
+model GlobalSettings {
+  id                    String   @id @default(cuid())
+  aiCommentsPerDollar   Int      @default(100)  // Number of AI comments users get for $1
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}

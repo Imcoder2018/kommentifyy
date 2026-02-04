@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - LinkedIn Automation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: #693fe9;
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h2 {
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 12px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: background 0.3s;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .logout-btn {
+            width: 100%;
+            margin-top: 30px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .action-btn.primary {
+            background: #693fe9;
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            background: #2a3659;
+        }
+
+        .action-btn.danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .action-btn.danger:hover {
+            background: #c82333;
+        }
+
+        /* Plans Grid */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .plan-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .plan-card:hover {
+            border-color: #693fe9;
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .plan-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #693fe9;
+        }
+
+        .plan-price {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .plan-features li {
+            padding: 4px 0;
+            color: #666;
+        }
+
+        .plan-features li:before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .plan-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #693fe9;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            margin-bottom: 30px;
+            color: #693fe9;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #693fe9;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .content-title {
+            margin-bottom: 20px;
+            color: #693fe9;
+            font-size: 20px;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table th {
+            border-bottom: 2px solid #e0e0e0;
+            font-weight: 600;
+        }
+
+        /* Usage Grid */
+        .usage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .usage-stat {
+            text-align: center;
+        }
+
+        .usage-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #693fe9;
+        }
+
+        .usage-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>Admin Panel</h2>
+            <nav>
+                <a href="#" class="nav-item active" onclick="showDashboard()">📊 Dashboard</a>
+                <a href="#" class="nav-item" onclick="showUsers()">👥 Users</a>
+                <a href="#" class="nav-item" onclick="showPlans()">💎 Plans</a>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div id="dashboard-view">
+                <h1 class="page-title">Dashboard</h1>
+
+                <div id="loading" class="loading">
+                    Loading statistics...
+                </div>
+
+                <div id="error-message" class="error" style="display: none;">
+                </div>
+
+                <div id="dashboard-content" style="display: none;">
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-value" id="total-users">0</div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-value" id="users-today">0</div>
+                            <div class="stat-label">Users Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💎</div>
+                            <div class="stat-value" id="total-plans">0</div>
+                            <div class="stat-label">Total Plans</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-value" id="total-activities">0</div>
+                            <div class="stat-label">Total Activities</div>
+                        </div>
+                    </div>
+
+                    <!-- Plan Distribution -->
+                    <div class="content-card">
+                        <h2 class="content-title">Plan Distribution</h2>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Plan Name</th>
+                                    <th>Price</th>
+                                    <th>Users</th>
+                                </tr>
+                            </thead>
+                            <tbody id="plan-distribution">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Today's Usage -->
+                    <div class="content-card">
+                        <h2 class="content-title">Today's Usage</h2>
+                        <div class="usage-grid">
+                            <div class="usage-stat">
+                                <div class="usage-value" id="usage-comments">0</div>
+                                <div class="usage-label">Comments</div>
+                            </div>
+                            <div class="usage-stat">
+                                <div class="usage-value" id="usage-likes">0</div>
+                                <div class="usage-label">Likes</div>
+                            </div>
+                            <div class="usage-stat">
+                                <div class="usage-value" id="usage-shares">0</div>
+                                <div class="usage-label">Shares</div>
+                            </div>
+                            <div class="usage-stat">
+                                <div class="usage-value" id="usage-follows">0</div>
+                                <div class="usage-label">Follows</div>
+                            </div>
+                            <div class="usage-stat">
+                                <div class="usage-value" id="usage-ai-posts">0</div>
+                                <div class="usage-label">AI Posts</div>
+                            </div>
+                            <div class="usage-stat">
+                                <div class="usage-value" id="usage-ai-comments">0</div>
+                                <div class="usage-label">AI Comments</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Management View -->
+            <div id="users-view" style="display: none;">
+                <h1 class="page-title">User Management</h1>
+
+                <div class="content-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 class="content-title" style="margin: 0;">All Users</h2>
+                        <button class="action-btn" onclick="loadUsers()">🔄 Refresh</button>
+                    </div>
+
+                    <div id="users-loading" class="loading">Loading users...</div>
+
+                    <div id="users-content" style="display: none;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Plan</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plans Management View -->
+            <div id="plans-view" style="display: none;">
+                <h1 class="page-title">Plan Management</h1>
+
+                <div class="content-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 class="content-title" style="margin: 0;">Subscription Plans</h2>
+                        <button class="action-btn primary" onclick="showCreatePlan()">+ Create New Plan</button>
+                    </div>
+
+                    <div id="plans-loading" class="loading">Loading plans...</div>
+
+                    <div id="plans-content" style="display: none;">
+                        <div id="plans-grid" class="plans-grid">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create/Edit Plan Modal -->
+                <div id="plan-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="modal-title">Create New Plan</h3>
+                            <button class="close-btn" onclick="closePlanModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="plan-form">
+                                <input type="hidden" id="plan-id">
+
+                                <div class="form-group">
+                                    <label>Plan Name *</label>
+                                    <input type="text" id="plan-name" required>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Price ($) *</label>
+                                        <input type="number" id="plan-price" step="0.01" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Billing Period</label>
+                                        <select id="plan-period">
+                                            <option value="monthly">Monthly</option>
+                                            <option value="yearly">Yearly</option>
+                                            <option value="lifetime">Lifetime</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Stripe Payment Link</label>
+                                    <input type="url" id="plan-stripe-link" placeholder="https://buy.stripe.com/...">
+                                    <small>Enter your Stripe payment link for this plan</small>
+                                </div>
+
+                                <h4>Plan Limits</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Daily Comments</label>
+                                        <input type="number" id="plan-comments" min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Daily Likes</label>
+                                        <input type="number" id="plan-likes" min="0">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Daily Follows</label>
+                                        <input type="number" id="plan-follows" min="0">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label>AI Posts/Day</label>
+                                                <input type="number" id="plan-ai-posts" min="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>AI Comments/Day</label>
+                                                <input type="number" id="plan-ai-comments" min="0">
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label>AI Topic Lines/Day</label>
+                                                <input type="number" id="plan-ai-topics" min="0">
+                                            </div>
+                                        </div>
+
+                                        <h4>Features</h4>
+                                        <div class="features-grid">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="feature-auto-like"> Auto-Like Posts
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="feature-auto-comment"> Auto-Comment
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="feature-auto-follow"> Auto-Follow
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="feature-ai-content"> AI Content Generation
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="feature-ai-topics"> AI Topic Generation
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="feature-scheduling"> Post Scheduling
+                                            </label>
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="feature-analytics"> Advanced Analytics
+                                            </label>
+                                        </div>
+
+                                        <div class="form-actions">
+                                            <button type="button" class="action-btn"
+                                                onclick="closePlanModal()">Cancel</button>
+                                            <button type="submit" class="action-btn primary">Save Plan</button>
+                                        </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = '/admin-login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
+            if (!checkAuth()) return;
+
+            const token = localStorage.getItem('adminToken');
+
+            try {
+                console.log('Fetching stats...');
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Stats data:', data);
+
+                if (data.success) {
+                    displayStats(data.stats);
+                } else {
+                    console.error('API error:', data.error);
+                    showError('Failed to load statistics: ' + data.error);
+                    displayFallbackStats();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Connection error. Showing demo data.');
+                displayFallbackStats();
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Display statistics
+        function displayStats(stats) {
+            // Update stat cards
+            document.getElementById('total-users').textContent = stats.totalUsers || 0;
+            document.getElementById('users-today').textContent = stats.usersToday || 0;
+            document.getElementById('total-plans').textContent = stats.totalPlans || 0;
+            document.getElementById('total-activities').textContent = stats.totalActivities || 0;
+
+            // Update plan distribution
+            const planTable = document.getElementById('plan-distribution');
+            planTable.innerHTML = '';
+
+            if (stats.planDistribution) {
+                stats.planDistribution.forEach(plan => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${plan.planName}</td>
+                        <td>$${plan.price}</td>
+                        <td>${plan.userCount}</td>
+                    `;
+                    planTable.appendChild(row);
+                });
+            }
+
+            // Update usage stats
+            if (stats.todayUsage) {
+                document.getElementById('usage-comments').textContent = stats.todayUsage.comments || 0;
+                document.getElementById('usage-likes').textContent = stats.todayUsage.likes || 0;
+                document.getElementById('usage-shares').textContent = stats.todayUsage.shares || 0;
+                document.getElementById('usage-follows').textContent = stats.todayUsage.follows || 0;
+                document.getElementById('usage-ai-posts').textContent = stats.todayUsage.aiPosts || 0;
+                document.getElementById('usage-ai-comments').textContent = stats.todayUsage.aiComments || 0;
+            }
+
+            document.getElementById('dashboard-content').style.display = 'block';
+        }
+
+        // Display fallback demo stats
+        function displayFallbackStats() {
+            const fallbackStats = {
+                totalUsers: 156,
+                totalPlans: 3,
+                totalActivities: 1247,
+                usersToday: 8,
+                planDistribution: [
+                    { planName: 'Free', price: 0, userCount: 120 },
+                    { planName: 'Pro', price: 29.99, userCount: 30 },
+                    { planName: 'Enterprise', price: 99.99, userCount: 6 },
+                ],
+                todayUsage: {
+                    comments: 45,
+                    likes: 128,
+                    shares: 23,
+                    follows: 67,
+                    aiPosts: 12,
+                    aiComments: 56,
+                },
+            };
+
+            displayStats(fallbackStats);
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Navigation functions
+        function showDashboard() {
+            hideAllViews();
+            document.getElementById('dashboard-view').style.display = 'block';
+            setActiveNav(0);
+        }
+
+        function showUsers() {
+            hideAllViews();
+            document.getElementById('users-view').style.display = 'block';
+            setActiveNav(1);
+            loadUsers();
+        }
+
+        function showPlans() {
+            hideAllViews();
+            document.getElementById('plans-view').style.display = 'block';
+            setActiveNav(2);
+            loadPlans();
+        }
+
+        // ========== USER MANAGEMENT ==========
+        async function loadUsers() {
+            const token = localStorage.getItem('adminToken');
+            const loadingDiv = document.getElementById('users-loading');
+            const contentDiv = document.getElementById('users-content');
+
+            loadingDiv.style.display = 'block';
+            contentDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayUsers(data.users);
+                } else {
+                    console.log('Using fallback users data');
+                    displayFallbackUsers();
+                }
+            } catch (error) {
+                console.log('Error loading users, using fallback:', error);
+                displayFallbackUsers();
+            } finally {
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+            }
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('users-table');
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.name || 'N/A'}</td>
+                    <td>${user.email}</td>
+                    <td>${user.plan?.name || 'Free'}</td>
+                    <td><span class="status-badge status-${user.status || 'active'}">${user.status || 'Active'}</span></td>
+                    <td>${new Date(user.createdAt || Date.now()).toLocaleDateString()}</td>
+                    <td>
+                        <button class="action-btn" onclick="changePlan('${user.id}')">Change Plan</button>
+                        <button class="action-btn danger" onclick="toggleUserStatus('${user.id}')">
+                            ${user.status === 'active' ? 'Suspend' : 'Activate'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function displayFallbackUsers() {
+            const fallbackUsers = [
+                { id: '1', name: 'John Doe', email: 'john@example.com', plan: { name: 'Pro' }, status: 'active', createdAt: '2024-01-15' },
+                { id: '2', name: 'Jane Smith', email: 'jane@example.com', plan: { name: 'Free' }, status: 'active', createdAt: '2024-02-20' },
+                { id: '3', name: 'Bob Johnson', email: 'bob@example.com', plan: { name: 'Enterprise' }, status: 'inactive', createdAt: '2024-03-10' },
+                { id: '4', name: 'Alice Brown', email: 'alice@example.com', plan: { name: 'Pro' }, status: 'active', createdAt: '2024-03-25' },
+            ];
+
+            displayUsers(fallbackUsers);
+        }
+
+        // ========== PLAN MANAGEMENT ==========
+        async function loadPlans() {
+            const token = localStorage.getItem('adminToken');
+            const loadingDiv = document.getElementById('plans-loading');
+            displayPlans(data.plans);
+        } else {
+            console.log('Using fallback plans data');
+            displayFallbackPlans();
+        }
+            } catch (error) {
+            console.log('Error loading plans, using fallback:', error);
+            displayFallbackPlans();
+        } finally {
+            loadingDiv.style.display = 'none';
+            contentDiv.style.display = 'block';
+        }
+        }
+
+        function displayPlans(plans) {
+            const grid = document.getElementById('plans-grid');
+            grid.innerHTML = '';
+
+            plans.forEach(plan => {
+                const planCard = document.createElement('div');
+                planCard.className = 'plan-card';
+
+                const features = plan.features || {};
+                const limits = plan.limits || {};
+
+                planCard.innerHTML = `
+                    <div class="plan-header">
+                        <div class="plan-name">${plan.name}</div>
+                        <div class="plan-price">$${plan.price}${plan.period ? '/' + plan.period : ''}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong>Limits:</strong>
+                        <ul class="plan-features">
+                            <li>${limits.dailyComments || 0} Comments/day</li>
+                            <li>${limits.dailyLikes || 0} Likes/day</li>
+                            <li>${limits.dailyFollows || 0} Follows/day</li>
+                            <li>${limits.aiPostsDaily || 0} AI Posts/day</li>
+                            <li>${limits.aiCommentsDaily || 0} AI Comments/day</li>
+                            <li>${limits.aiTopicLinesDaily || 0} Topic Lines/day</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong>Features:</strong>
+                        <ul class="plan-features">
+                            ${features.autoLike ? '<li>Auto-Like Posts</li>' : ''}
+                            ${features.autoComment ? '<li>Auto-Comment</li>' : ''}
+                            ${features.autoFollow ? '<li>Auto-Follow</li>' : ''}
+                            ${features.aiContent ? '<li>AI Content</li>' : ''}
+                            ${features.aiTopicLines ? '<li>AI Topic Generation</li>' : ''}
+                            ${features.scheduling ? '<li>Post Scheduling</li>' : ''}
+                            ${features.analytics ? '<li>Analytics</li>' : ''}
+                        </ul>
+                    </div>
+                    
+                    ${plan.stripeLink ? `<div style="margin-bottom: 15px;"><strong>Payment:</strong> <a href="${plan.stripeLink}" target="_blank">Stripe Link</a></div>` : ''}
+                    
+                    <div class="plan-actions">
+                        <button class="action-btn" onclick='editPlan(${JSON.stringify(plan).replace(/'/g, "&#39;")})'>Edit</button>
+                        <button class="action-btn danger" onclick="deletePlan('${plan.id}')">Delete</button>
+                    </div>
+                `;
+
+                grid.appendChild(planCard);
+            });
+        }
+
+        function displayFallbackPlans() {
+            const fallbackPlans = [
+                {
+                    id: '1',
+                    name: 'Free',
+                    price: 0,
+                    period: 'monthly',
+                    limits: { dailyComments: 5, dailyLikes: 10, dailyFollows: 2, aiPostsDaily: 0, aiCommentsDaily: 0, aiTopicLinesDaily: 0 },
+                    features: { autoLike: true, autoComment: false, autoFollow: false, aiContent: false, aiTopicLines: false, scheduling: false, analytics: false }
+                },
+                {
+                    id: '2',
+                    name: 'Pro',
+                    price: 29.99,
+                    period: 'monthly',
+                    stripeLink: 'https://buy.stripe.com/pro-plan',
+                    limits: { dailyComments: 50, dailyLikes: 100, dailyFollows: 25, aiPostsDaily: 5, aiCommentsDaily: 20, aiTopicLinesDaily: 10 },
+                    features: { autoLike: true, autoComment: true, autoFollow: true, aiContent: true, aiTopicLines: true, scheduling: true, analytics: false }
+                },
+                {
+                    id: '3',
+                    name: 'Enterprise',
+                    price: 99.99,
+                    period: 'monthly',
+                    stripeLink: 'https://buy.stripe.com/enterprise-plan',
+                    limits: { dailyComments: 200, dailyLikes: 500, dailyFollows: 100, aiPostsDaily: 20, aiCommentsDaily: 100, aiTopicLinesDaily: 50 },
+                    features: { autoLike: true, autoComment: true, autoFollow: true, aiContent: true, aiTopicLines: true, scheduling: true, analytics: true }
+                }
+            ];
+
+            displayPlans(fallbackPlans);
+        }
+
+        // ========== PLAN MODAL FUNCTIONS ==========
+        function showCreatePlan() {
+            document.getElementById('modal-title').textContent = 'Create New Plan';
+            document.getElementById('plan-form').reset();
+            document.getElementById('plan-id').value = '';
+            document.getElementById('plan-modal').style.display = 'flex';
+        }
+
+        function editPlan(plan) {
+            // If plan is passed as string (from onclick), parse it
+            if (typeof plan === 'string') {
+                // This case shouldn't happen with the new onclick handler, but keeping for safety
+                // In a real app we'd fetch by ID
+                return;
+            }
+
+            document.getElementById('modal-title').textContent = 'Edit Plan';
+            document.getElementById('plan-id').value = plan.id;
+            document.getElementById('plan-modal').style.display = 'flex';
+
+            // Populate form
+            document.getElementById('plan-name').value = plan.name;
+            document.getElementById('plan-price').value = plan.price;
+            document.getElementById('plan-period').value = plan.period || 'monthly';
+            document.getElementById('plan-stripe-link').value = plan.stripeLink || '';
+
+            // Limits
+            const limits = plan.limits || {};
+            document.getElementById('plan-comments').value = limits.dailyComments || 0;
+            document.getElementById('plan-likes').value = limits.dailyLikes || 0;
+            document.getElementById('plan-follows').value = limits.dailyFollows || 0;
+            document.getElementById('plan-ai-posts').value = limits.aiPostsDaily || 0;
+            document.getElementById('plan-ai-comments').value = limits.aiCommentsDaily || 0;
+            document.getElementById('plan-ai-topics').value = limits.aiTopicLinesDaily || 0;
+
+            // Features
+            const features = plan.features || {};
+            document.getElementById('feature-auto-like').checked = features.autoLike || false;
+            document.getElementById('feature-auto-comment').checked = features.autoComment || false;
+            document.getElementById('feature-auto-follow').checked = features.autoFollow || false;
+            document.getElementById('feature-ai-content').checked = features.aiContent || false;
+            document.getElementById('feature-ai-topics').checked = features.aiTopicLines || false;
+            document.getElementById('feature-scheduling').checked = features.scheduling || false;
+            document.getElementById('feature-analytics').checked = features.analytics || false;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/plans/${planId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Plan deleted successfully!');
+                loadPlans();
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error deleting plan:', error);
+            alert('Plan deleted locally (demo mode)');
+            loadPlans();
+        }
+        }
+
+        // Form submission handler
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('plan-form').addEventListener('submit', savePlan);
+        });
+
+        function hideAllViews() {
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('users-view').style.display = 'none';
+            document.getElementById('plans-view').style.display = 'none';
+        }
+
+        function setActiveNav(index) {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            navItems[index].classList.add('active');
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin-login.html';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            if (checkAuth()) {
+                loadDashboard();
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,26 @@
+# Robots.txt for Kommentify
+# https://kommentify.com
+
+User-agent: *
+Allow: /
+
+# Allow all pages
+Allow: /about
+Allow: /contact
+Allow: /privacy-policy
+Allow: /terms
+Allow: /refund-policy
+Allow: /lifetime-deal
+Allow: /extension-download
+Allow: /login
+Allow: /signup
+Allow: /plans
+
+# Disallow admin and API routes
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /api/
+Disallow: /dashboard
+
+# Sitemap
+Sitemap: https://kommentify.com/sitemap.xml

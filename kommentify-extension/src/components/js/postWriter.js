@@ -2,6 +2,7 @@ import { elements, state } from './state.js';
 import { API_CONFIG, showToast } from './utils.js';
 import { featureChecker } from '/shared/utils/featureChecker.js';
 import { loadPlans } from './auth.js';
+import { getInspirationSettings } from './inspiration.js';
 
 // --- POST WRITER FUNCTIONS --- //
 
@@ -92,13 +93,63 @@ export async function generatePost() {
     const targetAudience = elements.targetAudience?.value?.trim() || '';
     const keyMessage = elements.keyMessage?.value?.trim() || '';
     const userBackground = elements.userBackground?.value?.trim() || '';
+    
+    // Get inspiration context settings
+    let inspirationSettings = { useInspirationContext: false, selectedSources: [], topK: 3 };
+    try {
+        inspirationSettings = getInspirationSettings();
+    } catch (e) {
+        console.warn('Could not get inspiration settings:', e);
+    }
 
     // Show loading state
-    elements.postContent.value = '✨ Generating viral LinkedIn post with AI...\n\nThis may take a few seconds...';
+    const loadingMsg = inspirationSettings.useInspirationContext 
+        ? '✨ Generating post with your inspiration context...\n\nAnalyzing writing styles from your saved sources...'
+        : '✨ Generating viral LinkedIn post with AI...\n\nThis may take a few seconds...';
+    elements.postContent.value = loadingMsg;
     elements.generatePost.disabled = true;
 
     try {
-        // Send message to background to generate post
+        // If using inspiration context, call the RAG-based API directly
+        if (inspirationSettings.useInspirationContext && inspirationSettings.selectedSources.length > 0) {
+            const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+            const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL;
+            
+            const ragResponse = await fetch(`${apiUrl}/api/vector/generate`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    topic,
+                    template,
+                    tone,
+                    length,
+                    includeEmojis,
+                    includeHashtags,
+                    useInspirationContext: true,
+                    selectedSources: inspirationSettings.selectedSources,
+                    topK: inspirationSettings.topK
+                })
+            });
+            
+            const ragData = await ragResponse.json();
+            
+            if (ragData.success && ragData.post) {
+                elements.postContent.value = ragData.post;
+                updateCharacterCount();
+                if (ragData.contextUsed > 0) {
+                    showToast(`✨ Generated with ${ragData.contextUsed} inspiration examples`, 'success');
+                }
+                elements.generatePost.disabled = false;
+                return;
+            }
+            // Fall through to regular generation if RAG fails
+            console.log('RAG generation failed, falling back to regular generation');
+        }
+        
+        // Regular generation via background script
         const response = await chrome.runtime.sendMessage({
             action: 'generatePost',
             topic,

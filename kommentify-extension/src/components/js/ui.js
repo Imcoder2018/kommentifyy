@@ -21,6 +21,7 @@ import { initializeProcessingHistory, recordProcessingSession } from './processi
 import { featureChecker } from '/shared/utils/featureChecker.js';
 import { initializeWalkthrough, resetWalkthrough } from './walkthrough.js';
 import { initializeStatusLogger } from './statusLogger.js';
+import { initializeInspirationSources } from './inspiration.js';
 
 // --- INITIALIZATION --- //
 export function initializeElements() {
@@ -391,6 +392,9 @@ export async function initializeUI() {
         // Initialize comment settings (load saved values and set up auto-save listeners)
         initCommentSettings();
         updateSliderDisplays();
+        
+        // Initialize inspiration sources for post writer
+        initializeInspirationSources();
         
         // Defer non-critical operations
         setTimeout(async () => {

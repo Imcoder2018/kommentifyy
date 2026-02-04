@@ -312,24 +312,6 @@ export function showLoginScreen() {
                         </div>
                     </div>
                     
-                    <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
-                        <p>✅ Free trial included • ✅ No credit card required</p>
-                    </div>
-                    
-                    <div style="text-align: center; margin-top: 15px;">
-                        <button id="open-website-login" style="
-                            background: transparent;
-                            color: #693fe9;
-                            border: 1px solid #693fe9;
-                            padding: 8px 16px;
-                            border-radius: 6px;
-                            font-size: 12px;
-                            cursor: pointer;
-                            transition: all 0.3s;
-                        ">
-                            🌐 Open in Website
-                        </button>
-                    </div>
                 </div>
                 
                 <div style="text-align: center; margin-top: 20px; font-size: 12px; opacity: 0.8;">
@@ -392,8 +374,6 @@ function setupLoginScreenListeners() {
         if (e.key === 'Enter') handleInExtensionSignup();
     });
 
-    // Website login button
-    document.getElementById('open-website-login').addEventListener('click', handleWebsiteLogin);
 }
 
 // Handle Send OTP

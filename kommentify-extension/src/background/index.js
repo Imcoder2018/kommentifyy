@@ -329,6 +329,133 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    // Scrape Profile Posts for Inspiration Sources
+    if (request.action === "scrapeProfilePosts") {
+        (async () => {
+            try {
+                console.log('✨ BACKGROUND: Scraping profile posts for inspiration...');
+                console.log('BACKGROUND: Profile URL:', request.profileUrl);
+                console.log('BACKGROUND: Post count:', request.postCount);
+                
+                const profileUrl = request.profileUrl;
+                const postCount = request.postCount || 10;
+                
+                // Extract username from URL
+                const urlMatch = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/);
+                if (!urlMatch) {
+                    sendResponse({ success: false, error: 'Invalid LinkedIn profile URL' });
+                    return;
+                }
+                const username = urlMatch[1];
+                
+                // Open the profile's activity/posts page in a new tab
+                const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
+                console.log('BACKGROUND: Opening activity page:', activityUrl);
+                
+                const tab = await chrome.tabs.create({ url: activityUrl, active: false });
+                
+                // Wait for page to load
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Execute scraping script in the tab
+                const results = await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: (maxPosts) => {
+                        const posts = [];
+                        
+                        // Try multiple selectors for posts
+                        const postElements = document.querySelectorAll('[data-id^="urn:li:activity:"]');
+                        
+                        // Get author name from multiple possible locations
+                        const authorNameEl = document.querySelector('.update-components-actor__title') ||
+                                            document.querySelector('.text-heading-xlarge') || 
+                                            document.querySelector('.pv-top-card--list li') ||
+                                            document.querySelector('.feed-shared-actor__name');
+                        const authorName = authorNameEl?.textContent?.trim() || 'Unknown Author';
+                        
+                        console.log(`Found ${postElements.length} potential post elements`);
+                        
+                        let count = 0;
+                        for (const post of postElements) {
+                            if (count >= maxPosts) break;
+                            
+                            // Get post content - try multiple selectors
+                            const contentEl = post.querySelector('.update-components-text .break-words') ||
+                                            post.querySelector('.feed-shared-update-v2__description') || 
+                                            post.querySelector('.feed-shared-text') || 
+                                            post.querySelector('.break-words');
+                            
+                            if (!contentEl) {
+                                console.log('No content element found for post', count + 1);
+                                continue;
+                            }
+                            
+                            const content = contentEl.textContent?.trim();
+                            if (!content || content.length < 50) {
+                                console.log('Content too short or empty for post', count + 1);
+                                continue;
+                            }
+                            
+                            // Get engagement metrics - updated selectors
+                            const likesEl = post.querySelector('.social-details-social-counts__reactions-count') ||
+                                          post.querySelector('button[aria-label*="reactions"]') ||
+                                          post.querySelector('.feed-shared-social-counts__reactions-count');
+                                          
+                            const commentsEl = post.querySelector('.social-details-social-counts__comments') ||
+                                              post.querySelector('button[aria-label*="comments"]') ||
+                                              post.querySelector('.feed-shared-social-counts__comments');
+                            
+                            const likes = parseInt(likesEl?.textContent?.replace(/[^0-9]/g, '') || '0');
+                            const comments = parseInt(commentsEl?.textContent?.replace(/[^0-9]/g, '') || '0');
+                            
+                            console.log(`Post ${count + 1}: Found content (${content.length} chars), ${likes} likes, ${comments} comments`);
+                            
+                            posts.push({
+                                content: content.substring(0, 5000),
+                                likes: likes,
+                                comments: comments,
+                                authorName
+                            });
+                            
+                            count++;
+                        }
+                        
+                        console.log(`Successfully scraped ${posts.length} posts`);
+                        return { posts, authorName };
+                    },
+                    args: [postCount]
+                });
+                
+                // Close the tab
+                await chrome.tabs.remove(tab.id);
+                
+                const scrapedData = results[0]?.result || { posts: [], authorName: 'Unknown' };
+                
+                if (scrapedData.posts.length === 0) {
+                    // If no posts found with first method, try scrolling and waiting
+                    console.log('BACKGROUND: No posts found, trying extended scrape...');
+                    sendResponse({ 
+                        success: false, 
+                        error: 'Could not find posts on this profile. Make sure the profile has public posts.' 
+                    });
+                    return;
+                }
+                
+                console.log(`✅ BACKGROUND: Scraped ${scrapedData.posts.length} posts from ${scrapedData.authorName}`);
+                sendResponse({ 
+                    success: true, 
+                    posts: scrapedData.posts,
+                    authorName: scrapedData.authorName
+                });
+                
+            } catch (error) {
+                console.error('❌ BACKGROUND: Error scraping profile posts:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+        return true;
+    }
+
     // Get Comment Settings (for AI button manual review check)
     if (request.action === "getCommentSettings") {
         (async () => {

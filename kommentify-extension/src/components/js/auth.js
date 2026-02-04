@@ -189,11 +189,11 @@ async function handleClerkLogin() {
         clerkBtn.disabled = true;
         clerkBtn.innerHTML = '<span>⏳</span> Opening login...';
         
-        // Open sign-in page in new tab (redirect to extension-auth page after login)
-        const signInUrl = `${apiUrl}/sign-in?redirect_url=${encodeURIComponent(apiUrl + '/extension-auth')}`;
-        console.log('Opening Clerk sign-in URL:', signInUrl);
+        // Open extension-auth page directly (it will redirect to sign-in if needed)
+        const authUrl = `${apiUrl}/extension-auth`;
+        console.log('Opening extension auth URL:', authUrl);
         
-        const tab = await chrome.tabs.create({ url: signInUrl, active: true });
+        const tab = await chrome.tabs.create({ url: authUrl, active: true });
         
         // Show status message
         if (authStatus) {

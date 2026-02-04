@@ -1,7 +1,13 @@
-// Auth Bridge - Listens for auth data on kommentify.com/extension-auth page
+// Auth Bridge - Listens for auth data on kommentify.com pages
 // and sends it to the background script to store in extension storage
 
 (function() {
+    // Only run on extension-auth page
+    if (!window.location.pathname.includes('extension-auth')) {
+        console.log('[AUTH BRIDGE] Not on extension-auth page, skipping');
+        return;
+    }
+    
     console.log('[AUTH BRIDGE] Content script loaded on extension-auth page');
 
     // Function to extract and send auth data

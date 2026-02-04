@@ -54,8 +54,7 @@
     },
     {
       "matches": [
-        "https://kommentify.com/extension-auth*",
-        "https://*.kommentify.com/extension-auth*"
+        "https://kommentify.com/*"
       ],
       "js": [
         "content/authBridge.js"

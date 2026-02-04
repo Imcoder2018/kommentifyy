@@ -354,8 +354,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 const tab = await chrome.tabs.create({ url: activityUrl, active: false });
                 
-                // Wait for page to load
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                // Wait for page to fully load (LinkedIn needs more time)
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                
+                // Scroll to load more posts
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: () => {
+                        window.scrollTo(0, document.body.scrollHeight);
+                    }
+                });
+                
+                // Wait for content to load after scroll
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 
                 // Execute scraping script in the tab
                 const results = await chrome.scripting.executeScript({
@@ -363,50 +374,73 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     func: (maxPosts) => {
                         const posts = [];
                         
-                        // Try multiple selectors for posts
+                        // Find all post containers with activity URN
                         const postElements = document.querySelectorAll('[data-id^="urn:li:activity:"]');
                         
-                        // Get author name from multiple possible locations
-                        const authorNameEl = document.querySelector('.update-components-actor__title') ||
-                                            document.querySelector('.text-heading-xlarge') || 
-                                            document.querySelector('.pv-top-card--list li') ||
-                                            document.querySelector('.feed-shared-actor__name');
-                        const authorName = authorNameEl?.textContent?.trim() || 'Unknown Author';
-                        
                         console.log(`Found ${postElements.length} potential post elements`);
+                        
+                        // Get author name from the first post's actor section
+                        let authorName = 'Unknown Author';
+                        const firstActorTitle = document.querySelector('.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]');
+                        if (firstActorTitle) {
+                            authorName = firstActorTitle.textContent?.trim() || 'Unknown Author';
+                        }
                         
                         let count = 0;
                         for (const post of postElements) {
                             if (count >= maxPosts) break;
                             
-                            // Get post content - try multiple selectors
-                            const contentEl = post.querySelector('.update-components-text .break-words') ||
-                                            post.querySelector('.feed-shared-update-v2__description') || 
-                                            post.querySelector('.feed-shared-text') || 
-                                            post.querySelector('.break-words');
-                            
-                            if (!contentEl) {
-                                console.log('No content element found for post', count + 1);
+                            // Get post content - the text is in nested spans within update-components-text
+                            const textContainer = post.querySelector('.update-components-text');
+                            if (!textContainer) {
+                                console.log('No text container found for post', count + 1);
                                 continue;
                             }
                             
-                            const content = contentEl.textContent?.trim();
+                            // Get all text content, cleaning up the formatting
+                            let content = '';
+                            const textSpans = textContainer.querySelectorAll('span[dir="ltr"]');
+                            if (textSpans.length > 0) {
+                                // Get the main content span (usually the one inside break-words)
+                                const mainSpan = textContainer.querySelector('.break-words span[dir="ltr"]');
+                                if (mainSpan) {
+                                    content = mainSpan.innerText || mainSpan.textContent || '';
+                                } else {
+                                    // Fallback: join all text spans
+                                    content = Array.from(textSpans).map(s => s.textContent).join(' ');
+                                }
+                            } else {
+                                // Fallback to full text content
+                                content = textContainer.textContent || '';
+                            }
+                            
+                            // Clean up the content
+                            content = content.replace(/\s+/g, ' ').trim();
+                            content = content.replace(/…more$/, '').trim();
+                            
                             if (!content || content.length < 50) {
-                                console.log('Content too short or empty for post', count + 1);
+                                console.log('Content too short or empty for post', count + 1, '- length:', content.length);
                                 continue;
                             }
                             
-                            // Get engagement metrics - updated selectors
-                            const likesEl = post.querySelector('.social-details-social-counts__reactions-count') ||
-                                          post.querySelector('button[aria-label*="reactions"]') ||
-                                          post.querySelector('.feed-shared-social-counts__reactions-count');
-                                          
-                            const commentsEl = post.querySelector('.social-details-social-counts__comments') ||
-                                              post.querySelector('button[aria-label*="comments"]') ||
-                                              post.querySelector('.feed-shared-social-counts__comments');
+                            // Get engagement metrics
+                            const likesEl = post.querySelector('.social-details-social-counts__reactions-count');
+                            const likesBtn = post.querySelector('button[aria-label*="reaction"]');
+                            const commentsBtn = post.querySelector('button[aria-label*="comment"]');
                             
-                            const likes = parseInt(likesEl?.textContent?.replace(/[^0-9]/g, '') || '0');
-                            const comments = parseInt(commentsEl?.textContent?.replace(/[^0-9]/g, '') || '0');
+                            let likes = 0;
+                            if (likesEl) {
+                                likes = parseInt(likesEl.textContent?.replace(/[^0-9]/g, '') || '0');
+                            } else if (likesBtn) {
+                                const match = likesBtn.getAttribute('aria-label')?.match(/(\d+)/);
+                                likes = match ? parseInt(match[1]) : 0;
+                            }
+                            
+                            let comments = 0;
+                            if (commentsBtn) {
+                                const match = commentsBtn.getAttribute('aria-label')?.match(/(\d+)/);
+                                comments = match ? parseInt(match[1]) : 0;
+                            }
                             
                             console.log(`Post ${count + 1}: Found content (${content.length} chars), ${likes} likes, ${comments} comments`);
                             
@@ -432,11 +466,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const scrapedData = results[0]?.result || { posts: [], authorName: 'Unknown' };
                 
                 if (scrapedData.posts.length === 0) {
-                    // If no posts found with first method, try scrolling and waiting
-                    console.log('BACKGROUND: No posts found, trying extended scrape...');
+                    console.log('BACKGROUND: No posts found after scraping');
                     sendResponse({ 
                         success: false, 
-                        error: 'Could not find posts on this profile. Make sure the profile has public posts.' 
+                        error: 'Could not find posts on this profile. The profile may have no recent posts or they may be private.' 
                     });
                     return;
                 }

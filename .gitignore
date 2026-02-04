@@ -32,6 +32,7 @@ reorganize-to-src.ps1
 
 # Environment files
 .env
+.env.*
 .env.local
 .env.development
 .env.development.local
@@ -78,7 +79,16 @@ prisma/*.db-journal
 # Secrets
 *.pem
 *.key
+*.p12
+*.pfx
+*.crt
+*.cer
 secrets/
+credentials/
+private/
+*.credentials
+*.secret
+service-account*.json
 
 # Debug
 debug/

@@ -102,215 +102,55 @@ export function showLoginScreen() {
         ">
             <div style="max-width: 400px; margin: 0 auto;">
                 <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="font-size: 24px; margin-bottom: 10px;">🚀 LinkedIn Automation</h1>
-                    <p style="opacity: 0.9; font-size: 14px;">Login to access your automation dashboard</p>
-                </div>
-                
-                <!-- Tabs -->
-                <div style="display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 2px solid rgba(255,255,255,0.2);">
-                    <button id="login-tab" style="
-                        flex: 1;
-                        padding: 12px;
-                        background: #693fe9;
-                        color: white;
-                        border: none;
-                        cursor: pointer;
-                        font-weight: 500;
-                    ">Login</button>
-                    <button id="signup-tab" style="
-                        flex: 1;
-                        padding: 12px;
-                        background: rgba(255,255,255,0.1);
-                        color: white;
-                        border: none;
-                        cursor: pointer;
-                        font-weight: 500;
-                    ">Sign Up</button>
+                    <h1 style="font-size: 28px; margin-bottom: 10px;">🚀 Kommentify</h1>
+                    <p style="opacity: 0.9; font-size: 14px;">LinkedIn Automation & AI Content</p>
                 </div>
                 
                 <div style="background: white; border-radius: 15px; padding: 30px; color: #333;">
-                    <!-- Error/Success Messages -->
-                    <div id="auth-error" style="
-                        background: #fee;
-                        color: #c33;
+                    <!-- Status Messages -->
+                    <div id="auth-status" style="
+                        background: #f8f9fa;
+                        color: #666;
                         padding: 12px;
                         border-radius: 8px;
                         margin-bottom: 20px;
                         font-size: 14px;
-                        display: none;
-                    "></div>
-                    <div id="auth-success" style="
-                        background: #efe;
-                        color: #3c3;
-                        padding: 12px;
-                        border-radius: 8px;
-                        margin-bottom: 20px;
-                        font-size: 14px;
+                        text-align: center;
                         display: none;
                     "></div>
                     
-                    <!-- Login Form -->
-                    <div id="login-form" style="display: block;">
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Email</label>
-                            <input type="email" id="login-email" placeholder="your@email.com" style="
-                                width: 100%;
-                                padding: 12px 16px;
-                                border: 2px solid #e0e0e0;
-                                border-radius: 10px;
-                                font-size: 15px;
-                                box-sizing: border-box;
-                            " required>
-                        </div>
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Password</label>
-                            <input type="password" id="login-password" placeholder="••••••••" style="
-                                width: 100%;
-                                padding: 12px 16px;
-                                border: 2px solid #e0e0e0;
-                                border-radius: 10px;
-                                font-size: 15px;
-                                box-sizing: border-box;
-                            " required>
-                        </div>
-                        <button id="login-submit" style="
-                            width: 100%;
-                            padding: 14px;
-                            background: #693fe9;
-                            color: white;
-                            border: none;
-                            border-radius: 10px;
-                            font-size: 16px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            transition: all 0.3s;
-                        ">
-                            Login
-                        </button>
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <div style="font-size: 50px; margin-bottom: 15px;">🔐</div>
+                        <h2 style="font-size: 20px; margin-bottom: 10px; color: #333;">Welcome Back!</h2>
+                        <p style="color: #666; font-size: 14px; line-height: 1.5;">
+                            Click below to sign in or create an account using our secure authentication.
+                        </p>
                     </div>
                     
-                    <!-- Signup Form -->
-                    <div id="signup-form" style="display: none;">
-                        <!-- Step 1: Email & Name -->
-                        <div id="signup-step-1">
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Full Name</label>
-                                <input type="text" id="signup-name" placeholder="John Doe" style="
-                                    width: 100%;
-                                    padding: 12px 16px;
-                                    border: 2px solid #e0e0e0;
-                                    border-radius: 10px;
-                                    font-size: 15px;
-                                    box-sizing: border-box;
-                                " required>
-                            </div>
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Email</label>
-                                <input type="email" id="signup-email" placeholder="your@email.com" style="
-                                    width: 100%;
-                                    padding: 12px 16px;
-                                    border: 2px solid #e0e0e0;
-                                    border-radius: 10px;
-                                    font-size: 15px;
-                                    box-sizing: border-box;
-                                " required>
-                            </div>
-                            <button id="send-otp-btn" style="
-                                width: 100%;
-                                padding: 14px;
-                                background: #693fe9;
-                                color: white;
-                                border: none;
-                                border-radius: 10px;
-                                font-size: 16px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                transition: all 0.3s;
-                            ">
-                                📧 Send Verification Code
-                            </button>
-                        </div>
-                        
-                        <!-- Step 2: OTP Verification -->
-                        <div id="signup-step-2" style="display: none;">
-                            <div style="text-align: center; margin-bottom: 20px;">
-                                <p style="color: #666; font-size: 14px;">Enter the 6-digit code sent to</p>
-                                <p id="otp-email-display" style="color: #693fe9; font-weight: 600; font-size: 14px;"></p>
-                            </div>
-                            <div style="margin-bottom: 20px;">
-                                <input type="text" id="otp-input" placeholder="000000" maxlength="6" style="
-                                    width: 100%;
-                                    padding: 16px;
-                                    border: 2px solid #e0e0e0;
-                                    border-radius: 10px;
-                                    font-size: 24px;
-                                    font-weight: bold;
-                                    text-align: center;
-                                    letter-spacing: 8px;
-                                    box-sizing: border-box;
-                                " required>
-                            </div>
-                            <button id="verify-otp-btn" style="
-                                width: 100%;
-                                padding: 14px;
-                                background: #693fe9;
-                                color: white;
-                                border: none;
-                                border-radius: 10px;
-                                font-size: 16px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                margin-bottom: 10px;
-                            ">
-                                ✓ Verify Code
-                            </button>
-                            <button id="resend-otp-btn" style="
-                                width: 100%;
-                                padding: 10px;
-                                background: transparent;
-                                color: #693fe9;
-                                border: 1px solid #693fe9;
-                                border-radius: 10px;
-                                font-size: 14px;
-                                cursor: pointer;
-                            ">
-                                🔄 Resend Code
-                            </button>
-                        </div>
-                        
-                        <!-- Step 3: Password -->
-                        <div id="signup-step-3" style="display: none;">
-                            <div style="text-align: center; margin-bottom: 20px;">
-                                <span style="font-size: 40px;">✅</span>
-                                <p style="color: #28a745; font-weight: 600;">Email Verified!</p>
-                            </div>
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500; font-size: 14px;">Create Password</label>
-                                <input type="password" id="signup-password" placeholder="Min 8 characters" style="
-                                    width: 100%;
-                                    padding: 12px 16px;
-                                    border: 2px solid #e0e0e0;
-                                    border-radius: 10px;
-                                    font-size: 15px;
-                                    box-sizing: border-box;
-                                " required>
-                            </div>
-                            <button id="signup-submit" style="
-                                width: 100%;
-                                padding: 14px;
-                                background: #693fe9;
-                                color: white;
-                                border: none;
-                                border-radius: 10px;
-                                font-size: 16px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                transition: all 0.3s;
-                            ">
-                                🚀 Create Account
-                            </button>
-                        </div>
-                    </div>
+                    <!-- Primary Login Button -->
+                    <button id="clerk-login-btn" style="
+                        width: 100%;
+                        padding: 16px;
+                        background: #693fe9;
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        margin-bottom: 15px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                    ">
+                        <span>🚀</span> Sign In / Sign Up
+                    </button>
+                    
+                    <p style="text-align: center; color: #999; font-size: 12px; margin-bottom: 20px;">
+                        Opens in a new tab for secure authentication
+                    </p>
                     
                 </div>
                 
@@ -327,53 +167,143 @@ export function showLoginScreen() {
 
 // Setup event listeners for login screen
 function setupLoginScreenListeners() {
-    // Tab switching
-    document.getElementById('login-tab').addEventListener('click', () => {
-        document.getElementById('login-tab').style.background = '#693fe9';
-        document.getElementById('signup-tab').style.background = 'rgba(255,255,255,0.1)';
-        document.getElementById('login-form').style.display = 'block';
-        document.getElementById('signup-form').style.display = 'none';
-    });
+    // Clerk login button - opens login page in new tab
+    document.getElementById('clerk-login-btn').addEventListener('click', handleClerkLogin);
+}
 
-    document.getElementById('signup-tab').addEventListener('click', () => {
-        document.getElementById('signup-tab').style.background = '#693fe9';
-        document.getElementById('login-tab').style.background = 'rgba(255,255,255,0.1)';
-        document.getElementById('signup-form').style.display = 'block';
-        document.getElementById('login-form').style.display = 'none';
-        // Reset to step 1
-        document.getElementById('signup-step-1').style.display = 'block';
-        document.getElementById('signup-step-2').style.display = 'none';
-        document.getElementById('signup-step-3').style.display = 'none';
-    });
-
-    // Login form submission
-    document.getElementById('login-submit').addEventListener('click', handleInExtensionLogin);
-
-    // OTP flow handlers
-    document.getElementById('send-otp-btn').addEventListener('click', handleSendOTP);
-    document.getElementById('verify-otp-btn').addEventListener('click', handleVerifyOTP);
-    document.getElementById('resend-otp-btn').addEventListener('click', handleSendOTP);
+// Handle Clerk login - opens sign-in page in new tab and polls for auth token
+async function handleClerkLogin() {
+    const clerkBtn = document.getElementById('clerk-login-btn');
+    const authStatus = document.getElementById('auth-status');
     
-    // Signup form submission (after OTP verification)
-    document.getElementById('signup-submit').addEventListener('click', handleInExtensionSignup);
-
-    // Enter key handlers
-    document.getElementById('login-email').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleInExtensionLogin();
-    });
-    document.getElementById('login-password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleInExtensionLogin();
-    });
-    document.getElementById('signup-email').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSendOTP();
-    });
-    document.getElementById('otp-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleVerifyOTP();
-    });
-    document.getElementById('signup-password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleInExtensionSignup();
-    });
-
+    try {
+        // Get API base URL
+        const storage = await chrome.storage.local.get(['apiBaseUrl']);
+        let apiUrl = storage.apiBaseUrl || API_CONFIG.BASE_URL;
+        
+        if (!apiUrl || apiUrl.includes('localhost')) {
+            apiUrl = API_CONFIG.BASE_URL;
+        }
+        
+        // Show loading state
+        clerkBtn.disabled = true;
+        clerkBtn.innerHTML = '<span>⏳</span> Opening login...';
+        
+        // Open sign-in page in new tab (redirect back to dashboard after login)
+        const signInUrl = `${apiUrl}/sign-in?redirect_url=${encodeURIComponent(apiUrl + '/dashboard')}`;
+        console.log('Opening Clerk sign-in URL:', signInUrl);
+        
+        const tab = await chrome.tabs.create({ url: signInUrl, active: true });
+        
+        // Show status message
+        if (authStatus) {
+            authStatus.style.display = 'block';
+            authStatus.style.background = '#e8f4fd';
+            authStatus.style.color = '#0066cc';
+            authStatus.innerHTML = '⏳ Waiting for you to sign in...<br><small>This popup will refresh automatically</small>';
+        }
+        
+        // Poll the extension-token endpoint to check if user logged in
+        let pollCount = 0;
+        const maxPolls = 300; // 5 minutes (1 second interval)
+        
+        const checkAuthInterval = setInterval(async () => {
+            pollCount++;
+            
+            try {
+                // Poll the extension-token endpoint
+                const response = await fetch(`${apiUrl}/api/auth/extension-token`, {
+                    method: 'GET',
+                    credentials: 'include', // Important: include cookies for Clerk session
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.loggedIn && data.authToken) {
+                    console.log('✅ Auth token received from server! User logged in.');
+                    clearInterval(checkAuthInterval);
+                    
+                    // Store auth data in extension storage
+                    await chrome.storage.local.set({
+                        authToken: data.authToken,
+                        refreshToken: data.refreshToken,
+                        userData: data.userData,
+                        apiBaseUrl: data.apiBaseUrl || apiUrl
+                    });
+                    
+                    console.log('✅ Auth data saved to extension storage');
+                    
+                    // Try to close the login tab
+                    try {
+                        await chrome.tabs.remove(tab.id);
+                    } catch (e) {
+                        // Tab might already be closed
+                    }
+                    
+                    // Reload the popup
+                    location.reload();
+                    return;
+                }
+            } catch (fetchError) {
+                // Silently continue polling - user might not be logged in yet
+                console.log('Polling for auth...', pollCount);
+            }
+            
+            // Check if tab was closed
+            try {
+                await chrome.tabs.get(tab.id);
+            } catch (e) {
+                // Tab was closed, stop polling
+                console.log('Login tab closed by user');
+                clearInterval(checkAuthInterval);
+                
+                clerkBtn.disabled = false;
+                clerkBtn.innerHTML = '<span>🚀</span> Sign In / Sign Up';
+                
+                if (authStatus) {
+                    authStatus.style.display = 'none';
+                }
+                return;
+            }
+            
+            // Update status animation
+            if (pollCount % 3 === 0 && authStatus) {
+                const dots = '.'.repeat((pollCount % 3) + 1);
+                authStatus.innerHTML = `⏳ Waiting for sign in${dots}<br><small>Complete sign-in in the opened tab</small>`;
+            }
+            
+            // Timeout after max polls
+            if (pollCount >= maxPolls) {
+                console.log('Login check timeout');
+                clearInterval(checkAuthInterval);
+                
+                clerkBtn.disabled = false;
+                clerkBtn.innerHTML = '<span>🚀</span> Sign In / Sign Up';
+                
+                if (authStatus) {
+                    authStatus.style.background = '#fff3cd';
+                    authStatus.style.color = '#856404';
+                    authStatus.innerHTML = '⚠️ Login timed out. Please try again.';
+                }
+            }
+        }, 2000); // Poll every 2 seconds
+        
+    } catch (error) {
+        console.error('Clerk login error:', error);
+        
+        clerkBtn.disabled = false;
+        clerkBtn.innerHTML = '<span>🚀</span> Sign In / Sign Up';
+        
+        if (authStatus) {
+            authStatus.style.display = 'block';
+            authStatus.style.background = '#f8d7da';
+            authStatus.style.color = '#721c24';
+            authStatus.textContent = '❌ Failed to open login page. Please try again.';
+        }
+    }
 }
 
 // Handle Send OTP

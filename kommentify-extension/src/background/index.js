@@ -728,6 +728,428 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    // Save scraped posts to normal database (not vector DB)
+    if (request.action === "saveScrapedPosts") {
+        (async () => {
+            try {
+                console.log('💾 BACKGROUND: Saving scraped posts to database...');
+                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                
+                if (!authToken) {
+                    sendResponse({ success: false, error: 'Not authenticated' });
+                    return;
+                }
+                
+                const posts = request.posts || [];
+                if (posts.length === 0) {
+                    sendResponse({ success: false, error: 'No posts to save' });
+                    return;
+                }
+                
+                console.log(`📤 BACKGROUND: Saving ${posts.length} posts to scraped-posts API...`);
+                
+                const response = await fetch(`${apiUrl}/api/scraped-posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ posts })
+                });
+                
+                const data = await response.json();
+                console.log('💾 BACKGROUND: Save response:', data);
+                sendResponse(data);
+            } catch (error) {
+                console.error('❌ BACKGROUND: Error saving scraped posts:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+        return true;
+    }
+
+    // Track commands currently being processed to prevent duplicates
+    if (!globalThis._processingCommandIds) {
+        globalThis._processingCommandIds = new Set();
+    }
+    // Track LinkedIn tabs opened by commands for stop_all cleanup
+    if (!globalThis._commandLinkedInTabs) {
+        globalThis._commandLinkedInTabs = new Set();
+    }
+    // Flag to stop all tasks
+    if (typeof globalThis._stopAllTasks === 'undefined') {
+        globalThis._stopAllTasks = false;
+    }
+
+    // Stop all tasks handler
+    if (request.action === "stopAllTasks") {
+        (async () => {
+            try {
+                console.log('🛑 BACKGROUND: Stopping all tasks...');
+                globalThis._stopAllTasks = true;
+                
+                // Close all LinkedIn tabs opened by commands
+                const tabIds = [...globalThis._commandLinkedInTabs];
+                for (const tabId of tabIds) {
+                    try { await chrome.tabs.remove(tabId); } catch (e) { /* tab may already be closed */ }
+                }
+                globalThis._commandLinkedInTabs.clear();
+                globalThis._processingCommandIds.clear();
+                
+                // Cancel all pending commands via API
+                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                if (authToken) {
+                    await fetch(`${apiUrl}/api/extension/command/stop-all`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+                    });
+                }
+                
+                // Reset flag after a short delay so future commands can work
+                setTimeout(() => { globalThis._stopAllTasks = false; }, 2000);
+                
+                console.log('🛑 BACKGROUND: All tasks stopped, closed', tabIds.length, 'tabs');
+                sendResponse({ success: true, closedTabs: tabIds.length });
+            } catch (error) {
+                console.error('BACKGROUND: Error stopping tasks:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+        return true;
+    }
+
+    // Poll for website commands (post to LinkedIn from dashboard)
+    if (request.action === "pollWebsiteCommands") {
+        (async () => {
+            try {
+                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                
+                if (!authToken) {
+                    sendResponse({ success: false, commands: [] });
+                    return;
+                }
+                
+                const response = await fetch(`${apiUrl}/api/extension/command`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.commands && data.commands.length > 0) {
+                    console.log(`📥 BACKGROUND: Found ${data.commands.length} pending commands from website`);
+                    
+                    for (const cmd of data.commands) {
+                        // DEDUP: Skip if already being processed
+                        if (globalThis._processingCommandIds.has(cmd.id)) {
+                            console.log(`⏭️ BACKGROUND: Skipping command ${cmd.id} - already processing`);
+                            continue;
+                        }
+                        // Check stop flag
+                        if (globalThis._stopAllTasks) {
+                            console.log('🛑 BACKGROUND: Stop flag set, skipping remaining commands');
+                            break;
+                        }
+                        
+                        // Mark as processing locally
+                        globalThis._processingCommandIds.add(cmd.id);
+                        
+                        // Mark as in_progress on server immediately
+                        try {
+                            await fetch(`${apiUrl}/api/extension/command`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                            });
+                        } catch (e) { /* continue anyway */ }
+
+                        if (cmd.command === 'post_to_linkedin' && cmd.data?.content) {
+                            console.log('📝 BACKGROUND: Executing post_to_linkedin command...');
+                            
+                            try {
+                                // Step 1: Open a new LinkedIn tab
+                                console.log('BACKGROUND: Opening LinkedIn tab for website command...');
+                                const tab = await chrome.tabs.create({
+                                    url: 'https://www.linkedin.com/feed/',
+                                    active: true
+                                });
+                                globalThis._commandLinkedInTabs.add(tab.id);
+
+                                // Step 2: Wait for tab to fully load
+                                await new Promise((resolve) => {
+                                    const checkComplete = (tabId, changeInfo) => {
+                                        if (tabId === tab.id && changeInfo.status === 'complete') {
+                                            chrome.tabs.onUpdated.removeListener(checkComplete);
+                                            resolve();
+                                        }
+                                    };
+                                    chrome.tabs.onUpdated.addListener(checkComplete);
+                                    setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
+                                });
+
+                                // Check stop flag before continuing
+                                if (globalThis._stopAllTasks) { globalThis._processingCommandIds.delete(cmd.id); continue; }
+
+                                console.log('BACKGROUND: LinkedIn tab loaded, waiting 5s for render...');
+                                await new Promise(resolve => setTimeout(resolve, 5000));
+
+                                // Step 3: Inject posting script into the LinkedIn tab
+                                const content = cmd.data.content;
+                                const result = await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    func: (postContent) => {
+                                        return new Promise((resolve) => {
+                                            console.log('LinkedIn Post Script (from website): Starting...');
+                                            const SELECTORS = {
+                                                startPostButton: 'div.share-box-feed-entry__top-bar button',
+                                                postEditor: 'div.editor-container > div > div > div.ql-editor',
+                                                postSubmitButton: 'div.share-box_actions button'
+                                            };
+                                            const startPostBtn = document.querySelector(SELECTORS.startPostButton);
+                                            if (!startPostBtn) {
+                                                resolve({ success: false, error: 'Start post button not found' });
+                                                return;
+                                            }
+                                            startPostBtn.click();
+                                            setTimeout(() => {
+                                                const editor = document.querySelector(SELECTORS.postEditor);
+                                                if (!editor) {
+                                                    resolve({ success: false, error: 'Editor not found' });
+                                                    return;
+                                                }
+                                                editor.innerHTML = '';
+                                                editor.focus();
+                                                const lines = postContent.split('\n');
+                                                lines.forEach((line) => {
+                                                    if (line.trim() === '') {
+                                                        editor.appendChild(document.createElement('br'));
+                                                    } else {
+                                                        const p = document.createElement('p');
+                                                        p.textContent = line;
+                                                        editor.appendChild(p);
+                                                    }
+                                                });
+                                                editor.dispatchEvent(new Event('input', { bubbles: true }));
+                                                setTimeout(() => {
+                                                    const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
+                                                    let postButton = null;
+                                                    for (const btn of actionButtons) {
+                                                        if ((btn.textContent?.trim().toLowerCase() || '') === 'post') { postButton = btn; break; }
+                                                    }
+                                                    if (postButton && !postButton.disabled) {
+                                                        postButton.click();
+                                                        resolve({ success: true, posted: true });
+                                                    } else {
+                                                        resolve({ success: true, posted: false, message: 'Content inserted, click Post manually' });
+                                                    }
+                                                }, 3000);
+                                            }, 3000);
+                                        });
+                                    },
+                                    args: [content]
+                                });
+
+                                const scriptResult = result?.[0]?.result;
+                                console.log('BACKGROUND: Website command script result:', scriptResult);
+                                globalThis._commandLinkedInTabs.delete(tab.id);
+                                
+                                // Mark command as completed
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.posted ? 'completed' : 'completed_manual' })
+                                });
+                                
+                                console.log('✅ BACKGROUND: Post to LinkedIn command completed');
+                            } catch (postError) {
+                                console.error('❌ BACKGROUND: Failed to post to LinkedIn:', postError);
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
+                                });
+                            } finally {
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // Handle scrape_profile command from website
+                        if (cmd.command === 'scrape_profile' && cmd.data?.profileUrl) {
+                            console.log('🔍 BACKGROUND: Executing scrape_profile command for:', cmd.data.profileUrl);
+                            try {
+                                // Use the existing scrapeProfilePosts logic by sending internal message
+                                const scrapeResult = await new Promise((resolve) => {
+                                    chrome.runtime.sendMessage({
+                                        action: 'scrapeProfilePosts',
+                                        profileUrl: cmd.data.profileUrl,
+                                        postCount: cmd.data.postCount || 10
+                                    }, (response) => {
+                                        resolve(response || { success: false, error: 'No response' });
+                                    });
+                                });
+
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: scrapeResult.success ? 'completed' : 'failed' })
+                                });
+                                console.log('✅ BACKGROUND: scrape_profile command done:', scrapeResult.success);
+                            } catch (scrapeError) {
+                                console.error('❌ BACKGROUND: scrape_profile failed:', scrapeError);
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
+                                });
+                            } finally {
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // Handle scrape_feed_now command from website
+                        if (cmd.command === 'scrape_feed_now') {
+                            console.log('🔍 BACKGROUND: Executing scrape_feed_now command...');
+                            let scrapeTab = null;
+                            try {
+                                // Open LinkedIn feed and scrape posts
+                                const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
+                                scrapeTab = tab;
+                                globalThis._commandLinkedInTabs.add(tab.id);
+                                await new Promise((resolve) => {
+                                    const checkComplete = (tabId, changeInfo) => {
+                                        if (tabId === tab.id && changeInfo.status === 'complete') {
+                                            chrome.tabs.onUpdated.removeListener(checkComplete);
+                                            resolve();
+                                        }
+                                    };
+                                    chrome.tabs.onUpdated.addListener(checkComplete);
+                                    setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
+                                });
+                                await new Promise(resolve => setTimeout(resolve, 5000));
+
+                                // Scroll and scrape posts
+                                const durationMs = (cmd.data?.durationMinutes || 5) * 60 * 1000;
+                                const minLikes = cmd.data?.minLikes || 0;
+                                const minComments = cmd.data?.minComments || 0;
+                                const keywords = cmd.data?.keywords ? cmd.data.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean) : [];
+
+                                // Scroll a few times to load posts
+                                await scrollAndLoadContent(tab.id, 5);
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                                // Scrape visible posts
+                                const scrapeResult = await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    func: (minL, minC, kws) => {
+                                        const posts = [];
+                                        const postElements = document.querySelectorAll('[data-id^="urn:li:activity:"]');
+                                        for (const el of postElements) {
+                                            const textEl = el.querySelector('.update-components-text, .feed-shared-text, .feed-shared-inline-show-more-text');
+                                            const content = textEl ? (textEl.innerText || '').trim() : '';
+                                            if (content.length < 50) continue;
+
+                                            let likes = 0, comments = 0, shares = 0;
+                                            const likesEl = el.querySelector('.social-details-social-counts__reactions-count');
+                                            if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
+                                            const commentsEl = el.querySelector('button[aria-label*="comment"]');
+                                            if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
+
+                                            if (likes < minL || comments < minC) continue;
+                                            if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
+
+                                            let authorName = 'Unknown';
+                                            const authorEl = el.querySelector('.update-components-actor__title span[aria-hidden="true"], .feed-shared-actor__title span[aria-hidden="true"]');
+                                            if (authorEl) authorName = authorEl.textContent?.trim() || 'Unknown';
+
+                                            const urn = el.getAttribute('data-id') || '';
+                                            const activityMatch = urn.match(/urn:li:activity:(\d+)/);
+                                            const postUrl = activityMatch ? `https://www.linkedin.com/feed/update/urn:li:activity:${activityMatch[1]}/` : '';
+
+                                            posts.push({ postContent: content.substring(0, 5000), authorName, likes, comments, shares, postUrl });
+                                        }
+                                        return posts;
+                                    },
+                                    args: [minLikes, minComments, keywords]
+                                });
+
+                                const scrapedPosts = scrapeResult?.[0]?.result || [];
+                                console.log(`BACKGROUND: Scraped ${scrapedPosts.length} posts from feed`);
+
+                                // Save to backend
+                                if (scrapedPosts.length > 0) {
+                                    await fetch(`${apiUrl}/api/scraped-posts`, {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ posts: scrapedPosts })
+                                    });
+                                }
+
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
+                                });
+                                console.log(`✅ BACKGROUND: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
+                            } catch (feedError) {
+                                console.error('❌ BACKGROUND: scrape_feed_now failed:', feedError);
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
+                                });
+                            } finally {
+                                globalThis._processingCommandIds.delete(cmd.id);
+                                if (scrapeTab) globalThis._commandLinkedInTabs.delete(scrapeTab.id);
+                            }
+                        }
+                    }
+                }
+                
+                sendResponse({ success: true, commands: data.commands || [] });
+            } catch (error) {
+                console.error('BACKGROUND: Error polling website commands:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+        return true;
+    }
+
+    // Get feed scraping schedule from website
+    if (request.action === "getFeedSchedule") {
+        (async () => {
+            try {
+                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                
+                if (!authToken) {
+                    sendResponse({ success: false, error: 'Not authenticated' });
+                    return;
+                }
+                
+                const response = await fetch(`${apiUrl}/api/feed-schedules`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                sendResponse(data);
+            } catch (error) {
+                console.error('BACKGROUND: Error getting feed schedule:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+        return true;
+    }
+
     // Get Comment Settings (for AI button manual review check)
     if (request.action === "getCommentSettings") {
         (async () => {

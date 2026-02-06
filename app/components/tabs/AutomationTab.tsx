@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { IconBot, IconBriefcase, IconChart, IconClock, IconLightbulb, IconList, IconMessage, IconPause, IconPlus, IconRefresh, IconRocket, IconSearch, IconSettings, IconShare, IconStop, IconTarget, IconThumbsUp, IconTrash, IconZap } from './Icons';
+import { IconBot, IconBriefcase, IconChart, IconClock, IconLightbulb, IconList, IconMessage, IconPause, IconPlus, IconRefresh, IconRocket, IconSave, IconSearch, IconSettings, IconShare, IconStop, IconTarget, IconThumbsUp, IconTrash, IconZap } from './Icons';
 
 export default function AutomationTab() {
     return (
@@ -131,6 +131,11 @@ export default function AutomationTab() {
                                                                     <strong style={{"color":"#693fe9","fontSize":"13px"}}>Actions to Perform</strong>
                                                                 </div>
                                                                 <div style={{"display":"flex","flexDirection":"column","gap":"8px","fontSize":"12px"}}>
+                                                                    <label style={{"display":"flex","alignItems":"center","gap":"6px","cursor":"pointer","background":"linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%)","padding":"6px 8px","borderRadius":"6px","border":"1px solid rgba(16,185,129,0.3)"}}>
+                                                                        <input type="checkbox" id="bulk-save-posts" defaultChecked={true} style={{"width":"16px","height":"16px"}} />
+                                                                        <span style={{"color":"#10b981","fontWeight":600}}>
+                                                                            <IconSave size={14} /> Save Posts</span>
+                                                                    </label>
                                                                     <label style={{"display":"flex","alignItems":"center","gap":"6px","cursor":"pointer"}}>
                                                                         <input type="checkbox" id="bulk-like" style={{"width":"16px","height":"16px"}} />
                                                                         <span>

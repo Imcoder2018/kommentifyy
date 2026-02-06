@@ -259,3 +259,60 @@ model GlobalSettings {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
+
+// Scraped posts from LinkedIn feed (saved by extension)
+model ScrapedPost {
+  id              String   @id @default(cuid())
+  userId          String
+  postContent     String   @db.Text
+  authorName      String?
+  authorProfileUrl String?
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  shares          Int      @default(0)
+  postUrl         String?
+  scrapedAt       DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([scrapedAt])
+  @@index([likes])
+  @@index([comments])
+}
+
+// Feed scraping schedule (user-configurable)
+model FeedScrapeSchedule {
+  id              String   @id @default(cuid())
+  userId          String
+  scheduleTimes   String   // JSON array of times e.g. ["09:00","14:00","19:00"]
+  durationMinutes Int      @default(5)  // How long to run scraping
+  isActive        Boolean  @default(true)
+  // Criteria for qualifying posts
+  minLikes        Int      @default(0)
+  minComments     Int      @default(0)
+  keywords        String?  // Comma-separated words to look for in posts
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+// Post drafts saved from website writer
+model PostDraft {
+  id              String   @id @default(cuid())
+  userId          String
+  content         String   @db.Text
+  topic           String?
+  template        String?
+  tone            String?
+  status          String   @default("draft")  // draft, scheduled, posted
+  scheduledFor    DateTime?
+  postedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+}

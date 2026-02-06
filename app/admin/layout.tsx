@@ -53,6 +53,7 @@ export default function AdminLayout({
     { href: '/admin/extension-versions', icon: '📦', label: 'Extensions' },
     { href: '/admin/referrals', icon: '🎁', label: 'Referrals' },
     { href: '/admin/email-sequences', icon: '📧', label: 'Email Sequences' },
+    { href: '/admin/scraped-posts', icon: '📋', label: 'Scraped Posts' },
   ];
 
   return (

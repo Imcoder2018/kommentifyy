@@ -2,13 +2,72 @@
 // and sends it to the background script to store in extension storage
 
 (function() {
-    // Only run on extension-auth page
-    if (!window.location.pathname.includes('extension-auth')) {
-        console.log('[AUTH BRIDGE] Not on extension-auth page, skipping');
+    const isAuthPage = window.location.pathname.includes('extension-auth');
+    const isDashboard = window.location.pathname.includes('dashboard');
+    
+    if (!isAuthPage && !isDashboard) {
+        console.log('[AUTH BRIDGE] Not on extension-auth or dashboard page, skipping');
         return;
     }
     
-    console.log('[AUTH BRIDGE] Content script loaded on extension-auth page');
+    console.log('[AUTH BRIDGE] Content script loaded on', isAuthPage ? 'extension-auth' : 'dashboard', 'page');
+
+    // Dashboard: Listen for post-to-linkedin events from the website
+    if (isDashboard) {
+        // When website dispatches a post event, immediately tell background to poll commands
+        window.addEventListener('kommentify-post-to-linkedin', async (event) => {
+            console.log('[AUTH BRIDGE] Received post-to-linkedin command from dashboard');
+            // Small delay to let the API save the command first
+            setTimeout(() => {
+                try {
+                    chrome.runtime.sendMessage({
+                        action: 'pollWebsiteCommands'
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('[AUTH BRIDGE] Error:', chrome.runtime.lastError.message);
+                            return;
+                        }
+                        console.log('[AUTH BRIDGE] Poll commands response:', response);
+                    });
+                } catch (error) {
+                    console.error('[AUTH BRIDGE] Error forwarding post command:', error);
+                }
+            }, 1500);
+        });
+
+        // Listen for stop-all-tasks event from dashboard
+        window.addEventListener('kommentify-stop-all-tasks', async () => {
+            console.log('[AUTH BRIDGE] Received stop-all-tasks command from dashboard');
+            try {
+                chrome.runtime.sendMessage({ action: 'stopAllTasks' }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('[AUTH BRIDGE] Stop error:', chrome.runtime.lastError.message);
+                        return;
+                    }
+                    console.log('[AUTH BRIDGE] Stop all response:', response);
+                });
+            } catch (error) {
+                console.error('[AUTH BRIDGE] Error forwarding stop command:', error);
+            }
+        });
+
+        // Also poll for website commands every 10 seconds while dashboard is open
+        setInterval(() => {
+            try {
+                chrome.runtime.sendMessage({ action: 'pollWebsiteCommands' }, (response) => {
+                    if (chrome.runtime.lastError) return;
+                    if (response?.success && response?.commands?.length > 0) {
+                        console.log('[AUTH BRIDGE] Processed', response.commands.length, 'commands');
+                    }
+                });
+            } catch (e) { /* ignore */ }
+        }, 10000);
+
+        console.log('[AUTH BRIDGE] Dashboard bridge active - listening for post commands & polling every 10s');
+        return; // Don't run auth flow on dashboard
+    }
+
+    // Only run auth extraction on extension-auth page
 
     // Function to extract and send auth data
     async function extractAndSendAuthData() {

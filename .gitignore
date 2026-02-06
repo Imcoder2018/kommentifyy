@@ -73,15 +73,9 @@ build/
 *.tsbuildinfo
 
 
-git rm -r --cached .next/
-git commit -m "Remove .next from tracking"
-```
 
-Your `.gitignore` entry is correct:
-
-```
 .next/
-
+.next
 
 
 # Prisma

@@ -11,7 +11,7 @@ let openai: OpenAI | null = null;
 try {
   if (process.env.OPENAI_API_KEY) {
     openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.OPENAI_API_KEY.trim(),
     });
     console.log('OpenAI client initialized for post generation');
   } else {

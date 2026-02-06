@@ -4,8 +4,8 @@ import { verifyToken } from '@/lib/auth';
 
 // Initialize Upstash Vector (with built-in embeddings)
 const vectorIndex = new Index({
-  url: process.env.UPSTASH_VECTOR_REST_URL!,
-  token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+  url: (process.env.UPSTASH_VECTOR_REST_URL || '').trim(),
+  token: (process.env.UPSTASH_VECTOR_REST_TOKEN || '').trim(),
 });
 
 interface ScrapedPost {

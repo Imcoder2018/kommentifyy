@@ -5,13 +5,13 @@ import { verifyToken } from '@/lib/auth';
 
 // Initialize Upstash Vector
 const vectorIndex = new Index({
-  url: process.env.UPSTASH_VECTOR_REST_URL!,
-  token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+  url: (process.env.UPSTASH_VECTOR_REST_URL || '').trim(),
+  token: (process.env.UPSTASH_VECTOR_REST_TOKEN || '').trim(),
 });
 
 // Initialize OpenAI
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: (process.env.OPENAI_API_KEY || '').trim(),
 });
 
 export async function POST(request: NextRequest) {

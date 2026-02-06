@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     let openai: OpenAI | null = null;
     try {
       openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+        apiKey: (process.env.OPENAI_API_KEY || '').trim(),
       });
       diagnostics.clientInitialized = true;
     } catch (initError: any) {

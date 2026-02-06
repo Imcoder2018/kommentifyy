@@ -5,7 +5,7 @@
 
 export const OpenAIConfig = {
     // API Key should be loaded from environment variables in backend
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: (process.env.OPENAI_API_KEY || '').trim(),
     apiUrl: 'https://api.openai.com/v1/chat/completions',
 
     // Models based on preferences

@@ -72,6 +72,8 @@ venv/
 build/
 *.tsbuildinfo
 
+*.next
+
 # Prisma
 prisma/*.db
 prisma/*.db-journal

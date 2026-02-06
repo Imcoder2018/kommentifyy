@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Index } from '@upstash/vector';
-import OpenAI from 'openai';
 import { verifyToken } from '@/lib/auth';
 
-// Initialize Upstash Vector
+// Initialize Upstash Vector (with built-in embeddings)
 const vectorIndex = new Index({
   url: process.env.UPSTASH_VECTOR_REST_URL!,
   token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-});
-
-// Initialize OpenAI for embeddings
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export async function POST(request: NextRequest) {
@@ -46,22 +40,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 Searching for "${topic}" with top ${topK} results for user ${userId}`);
 
-    // Generate embedding for the search topic using BGE
-    const embeddingResponse = await fetch('https://api.upstash.com/v1/vector/embed', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.UPSTASH_VECTOR_REST_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'BGE_SMALL_EN_V1_5',
-        input: topic
-      })
-    });
-    
-    const embeddingData = await embeddingResponse.json();
-    const queryVector = embeddingData.data[0].embedding;
-
     // Build filter for user and optionally specific sources
     let filter = `userId = '${userId}'`;
     
@@ -72,9 +50,9 @@ export async function POST(request: NextRequest) {
       filter = `${filter} AND (${sourceFilters})`;
     }
 
-    // Query vector DB for similar posts
+    // Query using 'data' field - Upstash will auto-embed the query text
     const queryResponse = await vectorIndex.query({
-      vector: queryVector,
+      data: topic, // Upstash auto-embeds this
       topK: Math.min(topK, 10),
       filter,
       includeMetadata: true,

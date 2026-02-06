@@ -53,22 +53,6 @@ export async function POST(request: NextRequest) {
     // If using inspiration context, fetch similar posts from vector DB
     if (useInspirationContext) {
       try {
-        // Generate embedding for the topic using BGE
-        const embeddingResponse = await fetch('https://api.upstash.com/v1/vector/embed', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.UPSTASH_VECTOR_REST_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'BGE_SMALL_EN_V1_5',
-            input: topic
-          })
-        });
-        
-        const embeddingData = await embeddingResponse.json();
-        const queryVector = embeddingData.data[0].embedding;
-
         // Build filter
         let filter = `userId = '${userId}'`;
         if (selectedSources && selectedSources.length > 0) {
@@ -78,9 +62,11 @@ export async function POST(request: NextRequest) {
           filter = `${filter} AND (${sourceFilters})`;
         }
 
-        // Query for similar posts
+        console.log('🔍 Querying vector DB with filter:', filter);
+
+        // Query using 'data' field - Upstash will auto-embed the query text
         const queryResponse = await vectorIndex.query({
-          vector: queryVector,
+          data: topic, // Upstash auto-embeds this
           topK: Math.min(topK, 5),
           filter,
           includeMetadata: true,

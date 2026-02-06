@@ -127,6 +127,96 @@ try {
 
 console.log("BACKGROUND: All modules loaded and ready");
 
+// Helper function to wait for content to load
+async function waitForContentLoad(tabId, maxWaitTime = 10000) {
+    const startTime = Date.now();
+    const checkInterval = 500; // Check every 500ms
+    
+    while (Date.now() - startTime < maxWaitTime) {
+        try {
+            const results = await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                    // Check if page has basic LinkedIn structure
+                    const hasMainContent = document.querySelector('main') || document.querySelector('.scaffold-layout__main');
+                    const hasPosts = document.querySelectorAll('[data-id^="urn:li:activity:"]').length > 0;
+                    const hasLoading = document.querySelector('.scaffold-layout__show-more') || 
+                                     document.querySelector('.feed-skeleton') ||
+                                     document.querySelector('[data-test-id="loading"]');
+                    
+                    return {
+                        hasMainContent: !!hasMainContent,
+                        hasPosts,
+                        hasLoading: !!hasLoading,
+                        ready: hasMainContent && !hasLoading
+                    };
+                }
+            });
+            
+            const state = results[0]?.result;
+            if (state?.ready) {
+                console.log('BACKGROUND: Page content loaded successfully');
+                return true;
+            }
+            
+            if (state?.hasPosts) {
+                console.log('BACKGROUND: Posts found, proceeding with scrape');
+                return true;
+            }
+            
+            console.log(`BACKGROUND: Waiting for content... hasMain: ${state?.hasMainContent}, hasPosts: ${state?.hasPosts}, hasLoading: ${state?.hasLoading}`);
+        } catch (error) {
+            console.warn('BACKGROUND: Error checking content load:', error);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+    
+    console.log('BACKGROUND: Content load timeout, proceeding anyway');
+    return false;
+}
+
+// Helper function to scroll and load content
+async function scrollAndLoadContent(tabId, maxAttempts = 3) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            console.log(`BACKGROUND: Scroll attempt ${attempt}/${maxAttempts}`);
+            
+            await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                    // Smooth scroll to bottom
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+            
+            // Wait for content to load after scroll
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Check if new posts loaded
+            const results = await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                    const posts = document.querySelectorAll('[data-id^="urn:li:activity:"]');
+                    return {
+                        postCount: posts.length,
+                        hasMore: document.querySelector('.scaffold-layout__show-more') !== null
+                    };
+                }
+            });
+            
+            const state = results[0]?.result;
+            console.log(`BACKGROUND: After scroll ${attempt}: ${state?.postCount} posts found`);
+            
+        } catch (error) {
+            console.warn(`BACKGROUND: Scroll attempt ${attempt} failed:`, error);
+        }
+    }
+}
+
 // --- MESSAGE LISTENERS ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("BACKGROUND: Received message:", request.action);
@@ -329,11 +419,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
-    // Scrape Profile Posts for Inspiration Sources
+    // Scrape Profile Posts for Inspiration Sources - Opens posts one by one for full content
     if (request.action === "scrapeProfilePosts") {
         (async () => {
             try {
-                console.log('✨ BACKGROUND: Scraping profile posts for inspiration...');
+                console.log('✨ BACKGROUND: Scraping profile posts for inspiration (post-by-post method)...');
                 console.log('BACKGROUND: Profile URL:', request.profileUrl);
                 console.log('BACKGROUND: Post count:', request.postCount);
                 
@@ -348,138 +438,287 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
                 const username = urlMatch[1];
                 
-                // Open the profile's activity/posts page in a new tab
+                // STEP 1: Open the profile's activity page to get post URLs
                 const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
                 console.log('BACKGROUND: Opening activity page:', activityUrl);
                 
-                const tab = await chrome.tabs.create({ url: activityUrl, active: false });
+                const activityTab = await chrome.tabs.create({ url: activityUrl, active: false });
                 
-                // Wait for page to fully load (LinkedIn needs more time)
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                // Wait for page to load
+                await waitForContentLoad(activityTab.id, 12000);
                 
                 // Scroll to load more posts
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    func: () => {
-                        window.scrollTo(0, document.body.scrollHeight);
-                    }
-                });
-                
-                // Wait for content to load after scroll
+                await scrollAndLoadContent(activityTab.id, 3);
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 
-                // Execute scraping script in the tab
-                const results = await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
+                // STEP 2: Extract post URNs and author name from activity page
+                const extractResult = await chrome.scripting.executeScript({
+                    target: { tabId: activityTab.id },
                     func: (maxPosts) => {
-                        const posts = [];
+                        const postUrns = [];
                         
-                        // Find all post containers with activity URN
-                        const postElements = document.querySelectorAll('[data-id^="urn:li:activity:"]');
-                        
-                        console.log(`Found ${postElements.length} potential post elements`);
-                        
-                        // Get author name from the first post's actor section
+                        // Get author name from page
                         let authorName = 'Unknown Author';
-                        const firstActorTitle = document.querySelector('.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]');
-                        if (firstActorTitle) {
-                            authorName = firstActorTitle.textContent?.trim() || 'Unknown Author';
+                        const authorSelectors = [
+                            '.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]',
+                            '.feed-shared-actor__title span[aria-hidden="true"]',
+                            'h1.text-heading-xlarge',
+                            '.profile-top-card-person-list__name'
+                        ];
+                        
+                        for (const selector of authorSelectors) {
+                            const element = document.querySelector(selector);
+                            if (element) {
+                                authorName = element.textContent?.trim() || 'Unknown Author';
+                                break;
+                            }
                         }
                         
-                        let count = 0;
+                        // Find all post elements with URNs
+                        const postElements = document.querySelectorAll('[data-urn*="urn:li:activity:"], [data-id*="urn:li:activity:"]');
+                        console.log(`Found ${postElements.length} posts with URNs`);
+                        
                         for (const post of postElements) {
-                            if (count >= maxPosts) break;
+                            if (postUrns.length >= maxPosts) break;
                             
-                            // Get post content - the text is in nested spans within update-components-text
-                            const textContainer = post.querySelector('.update-components-text');
-                            if (!textContainer) {
-                                console.log('No text container found for post', count + 1);
-                                continue;
-                            }
+                            // Get the URN from data-urn or data-id
+                            let urn = post.getAttribute('data-urn') || post.getAttribute('data-id');
                             
-                            // Get all text content, cleaning up the formatting
-                            let content = '';
-                            const textSpans = textContainer.querySelectorAll('span[dir="ltr"]');
-                            if (textSpans.length > 0) {
-                                // Get the main content span (usually the one inside break-words)
-                                const mainSpan = textContainer.querySelector('.break-words span[dir="ltr"]');
-                                if (mainSpan) {
-                                    content = mainSpan.innerText || mainSpan.textContent || '';
-                                } else {
-                                    // Fallback: join all text spans
-                                    content = Array.from(textSpans).map(s => s.textContent).join(' ');
+                            // Skip non-activity URNs
+                            if (!urn || !urn.includes('urn:li:activity:')) continue;
+                            
+                            // Extract the activity ID
+                            const activityMatch = urn.match(/urn:li:activity:(\d+)/);
+                            if (activityMatch) {
+                                const activityId = activityMatch[1];
+                                // Check if this looks like original content (not a repost/share)
+                                const isRepost = post.querySelector('.feed-shared-reshared-content') || 
+                                               post.querySelector('.update-components-mini-update-v2');
+                                
+                                if (!isRepost) {
+                                    postUrns.push({
+                                        activityId,
+                                        urn
+                                    });
+                                    console.log(`Found post URN: ${activityId}`);
                                 }
-                            } else {
-                                // Fallback to full text content
-                                content = textContainer.textContent || '';
                             }
-                            
-                            // Clean up the content
-                            content = content.replace(/\s+/g, ' ').trim();
-                            content = content.replace(/…more$/, '').trim();
-                            
-                            if (!content || content.length < 50) {
-                                console.log('Content too short or empty for post', count + 1, '- length:', content.length);
-                                continue;
-                            }
-                            
-                            // Get engagement metrics
-                            const likesEl = post.querySelector('.social-details-social-counts__reactions-count');
-                            const likesBtn = post.querySelector('button[aria-label*="reaction"]');
-                            const commentsBtn = post.querySelector('button[aria-label*="comment"]');
-                            
-                            let likes = 0;
-                            if (likesEl) {
-                                likes = parseInt(likesEl.textContent?.replace(/[^0-9]/g, '') || '0');
-                            } else if (likesBtn) {
-                                const match = likesBtn.getAttribute('aria-label')?.match(/(\d+)/);
-                                likes = match ? parseInt(match[1]) : 0;
-                            }
-                            
-                            let comments = 0;
-                            if (commentsBtn) {
-                                const match = commentsBtn.getAttribute('aria-label')?.match(/(\d+)/);
-                                comments = match ? parseInt(match[1]) : 0;
-                            }
-                            
-                            console.log(`Post ${count + 1}: Found content (${content.length} chars), ${likes} likes, ${comments} comments`);
-                            
-                            posts.push({
-                                content: content.substring(0, 5000),
-                                likes: likes,
-                                comments: comments,
-                                authorName
-                            });
-                            
-                            count++;
                         }
                         
-                        console.log(`Successfully scraped ${posts.length} posts`);
-                        return { posts, authorName };
+                        console.log(`Extracted ${postUrns.length} post URNs`);
+                        return { postUrns, authorName };
                     },
-                    args: [postCount]
+                    args: [postCount + 5] // Get a few extra in case some fail
                 });
                 
-                // Close the tab
-                await chrome.tabs.remove(tab.id);
+                // Close activity tab
+                await chrome.tabs.remove(activityTab.id);
                 
-                const scrapedData = results[0]?.result || { posts: [], authorName: 'Unknown' };
+                const { postUrns, authorName } = extractResult[0]?.result || { postUrns: [], authorName: 'Unknown' };
                 
-                if (scrapedData.posts.length === 0) {
-                    console.log('BACKGROUND: No posts found after scraping');
+                if (postUrns.length === 0) {
+                    console.log('BACKGROUND: No post URNs found on activity page');
                     sendResponse({ 
                         success: false, 
-                        error: 'Could not find posts on this profile. The profile may have no recent posts or they may be private.' 
+                        error: 'Could not find posts on this profile. The profile may have no recent posts or they may be private.'
                     });
                     return;
                 }
                 
-                console.log(`✅ BACKGROUND: Scraped ${scrapedData.posts.length} posts from ${scrapedData.authorName}`);
-                sendResponse({ 
-                    success: true, 
-                    posts: scrapedData.posts,
-                    authorName: scrapedData.authorName
-                });
+                console.log(`BACKGROUND: Found ${postUrns.length} post URNs, now opening each post...`);
+                
+                // STEP 3: Open each post individually to get full content
+                const scrapedPosts = [];
+                let skippedCount = 0;
+                
+                for (let i = 0; i < Math.min(postUrns.length, postCount); i++) {
+                    const { activityId } = postUrns[i];
+                    const postUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`;
+                    
+                    console.log(`BACKGROUND: Opening post ${i + 1}/${Math.min(postUrns.length, postCount)}: ${postUrl}`);
+                    
+                    try {
+                        // Open the individual post page
+                        const postTab = await chrome.tabs.create({ url: postUrl, active: false });
+                        
+                        // Wait for post page to load
+                        await new Promise(resolve => setTimeout(resolve, 4000));
+                        
+                        // Scrape the full post content
+                        const postResult = await chrome.scripting.executeScript({
+                            target: { tabId: postTab.id },
+                            func: () => {
+                                // Get full post content from individual post page
+                                let content = '';
+                                
+                                // Try multiple selectors for post text
+                                const textSelectors = [
+                                    '.feed-shared-update-v2__description .update-components-text',
+                                    '.update-components-text',
+                                    '.feed-shared-text',
+                                    '.feed-shared-inline-show-more-text',
+                                    'article .break-words'
+                                ];
+                                
+                                for (const selector of textSelectors) {
+                                    const element = document.querySelector(selector);
+                                    if (element) {
+                                        content = element.innerText || element.textContent || '';
+                                        if (content.length > 50) break;
+                                    }
+                                }
+                                
+                                // Clean up content
+                                content = content
+                                    .replace(/\s+/g, ' ')
+                                    .replace(/…more$/i, '')
+                                    .replace(/See more$/i, '')
+                                    .replace(/See translation$/i, '')
+                                    .trim();
+                                
+                                // Get engagement metrics
+                                let likes = 0, comments = 0;
+                                
+                                const likesEl = document.querySelector('.social-details-social-counts__reactions-count');
+                                if (likesEl) {
+                                    const match = likesEl.textContent?.match(/(\d+(?:,\d+)*)/);
+                                    if (match) likes = parseInt(match[1].replace(/,/g, ''));
+                                }
+                                
+                                const commentsBtn = document.querySelector('button[aria-label*="comment"]');
+                                if (commentsBtn) {
+                                    const match = commentsBtn.getAttribute('aria-label')?.match(/(\d+)/);
+                                    if (match) comments = parseInt(match[1]);
+                                }
+                                
+                                return { content, likes, comments };
+                            }
+                        });
+                        
+                        // Close the post tab
+                        await chrome.tabs.remove(postTab.id);
+                        
+                        const postData = postResult[0]?.result;
+                        
+                        if (postData && postData.content && postData.content.length >= 50) {
+                            // Skip system messages
+                            const skipPatterns = [
+                                /^is now/i, /updated their profile/i, /shared this/i,
+                                /endorsed/i, /started following/i, /celebrated/i,
+                                /has a new profile photo/i, /reacted to this/i
+                            ];
+                            
+                            if (!skipPatterns.some(p => p.test(postData.content))) {
+                                scrapedPosts.push({
+                                    content: postData.content.substring(0, 5000),
+                                    likes: postData.likes || 0,
+                                    comments: postData.comments || 0,
+                                    authorName,
+                                    postUrl
+                                });
+                                console.log(`✅ BACKGROUND: Scraped post ${i + 1}: ${postData.content.substring(0, 80)}...`);
+                            } else {
+                                skippedCount++;
+                                console.log(`BACKGROUND: Skipped system message post ${i + 1}`);
+                            }
+                        } else {
+                            skippedCount++;
+                            console.log(`BACKGROUND: Post ${i + 1} had insufficient content`);
+                        }
+                        
+                        // Small delay between posts to avoid rate limiting
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        
+                    } catch (postError) {
+                        console.warn(`BACKGROUND: Failed to scrape post ${i + 1}:`, postError.message);
+                        skippedCount++;
+                    }
+                }
+                
+                if (scrapedPosts.length === 0) {
+                    console.log('BACKGROUND: No posts successfully scraped');
+                    sendResponse({ 
+                        success: false, 
+                        error: `Could not extract content from posts. Tried ${postUrns.length} posts, skipped ${skippedCount}.`
+                    });
+                    return;
+                }
+                
+                console.log(`✅ BACKGROUND: Successfully scraped ${scrapedPosts.length} posts from ${authorName}`);
+                
+                // STEP 4: Save directly to backend API (don't rely on popup staying open)
+                try {
+                    const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                    const apiUrl = apiBaseUrl || 'https://kommentify.com';
+                    
+                    if (!authToken) {
+                        console.error('BACKGROUND: No auth token, cannot save to backend');
+                        sendResponse({ success: false, error: 'Not authenticated. Please log in first.' });
+                        return;
+                    }
+                    
+                    console.log(`📤 BACKGROUND: Sending ${scrapedPosts.length} posts to vector DB...`);
+                    
+                    const ingestResponse = await fetch(`${apiUrl}/api/vector/ingest`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            posts: scrapedPosts,
+                            inspirationSource: {
+                                name: authorName,
+                                profileUrl: request.profileUrl
+                            }
+                        })
+                    });
+                    
+                    const ingestData = await ingestResponse.json();
+                    console.log('📤 BACKGROUND: Ingest response:', ingestData);
+                    
+                    if (ingestData.success) {
+                        // Store success in chrome.storage so UI can detect it
+                        await chrome.storage.local.set({
+                            lastInspirationResult: {
+                                success: true,
+                                authorName,
+                                postCount: ingestData.count,
+                                profileUrl: request.profileUrl,
+                                timestamp: Date.now()
+                            }
+                        });
+                        
+                        sendResponse({ 
+                            success: true, 
+                            posts: scrapedPosts,
+                            authorName,
+                            skippedCount,
+                            savedToBackend: true,
+                            savedCount: ingestData.count
+                        });
+                    } else {
+                        console.error('BACKGROUND: Ingest failed:', ingestData.error);
+                        sendResponse({ 
+                            success: true, 
+                            posts: scrapedPosts,
+                            authorName,
+                            skippedCount,
+                            savedToBackend: false,
+                            backendError: ingestData.error
+                        });
+                    }
+                } catch (apiError) {
+                    console.error('BACKGROUND: API call failed:', apiError);
+                    sendResponse({ 
+                        success: true, 
+                        posts: scrapedPosts,
+                        authorName,
+                        skippedCount,
+                        savedToBackend: false,
+                        backendError: apiError.message
+                    });
+                }
                 
             } catch (error) {
                 console.error('❌ BACKGROUND: Error scraping profile posts:', error);

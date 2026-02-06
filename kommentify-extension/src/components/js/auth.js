@@ -181,7 +181,8 @@ async function handleClerkLogin() {
         const storage = await chrome.storage.local.get(['apiBaseUrl']);
         let apiUrl = storage.apiBaseUrl || API_CONFIG.BASE_URL;
         
-        if (!apiUrl || apiUrl.includes('localhost')) {
+        // Allow localhost for development testing
+        if (!apiUrl) {
             apiUrl = API_CONFIG.BASE_URL;
         }
         

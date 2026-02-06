@@ -70,11 +70,30 @@ export function initializeInspirationSources() {
     loadInspirationSources();
 }
 
+// Listen for storage changes to auto-refresh when background completes scraping
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.lastInspirationResult) {
+        const result = changes.lastInspirationResult.newValue;
+        if (result && result.success) {
+            console.log('📚 Background scraping completed, refreshing sources...');
+            loadInspirationSources();
+        }
+    }
+});
+
 // Load inspiration sources from backend
 async function loadInspirationSources() {
+    console.log('📚 Loading inspiration sources from backend...');
     try {
         const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
         const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL;
+        
+        if (!authToken) {
+            console.warn('No auth token found, cannot load sources');
+            return;
+        }
+        
+        console.log('📚 Fetching from:', `${apiUrl}/api/vector/ingest`);
         
         const response = await fetch(`${apiUrl}/api/vector/ingest`, {
             method: 'GET',
@@ -85,16 +104,19 @@ async function loadInspirationSources() {
         });
         
         const data = await response.json();
+        console.log('📚 Load sources response:', data);
         
         if (data.success && data.sources) {
             inspirationSources = data.sources;
             selectedSourceUrls = inspirationSources.map(s => s.profileUrl);
             renderSourcesList();
             updateSourceCheckboxes();
-            console.log(`📚 Loaded ${inspirationSources.length} inspiration sources`);
+            console.log(`📚 Loaded ${inspirationSources.length} inspiration sources:`, inspirationSources);
+        } else {
+            console.warn('📚 No sources in response or request failed:', data.error);
         }
     } catch (error) {
-        console.error('Failed to load inspiration sources:', error);
+        console.error('❌ Failed to load inspiration sources:', error);
     }
 }
 
@@ -218,52 +240,41 @@ async function handleAddInspirationSource() {
     showStatus('Opening profile and scraping posts...', 'info');
     
     try {
-        // Send message to background script to handle scraping
+        // Send message to background script to handle scraping AND saving to backend
+        // Background script now handles the full flow to avoid popup timeout issues
         const response = await chrome.runtime.sendMessage({
             action: 'scrapeProfilePosts',
             profileUrl,
             postCount
         });
         
+        console.log('✅ Scrape response received:', response);
+        
         if (response.success) {
-            showStatus(`✅ Successfully scraped ${response.posts.length} posts!`, 'success');
-            
-            // Now send to backend for vector storage
-            showStatus('Saving to your inspiration library...', 'info');
-            
-            const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-            const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL;
-            
-            const ingestResponse = await fetch(`${apiUrl}/api/vector/ingest`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    posts: response.posts,
-                    inspirationSource: {
-                        name: response.authorName || 'Unknown Author',
-                        profileUrl: profileUrl
-                    }
-                })
-            });
-            
-            const ingestData = await ingestResponse.json();
-            
-            if (ingestData.success) {
-                showStatus(`✅ Added ${ingestData.count} posts from ${response.authorName}!`, 'success');
+            if (response.savedToBackend) {
+                showStatus(`✅ Added ${response.savedCount} posts from ${response.authorName}!`, 'success');
                 urlInput.value = '';
-                loadInspirationSources();
+                // Reload sources to show the new one
+                await loadInspirationSources();
+            } else if (response.backendError) {
+                showStatus(`⚠️ Scraped ${response.posts?.length || 0} posts but failed to save: ${response.backendError}`, 'error');
             } else {
-                throw new Error(ingestData.error || 'Failed to save posts');
+                showStatus(`✅ Scraped ${response.posts?.length || 0} posts from ${response.authorName}`, 'success');
+                urlInput.value = '';
+                await loadInspirationSources();
             }
         } else {
             throw new Error(response.error || 'Failed to scrape posts');
         }
     } catch (error) {
         console.error('Add inspiration source error:', error);
-        showStatus(`❌ ${error.message}`, 'error');
+        // Check if error is due to popup timeout - background may have completed anyway
+        if (error.message?.includes('Could not establish connection') || 
+            error.message?.includes('message port closed')) {
+            showStatus('⏳ Scraping in progress... Please wait and refresh the sources list.', 'info');
+        } else {
+            showStatus(`❌ ${error.message}`, 'error');
+        }
     } finally {
         if (addBtn) {
             addBtn.disabled = false;
@@ -274,13 +285,40 @@ async function handleAddInspirationSource() {
 
 // Handle deleting a source
 async function handleDeleteSource(profileUrl) {
-    // For now, just remove from local state
-    // In production, you'd want to delete from the vector DB as well
-    inspirationSources = inspirationSources.filter(s => s.profileUrl !== profileUrl);
-    selectedSourceUrls = selectedSourceUrls.filter(u => u !== profileUrl);
-    renderSourcesList();
-    updateSourceCheckboxes();
-    showNotification('Source removed', 'success');
+    if (!confirm('Delete this inspiration source? This will remove all saved posts from this profile.')) {
+        return;
+    }
+    
+    try {
+        // Delete from vector DB
+        const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+        const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL;
+        
+        const response = await fetch(`${apiUrl}/api/vector/delete`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ profileUrl })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Remove from local state
+            inspirationSources = inspirationSources.filter(s => s.profileUrl !== profileUrl);
+            selectedSourceUrls = selectedSourceUrls.filter(u => u !== profileUrl);
+            renderSourcesList();
+            updateSourceCheckboxes();
+            showNotification(`Deleted ${data.deleted || 0} posts`, 'success');
+        } else {
+            throw new Error(data.error || 'Failed to delete source');
+        }
+    } catch (error) {
+        console.error('Delete source error:', error);
+        showNotification('Failed to delete source: ' + error.message, 'error');
+    }
 }
 
 // Show status message

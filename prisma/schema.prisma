@@ -271,6 +271,7 @@ model ScrapedPost {
   comments        Int      @default(0)
   shares          Int      @default(0)
   postUrl         String?
+  imageUrl        String?  @db.Text
   scrapedAt       DateTime @default(now())
   createdAt       DateTime @default(now())
 

@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
           comments: parseInt(post.comments) || 0,
           shares: parseInt(post.shares) || 0,
           postUrl: post.postUrl || null,
+          imageUrl: post.imageUrl || null,
         },
       });
       created.push(record);

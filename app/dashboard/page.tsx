@@ -90,6 +90,8 @@ export default function DashboardPage() {
     const [analysisResults, setAnalysisResults] = useState<any[]>([]);
     const [analysisLoading, setAnalysisLoading] = useState(false);
     const [showAnalysis, setShowAnalysis] = useState(false);
+    // Image attachment for generated posts (index -> base64 data URL)
+    const [generatedPostImages, setGeneratedPostImages] = useState<Record<number, string>>({});
 
     // Inspiration Sources state
     const [inspirationProfiles, setInspirationProfiles] = useState<string>('');
@@ -518,21 +520,31 @@ export default function DashboardPage() {
         finally { setAnalysisLoading(false); }
     };
 
-    const postGeneratedToLinkedIn = async (content: string) => {
+    const postGeneratedToLinkedIn = async (content: string, imageDataUrl?: string) => {
         const token = localStorage.getItem('authToken');
         if (!token || !content.trim()) return;
         setTrendingStatus('Sending to extension...');
         try {
-            window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { detail: { content } }));
+            const cmdData: any = { content };
+            if (imageDataUrl) cmdData.imageDataUrl = imageDataUrl;
+            window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { detail: cmdData }));
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ command: 'post_to_linkedin', data: { content } }),
+                body: JSON.stringify({ command: 'post_to_linkedin', data: cmdData }),
             });
             const data = await res.json();
             if (data.success) setTrendingStatus('✅ Post sent to extension! It will auto-open LinkedIn.');
             else setTrendingStatus(data.error || 'Failed');
         } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
+    };
+
+    const handleImageAttach = (index: number, file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setGeneratedPostImages(prev => ({ ...prev, [index]: e.target?.result as string }));
+        };
+        reader.readAsDataURL(file);
     };
 
     // Load data when tabs become active
@@ -1380,29 +1392,7 @@ export default function DashboardPage() {
                                 {trendingStatus}
                             </div>
                         )}
-                        {/* Generated Posts Preview */}
-                        {trendingShowGenPreview && trendingGeneratedPosts.length > 0 && (
-                            <div style={{ marginBottom: '24px', background: 'rgba(105,63,233,0.1)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                                <h4 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🤖 AI Generated Posts ({trendingGeneratedPosts.length})</h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {trendingGeneratedPosts.map((gp: any, i: number) => (
-                                        <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '14px' }}>✨ {gp.title || `Post ${i + 1}`}</span>
-                                                <button onClick={() => postGeneratedToLinkedIn(gp.content)}
-                                                    style={{ padding: '6px 16px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '12px' }}>
-                                                    🚀 Post to LinkedIn
-                                                </button>
-                                            </div>
-                                            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: 0, whiteSpace: 'pre-wrap' }}>
-                                                {gp.content}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {/* Analysis Results Table */}
+                        {/* Analysis Results Table - shown on TOP */}
                         {showAnalysis && analysisResults.length > 0 && (
                             <div style={{ marginBottom: '24px', background: 'rgba(245,158,11,0.1)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(245,158,11,0.3)' }}>
                                 <h4 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>📊 Viral Potential Analysis</h4>
@@ -1450,6 +1440,43 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                         )}
+                        {/* Generated Posts Preview */}
+                        {trendingShowGenPreview && trendingGeneratedPosts.length > 0 && (
+                            <div style={{ marginBottom: '24px', background: 'rgba(105,63,233,0.1)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
+                                <h4 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🤖 AI Generated Posts ({trendingGeneratedPosts.length})</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    {trendingGeneratedPosts.map((gp: any, i: number) => (
+                                        <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '14px' }}>✨ {gp.title || `Post ${i + 1}`}</span>
+                                                <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i])}
+                                                    style={{ padding: '6px 16px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '12px' }}>
+                                                    🚀 Post to LinkedIn
+                                                </button>
+                                            </div>
+                                            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: '0 0 12px 0', whiteSpace: 'pre-wrap' }}>
+                                                {gp.content}
+                                            </p>
+                                            {/* Image attachment */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '12px' }}>
+                                                    📷 {generatedPostImages[i] ? 'Change Image' : 'Attach Image'}
+                                                    <input type="file" accept="image/*" style={{ display: 'none' }}
+                                                        onChange={(e) => { if (e.target.files?.[0]) handleImageAttach(i, e.target.files[0]); }} />
+                                                </label>
+                                                {generatedPostImages[i] && (
+                                                    <>
+                                                        <img src={generatedPostImages[i]} alt="Attached" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(105,63,233,0.4)' }} />
+                                                        <button onClick={() => setGeneratedPostImages(prev => { const n = { ...prev }; delete n[i]; return n; })}
+                                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px' }}>✕</button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         {/* Posts List */}
                         {savedPostsLoading ? (
                             <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.5)' }}>Loading trending posts...</div>
@@ -1482,9 +1509,16 @@ export default function DashboardPage() {
                                                 🗑️
                                             </button>
                                         </div>
-                                        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.6', margin: '0 0 12px 0', whiteSpace: 'pre-wrap', maxHeight: '150px', overflow: 'hidden' }}>
-                                            {post.postContent}
-                                        </p>
+                                        <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px', paddingRight: '4px' }}>
+                                            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
+                                                {post.postContent}
+                                            </p>
+                                        </div>
+                                        {post.imageUrl && (
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <img src={post.imageUrl} alt="Post image" style={{ maxWidth: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                            </div>
+                                        )}
                                         <div style={{ display: 'flex', gap: '20px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                                             <span style={{ color: '#ec4899', fontSize: '13px', fontWeight: '600' }}>❤️ {post.likes}</span>
                                             <span style={{ color: '#8b5cf6', fontSize: '13px', fontWeight: '600' }}>💬 {post.comments}</span>

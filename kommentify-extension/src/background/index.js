@@ -781,6 +781,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (typeof globalThis._stopAllTasks === 'undefined') {
         globalThis._stopAllTasks = false;
     }
+    // Global lock to prevent concurrent poll executions
+    if (typeof globalThis._pollCommandsRunning === 'undefined') {
+        globalThis._pollCommandsRunning = false;
+    }
 
     // Stop all tasks handler
     if (request.action === "stopAllTasks") {
@@ -823,11 +827,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Poll for website commands (post to LinkedIn from dashboard)
     if (request.action === "pollWebsiteCommands") {
         (async () => {
+            // LOCK: Prevent concurrent poll executions that cause duplicate commands
+            if (globalThis._pollCommandsRunning) {
+                console.log('⏭️ BACKGROUND: Poll already running, skipping');
+                sendResponse({ success: true, commands: [], skipped: true });
+                return;
+            }
+            globalThis._pollCommandsRunning = true;
             try {
                 const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
                 const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
                 
                 if (!authToken) {
+                    globalThis._pollCommandsRunning = false;
                     sendResponse({ success: false, commands: [] });
                     return;
                 }
@@ -901,15 +913,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                                 // Step 3: Inject posting script into the LinkedIn tab
                                 const content = cmd.data.content;
+                                const imageDataUrl = cmd.data.imageDataUrl || null;
                                 const result = await chrome.scripting.executeScript({
                                     target: { tabId: tab.id },
-                                    func: (postContent) => {
+                                    func: (postContent, imgDataUrl) => {
                                         return new Promise((resolve) => {
                                             console.log('LinkedIn Post Script (from website): Starting...');
                                             const SELECTORS = {
                                                 startPostButton: 'div.share-box-feed-entry__top-bar button',
                                                 postEditor: 'div.editor-container > div > div > div.ql-editor',
-                                                postSubmitButton: 'div.share-box_actions button'
+                                                postSubmitButton: 'div.share-box_actions button',
+                                                imageButton: 'button[aria-label="Add a photo"], button[aria-label="Add media"]'
                                             };
                                             const startPostBtn = document.querySelector(SELECTORS.startPostButton);
                                             if (!startPostBtn) {
@@ -936,27 +950,90 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                     }
                                                 });
                                                 editor.dispatchEvent(new Event('input', { bubbles: true }));
-                                                setTimeout(() => {
-                                                    const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
-                                                    let postButton = null;
-                                                    for (const btn of actionButtons) {
-                                                        if ((btn.textContent?.trim().toLowerCase() || '') === 'post') { postButton = btn; break; }
-                                                    }
-                                                    if (postButton && !postButton.disabled) {
-                                                        postButton.click();
-                                                        resolve({ success: true, posted: true });
-                                                    } else {
-                                                        resolve({ success: true, posted: false, message: 'Content inserted, click Post manually' });
-                                                    }
-                                                }, 3000);
+
+                                                // Handle image attachment if provided
+                                                const attachImage = () => {
+                                                    return new Promise((imgResolve) => {
+                                                        if (!imgDataUrl) { imgResolve(false); return; }
+                                                        try {
+                                                            // Click the image/media button in the share box
+                                                            const imgBtn = document.querySelector('button[aria-label="Add a photo"]') || 
+                                                                           document.querySelector('button[aria-label="Add media"]') ||
+                                                                           document.querySelector('.share-creation-state__detour-btn[aria-label*="photo"]') ||
+                                                                           document.querySelector('.image-sharing-detour-container button');
+                                                            if (imgBtn) {
+                                                                imgBtn.click();
+                                                                setTimeout(() => {
+                                                                    // Convert data URL to blob and inject into the file input
+                                                                    const byteString = atob(imgDataUrl.split(',')[1]);
+                                                                    const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                                                    const ab = new ArrayBuffer(byteString.length);
+                                                                    const ia = new Uint8Array(ab);
+                                                                    for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
+                                                                    const blob = new Blob([ab], { type: mimeString });
+                                                                    const file = new File([blob], 'image.jpg', { type: mimeString });
+                                                                    
+                                                                    // Find file input in the share dialog
+                                                                    const fileInput = document.querySelector('input[type="file"][accept*="image"]') ||
+                                                                                      document.querySelector('.image-sharing-detour-container input[type="file"]') ||
+                                                                                      document.querySelector('.share-creation-state input[type="file"]');
+                                                                    if (fileInput) {
+                                                                        const dt = new DataTransfer();
+                                                                        dt.items.add(file);
+                                                                        fileInput.files = dt.files;
+                                                                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                                                        console.log('LinkedIn Post Script: Image attached via file input');
+                                                                        setTimeout(() => imgResolve(true), 3000);
+                                                                    } else {
+                                                                        console.log('LinkedIn Post Script: File input not found, skipping image');
+                                                                        imgResolve(false);
+                                                                    }
+                                                                }, 2000);
+                                                            } else {
+                                                                console.log('LinkedIn Post Script: Image button not found');
+                                                                imgResolve(false);
+                                                            }
+                                                        } catch (imgErr) {
+                                                            console.error('LinkedIn Post Script: Image attach error:', imgErr);
+                                                            imgResolve(false);
+                                                        }
+                                                    });
+                                                };
+
+                                                // Wait for text, then attach image, then click post
+                                                const afterText = async () => {
+                                                    await attachImage();
+                                                    // Wait extra time for image upload if image was provided
+                                                    const extraWait = imgDataUrl ? 4000 : 0;
+                                                    setTimeout(() => {
+                                                        const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
+                                                        let postButton = null;
+                                                        for (const btn of actionButtons) {
+                                                            if ((btn.textContent?.trim().toLowerCase() || '') === 'post') { postButton = btn; break; }
+                                                        }
+                                                        if (postButton && !postButton.disabled) {
+                                                            postButton.click();
+                                                            resolve({ success: true, posted: true });
+                                                        } else {
+                                                            resolve({ success: true, posted: false, message: 'Content inserted, click Post manually' });
+                                                        }
+                                                    }, 3000 + extraWait);
+                                                };
+                                                afterText();
                                             }, 3000);
                                         });
                                     },
-                                    args: [content]
+                                    args: [content, imageDataUrl]
                                 });
 
                                 const scriptResult = result?.[0]?.result;
                                 console.log('BACKGROUND: Website command script result:', scriptResult);
+                                
+                                // Close the LinkedIn tab after posting
+                                try {
+                                    await chrome.tabs.remove(tab.id);
+                                    console.log('BACKGROUND: Closed LinkedIn tab', tab.id);
+                                } catch (closeErr) { /* tab may already be closed */ }
                                 globalThis._commandLinkedInTabs.delete(tab.id);
                                 
                                 // Mark command as completed
@@ -1071,7 +1148,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                             const activityMatch = urn.match(/urn:li:activity:(\d+)/);
                                             const postUrl = activityMatch ? `https://www.linkedin.com/feed/update/urn:li:activity:${activityMatch[1]}/` : '';
 
-                                            posts.push({ postContent: content.substring(0, 5000), authorName, likes, comments, shares, postUrl });
+                                            // Scrape post image if present
+                                            let imageUrl = null;
+                                            const imgEl = el.querySelector('.update-components-image img, .feed-shared-image img, img.ivm-view-attr__img--centered[src*="feedshare"]');
+                                            if (imgEl && imgEl.src && imgEl.src.includes('media.licdn.com')) {
+                                                imageUrl = imgEl.src;
+                                            }
+
+                                            posts.push({ postContent: content.substring(0, 5000), authorName, likes, comments, shares, postUrl, imageUrl });
                                         }
                                         return posts;
                                     },
@@ -1096,6 +1180,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
                                 });
                                 console.log(`✅ BACKGROUND: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
+                                // Close the scrape tab
+                                try { await chrome.tabs.remove(tab.id); } catch (e) { /* already closed */ }
                             } catch (feedError) {
                                 console.error('❌ BACKGROUND: scrape_feed_now failed:', feedError);
                                 await fetch(`${apiUrl}/api/extension/command`, {
@@ -1103,6 +1189,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                 });
+                                // Close the scrape tab on failure too
+                                if (scrapeTab) { try { await chrome.tabs.remove(scrapeTab.id); } catch (e) {} }
                             } finally {
                                 globalThis._processingCommandIds.delete(cmd.id);
                                 if (scrapeTab) globalThis._commandLinkedInTabs.delete(scrapeTab.id);
@@ -1115,6 +1203,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             } catch (error) {
                 console.error('BACKGROUND: Error polling website commands:', error);
                 sendResponse({ success: false, error: error.message });
+            } finally {
+                globalThis._pollCommandsRunning = false;
             }
         })();
         return true;

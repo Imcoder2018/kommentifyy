@@ -95,6 +95,17 @@ import { executeBulkProcessing, stopBulkProcessing } from './bulkProcessingExecu
 import { API_CONFIG } from '../shared/config.js';
 import { versionChecker } from './versionChecker.js';
 
+// Force-clean old cached apiBaseUrl on startup (prevents hitting old backend URLs)
+(async () => {
+    try {
+        const { apiBaseUrl } = await chrome.storage.local.get('apiBaseUrl');
+        if (apiBaseUrl && (apiBaseUrl.includes('backend-buxx') || apiBaseUrl.includes('backend-api-orcin') || apiBaseUrl.includes('backend-4poj'))) {
+            console.log('BACKGROUND: Clearing stale apiBaseUrl:', apiBaseUrl);
+            await chrome.storage.local.set({ apiBaseUrl: API_CONFIG.BASE_URL });
+        }
+    } catch (e) { console.warn('BACKGROUND: Could not clean apiBaseUrl:', e); }
+})();
+
 // Initialize immediately
 try {
     iconSwitcher.registerChanges();
@@ -672,7 +683,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 // STEP 4: Save directly to backend API (don't rely on popup staying open)
                 try {
                     const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                    const apiUrl = apiBaseUrl || 'https://kommentify.com';
+                    const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                     
                     if (!authToken) {
                         console.error('BACKGROUND: No auth token, cannot save to backend');

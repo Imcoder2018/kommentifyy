@@ -38,20 +38,19 @@ window.addEventListener('message', (event) => {
             // Check for errors from the background script
             if (chrome.runtime.lastError) {
                 console.error("BRIDGE ERROR:", chrome.runtime.lastError.message);
-                window.postMessage({
-                    type: `COMMENTRON_RUNTIME_RESULT_${requestId}`,
-                    error: chrome.runtime.lastError.message
-                }, '*');
+                document.dispatchEvent(new CustomEvent('COMMENTRON_BRIDGE_RESPONSE', {
+                    detail: { requestId: requestId, error: chrome.runtime.lastError.message }
+                }));
                 return;
             }
             
             console.log('BRIDGE: Received response from background:', response);
             
-            // Send the successful response back to the main world
-            window.postMessage({
-                type: `COMMENTRON_RUNTIME_RESULT_${requestId}`,
-                data: response
-            }, '*');
+            // Send the successful response back to the main world via CustomEvent
+            // (window.postMessage does NOT reliably cross the content-script/MAIN world boundary)
+            document.dispatchEvent(new CustomEvent('COMMENTRON_BRIDGE_RESPONSE', {
+                detail: { requestId: requestId, data: response }
+            }));
         });
     }
 });
@@ -62,16 +61,14 @@ window.addEventListener('message', (event) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'AI_COMMENT_RESULT' && message._bridgeRequestId) {
         console.log('BRIDGE FALLBACK: Received AI_COMMENT_RESULT for requestId:', message._bridgeRequestId);
-        window.postMessage({
-            type: `COMMENTRON_RUNTIME_RESULT_${message._bridgeRequestId}`,
-            data: message.data
-        }, '*');
+        document.dispatchEvent(new CustomEvent('COMMENTRON_BRIDGE_RESPONSE', {
+            detail: { requestId: message._bridgeRequestId, data: message.data }
+        }));
     }
     if (message.type === 'COMMENT_SETTINGS_RESULT' && message._bridgeRequestId) {
         console.log('BRIDGE FALLBACK: Received COMMENT_SETTINGS_RESULT for requestId:', message._bridgeRequestId);
-        window.postMessage({
-            type: `COMMENTRON_RUNTIME_RESULT_${message._bridgeRequestId}`,
-            data: message.data
-        }, '*');
+        document.dispatchEvent(new CustomEvent('COMMENTRON_BRIDGE_RESPONSE', {
+            detail: { requestId: message._bridgeRequestId, data: message.data }
+        }));
     }
 });

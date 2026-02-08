@@ -24,25 +24,25 @@ class AICommentButtonManager {
         return new Promise((resolve, reject) => {
             const requestId = `req_${Date.now()}_${Math.random()}`;
             
+            // Listen for CustomEvent from bridge (reliably crosses content-script/MAIN world boundary)
             const listener = (event) => {
-                // Note: Do NOT check event.source===window here — it fails for
-                // cross-world messages from content script bridge to MAIN world.
-                // The unique requestId is sufficient to filter our messages.
-                if (!event.data || event.data.type !== `COMMENTRON_RUNTIME_RESULT_${requestId}`) {
+                const detail = event.detail;
+                if (!detail || detail.requestId !== requestId) {
                     return;
                 }
                 
-                window.removeEventListener('message', listener);
+                document.removeEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
                 
-                if (event.data.error) {
-                    reject(new Error(event.data.error));
+                if (detail.error) {
+                    reject(new Error(detail.error));
                 } else {
-                    resolve(event.data.data);
+                    resolve(detail.data);
                 }
             };
             
-            window.addEventListener('message', listener);
+            document.addEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
             
+            // Send request to bridge via window.postMessage (page→content-script direction works)
             window.postMessage({
                 type: 'COMMENTRON_RUNTIME_SEND_MESSAGE',
                 action: action,
@@ -51,7 +51,7 @@ class AICommentButtonManager {
             }, '*');
             
             setTimeout(() => {
-                window.removeEventListener('message', listener);
+                document.removeEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
                 reject(new Error('Request timeout (90s)'));
             }, 90000);
         });

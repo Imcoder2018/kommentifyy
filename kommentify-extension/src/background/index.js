@@ -394,7 +394,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         commentStyle: finalStyle,
                         userExpertise: storedSettings.userExpertise || '',
                         userBackground: storedSettings.userBackground || '',
-                        authorName: request.authorName || 'there'
+                        authorName: request.authorName || 'there',
+                        useProfileStyle: storedSettings.useProfileStyle === true
                     })
                 });
 
@@ -2634,7 +2635,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         commentStyle: finalStyle,
                         userExpertise: finalExpertise,
                         userBackground: finalBackground,
-                        authorName: authorName || 'there'
+                        authorName: authorName || 'there',
+                        useProfileStyle: storedSettings.useProfileStyle === true
                     })
                 });
 

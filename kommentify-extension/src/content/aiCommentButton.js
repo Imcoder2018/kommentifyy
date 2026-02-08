@@ -25,7 +25,10 @@ class AICommentButtonManager {
             const requestId = `req_${Date.now()}_${Math.random()}`;
             
             const listener = (event) => {
-                if (event.source !== window || event.data.type !== `COMMENTRON_RUNTIME_RESULT_${requestId}`) {
+                // Note: Do NOT check event.source===window here — it fails for
+                // cross-world messages from content script bridge to MAIN world.
+                // The unique requestId is sufficient to filter our messages.
+                if (!event.data || event.data.type !== `COMMENTRON_RUNTIME_RESULT_${requestId}`) {
                     return;
                 }
                 

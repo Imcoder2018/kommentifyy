@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       commentStyle,
       userExpertise, 
       userBackground,
-      authorName 
+      authorName,
+      useProfileStyle: reqUseProfileStyle
     } = await request.json();
 
     if (!postText) {
@@ -115,13 +116,14 @@ export async function POST(request: NextRequest) {
     let finalStyle = commentStyle;
     let finalExpertise = userExpertise;
     let finalBackground = userBackground;
-    let useProfileStyle = false;
+    let useProfileStyle = reqUseProfileStyle === true ? true : false;
     try {
       const savedSettings = await (prisma as any).commentSettings.findUnique({
         where: { userId: user.id },
       });
       if (savedSettings) {
-        useProfileStyle = savedSettings.useProfileStyle === true;
+        // Request body override takes priority, then DB value
+        useProfileStyle = reqUseProfileStyle === true ? true : (savedSettings.useProfileStyle === true);
         finalTone = finalTone || savedSettings.tone;
         finalGoal = finalGoal || savedSettings.goal;
         finalLength = finalLength || savedSettings.commentLength;

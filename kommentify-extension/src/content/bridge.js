@@ -17,14 +17,14 @@ window.addEventListener('message', (event) => {
             window.postMessage({
                 type: `COMMENTRON_STORAGE_RESULT_${requestId}`,
                 data: result ? result[key] : null
-            });
+            }, '*');
         });
     } else if (type === 'COMMENTRON_SET_STORAGE') {
         chrome.storage.local.set({ [key]: value }, () => {
             window.postMessage({
                 type: `COMMENTRON_STORAGE_RESULT_${requestId}`,
                 data: { success: true }
-            });
+            }, '*');
         });
     }
     // --- Runtime Message Handler (NEW) ---
@@ -41,7 +41,7 @@ window.addEventListener('message', (event) => {
                 window.postMessage({
                     type: `COMMENTRON_RUNTIME_RESULT_${requestId}`,
                     error: chrome.runtime.lastError.message
-                });
+                }, '*');
                 return;
             }
             
@@ -51,7 +51,7 @@ window.addEventListener('message', (event) => {
             window.postMessage({
                 type: `COMMENTRON_RUNTIME_RESULT_${requestId}`,
                 data: response
-            });
+            }, '*');
         });
     }
 });
@@ -65,13 +65,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         window.postMessage({
             type: `COMMENTRON_RUNTIME_RESULT_${message._bridgeRequestId}`,
             data: message.data
-        });
+        }, '*');
     }
     if (message.type === 'COMMENT_SETTINGS_RESULT' && message._bridgeRequestId) {
         console.log('BRIDGE FALLBACK: Received COMMENT_SETTINGS_RESULT for requestId:', message._bridgeRequestId);
         window.postMessage({
             type: `COMMENTRON_RUNTIME_RESULT_${message._bridgeRequestId}`,
             data: message.data
-        });
+        }, '*');
     }
 });

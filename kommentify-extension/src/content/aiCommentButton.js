@@ -23,11 +23,12 @@ class AICommentButtonManager {
     async sendMessageToBackground(action, payload) {
         return new Promise((resolve, reject) => {
             const requestId = `req_${Date.now()}_${Math.random()}`;
+            let settled = false;
             
-            // Listen for plain Event from bridge.
-            // Data is passed via hidden DOM elements (CustomEvent.detail does NOT cross worlds).
-            const listener = () => {
-                // Read all pending response elements from the DOM
+            // POLL for hidden DOM elements created by bridge.js (isolated world).
+            // DOM is shared between worlds — this is 100% reliable.
+            // No events, no postMessage responses, no CustomEvent — just DOM polling.
+            const poller = setInterval(() => {
                 const els = document.querySelectorAll('[data-commentron-response]');
                 for (const el of els) {
                     try {
@@ -35,10 +36,9 @@ class AICommentButtonManager {
                         if (!detail || detail.requestId !== requestId) {
                             continue;
                         }
-                        // This response is for us — remove the element and stop listening
                         el.remove();
-                        document.removeEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
-                        
+                        clearInterval(poller);
+                        settled = true;
                         if (detail.error) {
                             reject(new Error(detail.error));
                         } else {
@@ -46,12 +46,10 @@ class AICommentButtonManager {
                         }
                         return;
                     } catch (e) {
-                        el.remove(); // Remove malformed elements
+                        el.remove();
                     }
                 }
-            };
-            
-            document.addEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
+            }, 150);
             
             // Send request to bridge via window.postMessage (page→content-script direction works)
             window.postMessage({
@@ -62,8 +60,10 @@ class AICommentButtonManager {
             }, '*');
             
             setTimeout(() => {
-                document.removeEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
-                reject(new Error('Request timeout (90s)'));
+                if (!settled) {
+                    clearInterval(poller);
+                    reject(new Error('Request timeout (90s)'));
+                }
             }, 90000);
         });
     }

@@ -8,13 +8,16 @@
  * We pass data via hidden DOM elements (DOM is shared) + plain Event dispatch.
  */
 
-// Helper: send a response to the MAIN world via a hidden DOM element + plain Event
+// Helper: send a response to the MAIN world via a hidden DOM element.
+// The DOM is shared between isolated and MAIN worlds.
+// The MAIN world polls for these elements (no events needed — events don't cross worlds).
 function bridgeSendToMainWorld(payload) {
     const el = document.createElement('div');
     el.style.display = 'none';
+    el.className = '__commentron_bridge_msg';
     el.setAttribute('data-commentron-response', JSON.stringify(payload));
-    document.documentElement.appendChild(el);
-    document.dispatchEvent(new Event('COMMENTRON_BRIDGE_RESPONSE'));
+    (document.body || document.documentElement).appendChild(el);
+    console.log('BRIDGE: Dropped DOM response for requestId:', payload.requestId);
 }
 
 window.addEventListener('message', (event) => {

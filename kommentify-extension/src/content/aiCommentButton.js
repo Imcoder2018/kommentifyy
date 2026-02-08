@@ -49,8 +49,8 @@ class AICommentButtonManager {
             
             setTimeout(() => {
                 window.removeEventListener('message', listener);
-                reject(new Error('Request timeout'));
-            }, 30000);
+                reject(new Error('Request timeout (90s)'));
+            }, 90000);
         });
     }
 
@@ -419,8 +419,14 @@ class AICommentButtonManager {
      */
     extractPostData(post) {
         // Get author name
-        const authorElement = post.querySelector('.update-components-actor__name span, .feed-shared-actor__name span, .update-components-actor__title span');
-        const authorName = authorElement?.textContent?.trim() || 'Unknown Author';
+        const authorElement = post.querySelector('.update-components-actor__name span[aria-hidden="true"], .feed-shared-actor__name span[aria-hidden="true"], .update-components-actor__title span[aria-hidden="true"]') 
+            || post.querySelector('.update-components-actor__name .visually-hidden, .feed-shared-actor__name .visually-hidden');
+        let authorName = authorElement?.innerText?.trim() || authorElement?.textContent?.trim() || 'Unknown Author';
+        // Remove duplicated names (LinkedIn sometimes nests spans)
+        const half = Math.floor(authorName.length / 2);
+        if (authorName.length > 2 && authorName.length % 2 === 0 && authorName.substring(0, half) === authorName.substring(half)) {
+            authorName = authorName.substring(0, half);
+        }
         
         // Get post text
         const textElement = post.querySelector('.feed-shared-update-v2__description, .update-components-text, .feed-shared-text__text-view span');

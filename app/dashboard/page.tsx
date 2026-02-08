@@ -124,6 +124,7 @@ export default function DashboardPage() {
     const [commentStyleCommentsLoading, setCommentStyleCommentsLoading] = useState(false);
 
     // Comment settings state (synced to server)
+    const [csUseProfileStyle, setCsUseProfileStyle] = useState(false);
     const [csGoal, setCsGoal] = useState('AddValue');
     const [csTone, setCsTone] = useState('Friendly');
     const [csLength, setCsLength] = useState('Short');
@@ -570,6 +571,7 @@ export default function DashboardPage() {
             const res = await fetch('/api/comment-settings', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success && data.settings) {
+                setCsUseProfileStyle(data.settings.useProfileStyle === true);
                 setCsGoal(data.settings.goal || 'AddValue');
                 setCsTone(data.settings.tone || 'Friendly');
                 setCsLength(data.settings.commentLength || 'Short');
@@ -589,7 +591,7 @@ export default function DashboardPage() {
             const res = await fetch('/api/comment-settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }),
+                body: JSON.stringify({ useProfileStyle: csUseProfileStyle, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }),
             });
             const data = await res.json();
             if (data.success) showToast('Comment settings saved!', 'success');
@@ -1588,11 +1590,36 @@ export default function DashboardPage() {
                             {csSettingsLoading ? (
                                 <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading settings...</div>
                             ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                                <>
+                                {/* Use Profile Style Toggle */}
+                                <div style={{ background: csUseProfileStyle ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)', padding: '16px 20px', borderRadius: '14px', border: `1px solid ${csUseProfileStyle ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                    onClick={() => setCsUseProfileStyle(!csUseProfileStyle)}>
+                                    <div style={{ width: '48px', height: '26px', borderRadius: '13px', background: csUseProfileStyle ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
+                                        <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileStyle ? '24px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', marginBottom: '2px' }}>
+                                            🎨 Use Selected Profiles&apos; Comment Style
+                                        </div>
+                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                                            {csUseProfileStyle 
+                                                ? 'AI will learn ONLY from your selected profiles\' scraped comments (up to 20). Goal, Tone, Length, and Style settings below are disabled.'
+                                                : 'Turn ON to let AI mimic the commenting style of your selected profiles instead of using manual settings below.'}
+                                        </div>
+                                    </div>
+                                </div>
+                                {csUseProfileStyle && (
+                                    <div style={{ background: 'rgba(59,130,246,0.08)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(59,130,246,0.2)', marginBottom: '20px' }}>
+                                        <p style={{ color: '#60a5fa', fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
+                                            <strong>Profile Style Mode Active:</strong> AI will analyze up to 20 comments from your selected profiles below and generate comments that match their exact tone, structure, and personality. The Goal, Tone, Length, and Style settings are ignored in this mode.
+                                        </p>
+                                    </div>
+                                )}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', opacity: csUseProfileStyle ? 0.4 : 1, pointerEvents: csUseProfileStyle ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
                                     {/* Comment Goal */}
                                     <div>
                                         <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Goal</label>
-                                        <select value={csGoal} onChange={e => setCsGoal(e.target.value)}
+                                        <select value={csGoal} onChange={e => setCsGoal(e.target.value)} disabled={csUseProfileStyle}
                                             style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
                                             <option value="AddValue" style={{ background: '#1a1a3e' }}>Add Value - Pure contribution, helpful insight</option>
                                             <option value="ShareExperience" style={{ background: '#1a1a3e' }}>Share Experience - Personal story that adds perspective</option>
@@ -1606,7 +1633,7 @@ export default function DashboardPage() {
                                     {/* Tone */}
                                     <div>
                                         <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Tone of Voice</label>
-                                        <select value={csTone} onChange={e => setCsTone(e.target.value)}
+                                        <select value={csTone} onChange={e => setCsTone(e.target.value)} disabled={csUseProfileStyle}
                                             style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
                                             <option value="Professional" style={{ background: '#1a1a3e' }}>Professional - Polished, formal</option>
                                             <option value="Friendly" style={{ background: '#1a1a3e' }}>Friendly - Warm, conversational</option>
@@ -1620,7 +1647,7 @@ export default function DashboardPage() {
                                     {/* Comment Length */}
                                     <div>
                                         <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Length</label>
-                                        <select value={csLength} onChange={e => setCsLength(e.target.value)}
+                                        <select value={csLength} onChange={e => setCsLength(e.target.value)} disabled={csUseProfileStyle}
                                             style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
                                             <option value="Brief" style={{ background: '#1a1a3e' }}>Brief - 100 characters max</option>
                                             <option value="Short" style={{ background: '#1a1a3e' }}>Short - 300 characters max</option>
@@ -1632,7 +1659,7 @@ export default function DashboardPage() {
                                     {/* Comment Style */}
                                     <div>
                                         <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Style</label>
-                                        <select value={csStyle} onChange={e => setCsStyle(e.target.value)}
+                                        <select value={csStyle} onChange={e => setCsStyle(e.target.value)} disabled={csUseProfileStyle}
                                             style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
                                             <option value="direct" style={{ background: '#1a1a3e' }}>Direct & Concise - Single paragraph</option>
                                             <option value="structured" style={{ background: '#1a1a3e' }}>Structured - 2-3 short paragraphs</option>
@@ -1644,13 +1671,16 @@ export default function DashboardPage() {
                                         </select>
                                         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>How your comments are structured</p>
                                     </div>
+                                </div>
+                                {/* Expertise, Background, AI Behavior - always enabled */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginTop: '16px' }}>
                                     {/* Expertise */}
                                     <div>
                                         <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Your Expertise/Niche</label>
                                         <input value={csExpertise} onChange={e => setCsExpertise(e.target.value)}
                                             placeholder="e.g., SaaS Marketing, AI Development, Leadership Coach"
                                             style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Your role, industry, or what you're known for</p>
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Your role, industry, or what you&apos;re known for</p>
                                     </div>
                                     {/* Background */}
                                     <div>
@@ -1671,6 +1701,7 @@ export default function DashboardPage() {
                                         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Controls what happens when you click AI button on posts</p>
                                     </div>
                                 </div>
+                                </>
                             )}
                             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                                 <button onClick={saveCommentSettings} disabled={csSettingsSaving}

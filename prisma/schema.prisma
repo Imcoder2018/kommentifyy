@@ -375,6 +375,7 @@ model ScrapedComment {
 model CommentSettings {
   id              String   @id @default(cuid())
   userId          String   @unique
+  useProfileStyle Boolean  @default(false)
   goal            String   @default("AddValue")
   tone            String   @default("Friendly")
   commentLength   String   @default("Short")

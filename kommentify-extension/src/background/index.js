@@ -330,21 +330,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // Generate AI Comment for posts (from AI button in content script)
     if (request.action === "generateAIComment") {
+        const _bridgeRequestId = request._bridgeRequestId;
+        const _senderTabId = sender?.tab?.id;
         (async () => {
             try {
                 console.log('🤖 BACKGROUND: Generating AI comment from AI button...');
                 console.log('BACKGROUND: Author:', request.authorName);
                 console.log('BACKGROUND: Post text length:', request.postText?.length || 0);
+                console.log('BACKGROUND: bridgeRequestId:', _bridgeRequestId, 'senderTabId:', _senderTabId);
                 
                 // Check if AI comment feature is allowed in plan
                 const canUseAiComment = await featureChecker.checkFeature('autoComment');
                 if (!canUseAiComment) {
                     console.error("❌ BACKGROUND: AI comment feature not allowed in current plan");
-                    sendResponse({ 
+                    const errResp = { 
                         success: false, 
                         error: 'AI comment generation is not available in your plan. Please upgrade!',
                         requiresUpgrade: true
-                    });
+                    };
+                    sendResponse(errResp);
+                    if (_senderTabId && _bridgeRequestId) {
+                        try { chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: errResp }); } catch(e) {}
+                    }
                     return;
                 }
 
@@ -352,7 +359,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
                 const token = storage.authToken;
                 let apiUrl = storage.apiBaseUrl;
-                if (!apiUrl || apiUrl.includes('backend-buxx')) {
+                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
                 }
 
@@ -413,10 +420,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
                 }
                 
-                sendResponse({ success: true, comment: data.content });
+                const successResp = { success: true, comment: data.content };
+                sendResponse(successResp);
+                // FALLBACK: Also send via chrome.tabs.sendMessage (MV3 sendResponse can be unreliable)
+                if (_senderTabId && _bridgeRequestId) {
+                    try {
+                        chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: successResp });
+                        console.log('📨 BACKGROUND: Sent fallback tabs.sendMessage to tab', _senderTabId);
+                    } catch(e) { console.warn('BACKGROUND: Fallback tabs.sendMessage failed:', e); }
+                }
             } catch (error) {
                 console.error('❌ BACKGROUND: Error generating AI comment:', error);
-                sendResponse({ success: false, error: error.message });
+                const errResp = { success: false, error: error.message };
+                sendResponse(errResp);
+                if (_senderTabId && _bridgeRequestId) {
+                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: errResp }); } catch(e) {}
+                }
             }
         })();
         return true;
@@ -737,7 +756,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 console.log('💾 BACKGROUND: Saving scraped posts to database...');
                 const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 
                 if (!authToken) {
                     sendResponse({ success: false, error: 'Not authenticated' });
@@ -824,7 +843,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 // Cancel all pending commands via API
                 const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 if (authToken) {
                     await fetch(`${apiUrl}/api/extension/command/stop-all`, {
                         method: 'POST',
@@ -865,7 +884,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             globalThis._pollLockTimestamp = Date.now();
             try {
                 const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 
                 if (!authToken) {
                     globalThis._pollCommandsRunning = false;
@@ -1441,7 +1460,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         (async () => {
             try {
                 const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const apiUrl = apiBaseUrl || API_CONFIG.BASE_URL || 'https://kommentify.com';
+                const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 
                 if (!authToken) {
                     sendResponse({ success: false, error: 'Not authenticated' });
@@ -1468,6 +1487,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // Get Comment Settings (for AI button manual review check)
     if (request.action === "getCommentSettings") {
+        const _bridgeRequestId = request._bridgeRequestId;
+        const _senderTabId = sender?.tab?.id;
         (async () => {
             const defaults = {
                 goal: 'AddValue',
@@ -1476,14 +1497,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 commentStyle: 'direct',
                 userExpertise: '',
                 userBackground: '',
-                aiAutoPost: 'manual'
+                aiAutoPost: 'manual',
+                useProfileStyle: false
             };
             try {
                 // Try to fetch from website API first
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
                 const token = storage.authToken;
                 let apiUrl = storage.apiBaseUrl;
-                if (!apiUrl || apiUrl.includes('backend-buxx')) apiUrl = API_CONFIG.BASE_URL;
+                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) apiUrl = API_CONFIG.BASE_URL;
                 
                 if (token) {
                     try {
@@ -1500,11 +1522,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 userExpertise: data.settings.userExpertise || defaults.userExpertise,
                                 userBackground: data.settings.userBackground || defaults.userBackground,
                                 aiAutoPost: data.settings.aiAutoPost || defaults.aiAutoPost,
+                                useProfileStyle: data.settings.useProfileStyle === true,
                             };
                             // Cache in local storage
                             await chrome.storage.local.set({ commentSettings: serverSettings });
                             console.log('BACKGROUND: Loaded comment settings from server:', serverSettings);
                             sendResponse(serverSettings);
+                            // FALLBACK: Also send via chrome.tabs.sendMessage
+                            if (_senderTabId && _bridgeRequestId) {
+                                try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: serverSettings }); } catch(e) {}
+                            }
                             return;
                         }
                     } catch (fetchErr) {
@@ -1517,9 +1544,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const settings = result.commentSettings || defaults;
                 console.log('BACKGROUND: Returning local comment settings:', settings);
                 sendResponse(settings);
+                if (_senderTabId && _bridgeRequestId) {
+                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: settings }); } catch(e) {}
+                }
             } catch (error) {
                 console.error('BACKGROUND: Error getting comment settings:', error);
                 sendResponse(defaults);
+                if (_senderTabId && _bridgeRequestId) {
+                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: defaults }); } catch(e) {}
+                }
             }
         })();
         return true;
@@ -1640,7 +1673,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
                 const token = storage.authToken;
                 let apiUrl = storage.apiBaseUrl;
-                if (!apiUrl || apiUrl.includes('backend-buxx')) {
+                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
                 }
 
@@ -1908,7 +1941,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const token = storage.authToken;
                 // Force use of config URL if storage URL is suspicious, undefined, or localhost
                 let apiUrl = storage.apiBaseUrl;
-                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('localhost')) {
+                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj') || apiUrl.includes('localhost')) {
                     apiUrl = API_CONFIG.BASE_URL;
                 }
 
@@ -1987,7 +2020,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
                 const token = storage.authToken;
                 let apiUrl = storage.apiBaseUrl;
-                if (!apiUrl || apiUrl.includes('backend-buxx')) {
+                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
                 }
 
@@ -2557,7 +2590,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
                 const token = storage.authToken;
                 let apiUrl = storage.apiBaseUrl;
-                if (!apiUrl || apiUrl.includes('backend-buxx')) {
+                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
                 }
 

@@ -312,7 +312,9 @@ Post: ${postText}
         styleExamplesUsed: styleExamples.length,
         selectedProfiles: styleDebugInfo.selectedProfiles,
         topComments: styleDebugInfo.topComments,
-        settingsUsed: { tone: finalTone, goal: finalGoal, length: finalLength, style: finalStyle },
+        useProfileStyle,
+        mode: useProfileStyle && styleExamples.length > 0 ? 'PROFILE_STYLE' : 'NORMAL',
+        settingsUsed: useProfileStyle ? { mode: 'profile_style_only' } : { tone: finalTone, goal: finalGoal, length: finalLength, style: finalStyle },
       },
     });
   } catch (error: any) {

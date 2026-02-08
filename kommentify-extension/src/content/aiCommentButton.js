@@ -348,6 +348,20 @@ class AICommentButtonManager {
         const originalText = aiBtn.innerHTML;
         aiBtn.innerHTML = '⏳ Generating...';
         aiBtn.style.opacity = '0.7';
+        aiBtn.disabled = true;
+        aiBtn.style.pointerEvents = 'none';
+        
+        // Safety timeout: reset button after 95s no matter what
+        const safetyTimer = setTimeout(() => {
+            if (aiBtn.innerHTML === '⏳ Generating...') {
+                console.warn('[AI Comment] Safety timeout reached (95s), resetting button');
+                aiBtn.innerHTML = originalText;
+                aiBtn.style.opacity = '1';
+                aiBtn.disabled = false;
+                aiBtn.style.pointerEvents = 'auto';
+                this.isGenerating = false;
+            }
+        }, 95000);
         
         try {
             // Find the post container
@@ -395,9 +409,12 @@ class AICommentButtonManager {
                 } else {
                     aiBtn.innerHTML = '✅ Posted!';
                 }
+                clearTimeout(safetyTimer);
                 setTimeout(() => {
                     aiBtn.innerHTML = originalText;
                     aiBtn.style.opacity = '1';
+                    aiBtn.disabled = false;
+                    aiBtn.style.pointerEvents = 'auto';
                 }, 2000);
             } else {
                 throw new Error('No comment generated (null response)');
@@ -405,9 +422,12 @@ class AICommentButtonManager {
         } catch (error) {
             console.error('[AI Comment] Error:', error);
             aiBtn.innerHTML = '❌ Error';
+            clearTimeout(safetyTimer);
             setTimeout(() => {
                 aiBtn.innerHTML = originalText;
                 aiBtn.style.opacity = '1';
+                aiBtn.disabled = false;
+                aiBtn.style.pointerEvents = 'auto';
             }, 2000);
         } finally {
             this.isGenerating = false;

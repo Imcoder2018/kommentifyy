@@ -7,7 +7,7 @@
 const getApiBaseUrl = async () => {
     try {
         const { apiBaseUrl } = await chrome.storage.local.get('apiBaseUrl');
-        if (apiBaseUrl && !apiBaseUrl.includes('localhost')) {
+        if (apiBaseUrl && !apiBaseUrl.includes('localhost') && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) {
             return apiBaseUrl;
         }
     } catch (e) {}

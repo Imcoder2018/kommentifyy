@@ -30,7 +30,7 @@ export class FeatureChecker {
 
             const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'userData']);
             const token = storage.authToken;
-            const apiUrl = storage.apiBaseUrl || API_CONFIG.BASE_URL;
+            const apiUrl = (storage.apiBaseUrl && !storage.apiBaseUrl.includes('backend-buxx') && !storage.apiBaseUrl.includes('backend-api-orcin') && !storage.apiBaseUrl.includes('backend-4poj')) ? storage.apiBaseUrl : API_CONFIG.BASE_URL;
 
             if (!token) {
                 console.warn('FEATURES: No auth token found');

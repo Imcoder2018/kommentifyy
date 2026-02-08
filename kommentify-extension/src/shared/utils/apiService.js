@@ -315,6 +315,13 @@ export function updateApiBaseUrl(newUrl) {
 export async function loadApiBaseUrl() {
     const result = await chrome.storage.local.get('apiBaseUrl');
     if (result.apiBaseUrl) {
+        // Filter out old/stale backend URLs
+        if (result.apiBaseUrl.includes('backend-buxx') || result.apiBaseUrl.includes('backend-api-orcin') || result.apiBaseUrl.includes('backend-4poj')) {
+            console.log('API SERVICE: Ignoring stale apiBaseUrl:', result.apiBaseUrl);
+            // Clean it up in storage too
+            chrome.storage.local.set({ apiBaseUrl: API_CONFIG.baseUrl });
+            return;
+        }
         API_CONFIG.baseUrl = result.apiBaseUrl;
     }
 }

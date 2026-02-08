@@ -33,7 +33,7 @@ class BackgroundStatisticsManager {
         try {
             const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', this.statsKey]);
             const token = storage.authToken;
-            const apiUrl = storage.apiBaseUrl || API_CONFIG.BASE_URL;
+            const apiUrl = (storage.apiBaseUrl && !storage.apiBaseUrl.includes('backend-buxx') && !storage.apiBaseUrl.includes('backend-api-orcin') && !storage.apiBaseUrl.includes('backend-4poj')) ? storage.apiBaseUrl : API_CONFIG.BASE_URL;
             const localStats = storage[this.statsKey];
             
             if (!token || !localStats || !localStats.dailyStats) {
@@ -178,7 +178,7 @@ class BackgroundStatisticsManager {
         try {
             const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
             const token = storage.authToken;
-            const apiUrl = storage.apiBaseUrl || API_CONFIG.BASE_URL;
+            const apiUrl = (storage.apiBaseUrl && !storage.apiBaseUrl.includes('backend-buxx') && !storage.apiBaseUrl.includes('backend-api-orcin') && !storage.apiBaseUrl.includes('backend-4poj')) ? storage.apiBaseUrl : API_CONFIG.BASE_URL;
 
             if (!token) {
                 console.warn('STATS: No auth token, skipping backend tracking');

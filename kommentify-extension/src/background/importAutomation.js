@@ -909,7 +909,7 @@ class ImportAutomation {
             // Get auth token and comment settings for AI generation
             const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
             const authToken = storage.authToken;
-            const apiBaseUrl = storage.apiBaseUrl || 'https://kommentify.com';
+            const apiBaseUrl = (storage.apiBaseUrl && !storage.apiBaseUrl.includes('backend-buxx') && !storage.apiBaseUrl.includes('backend-api-orcin') && !storage.apiBaseUrl.includes('backend-4poj')) ? storage.apiBaseUrl : 'https://kommentify.com';
             const commentSettings = storage.commentSettings || {
                 goal: 'AddValue',
                 tone: 'Friendly',

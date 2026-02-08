@@ -24,19 +24,30 @@ class AICommentButtonManager {
         return new Promise((resolve, reject) => {
             const requestId = `req_${Date.now()}_${Math.random()}`;
             
-            // Listen for CustomEvent from bridge (reliably crosses content-script/MAIN world boundary)
-            const listener = (event) => {
-                const detail = event.detail;
-                if (!detail || detail.requestId !== requestId) {
-                    return;
-                }
-                
-                document.removeEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
-                
-                if (detail.error) {
-                    reject(new Error(detail.error));
-                } else {
-                    resolve(detail.data);
+            // Listen for plain Event from bridge.
+            // Data is passed via hidden DOM elements (CustomEvent.detail does NOT cross worlds).
+            const listener = () => {
+                // Read all pending response elements from the DOM
+                const els = document.querySelectorAll('[data-commentron-response]');
+                for (const el of els) {
+                    try {
+                        const detail = JSON.parse(el.getAttribute('data-commentron-response'));
+                        if (!detail || detail.requestId !== requestId) {
+                            continue;
+                        }
+                        // This response is for us — remove the element and stop listening
+                        el.remove();
+                        document.removeEventListener('COMMENTRON_BRIDGE_RESPONSE', listener);
+                        
+                        if (detail.error) {
+                            reject(new Error(detail.error));
+                        } else {
+                            resolve(detail.data);
+                        }
+                        return;
+                    } catch (e) {
+                        el.remove(); // Remove malformed elements
+                    }
                 }
             };
             
@@ -445,8 +456,10 @@ class AICommentButtonManager {
         const authorElement = post.querySelector('.update-components-actor__name span[aria-hidden="true"], .feed-shared-actor__name span[aria-hidden="true"], .update-components-actor__title span[aria-hidden="true"]') 
             || post.querySelector('.update-components-actor__name .visually-hidden, .feed-shared-actor__name .visually-hidden');
         let authorName = authorElement?.innerText?.trim() || authorElement?.textContent?.trim() || 'Unknown Author';
-        // Remove duplicated names (LinkedIn nests spans causing "Name Name" or "Name\nName")
-        // Normalize whitespace first
+        // Remove duplicated names (LinkedIn nests spans causing "Name Name", "NameName", "Name\nName")
+        // First: regex catch-all for exact repeats (with or without whitespace separator)
+        authorName = authorName.replace(/^(.{2,})\s*\1$/, '$1').trim();
+        // Normalize whitespace
         authorName = authorName.replace(/\s+/g, ' ').trim();
         const half = Math.floor(authorName.length / 2);
         if (authorName.length > 2 && authorName.length % 2 === 0 && authorName.substring(0, half) === authorName.substring(half)) {

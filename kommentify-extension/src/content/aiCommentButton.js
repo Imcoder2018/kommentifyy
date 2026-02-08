@@ -445,10 +445,21 @@ class AICommentButtonManager {
         const authorElement = post.querySelector('.update-components-actor__name span[aria-hidden="true"], .feed-shared-actor__name span[aria-hidden="true"], .update-components-actor__title span[aria-hidden="true"]') 
             || post.querySelector('.update-components-actor__name .visually-hidden, .feed-shared-actor__name .visually-hidden');
         let authorName = authorElement?.innerText?.trim() || authorElement?.textContent?.trim() || 'Unknown Author';
-        // Remove duplicated names (LinkedIn sometimes nests spans)
+        // Remove duplicated names (LinkedIn nests spans causing "Name Name" or "Name\nName")
+        // Normalize whitespace first
+        authorName = authorName.replace(/\s+/g, ' ').trim();
         const half = Math.floor(authorName.length / 2);
         if (authorName.length > 2 && authorName.length % 2 === 0 && authorName.substring(0, half) === authorName.substring(half)) {
-            authorName = authorName.substring(0, half);
+            authorName = authorName.substring(0, half).trim();
+        }
+        // Also handle "Name Name" with a space separator between duplicates
+        const words = authorName.split(' ');
+        if (words.length >= 2 && words.length % 2 === 0) {
+            const firstHalf = words.slice(0, words.length / 2).join(' ');
+            const secondHalf = words.slice(words.length / 2).join(' ');
+            if (firstHalf === secondHalf) {
+                authorName = firstHalf;
+            }
         }
         
         // Get post text

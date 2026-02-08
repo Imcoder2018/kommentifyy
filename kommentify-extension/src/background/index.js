@@ -400,6 +400,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
 
                 console.log('✅ BACKGROUND: Generated comment:', data.content);
+                if (data.debug) {
+                    console.log('🎨 BACKGROUND: Style debug info:', JSON.stringify(data.debug));
+                }
                 
                 // Track AI comment generation
                 if (data.content) {
@@ -1466,26 +1469,57 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Get Comment Settings (for AI button manual review check)
     if (request.action === "getCommentSettings") {
         (async () => {
+            const defaults = {
+                goal: 'AddValue',
+                tone: 'Friendly',
+                commentLength: 'Short',
+                commentStyle: 'direct',
+                userExpertise: '',
+                userBackground: '',
+                aiAutoPost: 'manual'
+            };
             try {
+                // Try to fetch from website API first
+                const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const token = storage.authToken;
+                let apiUrl = storage.apiBaseUrl;
+                if (!apiUrl || apiUrl.includes('backend-buxx')) apiUrl = API_CONFIG.BASE_URL;
+                
+                if (token) {
+                    try {
+                        const res = await fetch(`${apiUrl}/api/comment-settings`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const data = await res.json();
+                        if (data.success && data.settings) {
+                            const serverSettings = {
+                                goal: data.settings.goal || defaults.goal,
+                                tone: data.settings.tone || defaults.tone,
+                                commentLength: data.settings.commentLength || defaults.commentLength,
+                                commentStyle: data.settings.commentStyle || defaults.commentStyle,
+                                userExpertise: data.settings.userExpertise || defaults.userExpertise,
+                                userBackground: data.settings.userBackground || defaults.userBackground,
+                                aiAutoPost: data.settings.aiAutoPost || defaults.aiAutoPost,
+                            };
+                            // Cache in local storage
+                            await chrome.storage.local.set({ commentSettings: serverSettings });
+                            console.log('BACKGROUND: Loaded comment settings from server:', serverSettings);
+                            sendResponse(serverSettings);
+                            return;
+                        }
+                    } catch (fetchErr) {
+                        console.warn('BACKGROUND: Could not fetch server settings, using local:', fetchErr.message);
+                    }
+                }
+                
+                // Fallback to local storage
                 const result = await chrome.storage.local.get('commentSettings');
-                const settings = result.commentSettings || {
-                    goal: 'AddValue',
-                    tone: 'Friendly',
-                    commentLength: 'Short',
-                    userExpertise: '',
-                    userBackground: '',
-                    aiAutoPost: 'manual'  // Default to manual review
-                };
-                console.log('BACKGROUND: Returning comment settings:', settings);
+                const settings = result.commentSettings || defaults;
+                console.log('BACKGROUND: Returning local comment settings:', settings);
                 sendResponse(settings);
             } catch (error) {
                 console.error('BACKGROUND: Error getting comment settings:', error);
-                sendResponse({
-                    goal: 'AddValue',
-                    tone: 'Friendly',
-                    commentLength: 'Short',
-                    aiAutoPost: 'manual'
-                });
+                sendResponse(defaults);
             }
         })();
         return true;

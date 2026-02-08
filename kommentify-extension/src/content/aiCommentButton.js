@@ -366,23 +366,32 @@ class AICommentButtonManager {
             
             // Get user settings
             const settings = await this.getUserSettings();
+            console.log('[AI Comment] Got settings:', settings);
             
             // Generate AI comment
+            console.log('[AI Comment] Calling generateComment...');
             const comment = await this.generateComment(postData, settings);
+            console.log('[AI Comment] Got comment response:', comment ? comment.substring(0, 80) + '...' : 'NULL');
             
             if (comment) {
                 // Click the comment button to open comment box
+                console.log('[AI Comment] Clicking comment button to open input...');
                 commentBtn.click();
                 
                 // Wait for comment box to appear
-                await this.waitForElement('.ql-editor, .comments-comment-box__form-container textarea, [contenteditable="true"]', post.parentElement || document.body);
+                try {
+                    await this.waitForElement('.ql-editor, .comments-comment-box__form-container textarea, [contenteditable="true"]', post.parentElement || document.body, 8000);
+                    console.log('[AI Comment] Comment box appeared');
+                } catch (waitErr) {
+                    console.warn('[AI Comment] waitForElement timed out, trying to fill anyway:', waitErr.message);
+                }
                 
                 // Find and fill the comment input (pass settings for auto-post check)
                 await this.fillCommentInput(comment, post, settings);
                 
                 // Show appropriate message based on auto-post setting
                 if (settings.aiAutoPost === 'manual') {
-                    aiBtn.innerHTML = '✅ Ready!';  // Indicates comment is ready for review
+                    aiBtn.innerHTML = '✅ Ready!';
                 } else {
                     aiBtn.innerHTML = '✅ Posted!';
                 }
@@ -390,6 +399,8 @@ class AICommentButtonManager {
                     aiBtn.innerHTML = originalText;
                     aiBtn.style.opacity = '1';
                 }, 2000);
+            } else {
+                throw new Error('No comment generated (null response)');
             }
         } catch (error) {
             console.error('[AI Comment] Error:', error);
@@ -454,6 +465,7 @@ class AICommentButtonManager {
      */
     async generateComment(postData, settings) {
         try {
+            console.log('[AI Comment] Sending generateAIComment to background...');
             const response = await this.sendMessageToBackground('generateAIComment', {
                 authorName: postData.authorName,
                 postText: postData.postText,
@@ -463,10 +475,18 @@ class AICommentButtonManager {
                 expertise: settings.expertise
             });
             
-            return response?.comment || null;
+            console.log('[AI Comment] Background response:', JSON.stringify(response).substring(0, 200));
+            
+            if (response?.comment) {
+                return response.comment;
+            }
+            if (response?.content) {
+                return response.content;
+            }
+            console.warn('[AI Comment] No comment in response, keys:', Object.keys(response || {}));
+            return null;
         } catch (error) {
             console.error('[AI Comment] Failed to generate comment:', error);
-            // Fallback: Generate a simple comment
             return this.generateFallbackComment(postData, settings);
         }
     }

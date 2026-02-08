@@ -370,3 +370,20 @@ model ScrapedComment {
   @@index([profileId])
   @@index([isTopComment])
 }
+
+// User comment settings (synced between website and extension)
+model CommentSettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  goal            String   @default("AddValue")
+  tone            String   @default("Friendly")
+  commentLength   String   @default("Short")
+  commentStyle    String   @default("direct")
+  userExpertise   String   @default("")
+  userBackground  String   @default("")
+  aiAutoPost      String   @default("manual")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}

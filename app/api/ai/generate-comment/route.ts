@@ -108,52 +108,93 @@ export async function POST(request: NextRequest) {
     console.log('Calling OpenAI API for comment generation...');
     console.log('Parameters:', { tone, goal, commentLength, commentStyle, userExpertise, authorName });
     
+    // Fetch user's saved comment settings from DB if not provided in request
+    let finalTone = tone;
+    let finalGoal = goal;
+    let finalLength = commentLength;
+    let finalStyle = commentStyle;
+    let finalExpertise = userExpertise;
+    let finalBackground = userBackground;
+    try {
+      const savedSettings = await (prisma as any).commentSettings.findUnique({
+        where: { userId: user.id },
+      });
+      if (savedSettings) {
+        finalTone = finalTone || savedSettings.tone;
+        finalGoal = finalGoal || savedSettings.goal;
+        finalLength = finalLength || savedSettings.commentLength;
+        finalStyle = finalStyle || savedSettings.commentStyle;
+        finalExpertise = finalExpertise || savedSettings.userExpertise;
+        finalBackground = finalBackground || savedSettings.userBackground;
+        console.log('📋 Using saved comment settings from DB:', { tone: finalTone, goal: finalGoal, length: finalLength, style: finalStyle });
+      }
+    } catch (settingsErr) {
+      console.error('Error loading saved comment settings:', settingsErr);
+    }
+    
     // Fetch comment style examples from selected profiles
     let styleExamples: string[] = [];
+    let styleDebugInfo = { selectedProfiles: 0, topComments: 0, totalExamples: 0 };
     try {
-      const selectedProfiles = await prisma.commentStyleProfile.findMany({
+      const selectedProfiles = await (prisma as any).commentStyleProfile.findMany({
         where: { userId: user.id, isSelected: true },
-        select: { id: true },
+        select: { id: true, profileName: true },
       });
+      styleDebugInfo.selectedProfiles = selectedProfiles.length;
+      console.log(`🎨 STYLE: Found ${selectedProfiles.length} selected profiles for AI training`);
+      
       if (selectedProfiles.length > 0) {
-        // First try top-starred comments, fall back to all comments
-        let comments = await prisma.scrapedComment.findMany({
+        const profileIds = selectedProfiles.map((p: any) => p.id);
+        
+        // First try top-starred comments
+        let comments = await (prisma as any).scrapedComment.findMany({
           where: { 
-            profileId: { in: selectedProfiles.map(p => p.id) },
+            profileId: { in: profileIds },
             isTopComment: true,
           },
           select: { commentText: true },
           take: 10,
           orderBy: { createdAt: 'desc' },
         });
+        styleDebugInfo.topComments = comments.length;
+        console.log(`🎨 STYLE: Found ${comments.length} top-starred comments`);
+        
         // If no top comments, use recent ones
         if (comments.length === 0) {
-          comments = await prisma.scrapedComment.findMany({
-            where: { profileId: { in: selectedProfiles.map(p => p.id) } },
+          comments = await (prisma as any).scrapedComment.findMany({
+            where: { profileId: { in: profileIds } },
             select: { commentText: true },
             take: 10,
             orderBy: { createdAt: 'desc' },
           });
+          console.log(`🎨 STYLE: Falling back to ${comments.length} recent comments`);
         }
+        
         styleExamples = comments.map((c: any) => c.commentText).filter((t: string) => t.length > 10);
-        console.log(`Found ${styleExamples.length} style examples from ${selectedProfiles.length} selected profiles`);
+        styleDebugInfo.totalExamples = styleExamples.length;
+        console.log(`🎨 STYLE: Using ${styleExamples.length} style examples for prompt injection`);
+        if (styleExamples.length > 0) {
+          console.log(`🎨 STYLE: First example preview: "${styleExamples[0].substring(0, 80)}..."`);
+        }
       }
     } catch (styleError) {
-      console.error('Error fetching style examples:', styleError);
+      console.error('🎨 STYLE ERROR:', styleError);
     }
 
     // Generate prompt using enhanced world-class logic
     const prompt = generateCommentPrompt(
       postText, 
-      tone || 'Professional', 
-      goal || 'AddValue',
-      commentLength || 'Short',
-      userExpertise || '',
-      userBackground || '',
+      finalTone || 'Professional', 
+      finalGoal || 'AddValue',
+      finalLength || 'Short',
+      finalExpertise || '',
+      finalBackground || '',
       authorName || 'there',
-      commentStyle || 'direct',
+      finalStyle || 'direct',
       styleExamples
     );
+    
+    console.log(`📝 PROMPT: Total length: ${prompt.length} chars, style examples injected: ${styleExamples.length > 0 ? 'YES' : 'NO'}`);
 
     // Use premium model for best quality comments
     const model = 'gpt-4o';
@@ -228,6 +269,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       content,
+      debug: {
+        styleExamplesUsed: styleExamples.length,
+        selectedProfiles: styleDebugInfo.selectedProfiles,
+        topComments: styleDebugInfo.topComments,
+        settingsUsed: { tone: finalTone, goal: finalGoal, length: finalLength, style: finalStyle },
+      },
     });
   } catch (error: any) {
     console.error('Generate comment error:', error);

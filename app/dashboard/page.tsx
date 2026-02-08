@@ -123,6 +123,17 @@ export default function DashboardPage() {
     const [commentStyleComments, setCommentStyleComments] = useState<any[]>([]);
     const [commentStyleCommentsLoading, setCommentStyleCommentsLoading] = useState(false);
 
+    // Comment settings state (synced to server)
+    const [csGoal, setCsGoal] = useState('AddValue');
+    const [csTone, setCsTone] = useState('Friendly');
+    const [csLength, setCsLength] = useState('Short');
+    const [csStyle, setCsStyle] = useState('direct');
+    const [csExpertise, setCsExpertise] = useState('');
+    const [csBackground, setCsBackground] = useState('');
+    const [csAutoPost, setCsAutoPost] = useState('manual');
+    const [csSettingsLoading, setCsSettingsLoading] = useState(false);
+    const [csSettingsSaving, setCsSettingsSaving] = useState(false);
+
     useEffect(() => {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -551,6 +562,42 @@ export default function DashboardPage() {
         } catch {}
     };
 
+    const loadCommentSettings = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setCsSettingsLoading(true);
+        try {
+            const res = await fetch('/api/comment-settings', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success && data.settings) {
+                setCsGoal(data.settings.goal || 'AddValue');
+                setCsTone(data.settings.tone || 'Friendly');
+                setCsLength(data.settings.commentLength || 'Short');
+                setCsStyle(data.settings.commentStyle || 'direct');
+                setCsExpertise(data.settings.userExpertise || '');
+                setCsBackground(data.settings.userBackground || '');
+                setCsAutoPost(data.settings.aiAutoPost || 'manual');
+            }
+        } catch {} finally { setCsSettingsLoading(false); }
+    };
+
+    const saveCommentSettings = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setCsSettingsSaving(true);
+        try {
+            const res = await fetch('/api/comment-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }),
+            });
+            const data = await res.json();
+            if (data.success) showToast('Comment settings saved!', 'success');
+            else showToast('Failed to save settings', 'error');
+        } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+        finally { setCsSettingsSaving(false); }
+    };
+
     // Tasks functions
     const loadTasks = async () => {
         const token = localStorage.getItem('authToken');
@@ -732,7 +779,8 @@ export default function DashboardPage() {
     // Load data when tabs become active
     const handleTabChange = (tabId: string) => {
         setActiveTab(tabId);
-        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadCommentStyleProfiles(); }
+        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); }
+        if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); }
         if (tabId === 'trending-posts') loadSavedPosts();
         if (tabId === 'tasks') loadTasks();
         if (tabId === 'feed-schedule') loadFeedSchedule();
@@ -765,6 +813,7 @@ export default function DashboardPage() {
     const navItems = [
         { id: 'overview', label: 'Overview', icon: '🏠' },
         { id: 'writer', label: 'Post Writer', icon: '✍️' },
+        { id: 'comments', label: 'Comments', icon: '💬' },
         { id: 'trending-posts', label: 'Trending Posts', icon: '🔥' },
         { id: 'tasks', label: 'Tasks', icon: '📋' },
         { id: 'history', label: 'History', icon: '📜' },
@@ -1522,123 +1571,232 @@ export default function DashboardPage() {
                             </div>
                         )}
                     </div>
-                    {/* Comment Style Sources Section */}
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>💬</span> Comment Style Sources
-                            </h3>
-                            <button onClick={loadCommentStyleProfiles}
-                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
-                                🔄 Refresh
-                            </button>
-                        </div>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px' }}>
-                            Add LinkedIn profiles to learn from their commenting style. The extension will scrape their comments and AI will mimic their tone.
-                        </p>
-                        {/* Add Profile Input */}
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <div style={{ flex: 1, minWidth: '250px' }}>
-                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px' }}>🔗 LinkedIn Profile URL</label>
-                                <input value={commentStyleUrl} onChange={e => setCommentStyleUrl(e.target.value)}
-                                    placeholder="https://linkedin.com/in/username"
-                                    style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                            </div>
-                            <button onClick={scrapeCommentStyle} disabled={commentStyleScraping}
-                                style={{ padding: '10px 20px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: commentStyleScraping ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)', marginTop: '18px', opacity: commentStyleScraping ? 0.7 : 1, transition: 'all 0.2s' }}>
-                                {commentStyleScraping ? '⏳ Sending...' : '💬 Scrape Comments'}
-                            </button>
-                        </div>
-                        {commentStyleStatus && (
-                            <div style={{ marginBottom: '16px', padding: '10px 16px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)', border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`, borderRadius: '10px', color: commentStyleStatus.includes('Error') ? '#f87171' : '#60a5fa', fontSize: '13px' }}>
-                                {commentStyleStatus}
-                            </div>
-                        )}
-                        {/* Saved Profiles */}
-                        <h4 style={{ color: 'white', fontSize: '15px', fontWeight: '700', marginBottom: '14px' }}>👤 Saved Comment Style Profiles</h4>
-                        {commentStyleLoading ? (
-                            <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading profiles...</div>
-                        ) : commentStyleProfiles.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '30px 0' }}>
-                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>No comment style profiles yet. Add a LinkedIn profile above to get started.</p>
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {commentStyleProfiles.map((profile: any) => (
-                                    <div key={profile.id}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: profile.isSelected ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.05)', padding: '14px 18px', borderRadius: '12px', border: `1px solid ${profile.isSelected ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
-                                            <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>💬</div>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{profile.profileName || profile.profileId}</div>
-                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{profile._count?.comments || profile.commentCount} comments scraped{profile.lastScrapedAt ? ` · Last: ${new Date(profile.lastScrapedAt).toLocaleDateString()}` : ''}</div>
-                                            </div>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
-                                                <input type="checkbox" checked={profile.isSelected} onChange={() => toggleProfileSelect(profile.id)}
-                                                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
-                                                AI Train
-                                            </label>
-                                            <button onClick={() => { if (commentStyleExpanded === profile.id) { setCommentStyleExpanded(null); setCommentStyleComments([]); } else { setCommentStyleExpanded(profile.id); loadProfileComments(profile.id); } }}
-                                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
-                                                {commentStyleExpanded === profile.id ? '▲ Hide' : '▼ View'}
-                                            </button>
-                                            <button onClick={() => deleteCommentStyleProfile(profile.id)}
-                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}>
-                                                🗑️
-                                            </button>
-                                        </div>
-                                        {/* Expanded comments list */}
-                                        {commentStyleExpanded === profile.id && (
-                                            <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '0 0 12px 12px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', maxHeight: '500px', overflowY: 'auto' }}>
-                                                {commentStyleCommentsLoading ? (
-                                                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading comments...</div>
-                                                ) : commentStyleComments.length === 0 ? (
-                                                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>No comments found. Try scraping again.</div>
-                                                ) : (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{commentStyleComments.length} comments · {commentStyleComments.filter((c: any) => c.isTopComment).length} marked as top</span>
-                                                        </div>
-                                                        {commentStyleComments.map((comment: any) => (
-                                                            <div key={comment.id} style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                                                                    <div style={{ flex: 1 }}>
-                                                                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '4px' }}>
-                                                                            {comment.context === 'DIRECT COMMENT ON POST' ? '💬 Direct comment' : `↩️ ${comment.context.substring(0, 80)}...`}
-                                                                        </div>
-                                                                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginBottom: '6px', fontStyle: 'italic' }}>
-                                                                            On: {(comment.postText || '').substring(0, 100)}...
-                                                                        </div>
-                                                                        <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.5', maxHeight: '80px', overflowY: 'auto', paddingRight: '4px' }}>
-                                                                            {comment.commentText}
-                                                                        </div>
-                                                                    </div>
-                                                                    <button onClick={() => toggleCommentTop(comment.id)}
-                                                                        title={comment.isTopComment ? 'Remove from top comments' : 'Mark as top comment for AI training'}
-                                                                        style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '8px', padding: '4px 10px', fontSize: '14px', cursor: 'pointer', flexShrink: 0, color: comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.5)' }}>
-                                                                        {comment.isTopComment ? '⭐' : '☆'}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {/* AI Training Info */}
-                        {commentStyleProfiles.some((p: any) => p.isSelected) && (
-                            <div style={{ background: 'rgba(59,130,246,0.1)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', marginTop: '16px' }}>
-                                <h4 style={{ color: '#60a5fa', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>🎯 AI Comment Style Training Active</h4>
-                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: 0 }}>
-                                    AI will use {commentStyleProfiles.filter((p: any) => p.isSelected).length} selected profile(s) with their top-starred comments to match their commenting style when generating comments (both manual and auto-commenting).
-                                </p>
-                            </div>
-                        )}
-                    </div>
                     </>
+                )}
+
+                {/* Comments Tab */}
+                {activeTab === 'comments' && (
+                    <div>
+                        {/* Comment Settings Section */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
+                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>⚙️</span> Comment Settings
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '20px' }}>
+                                These settings control how AI generates comments - both from the manual AI button on LinkedIn posts and auto-commenting.
+                            </p>
+                            {csSettingsLoading ? (
+                                <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading settings...</div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                                    {/* Comment Goal */}
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Goal</label>
+                                        <select value={csGoal} onChange={e => setCsGoal(e.target.value)}
+                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
+                                            <option value="AddValue" style={{ background: '#1a1a3e' }}>Add Value - Pure contribution, helpful insight</option>
+                                            <option value="ShareExperience" style={{ background: '#1a1a3e' }}>Share Experience - Personal story that adds perspective</option>
+                                            <option value="AskQuestion" style={{ background: '#1a1a3e' }}>Ask Question - Deepen discussion with curiosity</option>
+                                            <option value="DifferentPerspective" style={{ background: '#1a1a3e' }}>Different Perspective - Respectfully challenge</option>
+                                            <option value="BuildRelationship" style={{ background: '#1a1a3e' }}>Build Relationship - Warm, supportive engagement</option>
+                                            <option value="SubtlePitch" style={{ background: '#1a1a3e' }}>Subtle Pitch - Strategic positioning with soft CTA</option>
+                                        </select>
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>What you want to achieve with this comment</p>
+                                    </div>
+                                    {/* Tone */}
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Tone of Voice</label>
+                                        <select value={csTone} onChange={e => setCsTone(e.target.value)}
+                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
+                                            <option value="Professional" style={{ background: '#1a1a3e' }}>Professional - Polished, formal</option>
+                                            <option value="Friendly" style={{ background: '#1a1a3e' }}>Friendly - Warm, conversational</option>
+                                            <option value="ThoughtProvoking" style={{ background: '#1a1a3e' }}>Thought Provoking - Makes people think deeper</option>
+                                            <option value="Supportive" style={{ background: '#1a1a3e' }}>Supportive - Encouraging, validating</option>
+                                            <option value="Contrarian" style={{ background: '#1a1a3e' }}>Contrarian - Respectfully challenges</option>
+                                            <option value="Humorous" style={{ background: '#1a1a3e' }}>Humorous - Light, witty, entertaining</option>
+                                        </select>
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Controls AI comment personality and style</p>
+                                    </div>
+                                    {/* Comment Length */}
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Length</label>
+                                        <select value={csLength} onChange={e => setCsLength(e.target.value)}
+                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
+                                            <option value="Brief" style={{ background: '#1a1a3e' }}>Brief - 100 characters max</option>
+                                            <option value="Short" style={{ background: '#1a1a3e' }}>Short - 300 characters max</option>
+                                            <option value="Mid" style={{ background: '#1a1a3e' }}>Mid - 600 characters max</option>
+                                            <option value="Long" style={{ background: '#1a1a3e' }}>Long - 900 characters max</option>
+                                        </select>
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Maximum length of generated comments</p>
+                                    </div>
+                                    {/* Comment Style */}
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Style</label>
+                                        <select value={csStyle} onChange={e => setCsStyle(e.target.value)}
+                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
+                                            <option value="direct" style={{ background: '#1a1a3e' }}>Direct & Concise - Single paragraph</option>
+                                            <option value="structured" style={{ background: '#1a1a3e' }}>Structured - 2-3 short paragraphs</option>
+                                            <option value="storyteller" style={{ background: '#1a1a3e' }}>Storyteller - Personal anecdote lead</option>
+                                            <option value="challenger" style={{ background: '#1a1a3e' }}>Challenger - Different perspective</option>
+                                            <option value="supporter" style={{ background: '#1a1a3e' }}>Supporter - Validate with evidence</option>
+                                            <option value="expert" style={{ background: '#1a1a3e' }}>Expert - Data/experience references</option>
+                                            <option value="conversational" style={{ background: '#1a1a3e' }}>Conversational - Casual, colleague-like</option>
+                                        </select>
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>How your comments are structured</p>
+                                    </div>
+                                    {/* Expertise */}
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Your Expertise/Niche</label>
+                                        <input value={csExpertise} onChange={e => setCsExpertise(e.target.value)}
+                                            placeholder="e.g., SaaS Marketing, AI Development, Leadership Coach"
+                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Your role, industry, or what you're known for</p>
+                                    </div>
+                                    {/* Background */}
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Your Background (Optional)</label>
+                                        <input value={csBackground} onChange={e => setCsBackground(e.target.value)}
+                                            placeholder="e.g., Scaled 3 startups, 15 years in B2B sales"
+                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Experience, credentials, or results that add authority</p>
+                                    </div>
+                                    {/* AI Button Behavior */}
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>AI Button Behavior</label>
+                                        <select value={csAutoPost} onChange={e => setCsAutoPost(e.target.value)}
+                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
+                                            <option value="manual" style={{ background: '#1a1a3e' }}>Manual Review - Generate, paste, wait for me to post</option>
+                                            <option value="auto" style={{ background: '#1a1a3e' }}>Auto Post - Generate and submit automatically</option>
+                                        </select>
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Controls what happens when you click AI button on posts</p>
+                                    </div>
+                                </div>
+                            )}
+                            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button onClick={saveCommentSettings} disabled={csSettingsSaving}
+                                    style={{ padding: '12px 28px', background: csSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: csSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)', opacity: csSettingsSaving ? 0.7 : 1, transition: 'all 0.2s' }}>
+                                    {csSettingsSaving ? '⏳ Saving...' : '💾 Save Settings'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Comment Style Sources Section */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span>🎨</span> Comment Style Sources
+                                </h3>
+                                <button onClick={loadCommentStyleProfiles}
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px' }}>
+                                Add LinkedIn profiles to learn from their commenting style. The extension will scrape their comments and AI will mimic their tone.
+                            </p>
+                            {/* Add Profile Input */}
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <div style={{ flex: 1, minWidth: '250px' }}>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px' }}>🔗 LinkedIn Profile URL</label>
+                                    <input value={commentStyleUrl} onChange={e => setCommentStyleUrl(e.target.value)}
+                                        placeholder="https://linkedin.com/in/username"
+                                        style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                                </div>
+                                <button onClick={scrapeCommentStyle} disabled={commentStyleScraping}
+                                    style={{ padding: '10px 20px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: commentStyleScraping ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)', marginTop: '18px', opacity: commentStyleScraping ? 0.7 : 1, transition: 'all 0.2s' }}>
+                                    {commentStyleScraping ? '⏳ Sending...' : '💬 Scrape Comments'}
+                                </button>
+                            </div>
+                            {commentStyleStatus && (
+                                <div style={{ marginBottom: '16px', padding: '10px 16px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)', border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`, borderRadius: '10px', color: commentStyleStatus.includes('Error') ? '#f87171' : '#60a5fa', fontSize: '13px' }}>
+                                    {commentStyleStatus}
+                                </div>
+                            )}
+                            {/* Saved Profiles */}
+                            <h4 style={{ color: 'white', fontSize: '15px', fontWeight: '700', marginBottom: '14px' }}>👤 Saved Comment Style Profiles</h4>
+                            {commentStyleLoading ? (
+                                <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading profiles...</div>
+                            ) : commentStyleProfiles.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>No comment style profiles yet. Add a LinkedIn profile above to get started.</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {commentStyleProfiles.map((profile: any) => (
+                                        <div key={profile.id}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: profile.isSelected ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.05)', padding: '14px 18px', borderRadius: '12px', border: `1px solid ${profile.isSelected ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
+                                                <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>💬</div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{profile.profileName || profile.profileId}</div>
+                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{profile._count?.comments || profile.commentCount} comments scraped{profile.lastScrapedAt ? ` · Last: ${new Date(profile.lastScrapedAt).toLocaleDateString()}` : ''}</div>
+                                                </div>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+                                                    <input type="checkbox" checked={profile.isSelected} onChange={() => toggleProfileSelect(profile.id)}
+                                                        style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
+                                                    AI Train
+                                                </label>
+                                                <button onClick={() => { if (commentStyleExpanded === profile.id) { setCommentStyleExpanded(null); setCommentStyleComments([]); } else { setCommentStyleExpanded(profile.id); loadProfileComments(profile.id); } }}
+                                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
+                                                    {commentStyleExpanded === profile.id ? '▲ Hide' : '▼ View'}
+                                                </button>
+                                                <button onClick={() => deleteCommentStyleProfile(profile.id)}
+                                                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}>
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                            {/* Expanded comments list */}
+                                            {commentStyleExpanded === profile.id && (
+                                                <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '0 0 12px 12px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', maxHeight: '500px', overflowY: 'auto' }}>
+                                                    {commentStyleCommentsLoading ? (
+                                                        <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading comments...</div>
+                                                    ) : commentStyleComments.length === 0 ? (
+                                                        <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>No comments found. Try scraping again.</div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{commentStyleComments.length} comments · {commentStyleComments.filter((c: any) => c.isTopComment).length} marked as top</span>
+                                                            </div>
+                                                            {commentStyleComments.map((comment: any) => (
+                                                                <div key={comment.id} style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                                                                        <div style={{ flex: 1 }}>
+                                                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '4px' }}>
+                                                                                {comment.context === 'DIRECT COMMENT ON POST' ? '💬 Direct comment' : `↩️ ${comment.context.substring(0, 80)}...`}
+                                                                            </div>
+                                                                            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginBottom: '6px', fontStyle: 'italic' }}>
+                                                                                On: {(comment.postText || '').substring(0, 100)}...
+                                                                            </div>
+                                                                            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.5', maxHeight: '80px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                                                {comment.commentText}
+                                                                            </div>
+                                                                        </div>
+                                                                        <button onClick={() => toggleCommentTop(comment.id)}
+                                                                            title={comment.isTopComment ? 'Remove from top comments' : 'Mark as top comment for AI training'}
+                                                                            style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '8px', padding: '4px 10px', fontSize: '14px', cursor: 'pointer', flexShrink: 0, color: comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.5)' }}>
+                                                                            {comment.isTopComment ? '⭐' : '☆'}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {/* AI Training Info */}
+                            {commentStyleProfiles.some((p: any) => p.isSelected) && (
+                                <div style={{ background: 'rgba(59,130,246,0.1)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', marginTop: '16px' }}>
+                                    <h4 style={{ color: '#60a5fa', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>🎯 AI Comment Style Training Active</h4>
+                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: 0 }}>
+                                        AI will use {commentStyleProfiles.filter((p: any) => p.isSelected).length} selected profile(s) with their top-starred comments to match their commenting style when generating comments (both manual and auto-commenting).
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
 
                 {/* Trending Posts Tab */}

@@ -220,7 +220,9 @@ export default function DashboardPage() {
                 body: JSON.stringify({
                     topic: writerTopic, template: writerTemplate, tone: writerTone,
                     length: writerLength, includeHashtags: writerHashtags, includeEmojis: writerEmojis,
-                    targetAudience: writerTargetAudience, keyMessage: writerKeyMessage, userBackground: writerBackground
+                    targetAudience: writerTargetAudience, keyMessage: writerKeyMessage, userBackground: writerBackground,
+                    useInspirationSources: inspirationSources.length > 0 && (inspirationUseAll || inspirationSelected.length > 0),
+                    inspirationSourceNames: inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected
                 }),
             });
             const data = await res.json();
@@ -1290,6 +1292,49 @@ export default function DashboardPage() {
                 {/* Writer Tab */}
                 {activeTab === 'writer' && (
                     <>
+                    {/* Inspiration Sources Section */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><span>✨</span> Inspiration Sources</h3>
+                            <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>🔄 Refresh</button>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '14px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic the style of your saved sources.</p>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '14px' }}>
+                            <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={2}
+                                style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif', lineHeight: '1.5' }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <select value={inspirationPostCount} onChange={e => setInspirationPostCount(parseInt(e.target.value))} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                                    <option value="5">5 posts</option><option value="10">10 posts</option><option value="15">15 posts</option><option value="20">20 posts</option><option value="30">30 posts</option>
+                                </select>
+                                <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '8px 16px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                    {inspirationScraping ? '⏳ Scraping...' : '🔍 Scrape'}
+                                </button>
+                            </div>
+                        </div>
+                        {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 14px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
+                        {inspirationSources.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: inspirationSources.length > 0 ? '12px' : '0' }}>
+                                {inspirationSources.map((src: any, i: number) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                        <span style={{ fontSize: '12px' }}>👤</span>
+                                        <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>{src.name}</span>
+                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
+                                        <button onClick={() => deleteInspirationSource(src.name)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {inspirationSources.length === 0 && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', textAlign: 'center', margin: '8px 0 0' }}>No sources yet. Add LinkedIn profiles above to get started.</p>}
+                        {inspirationSources.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(105,63,233,0.1)', borderRadius: '10px', border: '1px solid rgba(105,63,233,0.25)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
+                                    <strong>Use All Sources</strong>
+                                </label>
+                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>AI will mimic their writing style when generating posts</span>
+                            </div>
+                        )}
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                         {/* Left Column: Settings */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1471,8 +1516,8 @@ export default function DashboardPage() {
                             </div>
                         </div>
                     </div>
-                    {/* Inspiration Sources Section */}
-                    <div style={{ marginTop: '24px', background: 'rgba(255,255,255,0.05)', padding: '30px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    {/* Inspiration Sources Section - moved to top */}
+                    <div style={{ display: 'none' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                             <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span>✨</span> Inspiration Sources
@@ -1833,6 +1878,47 @@ export default function DashboardPage() {
                 {/* Trending Posts Tab */}
                 {activeTab === 'trending-posts' && (
                     <div>
+                        {/* Instant Feed Scrape Task */}
+                        <div style={{ background: 'rgba(16,185,129,0.08)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                                <h3 style={{ color: '#34d399', fontSize: '15px', fontWeight: '700', margin: 0 }}>🚀 Scrape Feed Now</h3>
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                <div style={{ flex: '0 0 auto' }}>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>⏱️ Duration</label>
+                                    <select value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                                        <option value="1">1 min</option><option value="2">2 min</option><option value="3">3 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
+                                    </select>
+                                </div>
+                                <div style={{ flex: '0 0 auto' }}>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>❤️ Min Likes</label>
+                                    <input type="number" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value) || 0)} min={0} style={{ width: '70px', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
+                                </div>
+                                <div style={{ flex: '0 0 auto' }}>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>💬 Min Comments</label>
+                                    <input type="number" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value) || 0)} min={0} style={{ width: '70px', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: '150px' }}>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>🔑 Keywords</label>
+                                    <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="AI, startup, SaaS..." style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
+                                </div>
+                                <button onClick={async () => {
+                                    try {
+                                        const token = localStorage.getItem('authToken');
+                                        if (!token) { setTrendingStatus('Not authenticated'); return; }
+                                        setTrendingStatus('Sending scrape task to extension...');
+                                        const res = await fetch('/api/extension/command', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                            body: JSON.stringify({ command: 'scrape_feed_now', data: { durationMinutes: scheduleDuration, minLikes: scheduleMinLikes, minComments: scheduleMinComments, keywords: scheduleKeywords } }),
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) setTrendingStatus('✅ Scrape task sent! Extension will open LinkedIn and start scraping.');
+                                        else setTrendingStatus(data.error || 'Failed to send task');
+                                    } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
+                                }} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' }}>🚀 Start Now</button>
+                            </div>
+                        </div>
                         {/* Period Filters */}
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
                             {[{ id: 'today', label: '🔥 Today' }, { id: 'week', label: '📈 This Week' }, { id: 'month', label: '📊 This Month' }, { id: 'all', label: '🌐 All Time' }].map(p => (

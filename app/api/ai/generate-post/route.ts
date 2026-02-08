@@ -5,6 +5,17 @@ import { limitService } from '@/lib/limit-service';
 import OpenAI from 'openai';
 import { OpenAIConfig, generatePostPrompt } from '@/lib/openai-config';
 import { formatForLinkedIn } from '@/lib/linkedin-formatter';
+import { Index } from '@upstash/vector';
+
+let vectorIndex: any = null;
+try {
+  if (process.env.UPSTASH_VECTOR_REST_URL && process.env.UPSTASH_VECTOR_REST_TOKEN) {
+    vectorIndex = new Index({
+      url: (process.env.UPSTASH_VECTOR_REST_URL || '').trim(),
+      token: (process.env.UPSTASH_VECTOR_REST_TOKEN || '').trim(),
+    });
+  }
+} catch (e) { console.warn('Vector index not available for post generation'); }
 
 // Initialize OpenAI client with proper error handling
 let openai: OpenAI | null = null;
@@ -33,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    const { topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground } = await request.json();
+    const { topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground, useInspirationSources, inspirationSourceNames } = await request.json();
 
     // Get user and check limits
     const user = await prisma.user.findUnique({
@@ -91,8 +102,34 @@ ${includeHashtags ? `#${topic.replace(/\s+/g, '')} #ProfessionalDevelopment #Inn
     }
     
     console.log('Calling OpenAI API for post generation...');
+    // Fetch inspiration sources if enabled
+    let inspirationContext = '';
+    if (useInspirationSources && vectorIndex) {
+      try {
+        let filter = `userId = '${payload.userId}'`;
+        const queryResponse = await vectorIndex.query({
+          data: topic,
+          topK: 8,
+          filter,
+          includeMetadata: true,
+          includeVectors: false,
+        });
+        const inspirationPosts = (queryResponse || []).filter((r: any) => {
+          if (!inspirationSourceNames || inspirationSourceNames.length === 0) return true;
+          const authorName = r.metadata?.authorName || r.metadata?.sourceName || '';
+          return inspirationSourceNames.some((name: string) => authorName.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(authorName.toLowerCase()));
+        });
+        if (inspirationPosts.length > 0) {
+          inspirationContext = `\n\n═══════════════════════════════════════════════════════════\n🎨 WRITING STYLE INSPIRATION - MIMIC THIS STYLE\n═══════════════════════════════════════════════════════════\n\nThe user has saved posts from LinkedIn profiles they admire. Study these examples and mimic their:\n- Writing style, voice, and tone\n- Sentence structure and rhythm\n- Use of hooks, storytelling, and formatting\n- How they open and close posts\n- Their unique personality and energy\n\nINSPIRATION POSTS:\n${inspirationPosts.slice(0, 5).map((r: any, i: number) => `[Example ${i + 1} by ${r.metadata?.authorName || 'Unknown'}]:\n"${(r.metadata?.content || '').substring(0, 800)}"`).join('\n\n')}\n\nCRITICAL: Your generated post should feel like it was written by someone with a SIMILAR style to these examples. Match their energy, vocabulary level, formatting patterns, and overall vibe while writing about the requested topic.\n`;
+          console.log(`✅ Found ${inspirationPosts.length} inspiration posts for style context`);
+        }
+      } catch (vecErr: any) {
+        console.warn('Failed to fetch inspiration sources:', vecErr.message);
+      }
+    }
+
     // Generate prompt using shared logic with new elite prompt
-    const prompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground);
+    const prompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground) + inspirationContext;
 
     // Determine model (could add logic to check user plan for premium model access if needed)
     const model = OpenAIConfig.defaultModel;

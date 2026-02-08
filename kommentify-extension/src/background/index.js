@@ -228,6 +228,126 @@ async function scrollAndLoadContent(tabId, maxAttempts = 3) {
     }
 }
 
+// Standalone scrape function (extracted so command handler can call directly - chrome.runtime.sendMessage to self doesn't work in MV3)
+async function scrapeProfilePostsImpl(profileUrl, postCount) {
+    try {
+        console.log('✨ BACKGROUND: Scraping profile posts for inspiration...');
+        console.log('BACKGROUND: Profile URL:', profileUrl);
+        console.log('BACKGROUND: Post count:', postCount);
+
+        const urlMatch = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/);
+        if (!urlMatch) return { success: false, error: 'Invalid LinkedIn profile URL' };
+        const username = urlMatch[1];
+
+        const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
+        console.log('BACKGROUND: Opening activity page:', activityUrl);
+        const activityTab = await chrome.tabs.create({ url: activityUrl, active: false });
+        await waitForContentLoad(activityTab.id, 12000);
+        await scrollAndLoadContent(activityTab.id, 3);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        const extractResult = await chrome.scripting.executeScript({
+            target: { tabId: activityTab.id },
+            func: (maxPosts) => {
+                const postUrns = [];
+                let authorName = 'Unknown Author';
+                const authorSelectors = [
+                    '.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]',
+                    '.feed-shared-actor__title span[aria-hidden="true"]',
+                    'h1.text-heading-xlarge',
+                    '.profile-top-card-person-list__name'
+                ];
+                for (const selector of authorSelectors) {
+                    const element = document.querySelector(selector);
+                    if (element) { authorName = element.textContent?.trim() || 'Unknown Author'; break; }
+                }
+                const postElements = document.querySelectorAll('[data-urn*="urn:li:activity:"], [data-id*="urn:li:activity:"]');
+                for (const post of postElements) {
+                    if (postUrns.length >= maxPosts) break;
+                    let urn = post.getAttribute('data-urn') || post.getAttribute('data-id');
+                    if (!urn || !urn.includes('urn:li:activity:')) continue;
+                    const activityMatch = urn.match(/urn:li:activity:(\d+)/);
+                    if (activityMatch) {
+                        const isRepost = post.querySelector('.feed-shared-reshared-content') || post.querySelector('.update-components-mini-update-v2');
+                        if (!isRepost) postUrns.push({ activityId: activityMatch[1], urn });
+                    }
+                }
+                return { postUrns, authorName };
+            },
+            args: [postCount + 5]
+        });
+
+        await chrome.tabs.remove(activityTab.id);
+        const { postUrns, authorName } = extractResult[0]?.result || { postUrns: [], authorName: 'Unknown' };
+        if (postUrns.length === 0) return { success: false, error: 'Could not find posts on this profile.' };
+
+        console.log(`BACKGROUND: Found ${postUrns.length} post URNs, now opening each...`);
+        const scrapedPosts = [];
+        let skippedCount = 0;
+
+        for (let i = 0; i < Math.min(postUrns.length, postCount); i++) {
+            const { activityId } = postUrns[i];
+            const postUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`;
+            try {
+                const postTab = await chrome.tabs.create({ url: postUrl, active: false });
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                const postResult = await chrome.scripting.executeScript({
+                    target: { tabId: postTab.id },
+                    func: () => {
+                        let content = '';
+                        for (const sel of ['.feed-shared-update-v2__description .update-components-text','.update-components-text','.feed-shared-text','.feed-shared-inline-show-more-text','article .break-words']) {
+                            const el = document.querySelector(sel);
+                            if (el) { content = el.innerText || el.textContent || ''; if (content.length > 50) break; }
+                        }
+                        content = content.replace(/\s+/g, ' ').replace(/…more$/i, '').replace(/See more$/i, '').replace(/See translation$/i, '').trim();
+                        let likes = 0, comments = 0;
+                        const likesEl = document.querySelector('.social-details-social-counts__reactions-count');
+                        if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
+                        const commentsBtn = document.querySelector('button[aria-label*="comment"]');
+                        if (commentsBtn) { const m = commentsBtn.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
+                        return { content, likes, comments };
+                    }
+                });
+                await chrome.tabs.remove(postTab.id);
+                const postData = postResult[0]?.result;
+                if (postData && postData.content && postData.content.length >= 50) {
+                    const skipPatterns = [/^is now/i, /updated their profile/i, /shared this/i, /endorsed/i, /started following/i, /celebrated/i, /has a new profile photo/i, /reacted to this/i];
+                    if (!skipPatterns.some(p => p.test(postData.content))) {
+                        scrapedPosts.push({ content: postData.content.substring(0, 5000), likes: postData.likes || 0, comments: postData.comments || 0, authorName, postUrl });
+                    } else skippedCount++;
+                } else skippedCount++;
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            } catch (postError) { console.warn(`BACKGROUND: Failed to scrape post ${i + 1}:`, postError.message); skippedCount++; }
+        }
+
+        if (scrapedPosts.length === 0) return { success: false, error: `Could not extract content from posts. Tried ${postUrns.length} posts, skipped ${skippedCount}.` };
+        console.log(`✅ BACKGROUND: Successfully scraped ${scrapedPosts.length} posts from ${authorName}`);
+
+        // Save to backend
+        try {
+            const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+            const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
+            if (!authToken) return { success: false, error: 'Not authenticated.' };
+            const ingestResponse = await fetch(`${apiUrl}/api/vector/ingest`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ posts: scrapedPosts, inspirationSource: { name: authorName, profileUrl } })
+            });
+            const ingestData = await ingestResponse.json();
+            if (ingestData.success) {
+                await chrome.storage.local.set({ lastInspirationResult: { success: true, authorName, postCount: ingestData.count, profileUrl, timestamp: Date.now() } });
+                return { success: true, posts: scrapedPosts, authorName, skippedCount, savedToBackend: true, savedCount: ingestData.count };
+            }
+            return { success: true, posts: scrapedPosts, authorName, skippedCount, savedToBackend: false, backendError: ingestData.error };
+        } catch (apiError) {
+            return { success: true, posts: scrapedPosts, authorName, skippedCount, savedToBackend: false, backendError: apiError.message };
+        }
+    } catch (error) {
+        console.error('❌ BACKGROUND: Error scraping profile posts:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // --- MESSAGE LISTENERS ---
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("BACKGROUND: Received message:", request.action);
@@ -1153,16 +1273,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         if (cmd.command === 'scrape_profile' && cmd.data?.profileUrl) {
                             console.log('🔍 BACKGROUND: Executing scrape_profile command for:', cmd.data.profileUrl);
                             try {
-                                // Use the existing scrapeProfilePosts logic by sending internal message
-                                const scrapeResult = await new Promise((resolve) => {
-                                    chrome.runtime.sendMessage({
-                                        action: 'scrapeProfilePosts',
-                                        profileUrl: cmd.data.profileUrl,
-                                        postCount: cmd.data.postCount || 10
-                                    }, (response) => {
-                                        resolve(response || { success: false, error: 'No response' });
-                                    });
-                                });
+                                // Call extracted function directly (chrome.runtime.sendMessage to self doesn't work in MV3)
+                                const scrapeResult = await scrapeProfilePostsImpl(cmd.data.profileUrl, cmd.data.postCount || 10);
 
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',

@@ -108,6 +108,40 @@ export async function POST(request: NextRequest) {
     console.log('Calling OpenAI API for comment generation...');
     console.log('Parameters:', { tone, goal, commentLength, commentStyle, userExpertise, authorName });
     
+    // Fetch comment style examples from selected profiles
+    let styleExamples: string[] = [];
+    try {
+      const selectedProfiles = await prisma.commentStyleProfile.findMany({
+        where: { userId: user.id, isSelected: true },
+        select: { id: true },
+      });
+      if (selectedProfiles.length > 0) {
+        // First try top-starred comments, fall back to all comments
+        let comments = await prisma.scrapedComment.findMany({
+          where: { 
+            profileId: { in: selectedProfiles.map(p => p.id) },
+            isTopComment: true,
+          },
+          select: { commentText: true },
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        });
+        // If no top comments, use recent ones
+        if (comments.length === 0) {
+          comments = await prisma.scrapedComment.findMany({
+            where: { profileId: { in: selectedProfiles.map(p => p.id) } },
+            select: { commentText: true },
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+          });
+        }
+        styleExamples = comments.map((c: any) => c.commentText).filter((t: string) => t.length > 10);
+        console.log(`Found ${styleExamples.length} style examples from ${selectedProfiles.length} selected profiles`);
+      }
+    } catch (styleError) {
+      console.error('Error fetching style examples:', styleError);
+    }
+
     // Generate prompt using enhanced world-class logic
     const prompt = generateCommentPrompt(
       postText, 
@@ -117,7 +151,8 @@ export async function POST(request: NextRequest) {
       userExpertise || '',
       userBackground || '',
       authorName || 'there',
-      commentStyle || 'direct'
+      commentStyle || 'direct',
+      styleExamples
     );
 
     // Use premium model for best quality comments

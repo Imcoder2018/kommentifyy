@@ -92,6 +92,16 @@ export default function DashboardPage() {
     const [showAnalysis, setShowAnalysis] = useState(false);
     // Image attachment for generated posts (index -> base64 data URL)
     const [generatedPostImages, setGeneratedPostImages] = useState<Record<number, string>>({});
+    // Button loading states for Post to LinkedIn (index -> loading)
+    const [postingToLinkedIn, setPostingToLinkedIn] = useState<Record<number, boolean>>({});
+    // Toast notification
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    // History tab state
+    const [historyItems, setHistoryItems] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyFilter, setHistoryFilter] = useState<string>('all');
+    const [historyPage, setHistoryPage] = useState(1);
+    const [historyTotal, setHistoryTotal] = useState(0);
 
     // Inspiration Sources state
     const [inspirationProfiles, setInspirationProfiles] = useState<string>('');
@@ -102,6 +112,16 @@ export default function DashboardPage() {
     const [inspirationLoading, setInspirationLoading] = useState(false);
     const [inspirationUseAll, setInspirationUseAll] = useState(true);
     const [inspirationSelected, setInspirationSelected] = useState<string[]>([]);
+
+    // Comment Style Sources state
+    const [commentStyleProfiles, setCommentStyleProfiles] = useState<any[]>([]);
+    const [commentStyleLoading, setCommentStyleLoading] = useState(false);
+    const [commentStyleUrl, setCommentStyleUrl] = useState('');
+    const [commentStyleScraping, setCommentStyleScraping] = useState(false);
+    const [commentStyleStatus, setCommentStyleStatus] = useState('');
+    const [commentStyleExpanded, setCommentStyleExpanded] = useState<string | null>(null);
+    const [commentStyleComments, setCommentStyleComments] = useState<any[]>([]);
+    const [commentStyleCommentsLoading, setCommentStyleCommentsLoading] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');
@@ -223,25 +243,35 @@ export default function DashboardPage() {
         } catch {}
     };
 
+    const [writerPosting, setWriterPosting] = useState(false);
     const sendToExtension = async () => {
         const token = localStorage.getItem('authToken');
         if (!token || !writerContent.trim()) { setWriterStatus('No content to post'); return; }
+        setWriterPosting(true);
+        showToast('📤 Sending post to extension...', 'info');
         setWriterStatus('Sending to extension...');
         try {
-            // Dispatch event for the extension to pick up
             window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', {
                 detail: { content: writerContent }
             }));
-            // Also store as command for extension polling
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ command: 'post_to_linkedin', data: { content: writerContent } }),
             });
             const data = await res.json();
-            if (data.success) setWriterStatus('✅ Command sent! Extension will auto-open LinkedIn and post your content.');
-            else setWriterStatus(data.error || 'Failed to send');
-        } catch (e: any) { setWriterStatus('Error: ' + e.message); }
+            if (data.success) {
+                setWriterStatus('✅ Command sent! Extension will auto-open LinkedIn and post your content.');
+                showToast('✅ Post sent to extension! It will auto-open LinkedIn.', 'success');
+                await saveToHistory('published_post', 'LinkedIn Post (Writer)', { content: writerContent, source: 'writer' });
+            } else {
+                setWriterStatus(data.error || 'Failed to send');
+                showToast(data.error || 'Failed to send', 'error');
+            }
+        } catch (e: any) {
+            setWriterStatus('Error: ' + e.message);
+            showToast('Error: ' + e.message, 'error');
+        } finally { setWriterPosting(false); }
     };
 
     const schedulePost = async () => {
@@ -433,6 +463,94 @@ export default function DashboardPage() {
         } catch {}
     };
 
+    // Comment Style Sources functions
+    const loadCommentStyleProfiles = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setCommentStyleLoading(true);
+        try {
+            const res = await fetch('/api/scraped-comments', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setCommentStyleProfiles(data.profiles || []);
+        } catch {} finally { setCommentStyleLoading(false); }
+    };
+
+    const scrapeCommentStyle = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        const url = commentStyleUrl.trim();
+        if (!url.includes('linkedin.com/in/')) { setCommentStyleStatus('Please enter a valid LinkedIn profile URL'); return; }
+        setCommentStyleScraping(true);
+        setCommentStyleStatus('Sending scrape command to extension...');
+        try {
+            const res = await fetch('/api/extension/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ command: 'scrape_comments', data: { profileUrl: url } }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCommentStyleStatus('✅ Command sent! Extension will scrape comments from this profile.');
+                showToast('📤 Comment scraping command sent to extension!', 'info');
+                setCommentStyleUrl('');
+                setTimeout(() => loadCommentStyleProfiles(), 30000);
+            } else {
+                setCommentStyleStatus(data.error || 'Failed to send command');
+                showToast(data.error || 'Failed', 'error');
+            }
+        } catch (e: any) { setCommentStyleStatus('Error: ' + e.message); }
+        finally { setCommentStyleScraping(false); }
+    };
+
+    const loadProfileComments = async (profileId: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setCommentStyleCommentsLoading(true);
+        try {
+            const res = await fetch(`/api/scraped-comments?profileId=${profileId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setCommentStyleComments(data.comments || []);
+        } catch {} finally { setCommentStyleCommentsLoading(false); }
+    };
+
+    const toggleCommentTop = async (commentId: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/scraped-comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ action: 'toggleTop', commentId }),
+            });
+            // Refresh comments
+            setCommentStyleComments(prev => prev.map(c => c.id === commentId ? { ...c, isTopComment: !c.isTopComment } : c));
+        } catch {}
+    };
+
+    const toggleProfileSelect = async (profileId: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/scraped-comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ action: 'toggleSelect', profileId }),
+            });
+            setCommentStyleProfiles(prev => prev.map(p => p.id === profileId ? { ...p, isSelected: !p.isSelected } : p));
+        } catch {}
+    };
+
+    const deleteCommentStyleProfile = async (profileId: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch(`/api/scraped-comments?profileId=${profileId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            setCommentStyleProfiles(prev => prev.filter(p => p.id !== profileId));
+            if (commentStyleExpanded === profileId) { setCommentStyleExpanded(null); setCommentStyleComments([]); }
+            showToast('Profile and comments deleted', 'success');
+        } catch {}
+    };
+
     // Tasks functions
     const loadTasks = async () => {
         const token = localStorage.getItem('authToken');
@@ -482,6 +600,9 @@ export default function DashboardPage() {
                 setTrendingGeneratedPosts(data.posts);
                 setTrendingShowGenPreview(true);
                 setTrendingStatus(`✅ Generated ${data.posts.length} viral posts!`);
+                setGeneratedPostImages({});
+                // Save to history
+                await saveToHistory('ai_generated', `AI Generated ${data.posts.length} Posts`, data.posts, { customPrompt: trendingCustomPrompt, selectedCount: selected.length });
             } else setTrendingStatus(data.error || 'Generation failed');
         } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
         finally { setTrendingGenerating(false); }
@@ -515,15 +636,64 @@ export default function DashboardPage() {
                 setAnalysisResults(data.analysis);
                 setShowAnalysis(true);
                 setTrendingStatus('✅ Analysis complete!');
+                // Save to history
+                await saveToHistory('viral_analysis', 'Viral Potential Analysis', data.analysis, { postCount: allPosts.length, aiPostCount: aiPostIndices.length });
             } else setTrendingStatus(data.error || 'Analysis failed');
         } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
         finally { setAnalysisLoading(false); }
     };
 
-    const postGeneratedToLinkedIn = async (content: string, imageDataUrl?: string) => {
+    // Toast notification helper
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
+
+    // History functions
+    const loadHistory = async (page = 1) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setHistoryLoading(true);
+        try {
+            const typeParam = historyFilter === 'all' ? '' : historyFilter;
+            const res = await fetch(`/api/history?page=${page}&limit=20${typeParam ? `&type=${typeParam}` : ''}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (data.success) {
+                setHistoryItems(data.items || []);
+                setHistoryTotal(data.total || 0);
+                setHistoryPage(page);
+            }
+        } catch {} finally { setHistoryLoading(false); }
+    };
+
+    const saveToHistory = async (type: string, title: string, content: any, metadata?: any) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type, title, content: JSON.stringify(content), metadata: metadata ? JSON.stringify(metadata) : null }),
+            });
+        } catch {}
+    };
+
+    const deleteHistoryItem = async (id: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch(`/api/history?id=${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            loadHistory(historyPage);
+        } catch {}
+    };
+
+    const postGeneratedToLinkedIn = async (content: string, imageDataUrl?: string, postIndex?: number) => {
         const token = localStorage.getItem('authToken');
         if (!token || !content.trim()) return;
-        setTrendingStatus('Sending to extension...');
+        if (postIndex !== undefined) setPostingToLinkedIn(prev => ({ ...prev, [postIndex]: true }));
+        showToast('📤 Sending post to extension...', 'info');
         try {
             const cmdData: any = { content };
             if (imageDataUrl) cmdData.imageDataUrl = imageDataUrl;
@@ -534,9 +704,21 @@ export default function DashboardPage() {
                 body: JSON.stringify({ command: 'post_to_linkedin', data: cmdData }),
             });
             const data = await res.json();
-            if (data.success) setTrendingStatus('✅ Post sent to extension! It will auto-open LinkedIn.');
-            else setTrendingStatus(data.error || 'Failed');
-        } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
+            if (data.success) {
+                showToast('✅ Post sent to extension! It will auto-open LinkedIn.', 'success');
+                setTrendingStatus('✅ Post sent to extension! It will auto-open LinkedIn.');
+                // Save to history as published post
+                await saveToHistory('published_post', 'LinkedIn Post', { content, hasImage: !!imageDataUrl });
+            } else {
+                showToast(data.error || 'Failed to send', 'error');
+                setTrendingStatus(data.error || 'Failed');
+            }
+        } catch (e: any) {
+            showToast('Error: ' + e.message, 'error');
+            setTrendingStatus('Error: ' + e.message);
+        } finally {
+            if (postIndex !== undefined) setPostingToLinkedIn(prev => ({ ...prev, [postIndex]: false }));
+        }
     };
 
     const handleImageAttach = (index: number, file: File) => {
@@ -550,10 +732,11 @@ export default function DashboardPage() {
     // Load data when tabs become active
     const handleTabChange = (tabId: string) => {
         setActiveTab(tabId);
-        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); }
+        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadCommentStyleProfiles(); }
         if (tabId === 'trending-posts') loadSavedPosts();
         if (tabId === 'tasks') loadTasks();
         if (tabId === 'feed-schedule') loadFeedSchedule();
+        if (tabId === 'history') loadHistory();
     };
 
     if (loading) {
@@ -584,6 +767,7 @@ export default function DashboardPage() {
         { id: 'writer', label: 'Post Writer', icon: '✍️' },
         { id: 'trending-posts', label: 'Trending Posts', icon: '🔥' },
         { id: 'tasks', label: 'Tasks', icon: '📋' },
+        { id: 'history', label: 'History', icon: '📜' },
         { id: 'feed-schedule', label: 'Feed Schedule', icon: '⏰' },
         { id: 'usage', label: 'Usage & Limits', icon: '📊' },
         { id: 'referrals', label: 'Referrals', icon: '🎁' },
@@ -602,6 +786,24 @@ export default function DashboardPage() {
             background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)',
             display: 'flex'
         }}>
+            {/* Toast Notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed', top: '24px', right: '24px', zIndex: 10000,
+                    padding: '14px 24px', borderRadius: '14px', fontSize: '14px', fontWeight: '600',
+                    color: 'white', boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+                    animation: 'slideIn 0.3s ease-out',
+                    background: toast.type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' :
+                               toast.type === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' :
+                               'linear-gradient(135deg, #3b82f6, #2563eb)',
+                    border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.5)' : toast.type === 'error' ? 'rgba(239,68,68,0.5)' : 'rgba(59,130,246,0.5)'}`,
+                    display: 'flex', alignItems: 'center', gap: '10px', maxWidth: '400px',
+                }}>
+                    {toast.message}
+                    <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '16px', opacity: 0.7, marginLeft: '8px' }}>✕</button>
+                </div>
+            )}
+            <style>{`@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
             {/* Professional Sidebar */}
             <div style={{
                 width: sidebarCollapsed ? '80px' : '260px',
@@ -1172,9 +1374,9 @@ export default function DashboardPage() {
                                 )}
                                 {/* Action Buttons */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
-                                    <button onClick={sendToExtension}
-                                        style={{ padding: '14px', background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)' }}>
-                                        🚀 Post to LinkedIn
+                                    <button onClick={sendToExtension} disabled={writerPosting}
+                                        style={{ padding: '14px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 15px rgba(105,63,233,0.4)', opacity: writerPosting ? 0.7 : 1, transition: 'all 0.2s', transform: writerPosting ? 'scale(0.97)' : 'scale(1)' }}>
+                                        {writerPosting ? '⏳ Sending...' : '🚀 Post to LinkedIn'}
                                     </button>
                                     <button onClick={saveDraft}
                                         style={{ padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
@@ -1320,6 +1522,122 @@ export default function DashboardPage() {
                             </div>
                         )}
                     </div>
+                    {/* Comment Style Sources Section */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>💬</span> Comment Style Sources
+                            </h3>
+                            <button onClick={loadCommentStyleProfiles}
+                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                🔄 Refresh
+                            </button>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px' }}>
+                            Add LinkedIn profiles to learn from their commenting style. The extension will scrape their comments and AI will mimic their tone.
+                        </p>
+                        {/* Add Profile Input */}
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <div style={{ flex: 1, minWidth: '250px' }}>
+                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px' }}>🔗 LinkedIn Profile URL</label>
+                                <input value={commentStyleUrl} onChange={e => setCommentStyleUrl(e.target.value)}
+                                    placeholder="https://linkedin.com/in/username"
+                                    style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                            <button onClick={scrapeCommentStyle} disabled={commentStyleScraping}
+                                style={{ padding: '10px 20px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: commentStyleScraping ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)', marginTop: '18px', opacity: commentStyleScraping ? 0.7 : 1, transition: 'all 0.2s' }}>
+                                {commentStyleScraping ? '⏳ Sending...' : '💬 Scrape Comments'}
+                            </button>
+                        </div>
+                        {commentStyleStatus && (
+                            <div style={{ marginBottom: '16px', padding: '10px 16px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)', border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`, borderRadius: '10px', color: commentStyleStatus.includes('Error') ? '#f87171' : '#60a5fa', fontSize: '13px' }}>
+                                {commentStyleStatus}
+                            </div>
+                        )}
+                        {/* Saved Profiles */}
+                        <h4 style={{ color: 'white', fontSize: '15px', fontWeight: '700', marginBottom: '14px' }}>👤 Saved Comment Style Profiles</h4>
+                        {commentStyleLoading ? (
+                            <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading profiles...</div>
+                        ) : commentStyleProfiles.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>No comment style profiles yet. Add a LinkedIn profile above to get started.</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {commentStyleProfiles.map((profile: any) => (
+                                    <div key={profile.id}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: profile.isSelected ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.05)', padding: '14px 18px', borderRadius: '12px', border: `1px solid ${profile.isSelected ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
+                                            <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>💬</div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{profile.profileName || profile.profileId}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{profile._count?.comments || profile.commentCount} comments scraped{profile.lastScrapedAt ? ` · Last: ${new Date(profile.lastScrapedAt).toLocaleDateString()}` : ''}</div>
+                                            </div>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+                                                <input type="checkbox" checked={profile.isSelected} onChange={() => toggleProfileSelect(profile.id)}
+                                                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
+                                                AI Train
+                                            </label>
+                                            <button onClick={() => { if (commentStyleExpanded === profile.id) { setCommentStyleExpanded(null); setCommentStyleComments([]); } else { setCommentStyleExpanded(profile.id); loadProfileComments(profile.id); } }}
+                                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
+                                                {commentStyleExpanded === profile.id ? '▲ Hide' : '▼ View'}
+                                            </button>
+                                            <button onClick={() => deleteCommentStyleProfile(profile.id)}
+                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}>
+                                                🗑️
+                                            </button>
+                                        </div>
+                                        {/* Expanded comments list */}
+                                        {commentStyleExpanded === profile.id && (
+                                            <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '0 0 12px 12px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', maxHeight: '500px', overflowY: 'auto' }}>
+                                                {commentStyleCommentsLoading ? (
+                                                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading comments...</div>
+                                                ) : commentStyleComments.length === 0 ? (
+                                                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>No comments found. Try scraping again.</div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{commentStyleComments.length} comments · {commentStyleComments.filter((c: any) => c.isTopComment).length} marked as top</span>
+                                                        </div>
+                                                        {commentStyleComments.map((comment: any) => (
+                                                            <div key={comment.id} style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '4px' }}>
+                                                                            {comment.context === 'DIRECT COMMENT ON POST' ? '💬 Direct comment' : `↩️ ${comment.context.substring(0, 80)}...`}
+                                                                        </div>
+                                                                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginBottom: '6px', fontStyle: 'italic' }}>
+                                                                            On: {(comment.postText || '').substring(0, 100)}...
+                                                                        </div>
+                                                                        <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.5', maxHeight: '80px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                                            {comment.commentText}
+                                                                        </div>
+                                                                    </div>
+                                                                    <button onClick={() => toggleCommentTop(comment.id)}
+                                                                        title={comment.isTopComment ? 'Remove from top comments' : 'Mark as top comment for AI training'}
+                                                                        style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '8px', padding: '4px 10px', fontSize: '14px', cursor: 'pointer', flexShrink: 0, color: comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.5)' }}>
+                                                                        {comment.isTopComment ? '⭐' : '☆'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {/* AI Training Info */}
+                        {commentStyleProfiles.some((p: any) => p.isSelected) && (
+                            <div style={{ background: 'rgba(59,130,246,0.1)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', marginTop: '16px' }}>
+                                <h4 style={{ color: '#60a5fa', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>🎯 AI Comment Style Training Active</h4>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: 0 }}>
+                                    AI will use {commentStyleProfiles.filter((p: any) => p.isSelected).length} selected profile(s) with their top-starred comments to match their commenting style when generating comments (both manual and auto-commenting).
+                                </p>
+                            </div>
+                        )}
+                    </div>
                     </>
                 )}
 
@@ -1449,9 +1767,10 @@ export default function DashboardPage() {
                                         <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                                 <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '14px' }}>✨ {gp.title || `Post ${i + 1}`}</span>
-                                                <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i])}
-                                                    style={{ padding: '6px 16px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '12px' }}>
-                                                    🚀 Post to LinkedIn
+                                                <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i], i)}
+                                                    disabled={postingToLinkedIn[i]}
+                                                    style={{ padding: '6px 16px', background: postingToLinkedIn[i] ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: postingToLinkedIn[i] ? 'wait' : 'pointer', fontSize: '12px', opacity: postingToLinkedIn[i] ? 0.7 : 1, transition: 'all 0.2s', transform: postingToLinkedIn[i] ? 'scale(0.95)' : 'scale(1)' }}>
+                                                    {postingToLinkedIn[i] ? '⏳ Sending...' : '🚀 Post to LinkedIn'}
                                                 </button>
                                             </div>
                                             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: '0 0 12px 0', whiteSpace: 'pre-wrap' }}>
@@ -1622,6 +1941,137 @@ export default function DashboardPage() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* History Tab */}
+                {activeTab === 'history' && (
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0 }}>📜 History</h3>
+                            <button onClick={() => loadHistory(1)}
+                                style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
+                                🔄 Refresh
+                            </button>
+                        </div>
+                        {/* Filter Buttons */}
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                            {[{ id: 'all', label: '📋 All', color: '#8b5cf6' }, { id: 'ai_generated', label: '🤖 AI Generated', color: '#a78bfa' }, { id: 'viral_analysis', label: '📊 Analysis', color: '#fbbf24' }, { id: 'published_post', label: '🚀 Published', color: '#10b981' }].map(f => (
+                                <button key={f.id} onClick={() => { setHistoryFilter(f.id); setTimeout(() => loadHistory(1), 0); }}
+                                    style={{ padding: '10px 20px', background: historyFilter === f.id ? `${f.color}33` : 'rgba(255,255,255,0.08)', border: `1px solid ${historyFilter === f.id ? f.color + '66' : 'rgba(255,255,255,0.15)'}`, borderRadius: '12px', color: historyFilter === f.id ? f.color : 'rgba(255,255,255,0.7)', fontWeight: historyFilter === f.id ? '700' : '500', cursor: 'pointer', fontSize: '14px' }}>
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginBottom: '16px' }}>
+                            Total: <strong style={{ color: 'white' }}>{historyTotal}</strong> entries
+                        </div>
+                        {/* History Items */}
+                        {historyLoading ? (
+                            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.5)' }}>Loading history...</div>
+                        ) : historyItems.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📜</div>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>No history yet. Generate posts, run analysis, or publish to LinkedIn to build your history.</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {historyItems.map((item: any) => {
+                                    const typeConfig: Record<string, { icon: string; color: string; bg: string; label: string }> = {
+                                        ai_generated: { icon: '🤖', color: '#a78bfa', bg: 'rgba(105,63,233,0.15)', label: 'AI Generated Posts' },
+                                        viral_analysis: { icon: '📊', color: '#fbbf24', bg: 'rgba(245,158,11,0.15)', label: 'Viral Analysis' },
+                                        published_post: { icon: '🚀', color: '#10b981', bg: 'rgba(16,185,129,0.15)', label: 'Published Post' },
+                                    };
+                                    const tc = typeConfig[item.type] || { icon: '📄', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', label: item.type };
+                                    let parsedContent: any = null;
+                                    try { parsedContent = JSON.parse(item.content); } catch { parsedContent = item.content; }
+                                    let parsedMeta: any = null;
+                                    try { if (item.metadata) parsedMeta = JSON.parse(item.metadata); } catch {}
+
+                                    return (
+                                        <div key={item.id} style={{ background: tc.bg, padding: '20px', borderRadius: '16px', border: `1px solid ${tc.color}33` }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                                        <span style={{ fontSize: '18px' }}>{tc.icon}</span>
+                                                        <span style={{ color: tc.color, fontWeight: '700', fontSize: '15px' }}>{item.title || tc.label}</span>
+                                                        <span style={{ padding: '2px 10px', background: `${tc.color}22`, borderRadius: '10px', fontSize: '11px', color: tc.color, fontWeight: '600', border: `1px solid ${tc.color}33` }}>{tc.label}</span>
+                                                    </div>
+                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                                                        {new Date(item.createdAt).toLocaleString()}
+                                                        {parsedMeta?.selectedCount && <span> · {parsedMeta.selectedCount} posts selected</span>}
+                                                        {parsedMeta?.postCount && <span> · {parsedMeta.postCount} posts analyzed</span>}
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => deleteHistoryItem(item.id)}
+                                                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}>
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                            {/* Content display based on type */}
+                                            {item.type === 'ai_generated' && Array.isArray(parsedContent) && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    {parsedContent.map((post: any, pi: number) => (
+                                                        <div key={pi} style={{ background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '10px' }}>
+                                                            <div style={{ color: '#a78bfa', fontWeight: '600', fontSize: '13px', marginBottom: '6px' }}>✨ {post.title || `Post ${pi + 1}`}</div>
+                                                            <div style={{ maxHeight: '100px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{post.content}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {item.type === 'viral_analysis' && Array.isArray(parsedContent) && (
+                                                <div style={{ overflowX: 'auto' }}>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                                        <thead>
+                                                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                                                <th style={{ padding: '8px', textAlign: 'left', color: 'rgba(255,255,255,0.5)' }}>Rank</th>
+                                                                <th style={{ padding: '8px', textAlign: 'left', color: 'rgba(255,255,255,0.5)' }}>Score</th>
+                                                                <th style={{ padding: '8px', textAlign: 'left', color: 'rgba(255,255,255,0.5)' }}>Feedback</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {parsedContent.map((r: any, ri: number) => (
+                                                                <tr key={ri} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                    <td style={{ padding: '8px', color: 'white', fontWeight: '700' }}>#{ri + 1}</td>
+                                                                    <td style={{ padding: '8px' }}>
+                                                                        <span style={{ padding: '2px 8px', borderRadius: '10px', fontWeight: '600', background: r.score >= 80 ? 'rgba(16,185,129,0.2)' : r.score >= 60 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)', color: r.score >= 80 ? '#34d399' : r.score >= 60 ? '#fbbf24' : '#f87171' }}>{r.score}/100</span>
+                                                                    </td>
+                                                                    <td style={{ padding: '8px', color: 'rgba(255,255,255,0.6)', maxWidth: '300px' }}>{r.feedback}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                            {item.type === 'published_post' && parsedContent && (
+                                                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '10px' }}>
+                                                    <div style={{ maxHeight: '100px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{parsedContent.content || (typeof parsedContent === 'string' ? parsedContent : '')}</p>
+                                                    </div>
+                                                    {parsedContent.hasImage && <span style={{ color: '#a78bfa', fontSize: '11px', marginTop: '6px', display: 'inline-block' }}>📷 Image attached</span>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                                {/* Pagination */}
+                                {historyTotal > 20 && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', paddingTop: '20px' }}>
+                                        <button onClick={() => loadHistory(historyPage - 1)} disabled={historyPage <= 1}
+                                            style={{ padding: '10px 20px', background: historyPage <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: historyPage <= 1 ? 'rgba(255,255,255,0.3)' : 'white', cursor: historyPage <= 1 ? 'not-allowed' : 'pointer', fontSize: '14px' }}>
+                                            ← Previous
+                                        </button>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', alignSelf: 'center', fontSize: '14px' }}>Page {historyPage} of {Math.ceil(historyTotal / 20)}</span>
+                                        <button onClick={() => loadHistory(historyPage + 1)} disabled={historyPage >= Math.ceil(historyTotal / 20)}
+                                            style={{ padding: '10px 20px', background: historyPage >= Math.ceil(historyTotal / 20) ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: historyPage >= Math.ceil(historyTotal / 20) ? 'rgba(255,255,255,0.3)' : 'white', cursor: historyPage >= Math.ceil(historyTotal / 20) ? 'not-allowed' : 'pointer', fontSize: '14px' }}>
+                                            Next →
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

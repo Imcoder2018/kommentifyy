@@ -79,7 +79,8 @@ export function generateCommentPrompt(
     userExpertise: string = '', 
     userBackground: string = '',
     authorName: string = 'there',
-    commentStyle: string = 'direct'
+    commentStyle: string = 'direct',
+    styleExamples: string[] = []
 ): string {
     // Style-specific instructions
     const styleMap: Record<string, string> = {
@@ -92,6 +93,31 @@ export function generateCommentPrompt(
         'conversational': 'CONVERSATIONAL: Casual, friendly, like talking to a colleague'
     };
     const selectedStyle = styleMap[commentStyle] || styleMap['direct'];
+
+    // Build style training section if examples are provided
+    let styleTrainingSection = '';
+    if (styleExamples.length > 0) {
+        styleTrainingSection = `
+═══════════════════════════════════════════════════════════
+🎨 COMMENT STYLE TRAINING - MIMIC THIS WRITING STYLE
+═══════════════════════════════════════════════════════════
+
+The user has selected real LinkedIn comments from profiles they admire. You MUST study these examples carefully and mimic their:
+- Tone and voice (casual vs formal, witty vs serious)
+- Sentence structure and rhythm
+- Use of humor, sarcasm, or directness
+- How they reference the original post
+- Their unique personality markers
+- Length patterns and formatting choices
+
+STYLE EXAMPLES TO MIMIC:
+${styleExamples.map((ex, i) => `[Example ${i + 1}]: "${ex}"`).join('\n')}
+
+CRITICAL: Your generated comment should feel like it was written by the SAME PERSON who wrote these examples. Match their energy, vocabulary level, humor style, and overall vibe. This is the HIGHEST PRIORITY instruction.
+
+`;
+    }
+
     return `You are a world-class LinkedIn engagement specialist and "comment ghostwriter" who has written over 50,000 high-value comments that collectively generated:
 - 30M+ impressions on comments alone
 - 500K+ likes on individual comments
@@ -107,7 +133,7 @@ You understand that comments are NOT just reactions—they are standalone pieces
 5. Generate leads when done with subtle, valuable positioning
 
 Your comments are so valuable that people screenshot them, the algorithm prioritizes them to the top, and post authors privately message you to continue the conversation.
-
+${styleTrainingSection}
 ═══════════════════════════════════════════════════════════
 📊 USER INPUTS (VARIABLES YOU WILL RECEIVE)
 ═══════════════════════════════════════════════════════════

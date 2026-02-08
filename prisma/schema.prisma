@@ -299,6 +299,21 @@ model FeedScrapeSchedule {
   @@index([isActive])
 }
 
+// User history - stores AI generated posts, viral analysis, and published posts
+model UserHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // ai_generated, viral_analysis, published_post
+  title     String?
+  content   String   @db.Text   // JSON string for structured data
+  metadata  String?  @db.Text   // Additional JSON metadata
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
 // Post drafts saved from website writer
 model PostDraft {
   id              String   @id @default(cuid())
@@ -316,4 +331,42 @@ model PostDraft {
   @@index([userId])
   @@index([status])
   @@index([scheduledFor])
+}
+
+// Comment Style Profile - LinkedIn profiles to learn commenting style from
+model CommentStyleProfile {
+  id              String   @id @default(cuid())
+  userId          String
+  profileUrl      String   // LinkedIn profile URL
+  profileId       String   // e.g. "geckse" from /in/geckse
+  profileName     String?  // Display name
+  commentCount    Int      @default(0)
+  isSelected      Boolean  @default(false) // Whether this profile is selected for AI training
+  lastScrapedAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  comments        ScrapedComment[]
+
+  @@unique([userId, profileId])
+  @@index([userId])
+}
+
+// Scraped comments from a profile owner on various LinkedIn posts
+model ScrapedComment {
+  id              String   @id @default(cuid())
+  userId          String
+  profileId       String   // Links to CommentStyleProfile.id
+  postText        String   @db.Text   // The original post text the comment was on
+  context         String   @db.Text   // "DIRECT COMMENT ON POST" or "REPLY TO [Name]: ..."
+  commentText     String   @db.Text   // The profile owner's actual comment
+  isTopComment    Boolean  @default(false) // Marked as a top/favorite comment by user
+  scrapedAt       DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  profile         CommentStyleProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([profileId])
+  @@index([isTopComment])
 }

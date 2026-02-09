@@ -138,6 +138,237 @@ try {
 
 console.log("BACKGROUND: All modules loaded and ready");
 
+// --- COMMAND POLLING VIA ALARM (independent of content scripts) ---
+// This ensures commands from the website are picked up even if the dashboard tab is not open
+if (!globalThis._commandPollAlarmCreated) {
+    chrome.alarms.create('commandPoller', { periodInMinutes: 0.5 }); // every 30 seconds
+    globalThis._commandPollAlarmCreated = true;
+    console.log('BACKGROUND: Command poller alarm created (every 30s)');
+}
+
+// Standalone command polling function - called by alarm, no dependency on content scripts
+async function pollCommandsDirectly() {
+    // Reuse the same lock as the message handler
+    if (typeof globalThis._pollCommandsRunning === 'undefined') globalThis._pollCommandsRunning = false;
+    if (typeof globalThis._pollLockTimestamp === 'undefined') globalThis._pollLockTimestamp = 0;
+    if (!globalThis._processingCommandIds) globalThis._processingCommandIds = new Set();
+    if (!globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs = new Set();
+    if (typeof globalThis._stopAllTasks === 'undefined') globalThis._stopAllTasks = false;
+
+    if (globalThis._pollCommandsRunning) {
+        const lockAge = Date.now() - globalThis._pollLockTimestamp;
+        if (lockAge > 120000) {
+            console.log('⚠️ POLL-ALARM: Lock held >', Math.round(lockAge / 1000), 's - releasing');
+            globalThis._pollCommandsRunning = false;
+        } else {
+            return; // skip, already running
+        }
+    }
+    globalThis._pollCommandsRunning = true;
+    globalThis._pollLockTimestamp = Date.now();
+    try {
+        const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+        const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
+        if (!authToken) { globalThis._pollCommandsRunning = false; return; }
+
+        const response = await fetch(`${apiUrl}/api/extension/command`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (data.success && data.commands && data.commands.length > 0) {
+            console.log(`📥 POLL-ALARM: Found ${data.commands.length} pending commands`);
+            // Trigger the message handler to process them
+            // We send a message to ourselves - but in MV3 this doesn't work for service workers
+            // So instead, process inline using the same logic
+            for (const cmd of data.commands) {
+                if (globalThis._processingCommandIds.has(cmd.id)) continue;
+                if (globalThis._stopAllTasks) break;
+                globalThis._processingCommandIds.add(cmd.id);
+
+                // Mark as in_progress
+                try {
+                    await fetch(`${apiUrl}/api/extension/command`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                    });
+                } catch (e) {}
+
+                // --- scrape_profile ---
+                if (cmd.command === 'scrape_profile' && cmd.data?.profileUrl) {
+                    console.log('🔍 POLL-ALARM: Executing scrape_profile for:', cmd.data.profileUrl);
+                    try {
+                        const result = await scrapeProfilePostsImpl(cmd.data.profileUrl, cmd.data.postCount || 10);
+                        await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ commandId: cmd.id, status: result.success ? 'completed' : 'failed' })
+                        });
+                        console.log('✅ POLL-ALARM: scrape_profile done:', result.success);
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: scrape_profile failed:', e);
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally { globalThis._processingCommandIds.delete(cmd.id); }
+                }
+
+                // --- scrape_feed_now ---
+                else if (cmd.command === 'scrape_feed_now') {
+                    console.log('🔍 POLL-ALARM: Executing scrape_feed_now...');
+                    let scrapeTab = null;
+                    try {
+                        const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
+                        scrapeTab = tab;
+                        globalThis._commandLinkedInTabs.add(tab.id);
+                        await new Promise((resolve) => {
+                            const check = (tabId, info) => { if (tabId === tab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
+                            chrome.tabs.onUpdated.addListener(check);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
+                        });
+                        await new Promise(r => setTimeout(r, 5000));
+                        await scrollAndLoadContent(tab.id, 5);
+                        await new Promise(r => setTimeout(r, 2000));
+                        const minLikes = cmd.data?.minLikes || 0;
+                        const minComments = cmd.data?.minComments || 0;
+                        const keywords = cmd.data?.keywords ? cmd.data.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean) : [];
+                        const scrapeResult = await chrome.scripting.executeScript({
+                            target: { tabId: tab.id },
+                            func: (minL, minC, kws) => {
+                                const posts = [];
+                                const els = document.querySelectorAll('[data-id^="urn:li:activity:"]');
+                                for (const el of els) {
+                                    const textEl = el.querySelector('.update-components-text, .feed-shared-text, .feed-shared-inline-show-more-text');
+                                    const content = textEl ? (textEl.innerText || '').trim() : '';
+                                    if (content.length < 50) continue;
+                                    let likes = 0, comments = 0;
+                                    const likesEl = el.querySelector('.social-details-social-counts__reactions-count');
+                                    if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
+                                    const commentsEl = el.querySelector('button[aria-label*="comment"]');
+                                    if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
+                                    if (likes < minL || comments < minC) continue;
+                                    if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
+                                    let authorName = 'Unknown';
+                                    const authorEl = el.querySelector('.update-components-actor__title span[aria-hidden="true"], .feed-shared-actor__title span[aria-hidden="true"]');
+                                    if (authorEl) authorName = authorEl.textContent?.trim() || 'Unknown';
+                                    const urn = el.getAttribute('data-id') || '';
+                                    const activityMatch = urn.match(/urn:li:activity:(\d+)/);
+                                    const postUrl = activityMatch ? `https://www.linkedin.com/feed/update/urn:li:activity:${activityMatch[1]}/` : '';
+                                    let imageUrl = null;
+                                    const imgEl = el.querySelector('.update-components-image img, .feed-shared-image img, img.ivm-view-attr__img--centered[src*="feedshare"]');
+                                    if (imgEl && imgEl.src && imgEl.src.includes('media.licdn.com')) imageUrl = imgEl.src;
+                                    posts.push({ postContent: content.substring(0, 5000), authorName, likes, comments, shares: 0, postUrl, imageUrl });
+                                }
+                                return posts;
+                            },
+                            args: [minLikes, minComments, keywords]
+                        });
+                        const scrapedPosts = scrapeResult?.[0]?.result || [];
+                        console.log(`POLL-ALARM: Scraped ${scrapedPosts.length} posts from feed`);
+                        if (scrapedPosts.length > 0) {
+                            await fetch(`${apiUrl}/api/scraped-posts`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: scrapedPosts }) });
+                        }
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                        console.log(`✅ POLL-ALARM: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: scrape_feed_now failed:', e);
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally {
+                        if (scrapeTab) { try { await chrome.tabs.remove(scrapeTab.id); } catch (e) {} globalThis._commandLinkedInTabs.delete(scrapeTab.id); }
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
+                }
+
+                // --- scrape_comments ---
+                else if (cmd.command === 'scrape_comments' && cmd.data?.profileUrl) {
+                    console.log('💬 POLL-ALARM: Executing scrape_comments for:', cmd.data.profileUrl);
+                    let commentTab = null;
+                    try {
+                        const profileUrl = cmd.data.profileUrl.replace(/\/+$/, '');
+                        const urlMatch = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/);
+                        const targetProfileId = urlMatch ? urlMatch[1] : 'unknown';
+                        const activityUrl = `${profileUrl}/recent-activity/comments/`;
+                        const tab = await chrome.tabs.create({ url: activityUrl, active: false });
+                        commentTab = tab;
+                        globalThis._commandLinkedInTabs.add(tab.id);
+                        await new Promise((resolve) => {
+                            const check = (tabId, info) => { if (tabId === tab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
+                            chrome.tabs.onUpdated.addListener(check);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
+                        });
+                        await new Promise(r => setTimeout(r, 5000));
+                        await scrollAndLoadContent(tab.id, 8);
+                        await new Promise(r => setTimeout(r, 2000));
+                        const scrapeResult = await chrome.scripting.executeScript({
+                            target: { tabId: tab.id },
+                            func: (targetId) => {
+                                const results = [];
+                                const postCards = document.querySelectorAll('.profile-creator-shared-feed-update__container, [data-urn*="activity"], .feed-shared-update-v2');
+                                for (const card of postCards) {
+                                    const postTextEl = card.querySelector('.update-components-text, .feed-shared-text');
+                                    const postText = postTextEl ? postTextEl.innerText?.trim() : '';
+                                    if (!postText || postText.length < 20) continue;
+                                    const commentEls = card.querySelectorAll('.comments-comment-item, .comments-comment-entity');
+                                    for (const cEl of commentEls) {
+                                        const commentTextEl = cEl.querySelector('.comments-comment-item__main-content, .update-components-text');
+                                        const commentText = commentTextEl ? commentTextEl.innerText?.trim() : '';
+                                        if (!commentText || commentText.length < 5) continue;
+                                        const authorEl = cEl.querySelector('.comments-post-meta__name-text a, .comments-comment-item__post-meta a');
+                                        const authorName = authorEl ? authorEl.textContent?.trim() : '';
+                                        const authorLink = authorEl ? authorEl.href : '';
+                                        const isTargetComment = authorLink.includes(`/in/${targetId}`);
+                                        if (isTargetComment) {
+                                            results.push({ postText: postText.substring(0, 2000), context: 'DIRECT COMMENT ON POST', commentText: commentText.substring(0, 1000) });
+                                        }
+                                    }
+                                }
+                                return { comments: results, count: results.length };
+                            },
+                            args: [targetProfileId]
+                        });
+                        const result = scrapeResult?.[0]?.result || { comments: [], count: 0 };
+                        console.log(`POLL-ALARM: Scraped ${result.count} comments from ${targetProfileId}`);
+                        if (result.comments.length > 0) {
+                            await fetch(`${apiUrl}/api/scraped-comments`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ profileUrl: cmd.data.profileUrl, profileId: targetProfileId, profileName: cmd.data.profileName || targetProfileId, comments: result.comments })
+                            });
+                        }
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                        console.log(`✅ POLL-ALARM: scrape_comments done, saved ${result.count} comments`);
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: scrape_comments failed:', e);
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally {
+                        if (commentTab) { try { await chrome.tabs.remove(commentTab.id); } catch (e) {} globalThis._commandLinkedInTabs.delete(commentTab.id); }
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
+                }
+
+                // --- post_to_linkedin ---
+                else if (cmd.command === 'post_to_linkedin' && cmd.data?.content) {
+                    console.log('📝 POLL-ALARM: Executing post_to_linkedin...');
+                    // Delegate to the message handler version (already implemented there)
+                    // For now mark as pending so next poll via message handler picks it up
+                    globalThis._processingCommandIds.delete(cmd.id);
+                    try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'queued' }) }); } catch (x) {}
+                }
+
+                // --- unknown command ---
+                else {
+                    console.log('⚠️ POLL-ALARM: Unknown command:', cmd.command);
+                    globalThis._processingCommandIds.delete(cmd.id);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('POLL-ALARM: Error polling commands:', error);
+    } finally {
+        globalThis._pollCommandsRunning = false;
+    }
+}
+
 // Helper function to wait for content to load
 async function waitForContentLoad(tabId, maxWaitTime = 10000) {
     const startTime = Date.now();
@@ -3030,6 +3261,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     // Version check alarm
     if (alarm.name === 'versionCheck') {
         await versionChecker.handleAlarm(alarm);
+    }
+
+    // Command poller alarm - polls for website commands every 30s
+    if (alarm.name === 'commandPoller') {
+        await pollCommandsDirectly();
     }
 });
 

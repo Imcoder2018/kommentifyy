@@ -424,24 +424,13 @@ export default function DashboardPage() {
         if (!token) return;
         setInspirationLoading(true);
         try {
-            const res = await fetch('/api/vector/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ query: '', limit: 100 }),
+            const res = await fetch('/api/vector/ingest', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
             });
             const data = await res.json();
-            if (data.success) {
-                // Group by source name
-                const sourcesMap: Record<string, { name: string; profileUrl: string; count: number }> = {};
-                (data.results || []).forEach((r: any) => {
-                    const srcName = r.metadata?.sourceName || r.metadata?.authorName || 'Unknown';
-                    const srcUrl = r.metadata?.profileUrl || '';
-                    if (!sourcesMap[srcName]) {
-                        sourcesMap[srcName] = { name: srcName, profileUrl: srcUrl, count: 0 };
-                    }
-                    sourcesMap[srcName].count++;
-                });
-                setInspirationSources(Object.values(sourcesMap));
+            if (data.success && data.sources) {
+                setInspirationSources(data.sources.map((s: any) => ({ name: s.name, profileUrl: s.profileUrl, count: s.postCount || 0 })));
             }
         } catch {} finally { setInspirationLoading(false); }
     };
@@ -877,7 +866,7 @@ export default function DashboardPage() {
     ];
 
     return (
-        <div style={{ 
+        <div data-theme={theme} style={{ 
             fontFamily: 'system-ui, -apple-system, sans-serif', 
             minHeight: '100vh', 
             background: theme === 'light' ? 'linear-gradient(135deg, #f8f9fc 0%, #eef1f8 100%)' : theme === 'dark' ? 'linear-gradient(135deg, #0a0a1a 0%, #111128 100%)' : 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)',
@@ -901,12 +890,59 @@ export default function DashboardPage() {
                     <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '16px', opacity: 0.7, marginLeft: '8px' }}>✕</button>
                 </div>
             )}
-            <style>{`@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+            <style>{`
+                @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                /* Fix select dropdown options for dark/current themes */
+                [data-theme="current"] select option,
+                [data-theme="dark"] select option {
+                    background: #1a1a3e !important;
+                    color: white !important;
+                }
+                /* ===== LIGHT THEME OVERRIDES ===== */
+                [data-theme="light"] { color: #1a1a2e !important; }
+                [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] h4, [data-theme="light"] h5 { color: #1a1a2e !important; }
+                [data-theme="light"] p, [data-theme="light"] span, [data-theme="light"] label, [data-theme="light"] div { color: inherit; }
+                /* Sidebar */
+                [data-theme="light"] > div:nth-child(3) { background: rgba(255,255,255,0.95) !important; border-right-color: rgba(0,0,0,0.1) !important; }
+                [data-theme="light"] > div:nth-child(3) button { color: #444 !important; }
+                [data-theme="light"] > div:nth-child(3) button:hover { background: rgba(105,63,233,0.08) !important; }
+                /* Main content area text */
+                [data-theme="light"] input, [data-theme="light"] textarea {
+                    background: rgba(0,0,0,0.04) !important; color: #1a1a2e !important; border-color: rgba(0,0,0,0.15) !important;
+                }
+                [data-theme="light"] input::placeholder, [data-theme="light"] textarea::placeholder { color: #999 !important; }
+                [data-theme="light"] select {
+                    background: rgba(0,0,0,0.04) !important; color: #1a1a2e !important; border-color: rgba(0,0,0,0.15) !important;
+                }
+                [data-theme="light"] select option { background: white !important; color: #1a1a2e !important; }
+                /* Cards and containers */
+                [data-theme="light"] [style*="rgba(255,255,255,0.05)"],
+                [data-theme="light"] [style*="rgba(255,255,255,0.08)"] {
+                    background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.1) !important;
+                }
+                /* Fix all white text to dark */
+                [data-theme="light"] [style*="color: white"],
+                [data-theme="light"] [style*="color: rgb(255, 255, 255)"] { color: #1a1a2e !important; }
+                [data-theme="light"] [style*="color: rgba(255, 255, 255"] { color: #444 !important; }
+                /* Table styling */
+                [data-theme="light"] table { color: #1a1a2e !important; }
+                [data-theme="light"] th, [data-theme="light"] td { color: #333 !important; }
+                /* Buttons - keep gradient buttons as-is */
+                [data-theme="light"] button[style*="linear-gradient"] { color: white !important; }
+                /* Tab content sections */
+                [data-theme="light"] [style*="background: rgba(255,255,255,0.05)"] { background: rgba(0,0,0,0.03) !important; }
+                [data-theme="light"] [style*="background: rgba(255,255,255,0.08)"] { background: rgba(0,0,0,0.04) !important; }
+                [data-theme="light"] [style*="border: 1px solid rgba(255,255,255"] { border-color: rgba(0,0,0,0.12) !important; }
+                [data-theme="light"] [style*="border: 2px solid rgba(255,255,255"] { border-color: rgba(0,0,0,0.12) !important; }
+                /* Status badges */
+                [data-theme="light"] [style*="rgba(16,185,129,0.08)"] { background: rgba(16,185,129,0.1) !important; }
+                [data-theme="light"] [style*="rgba(105,63,233,0.08)"] { background: rgba(105,63,233,0.08) !important; }
+            `}</style>
             {/* Professional Sidebar */}
             <div style={{
                 width: sidebarCollapsed ? '80px' : '260px',
-                background: 'rgba(15, 15, 35, 0.95)',
-                borderRight: '1px solid rgba(255,255,255,0.08)',
+                background: theme === 'light' ? 'rgba(255,255,255,0.97)' : 'rgba(15, 15, 35, 0.95)',
+                borderRight: theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.08)',
                 height: '100vh',
                 position: 'fixed',
                 left: 0,
@@ -1023,7 +1059,7 @@ export default function DashboardPage() {
                 {/* Navigation */}
                 <div style={{ flex: 1, padding: '0 12px', overflowY: 'auto' }}>
                     {!sidebarCollapsed && (
-                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', paddingLeft: '12px', letterSpacing: '1.5px', fontWeight: '600' }}>
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', marginBottom: '12px', paddingLeft: '12px', letterSpacing: '1.5px', fontWeight: '600' }}>
                             Dashboard
                         </div>
                     )}
@@ -1042,7 +1078,7 @@ export default function DashboardPage() {
                                 background: activeTab === item.id 
                                     ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
                                     : 'transparent',
-                                color: activeTab === item.id ? 'white' : 'rgba(255,255,255,0.6)',
+                                color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'),
                                 border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent',
                                 borderRadius: '12px',
                                 cursor: 'pointer',
@@ -1059,7 +1095,7 @@ export default function DashboardPage() {
                     ))}
 
                     {!sidebarCollapsed && (
-                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
                             Settings
                         </div>
                     )}
@@ -1071,6 +1107,7 @@ export default function DashboardPage() {
                             key={item.id}
                             onClick={() => item.action ? item.action() : setActiveTab(item.id)}
                             title={sidebarCollapsed ? item.label : undefined}
+                            data-settings-btn="true"
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1080,7 +1117,7 @@ export default function DashboardPage() {
                                 background: activeTab === item.id 
                                     ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
                                     : 'transparent',
-                                color: activeTab === item.id ? 'white' : 'rgba(255,255,255,0.6)',
+                                color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'),
                                 border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent',
                                 borderRadius: '12px',
                                 cursor: 'pointer',

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface ReferralData {
     referralCode: string;
@@ -26,14 +26,23 @@ interface ReferralData {
 }
 
 export default function DashboardPage() {
+    return (
+        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)' }}><div style={{ textAlign: 'center', color: 'white' }}><div style={{ fontSize: '48px', marginBottom: '20px' }}>⚡</div><div style={{ fontSize: '18px', opacity: 0.8 }}>Loading your dashboard...</div></div></div>}>
+            <DashboardContent />
+        </Suspense>
+    );
+}
+
+function DashboardContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [user, setUser] = useState<any>(null);
     const [usage, setUsage] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [referralData, setReferralData] = useState<ReferralData | null>(null);
     const [copied, setCopied] = useState(false);
     const [showReferrals, setShowReferrals] = useState(false);
-    const [activeTab, setActiveTab] = useState<string>('overview');
+    const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'overview');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     // Writer tab state
@@ -818,11 +827,12 @@ export default function DashboardPage() {
     // Load data when tabs become active
     const handleTabChange = (tabId: string) => {
         setActiveTab(tabId);
+        // Update URL without full navigation so reload preserves tab
+        window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
         if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); }
         if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
-        if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); }
+        if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tabId === 'tasks') loadTasks();
-        if (tabId === 'feed-schedule') loadFeedSchedule();
         if (tabId === 'history') loadHistory();
     };
 
@@ -857,12 +867,11 @@ export default function DashboardPage() {
 
     const navItems = [
         { id: 'overview', label: 'Overview', icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10') },
+        { id: 'trending-posts', label: 'Trending Posts', icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z') },
         { id: 'writer', label: 'Post Writer', icon: svgIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z') },
         { id: 'comments', label: 'Comments', icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z') },
-        { id: 'trending-posts', label: 'Trending Posts', icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z') },
         { id: 'tasks', label: 'Tasks', icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11') },
         { id: 'history', label: 'History', icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z') },
-        { id: 'feed-schedule', label: 'Feed Schedule', icon: svgIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z') },
         { id: 'usage', label: 'Usage & Limits', icon: svgIcon('M18 20V10 M12 20V4 M6 20v-6') },
         { id: 'referrals', label: 'Referrals', icon: svgIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z') },
         { id: 'extension', label: 'Extension', icon: svgIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z') },
@@ -1065,7 +1074,7 @@ export default function DashboardPage() {
                         <div style={{ 
                             display: 'flex', 
                             alignItems: 'center', 
-                            justifyContent: 'space-between',
+                            justifyContent: 'center',
                             padding: '8px 12px',
                             background: 'rgba(16,185,129,0.15)',
                             borderRadius: '8px',
@@ -1073,9 +1082,6 @@ export default function DashboardPage() {
                         }}>
                             <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
                                 {user?.plan?.name || 'Free'} Plan
-                            </span>
-                            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
-                                ${user?.plan?.price || 0}/mo
                             </span>
                         </div>
                     </div>
@@ -1150,7 +1156,7 @@ export default function DashboardPage() {
                     {settingsItems.map(item => (
                         <button
                             key={item.id}
-                            onClick={() => item.action ? item.action() : setActiveTab(item.id)}
+                            onClick={() => item.action ? item.action() : handleTabChange(item.id)}
                             title={sidebarCollapsed ? item.label : undefined}
                             data-settings-btn="true"
                             style={{
@@ -1248,13 +1254,14 @@ export default function DashboardPage() {
                             fontSize: '32px', 
                             fontWeight: '800',
                             color: 'white',
-                            margin: 0,
-                            marginBottom: '8px'
+                            margin: '0 0 8px 0',
                         }}>
-                            {activeTab === 'overview' && 'Welcome back, ' + (user?.name?.split(' ')[0] || 'User') + '! 👋'}
-                            {activeTab === 'writer' && 'Post Writer ✍️'}
-                            {activeTab === 'saved-posts' && 'Saved Posts 📋'}
-                            {activeTab === 'feed-schedule' && 'Feed Schedule ⏰'}
+                            {activeTab === 'overview' && 'Overview'}
+                            {activeTab === 'writer' && 'Post Writer'}
+                            {activeTab === 'comments' && 'Comments'}
+                            {activeTab === 'trending-posts' && 'Trending Posts'}
+                            {activeTab === 'tasks' && 'Tasks'}
+                            {activeTab === 'history' && 'History'}
                             {activeTab === 'usage' && 'Usage & Limits'}
                             {activeTab === 'referrals' && 'Referral Program'}
                             {activeTab === 'extension' && 'Chrome Extension'}
@@ -1263,8 +1270,10 @@ export default function DashboardPage() {
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '15px', margin: 0 }}>
                             {activeTab === 'overview' && 'Here\'s what\'s happening with your LinkedIn automation'}
                             {activeTab === 'writer' && 'Create AI-powered LinkedIn posts and publish via extension'}
-                            {activeTab === 'saved-posts' && 'View and manage posts saved from your LinkedIn feed'}
-                            {activeTab === 'feed-schedule' && 'Schedule automatic feed scraping and post saving'}
+                            {activeTab === 'trending-posts' && 'Scrape, analyze and generate viral posts from trending content'}
+                            {activeTab === 'comments' && 'Configure AI comment generation settings and style profiles'}
+                            {activeTab === 'tasks' && 'View and manage extension tasks'}
+                            {activeTab === 'history' && 'Browse your generation and publishing history'}
                             {activeTab === 'usage' && 'Monitor your daily usage and plan limits'}
                             {activeTab === 'referrals' && 'Earn 30% commission on every paid referral'}
                             {activeTab === 'extension' && 'Install the Chrome extension to get started'}
@@ -1785,7 +1794,7 @@ export default function DashboardPage() {
                                 <>
                                 {/* Use Profile Style Toggle */}
                                 <div style={{ background: csUseProfileStyle ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)', padding: '16px 20px', borderRadius: '14px', border: `1px solid ${csUseProfileStyle ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', transition: 'all 0.2s' }}
-                                    onClick={() => setCsUseProfileStyle(!csUseProfileStyle)}>
+                                    onClick={() => { const newVal = !csUseProfileStyle; setCsUseProfileStyle(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { if (d.success) showToast('Settings auto-saved!', 'success'); }); }, 100); }}>
                                     <div style={{ width: '48px', height: '26px', borderRadius: '13px', background: csUseProfileStyle ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
                                         <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileStyle ? '24px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                                     </div>
@@ -2076,6 +2085,7 @@ export default function DashboardPage() {
                                         const token = localStorage.getItem('authToken');
                                         if (!token) { setTrendingStatus('Not authenticated'); return; }
                                         setTrendingStatus('Sending scrape task to extension...');
+                                        await saveFeedSchedule();
                                         const res = await fetch('/api/extension/command', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -2086,6 +2096,34 @@ export default function DashboardPage() {
                                         else setTrendingStatus(data.error || 'Failed to send task');
                                     } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
                                 }} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' }}>🚀 Start Now</button>
+                            </div>
+                            {/* Schedule Times (moved from Feed Schedule tab) */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px', flexWrap: 'wrap' }}>
+                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>🕐 Daily Schedule:</span>
+                                {scheduleTimesInput.map((time, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '8px', padding: '4px 8px' }}>
+                                        <input type="time" value={time} onChange={e => { const arr = [...scheduleTimesInput]; arr[i] = e.target.value; setScheduleTimesInput(arr); }}
+                                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '12px', outline: 'none', width: '70px' }} />
+                                        <button onClick={() => setScheduleTimesInput(scheduleTimesInput.filter((_, idx) => idx !== i))}
+                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
+                                    </div>
+                                ))}
+                                <button onClick={() => {
+                                    const now = new Date(); now.setMinutes(now.getMinutes() + 2);
+                                    setScheduleTimesInput([...scheduleTimesInput, `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`]);
+                                }}
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: '8px', padding: '4px 10px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '12px' }}>
+                                    + Add Time
+                                </button>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', cursor: 'pointer' }}>
+                                    <span style={{ color: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600' }}>
+                                        {scheduleActive ? '🟢 Active' : '🔴 Off'}
+                                    </span>
+                                    <div onClick={() => setScheduleActive(!scheduleActive)} style={{ width: '36px', height: '20px', background: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.2)', borderRadius: '10px', padding: '2px', cursor: 'pointer', transition: 'background 0.2s' }}>
+                                        <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '8px', transition: 'transform 0.2s', transform: scheduleActive ? 'translateX(16px)' : 'translateX(0)' }} />
+                                    </div>
+                                </label>
+                                <button onClick={saveFeedSchedule} style={{ padding: '4px 12px', background: 'rgba(105,63,233,0.3)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '8px', color: '#a78bfa', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>💾 Save</button>
                             </div>
                         </div>
                         {/* Kommentify Trending Posts (Admin-shared) */}
@@ -2351,11 +2389,17 @@ export default function DashboardPage() {
                             <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0 }}>📋 Extension Tasks</h3>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <button onClick={loadTasks}
-                                    style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
+                                    style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.15s ease', transform: 'scale(1)' }}
+                                    onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
+                                    onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+                                    onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
                                     🔄 Refresh
                                 </button>
                                 <button onClick={stopAllTasks}
-                                    style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 15px rgba(239,68,68,0.4)' }}>
+                                    style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 15px rgba(239,68,68,0.4)', transition: 'all 0.15s ease', transform: 'scale(1)' }}
+                                    onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
+                                    onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+                                    onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
                                     🛑 Stop All Tasks
                                 </button>
                             </div>
@@ -2551,129 +2595,6 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* Feed Schedule Tab */}
-                {activeTab === 'feed-schedule' && (
-                    <div style={{ maxWidth: '800px' }}>
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '30px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0 }}>⏰ Feed Scraping Schedule</h3>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                                    <span style={{ color: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600' }}>
-                                        {scheduleActive ? '🟢 Active' : '🔴 Inactive'}
-                                    </span>
-                                    <div onClick={() => setScheduleActive(!scheduleActive)} style={{ width: '44px', height: '24px', background: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.2)', borderRadius: '12px', padding: '2px', cursor: 'pointer', transition: 'background 0.2s' }}>
-                                        <div style={{ width: '20px', height: '20px', background: 'white', borderRadius: '10px', transition: 'transform 0.2s', transform: scheduleActive ? 'translateX(20px)' : 'translateX(0)' }} />
-                                    </div>
-                                </label>
-                            </div>
-                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginBottom: '24px' }}>
-                                Configure when the extension should automatically visit your LinkedIn feed and save posts matching your criteria.
-                            </p>
-                            {/* Schedule Times */}
-                            <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '600', marginBottom: '10px' }}>🕐 Schedule Times (daily)</label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-                                    {scheduleTimesInput.map((time, i) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '10px', padding: '8px 12px' }}>
-                                            <input type="time" value={time} onChange={e => { const arr = [...scheduleTimesInput]; arr[i] = e.target.value; setScheduleTimesInput(arr); }}
-                                                style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '14px', outline: 'none' }} />
-                                            <button onClick={() => setScheduleTimesInput(scheduleTimesInput.filter((_, idx) => idx !== i))}
-                                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px', padding: '0 4px' }}>×</button>
-                                        </div>
-                                    ))}
-                                    <button onClick={() => {
-                                        const now = new Date();
-                                        now.setMinutes(now.getMinutes() + 2);
-                                        const hh = String(now.getHours()).padStart(2, '0');
-                                        const mm = String(now.getMinutes()).padStart(2, '0');
-                                        setScheduleTimesInput([...scheduleTimesInput, `${hh}:${mm}`]);
-                                    }}
-                                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: '10px', padding: '8px 16px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '14px' }}>
-                                        + Add Time
-                                    </button>
-                                </div>
-                            </div>
-                            {/* Duration */}
-                            <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '600', marginBottom: '10px' }}>
-                                    <span>⏱️ Duration per session</span>
-                                    <strong style={{ color: '#a78bfa' }}>{scheduleDuration} min</strong>
-                                </label>
-                                <input type="range" min="1" max="30" value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))}
-                                    style={{ width: '100%', accentColor: '#693fe9' }} />
-                            </div>
-                            {/* Criteria */}
-                            <h4 style={{ color: 'white', fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>🎯 Post Qualification Criteria</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                                <div>
-                                    <label style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
-                                        <span>❤️ Min Likes</span>
-                                        <strong style={{ color: '#ec4899' }}>{scheduleMinLikes}</strong>
-                                    </label>
-                                    <input type="range" min="0" max="500" step="5" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value))}
-                                        style={{ width: '100%', accentColor: '#ec4899' }} />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
-                                        <span>💬 Min Comments</span>
-                                        <strong style={{ color: '#8b5cf6' }}>{scheduleMinComments}</strong>
-                                    </label>
-                                    <input type="range" min="0" max="200" step="5" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value))}
-                                        style={{ width: '100%', accentColor: '#8b5cf6' }} />
-                                </div>
-                            </div>
-                            {/* Keywords */}
-                            <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '600', marginBottom: '10px' }}>🔑 Keywords to match (comma-separated)</label>
-                                <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="e.g., AI, machine learning, startup, SaaS"
-                                    style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                                <small style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '6px', display: 'block' }}>Leave empty to save all posts. Posts containing any of these words will be captured.</small>
-                            </div>
-                            {/* Save & Run Buttons */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                <button onClick={saveFeedSchedule}
-                                    style={{ padding: '16px', background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)' }}>
-                                    💾 Save Schedule
-                                </button>
-                                <button onClick={async () => {
-                                    setWriterStatus('Sending scrape task to extension...');
-                                    try {
-                                        const token = localStorage.getItem('authToken');
-                                        if (!token) { setWriterStatus('Not authenticated'); return; }
-                                        // Save schedule first
-                                        await saveFeedSchedule();
-                                        // Send command to extension to start scraping now
-                                        const res = await fetch('/api/extension/command', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                            body: JSON.stringify({ command: 'scrape_feed_now', data: { durationMinutes: scheduleDuration, minLikes: scheduleMinLikes, minComments: scheduleMinComments, keywords: scheduleKeywords } }),
-                                        });
-                                        const data = await res.json();
-                                        if (data.success) {
-                                            setWriterStatus('✅ Scrape task sent! Extension will open LinkedIn and start scraping.');
-                                            // Trigger extension via custom event
-                                            window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { detail: { command: 'scrape_feed_now' } }));
-                                        } else setWriterStatus(data.error || 'Failed to send task');
-                                    } catch (e: any) { setWriterStatus('Error: ' + e.message); }
-                                }}
-                                    style={{ padding: '16px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
-                                    🚀 Send Task Now
-                                </button>
-                            </div>
-                        </div>
-                        {/* Info Card */}
-                        <div style={{ background: 'rgba(105,63,233,0.1)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                            <h4 style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '700', marginBottom: '10px' }}>ℹ️ How it works</h4>
-                            <ul style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', lineHeight: '1.8', margin: 0, paddingLeft: '20px' }}>
-                                <li>The extension will automatically open LinkedIn at your scheduled times</li>
-                                <li>It scrolls through your feed for the configured duration</li>
-                                <li>Posts matching your criteria (likes, comments, keywords) will be saved</li>
-                                <li>You can review all saved posts in the "Saved Posts" tab</li>
-                                <li>Make sure the extension is installed and you are logged into LinkedIn</li>
-                            </ul>
-                        </div>
-                    </div>
-                )}
 
                 {/* Usage Tab */}
                 {activeTab === 'usage' && (
@@ -2830,7 +2751,7 @@ export default function DashboardPage() {
                             <div>
                                 <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Current Plan</label>
                                 <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, rgba(105,63,233,0.2), rgba(139,92,246,0.1))', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(105,63,233,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span>{user?.plan?.name || 'Free'} - ${user?.plan?.price || 0}/mo</span>
+                                    <span>{user?.plan?.name || 'Free'}</span>
                                     <button onClick={() => router.push('/plans')} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Change Plan</button>
                                 </div>
                             </div>

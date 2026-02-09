@@ -333,20 +333,21 @@ export default function DashboardPage() {
     };
 
     // Saved posts functions
-    const loadSavedPosts = async (page = 1) => {
+    const loadSavedPosts = async (page = 1, periodOverride?: string) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         setSavedPostsLoading(true);
         try {
             // Calculate date filter based on trending period
+            const activePeriod = periodOverride !== undefined ? periodOverride : trendingPeriod;
             let periodFilter = '';
-            if (trendingPeriod === 'today') {
+            if (activePeriod === 'today') {
                 const d = new Date(); d.setHours(0,0,0,0);
                 periodFilter = d.toISOString();
-            } else if (trendingPeriod === 'week') {
+            } else if (activePeriod === 'week') {
                 const d = new Date(); d.setDate(d.getDate() - 7);
                 periodFilter = d.toISOString();
-            } else if (trendingPeriod === 'month') {
+            } else if (activePeriod === 'month') {
                 const d = new Date(); d.setMonth(d.getMonth() - 1);
                 periodFilter = d.toISOString();
             }
@@ -734,12 +735,13 @@ export default function DashboardPage() {
     };
 
     // History functions
-    const loadHistory = async (page = 1) => {
+    const loadHistory = async (page = 1, filterOverride?: string) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         setHistoryLoading(true);
         try {
-            const typeParam = historyFilter === 'all' ? '' : historyFilter;
+            const activeFilter = filterOverride !== undefined ? filterOverride : historyFilter;
+            const typeParam = activeFilter === 'all' ? '' : activeFilter;
             const res = await fetch(`/api/history?page=${page}&limit=20${typeParam ? `&type=${typeParam}` : ''}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -847,22 +849,28 @@ export default function DashboardPage() {
         );
     }
 
+    const svgIcon = (path: string, color = 'currentColor') => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d={path} />
+        </svg>
+    );
+
     const navItems = [
-        { id: 'overview', label: 'Overview', icon: '🏠' },
-        { id: 'writer', label: 'Post Writer', icon: '✍️' },
-        { id: 'comments', label: 'Comments', icon: '💬' },
-        { id: 'trending-posts', label: 'Trending Posts', icon: '🔥' },
-        { id: 'tasks', label: 'Tasks', icon: '📋' },
-        { id: 'history', label: 'History', icon: '📜' },
-        { id: 'feed-schedule', label: 'Feed Schedule', icon: '⏰' },
-        { id: 'usage', label: 'Usage & Limits', icon: '📊' },
-        { id: 'referrals', label: 'Referrals', icon: '🎁' },
-        { id: 'extension', label: 'Extension', icon: '🧩' },
+        { id: 'overview', label: 'Overview', icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10') },
+        { id: 'writer', label: 'Post Writer', icon: svgIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z') },
+        { id: 'comments', label: 'Comments', icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z') },
+        { id: 'trending-posts', label: 'Trending Posts', icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z') },
+        { id: 'tasks', label: 'Tasks', icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11') },
+        { id: 'history', label: 'History', icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z') },
+        { id: 'feed-schedule', label: 'Feed Schedule', icon: svgIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z') },
+        { id: 'usage', label: 'Usage & Limits', icon: svgIcon('M18 20V10 M12 20V4 M6 20v-6') },
+        { id: 'referrals', label: 'Referrals', icon: svgIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z') },
+        { id: 'extension', label: 'Extension', icon: svgIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z') },
     ];
 
     const settingsItems = [
-        { id: 'account', label: 'Account', icon: '👤' },
-        { id: 'billing', label: 'Billing', icon: '💳', action: () => router.push('/plans') },
+        { id: 'account', label: 'Account', icon: svgIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z') },
+        { id: 'billing', label: 'Billing', icon: svgIcon('M1 4h22v16H1z M1 10h22'), action: () => router.push('/plans') },
     ];
 
     return (
@@ -902,41 +910,78 @@ export default function DashboardPage() {
                 [data-theme="light"] { color: #1a1a2e !important; }
                 [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3, [data-theme="light"] h4, [data-theme="light"] h5 { color: #1a1a2e !important; }
                 [data-theme="light"] p, [data-theme="light"] span, [data-theme="light"] label, [data-theme="light"] div { color: inherit; }
-                /* Sidebar */
-                [data-theme="light"] > div:nth-child(3) { background: rgba(255,255,255,0.95) !important; border-right-color: rgba(0,0,0,0.1) !important; }
-                [data-theme="light"] > div:nth-child(3) button { color: #444 !important; }
-                [data-theme="light"] > div:nth-child(3) button:hover { background: rgba(105,63,233,0.08) !important; }
                 /* Main content area text */
                 [data-theme="light"] input, [data-theme="light"] textarea {
-                    background: rgba(0,0,0,0.04) !important; color: #1a1a2e !important; border-color: rgba(0,0,0,0.15) !important;
+                    background: white !important; color: #1a1a2e !important; border-color: rgba(0,0,0,0.2) !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
                 }
                 [data-theme="light"] input::placeholder, [data-theme="light"] textarea::placeholder { color: #999 !important; }
                 [data-theme="light"] select {
-                    background: rgba(0,0,0,0.04) !important; color: #1a1a2e !important; border-color: rgba(0,0,0,0.15) !important;
+                    background: white !important; color: #1a1a2e !important; border-color: rgba(0,0,0,0.2) !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
                 }
                 [data-theme="light"] select option { background: white !important; color: #1a1a2e !important; }
-                /* Cards and containers */
-                [data-theme="light"] [style*="rgba(255,255,255,0.05)"],
-                [data-theme="light"] [style*="rgba(255,255,255,0.08)"] {
-                    background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.1) !important;
-                }
-                /* Fix all white text to dark */
+                /* SVG icons in sidebar */
+                [data-theme="light"] svg { stroke: currentColor !important; }
+                /* Fix all white text to dark - comprehensive */
                 [data-theme="light"] [style*="color: white"],
                 [data-theme="light"] [style*="color: rgb(255, 255, 255)"] { color: #1a1a2e !important; }
-                [data-theme="light"] [style*="color: rgba(255, 255, 255"] { color: #444 !important; }
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.8)"],
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.85)"],
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.7)"] { color: #333 !important; }
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.6)"],
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.5)"] { color: #666 !important; }
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.4)"],
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.3)"],
+                [data-theme="light"] [style*="color: rgba(255, 255, 255, 0.35)"] { color: #888 !important; }
+                /* Cards, containers and boxes - make visible */
+                [data-theme="light"] [style*="background: rgba(255, 255, 255, 0.05)"],
+                [data-theme="light"] [style*="background: rgba(255,255,255,0.05)"] { background: white !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important; }
+                [data-theme="light"] [style*="background: rgba(255, 255, 255, 0.08)"],
+                [data-theme="light"] [style*="background: rgba(255,255,255,0.08)"] { background: rgba(245,245,250,0.9) !important; box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important; }
+                [data-theme="light"] [style*="background: rgba(255, 255, 255, 0.03)"],
+                [data-theme="light"] [style*="background: rgba(255,255,255,0.03)"] { background: rgba(248,248,252,0.8) !important; }
+                [data-theme="light"] [style*="background: rgba(255, 255, 255, 0.04)"],
+                [data-theme="light"] [style*="background: rgba(255,255,255,0.04)"] { background: rgba(245,245,250,0.6) !important; }
+                [data-theme="light"] [style*="background: rgba(0, 0, 0, 0.2)"],
+                [data-theme="light"] [style*="background: rgba(0,0,0,0.2)"],
+                [data-theme="light"] [style*="background: rgba(0, 0, 0, 0.15)"],
+                [data-theme="light"] [style*="background: rgba(0,0,0,0.15)"] { background: rgba(240,240,248,0.8) !important; }
+                /* Borders */
+                [data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255"],
+                [data-theme="light"] [style*="border: 1px solid rgba(255,255,255"] { border-color: rgba(0,0,0,0.1) !important; }
+                [data-theme="light"] [style*="border: 2px solid rgba(255, 255, 255"],
+                [data-theme="light"] [style*="border: 2px solid rgba(255,255,255"] { border-color: rgba(0,0,0,0.12) !important; }
+                [data-theme="light"] [style*="border-top: 1px solid rgba(255, 255, 255"],
+                [data-theme="light"] [style*="border-top: 1px solid rgba(255,255,255"] { border-top-color: rgba(0,0,0,0.08) !important; }
+                [data-theme="light"] [style*="border-right: 1px solid rgba(255, 255, 255"],
+                [data-theme="light"] [style*="borderRight"] { border-right-color: rgba(0,0,0,0.08) !important; }
+                /* Gradient cards - keep visible */
+                [data-theme="light"] [style*="background: linear-gradient(135deg, rgba(105,63,233"] { background: linear-gradient(135deg, rgba(105,63,233,0.08), rgba(139,92,246,0.05)) !important; border-color: rgba(105,63,233,0.2) !important; }
+                [data-theme="light"] [style*="background: linear-gradient(135deg, rgba(16,185,129"] { background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.05)) !important; border-color: rgba(16,185,129,0.2) !important; }
+                [data-theme="light"] [style*="background: linear-gradient(135deg, rgba(245,158,11"] { background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(217,119,6,0.05)) !important; border-color: rgba(245,158,11,0.2) !important; }
                 /* Table styling */
                 [data-theme="light"] table { color: #1a1a2e !important; }
-                [data-theme="light"] th, [data-theme="light"] td { color: #333 !important; }
-                /* Buttons - keep gradient buttons as-is */
+                [data-theme="light"] th { color: #555 !important; }
+                [data-theme="light"] td { color: #333 !important; }
+                /* Buttons - keep gradient buttons white text */
                 [data-theme="light"] button[style*="linear-gradient"] { color: white !important; }
-                /* Tab content sections */
-                [data-theme="light"] [style*="background: rgba(255,255,255,0.05)"] { background: rgba(0,0,0,0.03) !important; }
-                [data-theme="light"] [style*="background: rgba(255,255,255,0.08)"] { background: rgba(0,0,0,0.04) !important; }
-                [data-theme="light"] [style*="border: 1px solid rgba(255,255,255"] { border-color: rgba(0,0,0,0.12) !important; }
-                [data-theme="light"] [style*="border: 2px solid rgba(255,255,255"] { border-color: rgba(0,0,0,0.12) !important; }
-                /* Status badges */
-                [data-theme="light"] [style*="rgba(16,185,129,0.08)"] { background: rgba(16,185,129,0.1) !important; }
-                [data-theme="light"] [style*="rgba(105,63,233,0.08)"] { background: rgba(105,63,233,0.08) !important; }
+                /* Toast text */
+                [data-theme="light"] [style*="animation: slideIn"] { color: white !important; }
+                /* Progress bars */
+                [data-theme="light"] [style*="background: rgba(255, 255, 255, 0.1)"],
+                [data-theme="light"] [style*="background: rgba(255,255,255,0.1)"] { background: rgba(0,0,0,0.08) !important; }
+                /* Logout border */
+                [data-theme="light"] [style*="border-top: 1px solid rgba(255,255,255,0.08)"] { border-top-color: rgba(0,0,0,0.08) !important; }
+                /* Sidebar collapse divider */
+                [data-theme="light"] [style*="borderTop: 1px solid rgba(255,255,255,0.1)"] { border-top-color: rgba(0,0,0,0.1) !important; }
+                /* Colored status badges - keep readable */
+                [data-theme="light"] [style*="rgba(16,185,129,0.08)"] { background: rgba(16,185,129,0.08) !important; }
+                [data-theme="light"] [style*="rgba(105,63,233,0.08)"],
+                [data-theme="light"] [style*="rgba(105,63,233,0.06)"] { background: rgba(105,63,233,0.06) !important; }
+                [data-theme="light"] [style*="rgba(245,158,11,0.08)"] { background: rgba(245,158,11,0.06) !important; }
+                [data-theme="light"] [style*="rgba(59,130,246,0.12)"] { background: rgba(59,130,246,0.08) !important; }
+                [data-theme="light"] [style*="rgba(59,130,246,0.08)"] { background: rgba(59,130,246,0.06) !important; }
             `}</style>
             {/* Professional Sidebar */}
             <div style={{
@@ -1089,7 +1134,7 @@ export default function DashboardPage() {
                                 gap: '12px'
                             }}
                         >
-                            <span style={{ fontSize: '18px' }}>{item.icon}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
                             {!sidebarCollapsed && item.label}
                         </button>
                     ))}
@@ -1128,7 +1173,7 @@ export default function DashboardPage() {
                                 gap: '12px'
                             }}
                         >
-                            <span style={{ fontSize: '18px' }}>{item.icon}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
                             {!sidebarCollapsed && item.label}
                         </button>
                     ))}
@@ -1227,27 +1272,6 @@ export default function DashboardPage() {
                         </p>
                     </div>
                     
-                    <button 
-                        onClick={() => router.push('/plans')}
-                        style={{
-                            padding: '12px 24px',
-                            background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '12px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontSize: '14px',
-                            boxShadow: '0 4px 15px rgba(105,63,233,0.4)',
-                            transition: 'all 0.2s ease'
-                        }}
-                    >
-                        <span>⚡</span>
-                        Manage Plan
-                    </button>
                     {/* Theme Toggle */}
                     <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
                         {(['current', 'light', 'dark'] as const).map(t => (
@@ -1273,7 +1297,7 @@ export default function DashboardPage() {
                             }}>
                                 <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Current Plan</div>
                                 <div style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>{user?.plan?.name || 'Free'}</div>
-                                <div style={{ fontSize: '14px', color: '#10b981' }}>${user?.plan?.price || 0}/month</div>
+                                <div style={{ fontSize: '14px', color: '#10b981' }}>Active Plan</div>
                             </div>
 
                             {/* Referral Earnings */}
@@ -1405,14 +1429,23 @@ export default function DashboardPage() {
                         {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 14px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
                         {inspirationSources.length > 0 && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: inspirationSources.length > 0 ? '12px' : '0' }}>
-                                {inspirationSources.map((src: any, i: number) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                {inspirationSources.map((src: any, i: number) => {
+                                    const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
+                                    return (
+                                    <div key={i} onClick={() => {
+                                        if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
+                                        else if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== src.name));
+                                        else setInspirationSelected([...inspirationSelected, src.name]);
+                                    }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: isChecked ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                        <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '15px', height: '15px', cursor: 'pointer' }} />
                                         <span style={{ fontSize: '12px' }}>👤</span>
-                                        <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>{src.name}</span>
+                                        <span style={{ color: isChecked ? '#a78bfa' : 'white', fontSize: '13px', fontWeight: '600' }}>{src.name}</span>
                                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
-                                        <button onClick={() => deleteInspirationSource(src.name)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
+                                        <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                         {inspirationSources.length === 0 && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', textAlign: 'center', margin: '8px 0 0' }}>No sources yet. Add LinkedIn profiles above to get started.</p>}
@@ -1430,13 +1463,21 @@ export default function DashboardPage() {
                             <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.08)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
                                 <div style={{ color: '#fbbf24', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>⭐ Kommentify Shared Profiles</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {sharedInspProfiles.map((p: any, i: number) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                    {sharedInspProfiles.map((p: any, i: number) => {
+                                        const isChecked = inspirationSelected.includes(p.profileName);
+                                        return (
+                                        <div key={i} onClick={() => {
+                                            if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== p.profileName));
+                                            else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
+                                        }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isChecked ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: isChecked ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                            <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '14px', height: '14px', cursor: 'pointer' }} />
                                             <span style={{ fontSize: '11px' }}>👤</span>
-                                            <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{p.profileName}</span>
+                                            <span style={{ color: isChecked ? '#fbbf24' : 'white', fontSize: '12px', fontWeight: '600' }}>{p.profileName}</span>
                                             <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{p.postCount} posts</span>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -1900,13 +1941,19 @@ export default function DashboardPage() {
                                     <h4 style={{ color: '#fbbf24', fontSize: '14px', fontWeight: '700', marginBottom: '10px' }}>⭐ Kommentify Shared Profiles</h4>
                                     <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '10px' }}>Pre-scraped comment profiles shared by Kommentify. Select to use for AI comment style.</p>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                        {sharedCommentProfiles.map((p: any, i: number) => (
-                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                        {sharedCommentProfiles.map((p: any, i: number) => {
+                                            const profileMatch = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
+                                            const isSelected = profileMatch?.isSelected || false;
+                                            return (
+                                            <div key={i} onClick={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: isSelected ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: isSelected ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                                <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: '#f59e0b', width: '15px', height: '15px', cursor: 'pointer' }} />
                                                 <span style={{ fontSize: '12px' }}>💬</span>
-                                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>{p.profileName || p.profileId}</span>
+                                                <span style={{ color: isSelected ? '#fbbf24' : 'white', fontSize: '13px', fontWeight: '600' }}>{p.profileName || p.profileId}</span>
                                                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{p.commentCount} comments</span>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -2065,62 +2112,68 @@ export default function DashboardPage() {
                         {/* Period Filters */}
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
                             {[{ id: 'today', label: '🔥 Today' }, { id: 'week', label: '📈 This Week' }, { id: 'month', label: '📊 This Month' }, { id: 'all', label: '🌐 All Time' }].map(p => (
-                                <button key={p.id} onClick={() => { setTrendingPeriod(p.id); loadSavedPosts(1); }}
+                                <button key={p.id} onClick={() => { setTrendingPeriod(p.id); loadSavedPosts(1, p.id); }}
                                     style={{ padding: '10px 20px', background: trendingPeriod === p.id ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.08)', border: trendingPeriod === p.id ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontWeight: trendingPeriod === p.id ? '700' : '500', cursor: 'pointer', fontSize: '14px' }}>
                                     {p.label}
                                 </button>
                             ))}
                         </div>
                         {/* Controls Row */}
-                        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <input type="text" value={savedPostsSearch} onChange={e => setSavedPostsSearch(e.target.value)} placeholder="Search trending posts..."
-                                onKeyDown={e => e.key === 'Enter' && loadSavedPosts(1)}
-                                style={{ flex: 1, minWidth: '200px', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                            <select value={savedPostsSortBy} onChange={e => { setSavedPostsSortBy(e.target.value); }}
-                                style={{ padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontSize: '13px' }}>
-                                <option value="comments">Comments</option>
-                                <option value="likes">Likes</option>
-                                <option value="shares">Shares</option>
-                                <option value="scrapedAt">Date Saved</option>
-                            </select>
-                            <button onClick={() => loadSavedPosts(1)}
-                                style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>
-                                🔍 Search
-                            </button>
-                        </div>
-                        {/* Selection info + AI Actions */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
-                                Total: <strong style={{ color: 'white' }}>{savedPostsTotal}</strong> trending posts
-                                {trendingSelectedPosts.length > 0 && (
-                                    <span style={{ marginLeft: '16px', color: '#a78bfa' }}>
-                                        {trendingSelectedPosts.length} selected <span style={{ color: 'rgba(255,255,255,0.3)' }}>(max 10)</span>
-                                    </span>
-                                )}
-                            </div>
-                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                <button onClick={() => {
-                                    if (trendingSelectedPosts.length === savedPosts.length) setTrendingSelectedPosts([]);
-                                    else setTrendingSelectedPosts(savedPosts.slice(0, 3).map(p => p.id));
-                                }}
-                                    style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '13px' }}>
-                                    {trendingSelectedPosts.length > 0 ? 'Clear Selection' : 'Auto-Select Top 3'}
-                                </button>
-                                <button onClick={generateTrendingPosts} disabled={trendingGenerating || trendingSelectedPosts.length === 0}
-                                    style={{ padding: '8px 18px', background: trendingGenerating ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: trendingGenerating ? 'wait' : 'pointer', fontSize: '13px', boxShadow: '0 4px 15px rgba(105,63,233,0.3)' }}>
-                                    {trendingGenerating ? '⏳ Generating...' : '🤖 AI Generate Posts'}
-                                </button>
-                                <button onClick={analyzePosts} disabled={analysisLoading || trendingGeneratedPosts.length === 0}
-                                    style={{ padding: '8px 18px', background: analysisLoading ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: analysisLoading ? 'wait' : 'pointer', fontSize: '13px' }}>
-                                    {analysisLoading ? '⏳ Analyzing...' : '📊 Analyze Posts'}
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '20px' }}>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 10px 0' }}>Search and filter your scraped trending posts by keyword, then sort by engagement metrics.</p>
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <input type="text" value={savedPostsSearch} onChange={e => setSavedPostsSearch(e.target.value)} placeholder="Search by keyword in post content..."
+                                    onKeyDown={e => e.key === 'Enter' && loadSavedPosts(1)}
+                                    style={{ flex: 1, minWidth: '200px', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(105,63,233,0.3)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                                <select value={savedPostsSortBy} onChange={e => { setSavedPostsSortBy(e.target.value); }}
+                                    style={{ padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontSize: '13px' }}>
+                                    <option value="comments">Sort: Comments</option>
+                                    <option value="likes">Sort: Likes</option>
+                                    <option value="shares">Sort: Shares</option>
+                                    <option value="scrapedAt">Sort: Date Saved</option>
+                                </select>
+                                <button onClick={() => loadSavedPosts(1)}
+                                    style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>
+                                    🔍 Search
                                 </button>
                             </div>
                         </div>
-                        {/* Custom Prompt */}
-                        <div style={{ marginBottom: '16px' }}>
-                            <input type="text" value={trendingCustomPrompt} onChange={e => setTrendingCustomPrompt(e.target.value)}
-                                placeholder="Custom AI instruction (optional): e.g., Focus on SaaS topics, write for tech founders..."
-                                style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                        {/* AI Actions Panel */}
+                        <div style={{ background: 'rgba(105,63,233,0.06)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
+                                    Total: <strong style={{ color: 'white' }}>{savedPostsTotal}</strong> trending posts
+                                    {trendingSelectedPosts.length > 0 && (
+                                        <span style={{ marginLeft: '16px', color: '#a78bfa' }}>
+                                            {trendingSelectedPosts.length} selected <span style={{ color: 'rgba(255,255,255,0.3)' }}>(max 10)</span>
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                    <button onClick={() => {
+                                        if (trendingSelectedPosts.length === savedPosts.length) setTrendingSelectedPosts([]);
+                                        else setTrendingSelectedPosts(savedPosts.slice(0, 3).map(p => p.id));
+                                    }}
+                                        style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '13px' }}>
+                                        {trendingSelectedPosts.length > 0 ? 'Clear Selection' : 'Auto-Select Top 3'}
+                                    </button>
+                                    <button onClick={generateTrendingPosts} disabled={trendingGenerating || trendingSelectedPosts.length === 0}
+                                        style={{ padding: '8px 18px', background: trendingGenerating ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: trendingGenerating ? 'wait' : 'pointer', fontSize: '13px', boxShadow: '0 4px 15px rgba(105,63,233,0.3)' }}>
+                                        {trendingGenerating ? '⏳ Generating...' : '🤖 AI Generate Posts'}
+                                    </button>
+                                    <button onClick={analyzePosts} disabled={analysisLoading || trendingGeneratedPosts.length === 0}
+                                        style={{ padding: '8px 18px', background: analysisLoading ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: analysisLoading ? 'wait' : 'pointer', fontSize: '13px' }}>
+                                        {analysisLoading ? '⏳ Analyzing...' : '📊 Analyze Posts'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>✏️ Custom AI Instruction (optional)</label>
+                                <input type="text" value={trendingCustomPrompt} onChange={e => setTrendingCustomPrompt(e.target.value)}
+                                    placeholder="e.g., Focus on SaaS topics, write for tech founders, keep it under 200 words..."
+                                    style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(105,63,233,0.3)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '6px 0 0 0' }}>Select trending posts above, then click &quot;AI Generate Posts&quot; to create 3 new posts inspired by them. Use &quot;Analyze Posts&quot; to score their viral potential.</p>
+                            </div>
                         </div>
                         {/* Status */}
                         {trendingStatus && (
@@ -2191,9 +2244,12 @@ export default function DashboardPage() {
                                                     {postingToLinkedIn[i] ? '⏳ Sending...' : '🚀 Post to LinkedIn'}
                                                 </button>
                                             </div>
-                                            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: '0 0 12px 0', whiteSpace: 'pre-wrap' }}>
-                                                {gp.content}
-                                            </p>
+                                            <textarea value={gp.content} onChange={(e) => {
+                                                const updated = [...trendingGeneratedPosts];
+                                                updated[i] = { ...updated[i], content: e.target.value };
+                                                setTrendingGeneratedPosts(updated);
+                                            }}
+                                                style={{ width: '100%', minHeight: '120px', color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: '0 0 12px 0', whiteSpace: 'pre-wrap', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(105,63,233,0.2)', borderRadius: '10px', padding: '12px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
                                             {/* Image attachment */}
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '12px' }}>
@@ -2377,7 +2433,7 @@ export default function DashboardPage() {
                         {/* Filter Buttons */}
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
                             {[{ id: 'all', label: '📋 All', color: '#8b5cf6' }, { id: 'ai_generated', label: '🤖 AI Generated', color: '#a78bfa' }, { id: 'viral_analysis', label: '📊 Analysis', color: '#fbbf24' }, { id: 'published_post', label: '🚀 Published', color: '#10b981' }].map(f => (
-                                <button key={f.id} onClick={() => { setHistoryFilter(f.id); setTimeout(() => loadHistory(1), 0); }}
+                                <button key={f.id} onClick={() => { setHistoryFilter(f.id); loadHistory(1, f.id); }}
                                     style={{ padding: '10px 20px', background: historyFilter === f.id ? `${f.color}33` : 'rgba(255,255,255,0.08)', border: `1px solid ${historyFilter === f.id ? f.color + '66' : 'rgba(255,255,255,0.15)'}`, borderRadius: '12px', color: historyFilter === f.id ? f.color : 'rgba(255,255,255,0.7)', fontWeight: historyFilter === f.id ? '700' : '500', cursor: 'pointer', fontSize: '14px' }}>
                                     {f.label}
                                 </button>

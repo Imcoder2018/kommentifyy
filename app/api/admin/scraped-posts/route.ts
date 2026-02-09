@@ -75,3 +75,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+// PUT - Admin: Share/unshare posts with all users
+export async function PUT(request: NextRequest) {
+  try {
+    const adminToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!adminToken) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const jwt = require('jsonwebtoken');
+    try { jwt.verify(adminToken, process.env.JWT_SECRET || 'fallback-secret'); } catch { return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 }); }
+
+    const { postIds, shared } = await request.json();
+    if (!postIds || !Array.isArray(postIds)) return NextResponse.json({ success: false, error: 'postIds array required' }, { status: 400 });
+
+    await (prisma as any).scrapedPost.updateMany({
+      where: { id: { in: postIds } },
+      data: { isSharedByAdmin: shared === true },
+    });
+
+    return NextResponse.json({ success: true, updated: postIds.length, shared: shared === true });
+  } catch (error: any) {
+    console.error('Admin share posts error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

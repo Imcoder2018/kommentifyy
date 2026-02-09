@@ -272,6 +272,7 @@ model ScrapedPost {
   shares          Int      @default(0)
   postUrl         String?
   imageUrl        String?  @db.Text
+  isSharedByAdmin Boolean  @default(false)
   scrapedAt       DateTime @default(now())
   createdAt       DateTime @default(now())
 
@@ -279,6 +280,7 @@ model ScrapedPost {
   @@index([scrapedAt])
   @@index([likes])
   @@index([comments])
+  @@index([isSharedByAdmin])
 }
 
 // Feed scraping schedule (user-configurable)
@@ -342,6 +344,7 @@ model CommentStyleProfile {
   profileName     String?  // Display name
   commentCount    Int      @default(0)
   isSelected      Boolean  @default(false) // Whether this profile is selected for AI training
+  isSharedByAdmin Boolean  @default(false) // Admin shared this profile with all users
   lastScrapedAt   DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -350,6 +353,7 @@ model CommentStyleProfile {
 
   @@unique([userId, profileId])
   @@index([userId])
+  @@index([isSharedByAdmin])
 }
 
 // Scraped comments from a profile owner on various LinkedIn posts
@@ -387,4 +391,17 @@ model CommentSettings {
   updatedAt       DateTime @updatedAt
 
   @@index([userId])
+}
+
+// Admin-shared inspiration profiles (profile URLs shared with all users)
+model SharedInspirationProfile {
+  id              String   @id @default(cuid())
+  profileUrl      String   @unique
+  profileName     String
+  postCount       Int      @default(0)
+  sourceUserId    String
+  sharedBy        String
+  createdAt       DateTime @default(now())
+
+  @@index([profileUrl])
 }

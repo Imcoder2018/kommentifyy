@@ -135,6 +135,20 @@ export default function DashboardPage() {
     const [csSettingsLoading, setCsSettingsLoading] = useState(false);
     const [csSettingsSaving, setCsSettingsSaving] = useState(false);
 
+    // Kommentify shared content state
+    const [sharedPosts, setSharedPosts] = useState<any[]>([]);
+    const [sharedPostsLoading, setSharedPostsLoading] = useState(false);
+    const [sharedInspProfiles, setSharedInspProfiles] = useState<any[]>([]);
+    const [sharedCommentProfiles, setSharedCommentProfiles] = useState<any[]>([]);
+
+    // Theme state
+    const [theme, setTheme] = useState<'current' | 'light' | 'dark'>('current');
+
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('dashboard-theme') as 'current' | 'light' | 'dark' | null;
+        if (savedTheme) setTheme(savedTheme);
+    }, []);
+
     useEffect(() => {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -477,6 +491,36 @@ export default function DashboardPage() {
         } catch {}
     };
 
+    // Kommentify shared content functions
+    const loadSharedPosts = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setSharedPostsLoading(true);
+        try {
+            const res = await fetch('/api/shared/posts?limit=50', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setSharedPosts(data.posts || []);
+        } catch {} finally { setSharedPostsLoading(false); }
+    };
+    const loadSharedInspProfiles = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/shared/inspiration-profiles', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setSharedInspProfiles(data.profiles || []);
+        } catch {}
+    };
+    const loadSharedCommentProfiles = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/shared/comment-profiles', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setSharedCommentProfiles(data.profiles || []);
+        } catch {}
+    };
+
     // Comment Style Sources functions
     const loadCommentStyleProfiles = async () => {
         const token = localStorage.getItem('authToken');
@@ -783,9 +827,9 @@ export default function DashboardPage() {
     // Load data when tabs become active
     const handleTabChange = (tabId: string) => {
         setActiveTab(tabId);
-        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); }
-        if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); }
-        if (tabId === 'trending-posts') loadSavedPosts();
+        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); }
+        if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
+        if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); }
         if (tabId === 'tasks') loadTasks();
         if (tabId === 'feed-schedule') loadFeedSchedule();
         if (tabId === 'history') loadHistory();
@@ -836,7 +880,8 @@ export default function DashboardPage() {
         <div style={{ 
             fontFamily: 'system-ui, -apple-system, sans-serif', 
             minHeight: '100vh', 
-            background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)',
+            background: theme === 'light' ? 'linear-gradient(135deg, #f8f9fc 0%, #eef1f8 100%)' : theme === 'dark' ? 'linear-gradient(135deg, #0a0a1a 0%, #111128 100%)' : 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)',
+            color: theme === 'light' ? '#1a1a2e' : 'white',
             display: 'flex'
         }}>
             {/* Toast Notification */}
@@ -1166,6 +1211,15 @@ export default function DashboardPage() {
                         <span>⚡</span>
                         Manage Plan
                     </button>
+                    {/* Theme Toggle */}
+                    <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+                        {(['current', 'light', 'dark'] as const).map(t => (
+                            <button key={t} onClick={() => { setTheme(t); localStorage.setItem('dashboard-theme', t); }}
+                                style={{ padding: '8px 14px', background: theme === t ? 'rgba(105,63,233,0.6)' : 'transparent', color: theme === t ? 'white' : 'rgba(255,255,255,0.6)', border: 'none', fontSize: '12px', fontWeight: theme === t ? '700' : '500', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                {t === 'current' ? '🎨 Current' : t === 'light' ? '☀️ Light' : '🌙 Dark'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Overview Tab Content */}
@@ -1332,6 +1386,21 @@ export default function DashboardPage() {
                                     <strong>Use All Sources</strong>
                                 </label>
                                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>AI will mimic their writing style when generating posts</span>
+                            </div>
+                        )}
+                        {/* Kommentify Shared Profiles */}
+                        {sharedInspProfiles.length > 0 && (
+                            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.08)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                                <div style={{ color: '#fbbf24', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>⭐ Kommentify Shared Profiles</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {sharedInspProfiles.map((p: any, i: number) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                            <span style={{ fontSize: '11px' }}>👤</span>
+                                            <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{p.profileName}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{p.postCount} posts</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -1788,6 +1857,22 @@ export default function DashboardPage() {
                                     {commentStyleStatus}
                                 </div>
                             )}
+                            {/* Kommentify Shared Comment Profiles */}
+                            {sharedCommentProfiles.length > 0 && (
+                                <div style={{ marginBottom: '20px', padding: '16px', background: 'rgba(245,158,11,0.08)', borderRadius: '14px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                                    <h4 style={{ color: '#fbbf24', fontSize: '14px', fontWeight: '700', marginBottom: '10px' }}>⭐ Kommentify Shared Profiles</h4>
+                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '10px' }}>Pre-scraped comment profiles shared by Kommentify. Select to use for AI comment style.</p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {sharedCommentProfiles.map((p: any, i: number) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                                <span style={{ fontSize: '12px' }}>💬</span>
+                                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>{p.profileName || p.profileId}</span>
+                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{p.commentCount} comments</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             {/* Saved Profiles */}
                             <h4 style={{ color: 'white', fontSize: '15px', fontWeight: '700', marginBottom: '14px' }}>👤 Saved Comment Style Profiles</h4>
                             {commentStyleLoading ? (
@@ -1919,6 +2004,27 @@ export default function DashboardPage() {
                                 }} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' }}>🚀 Start Now</button>
                             </div>
                         </div>
+                        {/* Kommentify Trending Posts (Admin-shared) */}
+                        {sharedPosts.length > 0 && (
+                            <div style={{ background: 'rgba(105,63,233,0.08)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '20px' }}>
+                                <h3 style={{ color: '#a78bfa', fontSize: '15px', fontWeight: '700', margin: '0 0 12px 0' }}>⭐ Kommentify Trending Posts</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 12px 0' }}>Curated posts shared by Kommentify for inspiration</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                                    {sharedPosts.slice(0, 10).map((p: any, i: number) => (
+                                        <div key={p.id || i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                            <input type="checkbox" checked={trendingSelectedPosts.includes(p.id)} onChange={() => { setTrendingSelectedPosts(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]); }}
+                                                style={{ accentColor: '#693fe9', width: '16px', height: '16px', marginTop: '2px', flexShrink: 0 }} />
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>{p.authorName || 'Unknown'} · ❤️ {p.likes} · 💬 {p.comments}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>{p.postContent?.substring(0, 200)}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {sharedPostsLoading && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px' }}>Loading Kommentify posts...</div>}
+
                         {/* Period Filters */}
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
                             {[{ id: 'today', label: '🔥 Today' }, { id: 'week', label: '📈 This Week' }, { id: 'month', label: '📊 This Month' }, { id: 'all', label: '🌐 All Time' }].map(p => (

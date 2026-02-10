@@ -85,6 +85,9 @@ function DashboardContent() {
     // Tasks tab state
     const [tasks, setTasks] = useState<any[]>([]);
     const [tasksLoading, setTasksLoading] = useState(false);
+    const [taskNotifications, setTaskNotifications] = useState<Array<{ id: string; message: string; type: 'info' | 'success' | 'error'; time: number }>>([]);
+    const [taskStatusExpanded, setTaskStatusExpanded] = useState<string | null>(null);
+    const [prevTasksRef, setPrevTasksRef] = useState<any[]>([]);
 
     // Trending Posts AI generation state
     const [trendingPeriod, setTrendingPeriod] = useState<string>('all');
@@ -646,16 +649,47 @@ function DashboardContent() {
     };
 
     // Tasks functions
-    const loadTasks = async () => {
+    const addTaskNotification = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+        const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+        setTaskNotifications(prev => [...prev.slice(-4), { id, message, type, time: Date.now() }]);
+        setTimeout(() => setTaskNotifications(prev => prev.filter(n => n.id !== id)), 5000);
+    };
+
+    const loadTasks = async (silent = false) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
-        setTasksLoading(true);
+        if (!silent) setTasksLoading(true);
         try {
             const res = await fetch('/api/extension/command/all', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            if (data.success) setTasks(data.commands || []);
-        } catch {} finally { setTasksLoading(false); }
+            if (data.success) {
+                const newTasks = data.commands || [];
+                // Detect changes for notifications
+                if (prevTasksRef.length > 0) {
+                    for (const nt of newTasks) {
+                        const prev = prevTasksRef.find((t: any) => t.id === nt.id);
+                        if (!prev) {
+                            const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Scrape Feed' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command;
+                            addTaskNotification(`New task: ${cmdName}`, 'info');
+                        } else if (prev.status !== nt.status) {
+                            const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Scrape Feed' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command;
+                            if (nt.status === 'completed' || nt.status === 'completed_manual') addTaskNotification(`Completed: ${cmdName}`, 'success');
+                            else if (nt.status === 'failed' || nt.status === 'cancelled') addTaskNotification(`Failed: ${cmdName}`, 'error');
+                            else if (nt.status === 'in_progress') addTaskNotification(`Processing: ${cmdName}`, 'info');
+                        }
+                    }
+                }
+                setPrevTasksRef(newTasks);
+                setTasks(newTasks);
+            }
+        } catch {} finally { if (!silent) setTasksLoading(false); }
     };
+
+    // Poll tasks every 15 seconds for live notifications
+    useEffect(() => {
+        const interval = setInterval(() => loadTasks(true), 15000);
+        return () => clearInterval(interval);
+    }, [prevTasksRef]);
 
     const stopAllTasks = async () => {
         const token = localStorage.getItem('authToken');
@@ -865,6 +899,12 @@ function DashboardContent() {
         </svg>
     );
 
+    const miniIcon = (path: string, color = 'currentColor', size = 14) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
+            <path d={path} />
+        </svg>
+    );
+
     const navItems = [
         { id: 'overview', label: 'Overview', icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10') },
         { id: 'trending-posts', label: 'Trending Posts', icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z') },
@@ -907,6 +947,97 @@ function DashboardContent() {
                     <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '16px', opacity: 0.7, marginLeft: '8px' }}>✕</button>
                 </div>
             )}
+            {/* Task Notification Popups */}
+            {taskNotifications.map((tn, idx) => (
+                <div key={tn.id} style={{
+                    position: 'fixed', top: `${70 + idx * 52}px`, right: '24px', zIndex: 9999,
+                    padding: '10px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '600',
+                    color: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                    animation: 'slideIn 0.3s ease-out',
+                    background: tn.type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' :
+                               tn.type === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' :
+                               'linear-gradient(135deg, #3b82f6, #2563eb)',
+                    display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '340px',
+                }}>
+                    <span>{tn.type === 'success' ? '✅' : tn.type === 'error' ? '❌' : '🔄'}</span>
+                    {tn.message}
+                    <button onClick={() => setTaskNotifications(prev => prev.filter(n => n.id !== tn.id))} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '14px', opacity: 0.7, marginLeft: '4px' }}>✕</button>
+                </div>
+            ))}
+
+            {/* Persistent Task Status Boxes (top-right) */}
+            <div style={{ position: 'fixed', top: '24px', right: '440px', zIndex: 9998, display: 'flex', gap: '6px' }}>
+                {[
+                    { key: 'pending', label: 'Pending', count: tasks.filter(t => t.status === 'pending').length, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
+                    { key: 'in_progress', label: 'In Progress', count: tasks.filter(t => t.status === 'in_progress').length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)' },
+                    { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed' || t.status === 'completed_manual').length, color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)' },
+                    { key: 'failed', label: 'Failed', count: tasks.filter(t => t.status === 'failed' || t.status === 'cancelled').length, color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
+                ].map(s => (
+                    <div key={s.key} onClick={() => setTaskStatusExpanded(taskStatusExpanded === s.key ? null : s.key)}
+                        style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: taskStatusExpanded === s.key ? 'scale(1.05)' : 'scale(1)' }}>
+                        <div style={{ fontSize: '16px', fontWeight: '800', color: s.color, lineHeight: 1 }}>{s.count}</div>
+                        <div style={{ fontSize: '9px', color: s.color, fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>{s.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Expanded Task List Popup */}
+            {taskStatusExpanded && (
+                <>
+                    <div onClick={() => setTaskStatusExpanded(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9997 }} />
+                    <div style={{ position: 'fixed', top: '72px', right: '440px', zIndex: 9998, background: theme === 'light' ? '#fff' : '#1a1a3e', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '380px', maxHeight: '400px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <span style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '700', fontSize: '14px' }}>
+                                {taskStatusExpanded === 'pending' ? 'Pending' : taskStatusExpanded === 'in_progress' ? 'In Progress' : taskStatusExpanded === 'completed' ? 'Completed' : 'Failed/Cancelled'} Tasks
+                            </span>
+                            <button onClick={() => setTaskStatusExpanded(null)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#666' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>✕</button>
+                        </div>
+                        {tasks.filter(t => {
+                            if (taskStatusExpanded === 'pending') return t.status === 'pending';
+                            if (taskStatusExpanded === 'in_progress') return t.status === 'in_progress';
+                            if (taskStatusExpanded === 'completed') return t.status === 'completed' || t.status === 'completed_manual';
+                            if (taskStatusExpanded === 'failed') return t.status === 'failed' || t.status === 'cancelled';
+                            return false;
+                        }).length === 0 ? (
+                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No tasks</div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {tasks.filter(t => {
+                                    if (taskStatusExpanded === 'pending') return t.status === 'pending';
+                                    if (taskStatusExpanded === 'in_progress') return t.status === 'in_progress';
+                                    if (taskStatusExpanded === 'completed') return t.status === 'completed' || t.status === 'completed_manual';
+                                    if (taskStatusExpanded === 'failed') return t.status === 'failed' || t.status === 'cancelled';
+                                    return false;
+                                }).map((task: any) => (
+                                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '600', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command === 'scrape_profile' ? 'Scrape Profile' : task.command}
+                                            </div>
+                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{task.createdAt ? new Date(task.createdAt).toLocaleString() : ''}</div>
+                                        </div>
+                                        {(task.status === 'pending' || task.status === 'in_progress') && (
+                                            <button onClick={async (e) => {
+                                                e.stopPropagation();
+                                                const token = localStorage.getItem('authToken');
+                                                if (!token) return;
+                                                try {
+                                                    await fetch('/api/extension/command', { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: task.id }) });
+                                                    loadTasks(true);
+                                                } catch {}
+                                            }}
+                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                                Stop
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
+
             <style>{`
                 @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                 /* Fix select dropdown options for dark/current themes */
@@ -2059,25 +2190,25 @@ function DashboardContent() {
                         {/* Instant Feed Scrape Task */}
                         <div style={{ background: 'rgba(16,185,129,0.08)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                                <h3 style={{ color: '#34d399', fontSize: '15px', fontWeight: '700', margin: 0 }}>🚀 Scrape Feed Now</h3>
+                                <h3 style={{ color: '#34d399', fontSize: '15px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', '#34d399', 16)} Scrape Feed Now</h3>
                             </div>
                             <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                                 <div style={{ flex: '0 0 auto' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>⏱️ Duration</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z', 'rgba(255,255,255,0.6)', 12)} Duration</label>
                                     <select value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
                                         <option value="1">1 min</option><option value="2">2 min</option><option value="3">3 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
                                     </select>
                                 </div>
                                 <div style={{ flex: '0 0 auto' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>❤️ Min Likes</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', 'rgba(255,255,255,0.6)', 12)} Min Likes</label>
                                     <input type="number" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value) || 0)} min={0} style={{ width: '70px', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
                                 </div>
                                 <div style={{ flex: '0 0 auto' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>💬 Min Comments</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'rgba(255,255,255,0.6)', 12)} Min Comments</label>
                                     <input type="number" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value) || 0)} min={0} style={{ width: '70px', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
                                 </div>
                                 <div style={{ flex: 1, minWidth: '150px' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>🔑 Keywords</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4', 'rgba(255,255,255,0.6)', 12)} Keywords</label>
                                     <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="AI, startup, SaaS..." style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
                                 </div>
                                 <button onClick={async () => {
@@ -2095,11 +2226,11 @@ function DashboardContent() {
                                         if (data.success) setTrendingStatus('✅ Scrape task sent! Extension will open LinkedIn and start scraping.');
                                         else setTrendingStatus(data.error || 'Failed to send task');
                                     } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
-                                }} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' }}>🚀 Start Now</button>
+                                }} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' , display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', 'white', 13)} Start Now</button>
                             </div>
                             {/* Schedule Times (moved from Feed Schedule tab) */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px', flexWrap: 'wrap' }}>
-                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>🕐 Daily Schedule:</span>
+                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z', 'rgba(255,255,255,0.6)', 12)} Daily Schedule:</span>
                                 {scheduleTimesInput.map((time, i) => (
                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '8px', padding: '4px 8px' }}>
                                         <input type="time" value={time} onChange={e => { const arr = [...scheduleTimesInput]; arr[i] = e.target.value; setScheduleTimesInput(arr); }}
@@ -2117,19 +2248,19 @@ function DashboardContent() {
                                 </button>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', cursor: 'pointer' }}>
                                     <span style={{ color: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600' }}>
-                                        {scheduleActive ? '🟢 Active' : '🔴 Off'}
+                                        {scheduleActive ? 'Active' : 'Off'}
                                     </span>
                                     <div onClick={() => setScheduleActive(!scheduleActive)} style={{ width: '36px', height: '20px', background: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.2)', borderRadius: '10px', padding: '2px', cursor: 'pointer', transition: 'background 0.2s' }}>
                                         <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '8px', transition: 'transform 0.2s', transform: scheduleActive ? 'translateX(16px)' : 'translateX(0)' }} />
                                     </div>
                                 </label>
-                                <button onClick={saveFeedSchedule} style={{ padding: '4px 12px', background: 'rgba(105,63,233,0.3)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '8px', color: '#a78bfa', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>💾 Save</button>
+                                <button onClick={saveFeedSchedule} style={{ padding: '4px 12px', background: 'rgba(105,63,233,0.3)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '8px', color: '#a78bfa', cursor: 'pointer', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', '#a78bfa', 10)} Save</button>
                             </div>
                         </div>
                         {/* Kommentify Trending Posts (Admin-shared) */}
                         {sharedPosts.length > 0 && (
                             <div style={{ background: 'rgba(105,63,233,0.08)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '20px' }}>
-                                <h3 style={{ color: '#a78bfa', fontSize: '15px', fontWeight: '700', margin: '0 0 12px 0' }}>⭐ Kommentify Trending Posts</h3>
+                                <h3 style={{ color: '#a78bfa', fontSize: '15px', fontWeight: '700', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 14)} Kommentify Trending Posts</h3>
                                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 12px 0' }}>Curated posts shared by Kommentify for inspiration</p>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
                                     {sharedPosts.slice(0, 10).map((p: any, i: number) => (
@@ -2137,7 +2268,7 @@ function DashboardContent() {
                                             <input type="checkbox" checked={trendingSelectedPosts.includes(p.id)} onChange={() => { setTrendingSelectedPosts(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]); }}
                                                 style={{ accentColor: '#693fe9', width: '16px', height: '16px', marginTop: '2px', flexShrink: 0 }} />
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>{p.authorName || 'Unknown'} · ❤️ {p.likes} · 💬 {p.comments}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>{p.authorName || 'Unknown'} · {p.likes} likes · {p.comments} comments</div>
                                                 <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>{p.postContent?.substring(0, 200)}</div>
                                             </div>
                                         </div>
@@ -2149,7 +2280,7 @@ function DashboardContent() {
 
                         {/* Period Filters */}
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                            {[{ id: 'today', label: '🔥 Today' }, { id: 'week', label: '📈 This Week' }, { id: 'month', label: '📊 This Month' }, { id: 'all', label: '🌐 All Time' }].map(p => (
+                            {[{ id: 'today', label: 'Today' }, { id: 'week', label: 'This Week' }, { id: 'month', label: 'This Month' }, { id: 'all', label: 'All Time' }].map(p => (
                                 <button key={p.id} onClick={() => { setTrendingPeriod(p.id); loadSavedPosts(1, p.id); }}
                                     style={{ padding: '10px 20px', background: trendingPeriod === p.id ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.08)', border: trendingPeriod === p.id ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontWeight: trendingPeriod === p.id ? '700' : '500', cursor: 'pointer', fontSize: '14px' }}>
                                     {p.label}
@@ -2172,7 +2303,7 @@ function DashboardContent() {
                                 </select>
                                 <button onClick={() => loadSavedPosts(1)}
                                     style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>
-                                    🔍 Search
+                                    {miniIcon('M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35', 'white', 13)} Search
                                 </button>
                             </div>
                         </div>
@@ -2197,16 +2328,16 @@ function DashboardContent() {
                                     </button>
                                     <button onClick={generateTrendingPosts} disabled={trendingGenerating || trendingSelectedPosts.length === 0}
                                         style={{ padding: '8px 18px', background: trendingGenerating ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: trendingGenerating ? 'wait' : 'pointer', fontSize: '13px', boxShadow: '0 4px 15px rgba(105,63,233,0.3)' }}>
-                                        {trendingGenerating ? '⏳ Generating...' : '🤖 AI Generate Posts'}
+                                        {trendingGenerating ? 'Generating...' : 'AI Generate Posts'}
                                     </button>
                                     <button onClick={analyzePosts} disabled={analysisLoading || trendingGeneratedPosts.length === 0}
                                         style={{ padding: '8px 18px', background: analysisLoading ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: analysisLoading ? 'wait' : 'pointer', fontSize: '13px' }}>
-                                        {analysisLoading ? '⏳ Analyzing...' : '📊 Analyze Posts'}
+                                        {analysisLoading ? 'Analyzing...' : 'Analyze Posts'}
                                     </button>
                                 </div>
                             </div>
                             <div>
-                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>✏️ Custom AI Instruction (optional)</label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>{miniIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z', 'rgba(255,255,255,0.6)', 12)} Custom AI Instruction (optional)</label>
                                 <input type="text" value={trendingCustomPrompt} onChange={e => setTrendingCustomPrompt(e.target.value)}
                                     placeholder="e.g., Focus on SaaS topics, write for tech founders, keep it under 200 words..."
                                     style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(105,63,233,0.3)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
@@ -2222,7 +2353,7 @@ function DashboardContent() {
                         {/* Analysis Results Table - shown on TOP */}
                         {showAnalysis && analysisResults.length > 0 && (
                             <div style={{ marginBottom: '24px', background: 'rgba(245,158,11,0.1)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(245,158,11,0.3)' }}>
-                                <h4 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>📊 Viral Potential Analysis</h4>
+                                <h4 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#fbbf24', 16)} Viral Potential Analysis</h4>
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                         <thead>
@@ -2270,16 +2401,16 @@ function DashboardContent() {
                         {/* Generated Posts Preview */}
                         {trendingShowGenPreview && trendingGeneratedPosts.length > 0 && (
                             <div style={{ marginBottom: '24px', background: 'rgba(105,63,233,0.1)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                                <h4 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🤖 AI Generated Posts ({trendingGeneratedPosts.length})</h4>
+                                <h4 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M12 8V4l8 8-8 8v-4H4V8h8z', '#a78bfa', 16)} AI Generated Posts ({trendingGeneratedPosts.length})</h4>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     {trendingGeneratedPosts.map((gp: any, i: number) => (
                                         <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '14px' }}>✨ {gp.title || `Post ${i + 1}`}</span>
+                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 13)} {gp.title || `Post ${i + 1}`}</span>
                                                 <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i], i)}
                                                     disabled={postingToLinkedIn[i]}
                                                     style={{ padding: '6px 16px', background: postingToLinkedIn[i] ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: postingToLinkedIn[i] ? 'wait' : 'pointer', fontSize: '12px', opacity: postingToLinkedIn[i] ? 0.7 : 1, transition: 'all 0.2s', transform: postingToLinkedIn[i] ? 'scale(0.95)' : 'scale(1)' }}>
-                                                    {postingToLinkedIn[i] ? '⏳ Sending...' : '🚀 Post to LinkedIn'}
+                                                    {postingToLinkedIn[i] ? 'Sending...' : 'Post to LinkedIn'}
                                                 </button>
                                             </div>
                                             <textarea value={gp.content} onChange={(e) => {
@@ -2287,11 +2418,11 @@ function DashboardContent() {
                                                 updated[i] = { ...updated[i], content: e.target.value };
                                                 setTrendingGeneratedPosts(updated);
                                             }}
-                                                style={{ width: '100%', minHeight: '120px', color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: '0 0 12px 0', whiteSpace: 'pre-wrap', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(105,63,233,0.2)', borderRadius: '10px', padding: '12px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
+                                                style={{ width: '100%', minHeight: '260px', color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: '0 0 12px 0', whiteSpace: 'pre-wrap', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(105,63,233,0.2)', borderRadius: '10px', padding: '14px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
                                             {/* Image attachment */}
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '12px' }}>
-                                                    📷 {generatedPostImages[i] ? 'Change Image' : 'Attach Image'}
+                                                    {miniIcon('M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z', 'rgba(255,255,255,0.7)', 13)} {generatedPostImages[i] ? 'Change Image' : 'Attach Image'}
                                                     <input type="file" accept="image/*" style={{ display: 'none' }}
                                                         onChange={(e) => { if (e.target.files?.[0]) handleImageAttach(i, e.target.files[0]); }} />
                                                 </label>
@@ -2313,7 +2444,7 @@ function DashboardContent() {
                             <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.5)' }}>Loading trending posts...</div>
                         ) : savedPosts.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔥</div>
+                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 'rgba(255,255,255,0.3)', 48)}</div>
                                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>No trending posts yet. Enable post saving in the extension commenter tab.</p>
                             </div>
                         ) : (
@@ -2336,8 +2467,8 @@ function DashboardContent() {
                                                 </div>
                                             </div>
                                             <button onClick={(e) => { e.stopPropagation(); deleteSavedPost(post.id); }}
-                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}>
-                                                🗑️
+                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                                {miniIcon('M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2', '#f87171', 12)}
                                             </button>
                                         </div>
                                         <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px', paddingRight: '4px' }}>
@@ -2351,13 +2482,13 @@ function DashboardContent() {
                                             </div>
                                         )}
                                         <div style={{ display: 'flex', gap: '20px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                                            <span style={{ color: '#ec4899', fontSize: '13px', fontWeight: '600' }}>❤️ {post.likes}</span>
-                                            <span style={{ color: '#8b5cf6', fontSize: '13px', fontWeight: '600' }}>💬 {post.comments}</span>
-                                            <span style={{ color: '#06b6d4', fontSize: '13px', fontWeight: '600' }}>🔄 {post.shares}</span>
+                                            <span style={{ color: '#ec4899', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 13)} {post.likes}</span>
+                                            <span style={{ color: '#8b5cf6', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', '#8b5cf6', 13)} {post.comments}</span>
+                                            <span style={{ color: '#06b6d4', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15', '#06b6d4', 13)} {post.shares}</span>
                                             {post.postUrl && (
                                                 <a href={post.postUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                                                     style={{ color: '#693fe9', fontSize: '13px', fontWeight: '600', textDecoration: 'none', marginLeft: 'auto' }}>
-                                                    🔗 View
+                                                    {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71', '#693fe9', 13)} View
                                                 </a>
                                             )}
                                         </div>
@@ -2388,7 +2519,7 @@ function DashboardContent() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                             <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0 }}>📋 Extension Tasks</h3>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <button onClick={loadTasks}
+                                <button onClick={() => loadTasks()}
                                     style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.15s ease', transform: 'scale(1)' }}
                                     onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
                                     onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}

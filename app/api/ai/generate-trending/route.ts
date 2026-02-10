@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken, extractToken } from '@/lib/auth';
 import { limitService } from '@/lib/limit-service';
 import OpenAI from 'openai';
+import { formatForLinkedIn } from '@/lib/linkedin-formatter';
 
 let openai: OpenAI | null = null;
 try {
@@ -61,7 +62,10 @@ RULES:
 - NO hashtags unless they feel natural. NO emojis overload (1-2 max per post)
 - Each post MUST be unique in angle, structure, and voice
 - Study the PATTERNS in the trending posts: what hooks work, what structures get engagement, what topics resonate
-- Then create something BETTER and MORE AUTHENTIC than what's trending`;
+- Then create something BETTER and MORE AUTHENTIC than what's trending
+- CRITICAL: Do NOT use any markdown formatting. No ** for bold, no * for italic, no # for headers, no _ for underline. LinkedIn does not support markdown.
+- Instead of bold markers, use UPPERCASE for emphasis or just write naturally without any special formatting characters.
+- Never output asterisks (*) around words. Write plain text only.`;
 
     const userPrompt = `Here are ${trendingPosts.length} currently trending LinkedIn posts with high engagement:
 
@@ -111,6 +115,14 @@ Return your response in this EXACT JSON format (no markdown, no code blocks, jus
       } else {
         return NextResponse.json({ success: false, error: 'Failed to parse AI response' }, { status: 500 });
       }
+    }
+
+    // Format each post's content for LinkedIn (convert any remaining markdown to Unicode bold, clean up)
+    if (Array.isArray(generatedPosts)) {
+      generatedPosts = generatedPosts.map((post: any) => ({
+        ...post,
+        content: formatForLinkedIn(post.content || ''),
+      }));
     }
 
     await limitService.incrementUsage(user.id, 'aiPosts');

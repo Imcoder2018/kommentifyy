@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useClerk } from '@clerk/nextjs';
 
 interface ReferralData {
     referralCode: string;
@@ -44,6 +45,8 @@ function DashboardContent() {
     const [showReferrals, setShowReferrals] = useState(false);
     const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'overview');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
+    const { signOut } = useClerk();
 
     // Writer tab state
     const [writerTopic, setWriterTopic] = useState('');
@@ -166,6 +169,7 @@ function DashboardContent() {
     }, []);
 
     useEffect(() => {
+        if (loggingOut) return;
         const token = localStorage.getItem('authToken');
         if (!token) {
             router.push('/login');
@@ -879,6 +883,23 @@ function DashboardContent() {
         if (tabId === 'history') loadHistory();
     };
 
+    if (loggingOut) {
+        return (
+            <div style={{ 
+                minHeight: '100vh', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)'
+            }}>
+                <div style={{ textAlign: 'center', color: 'white' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚪</div>
+                    <div style={{ fontSize: '18px', opacity: 0.8 }}>Logging out...</div>
+                </div>
+            </div>
+        );
+    }
+
     if (loading) {
         return (
             <div style={{ 
@@ -1377,9 +1398,16 @@ function DashboardContent() {
                 {/* Logout Button */}
                 <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                     <button
-                        onClick={() => {
-                            localStorage.removeItem('authToken');
-                            router.push('/login');
+                        onClick={async () => {
+                            setLoggingOut(true);
+                            try {
+                                localStorage.removeItem('authToken');
+                                document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                                await signOut();
+                            } catch (e) {
+                                console.error('Sign out error:', e);
+                            }
+                            window.location.href = '/login';
                         }}
                         style={{
                             display: 'flex',

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardTab, WriterTab, AutomationTab, NetworkTab, ImportTab, AnalyticsTab, LimitsTab, SettingsTab } from './components/tabs';
 import WhatsAppButton from './components/WhatsAppButton';
 import Footer from './components/Footer';
@@ -447,6 +448,7 @@ function ExtensionPreview() {
 }
 
 export default function LandingPage() {
+    const router = useRouter();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [lifetimeDeals, setLifetimeDeals] = useState<Plan[]>([]);
@@ -462,6 +464,19 @@ export default function LandingPage() {
         if (paidPlanIndex === 1) return 0.2424; // 24.24% off (Growth)
         return 0.3364; // 33.64% off for Pro and beyond
     };
+
+    // Auto-redirect logged-in users to dashboard
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            fetch('/api/auth/validate', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) router.push('/dashboard');
+                })
+                .catch(() => {});
+        }
+    }, [router]);
 
     useEffect(() => {
         fetch('/api/plans')

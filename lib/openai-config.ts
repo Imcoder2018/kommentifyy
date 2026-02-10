@@ -404,7 +404,8 @@ export function generatePostPrompt(
     includeEmojis: boolean,
     targetAudience: string = '',
     keyMessage: string = '',
-    userBackground: string = ''
+    userBackground: string = '',
+    language: string = ''
 ): string {
     const postTypeMap: Record<string, string> = {
         'lead_magnet': 'Lead Magnet - Offer valuable free resource/download to capture leads',
@@ -551,6 +552,7 @@ ${includeHashtags ? '---\n#Hashtag1 #Hashtag2 #Hashtag3 #Hashtag4 #Hashtag5' : '
 
 ═══════════════════════════════════════════════════════════
 
+${language ? `\n═══════════════════════════════════════════════════════════\n🌍 LANGUAGE REQUIREMENT (CRITICAL)\n═══════════════════════════════════════════════════════════\n\nYou MUST write the ENTIRE post in ${language}. Every single word, sentence, hook, CTA, and closing must be in ${language}. This is NON-NEGOTIABLE.\n` : ''}
 Now create a viral LinkedIn post. Take your time, think through each section, and write something that would get 100K+ impressions.`;
 }
 

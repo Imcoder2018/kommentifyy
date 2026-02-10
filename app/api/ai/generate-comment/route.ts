@@ -240,14 +240,20 @@ Post: ${postText}
     // Use premium model for best quality comments
     const model = 'gpt-4o';
 
-    // Set max tokens based on comment length
+    // Set max tokens based on comment length (tighter limits to enforce char counts)
     const lengthSettings: Record<string, number> = {
-      Brief: 60,   // ~100 characters
-      Short: 150,  // ~300 characters
-      Mid: 300,    // ~600 characters
-      Long: 450    // ~900 characters
+      Brief: 40,   // ~100 characters - very tight
+      Short: 120,  // ~300 characters
+      Mid: 250,    // ~600 characters
+      Long: 400    // ~900 characters
     };
-    const maxTokens = useProfileStyle ? 300 : (lengthSettings[finalLength || 'Short'] || 150);
+    const charLimits: Record<string, number> = {
+      Brief: 100,
+      Short: 300,
+      Mid: 600,
+      Long: 900
+    };
+    const maxTokens = useProfileStyle ? 300 : (lengthSettings[finalLength || 'Short'] || 120);
 
     let content;
     try {
@@ -288,7 +294,23 @@ Post: ${postText}
 
     // Format comment for LinkedIn
     content = formatCommentForLinkedIn(content);
-    console.log('Comment formatted for LinkedIn');
+    
+    // HARD enforce character limit - truncate if AI exceeded it
+    const hardLimit = charLimits[finalLength || 'Short'] || 300;
+    if (!useProfileStyle && content.length > hardLimit) {
+      console.log(`⚠️ Comment exceeded ${hardLimit} char limit (${content.length} chars), truncating...`);
+      // Try to truncate at a natural sentence boundary
+      let truncated = content.substring(0, hardLimit);
+      const lastPeriod = truncated.lastIndexOf('.');
+      const lastQuestion = truncated.lastIndexOf('?');
+      const lastExclaim = truncated.lastIndexOf('!');
+      const lastBreak = Math.max(lastPeriod, lastQuestion, lastExclaim);
+      if (lastBreak > hardLimit * 0.5) {
+        truncated = truncated.substring(0, lastBreak + 1);
+      }
+      content = truncated.trim();
+    }
+    console.log(`Comment formatted for LinkedIn (${content.length} chars, limit: ${hardLimit})`);
 
     // Update usage
     await limitService.incrementUsage(user.id, 'aiComments');

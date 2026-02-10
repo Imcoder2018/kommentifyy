@@ -51,14 +51,8 @@ export default function AuthCallbackPage() {
                     
                     setStatus('Success! Redirecting...');
                     
-                    // Redirect based on plan - check for paid plans, lifetime deals, or active trials
-                    const userPlan = data.user?.plan;
-                    const hasPaidPlan = userPlan && (
-                        (userPlan.price > 0 && !userPlan.isDefaultFreePlan) ||
-                        userPlan.isLifetime ||
-                        (userPlan.isTrialPlan && data.user?.trialEndsAt && new Date(data.user.trialEndsAt) > new Date())
-                    );
-                    router.push(hasPaidPlan ? '/dashboard' : '/plans');
+                    // Always redirect to dashboard - dashboard will handle plan checks
+                    router.push('/dashboard');
                 } else {
                     setError(data.error || 'Failed to sync account');
                 }

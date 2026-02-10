@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    const { topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground, useInspirationSources, inspirationSourceNames } = await request.json();
+    const { topic, template, tone, length, includeHashtags, includeEmojis, language, targetAudience, keyMessage, userBackground, useInspirationSources, inspirationSourceNames } = await request.json();
 
     // Get user and check limits
     const user = await prisma.user.findUnique({
@@ -129,7 +129,7 @@ ${includeHashtags ? `#${topic.replace(/\s+/g, '')} #ProfessionalDevelopment #Inn
     }
 
     // Generate prompt using shared logic with new elite prompt
-    const prompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground) + inspirationContext;
+    const prompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground, language) + inspirationContext;
 
     // Determine model (could add logic to check user plan for premium model access if needed)
     const model = OpenAIConfig.defaultModel;

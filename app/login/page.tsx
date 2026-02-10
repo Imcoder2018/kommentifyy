@@ -10,8 +10,8 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (isLoaded && isSignedIn) {
-            // User is already signed in, redirect to plans
-            router.push('/plans');
+            // User is already signed in, redirect to dashboard
+            router.push('/dashboard');
         }
     }, [isLoaded, isSignedIn, router]);
 

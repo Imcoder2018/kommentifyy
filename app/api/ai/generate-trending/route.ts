@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Daily AI post limit reached' }, { status: 429 });
     }
 
-    const { trendingPosts, customPrompt } = await request.json();
+    const { trendingPosts, customPrompt, includeHashtags, language } = await request.json();
 
     if (!trendingPosts || trendingPosts.length === 0) {
       return NextResponse.json({ success: false, error: 'No trending posts provided' }, { status: 400 });
@@ -59,7 +59,8 @@ RULES:
 - Use pattern interrupts, bold opening hooks, and emotional storytelling
 - Keep sentences short. Use line breaks liberally. White space is your friend.
 - Include a strong call-to-action or thought-provoking question at the end
-- NO hashtags unless they feel natural. NO emojis overload (1-2 max per post)
+- ${includeHashtags ? 'Include 3-5 relevant hashtags at the END of each post, separated by spaces' : 'NO hashtags at all. Do not include any # symbols.'}
+- NO emojis overload (1-2 max per post)
 - Each post MUST be unique in angle, structure, and voice
 - Study the PATTERNS in the trending posts: what hooks work, what structures get engagement, what topics resonate
 - Then create something BETTER and MORE AUTHENTIC than what's trending
@@ -79,6 +80,7 @@ Each post should:
 3. Feel genuinely human and authentic - not AI-generated
 4. Be 150-400 words
 5. Include natural engagement triggers (questions, controversial takes, relatable stories)
+${language ? `6. CRITICAL: Write the ENTIRE post in ${language}. Every word must be in ${language}.` : ''}
 
 ${customInstruction}
 

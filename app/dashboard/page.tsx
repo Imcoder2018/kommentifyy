@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface ReferralData {
@@ -87,7 +87,8 @@ function DashboardContent() {
     const [tasksLoading, setTasksLoading] = useState(false);
     const [taskNotifications, setTaskNotifications] = useState<Array<{ id: string; message: string; type: 'info' | 'success' | 'error'; time: number }>>([]);
     const [taskStatusExpanded, setTaskStatusExpanded] = useState<string | null>(null);
-    const [prevTasksRef, setPrevTasksRef] = useState<any[]>([]);
+    const prevTasksRef = useRef<any[]>([]);
+    const notifiedTaskIds = useRef<Set<string>>(new Set());
 
     // Trending Posts AI generation state
     const [trendingPeriod, setTrendingPeriod] = useState<string>('all');
@@ -664,32 +665,36 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success) {
                 const newTasks = data.commands || [];
-                // Detect changes for notifications
-                if (prevTasksRef.length > 0) {
+                // Detect changes for notifications - use refs to avoid duplicates
+                if (prevTasksRef.current.length > 0) {
                     for (const nt of newTasks) {
-                        const prev = prevTasksRef.find((t: any) => t.id === nt.id);
+                        const notifKey = `${nt.id}_${nt.status}`;
+                        if (notifiedTaskIds.current.has(notifKey)) continue;
+                        const prev = prevTasksRef.current.find((t: any) => t.id === nt.id);
+                        const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Scrape Feed' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command;
                         if (!prev) {
-                            const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Scrape Feed' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command;
+                            notifiedTaskIds.current.add(notifKey);
                             addTaskNotification(`New task: ${cmdName}`, 'info');
                         } else if (prev.status !== nt.status) {
-                            const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Scrape Feed' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command;
+                            notifiedTaskIds.current.add(notifKey);
                             if (nt.status === 'completed' || nt.status === 'completed_manual') addTaskNotification(`Completed: ${cmdName}`, 'success');
                             else if (nt.status === 'failed' || nt.status === 'cancelled') addTaskNotification(`Failed: ${cmdName}`, 'error');
                             else if (nt.status === 'in_progress') addTaskNotification(`Processing: ${cmdName}`, 'info');
                         }
                     }
                 }
-                setPrevTasksRef(newTasks);
+                prevTasksRef.current = newTasks;
                 setTasks(newTasks);
             }
         } catch {} finally { if (!silent) setTasksLoading(false); }
     };
 
-    // Poll tasks every 15 seconds for live notifications
+    // Poll tasks every 15 seconds for live notifications - empty deps so interval is created once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         const interval = setInterval(() => loadTasks(true), 15000);
         return () => clearInterval(interval);
-    }, [prevTasksRef]);
+    }, []);
 
     const stopAllTasks = async () => {
         const token = localStorage.getItem('authToken');
@@ -912,6 +917,9 @@ function DashboardContent() {
         { id: 'comments', label: 'Comments', icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z') },
         { id: 'tasks', label: 'Tasks', icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11') },
         { id: 'history', label: 'History', icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z') },
+    ];
+
+    const accountItems = [
         { id: 'usage', label: 'Usage & Limits', icon: svgIcon('M18 20V10 M12 20V4 M6 20v-6') },
         { id: 'referrals', label: 'Referrals', icon: svgIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z') },
         { id: 'extension', label: 'Extension', icon: svgIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z') },
@@ -1019,14 +1027,22 @@ function DashboardContent() {
                                         {(task.status === 'pending' || task.status === 'in_progress') && (
                                             <button onClick={async (e) => {
                                                 e.stopPropagation();
+                                                const btn = e.currentTarget;
+                                                btn.textContent = 'Stopping...';
+                                                btn.style.opacity = '0.6';
                                                 const token = localStorage.getItem('authToken');
                                                 if (!token) return;
                                                 try {
-                                                    await fetch('/api/extension/command', { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: task.id }) });
-                                                    loadTasks(true);
-                                                } catch {}
+                                                    window.dispatchEvent(new CustomEvent('kommentify-stop-all-tasks'));
+                                                    await fetch('/api/extension/command', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: task.id, status: 'cancelled' }) });
+                                                    await loadTasks(true);
+                                                    addTaskNotification(`Stopped: ${task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command}`, 'error');
+                                                } catch {} finally { btn.style.opacity = '1'; }
                                             }}
-                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                                onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.9)')}
+                                                onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+                                                onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap', transition: 'all 0.15s ease' }}>
                                                 Stop
                                             </button>
                                         )}
@@ -1247,6 +1263,44 @@ function DashboardContent() {
                     )}
                     
                     {navItems.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => handleTabChange(item.id)}
+                            title={sidebarCollapsed ? item.label : undefined}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                                width: '100%',
+                                padding: sidebarCollapsed ? '14px' : '12px 16px',
+                                background: activeTab === item.id 
+                                    ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
+                                    : 'transparent',
+                                color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'),
+                                border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                marginBottom: '6px',
+                                transition: 'all 0.2s ease',
+                                fontWeight: activeTab === item.id ? '600' : '500',
+                                fontSize: '14px',
+                                gap: '12px'
+                            }}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
+                            {!sidebarCollapsed && item.label}
+                        </button>
+                    ))}
+
+                    {!sidebarCollapsed && (
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
+                            Account
+                        </div>
+                    )}
+
+                    {sidebarCollapsed && <div style={{ margin: '20px 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}></div>}
+
+                    {accountItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => handleTabChange(item.id)}

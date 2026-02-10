@@ -213,11 +213,13 @@ async function pollCommandsDirectly() {
                     } finally { globalThis._processingCommandIds.delete(cmd.id); }
                 }
 
-                // --- scrape_feed_now ---
+                // --- scrape_feed_now (time-based) ---
                 else if (cmd.command === 'scrape_feed_now') {
-                    console.log('🔍 POLL-ALARM: Executing scrape_feed_now...');
+                    console.log('🔍 POLL-ALARM: Executing scrape_feed_now (time-based)...');
                     let scrapeTab = null;
                     try {
+                        // Mark as in_progress
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
                         const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
                         scrapeTab = tab;
                         globalThis._commandLinkedInTabs.add(tab.id);
@@ -227,11 +229,28 @@ async function pollCommandsDirectly() {
                             setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
                         });
                         await new Promise(r => setTimeout(r, 5000));
-                        await scrollAndLoadContent(tab.id, 5);
-                        await new Promise(r => setTimeout(r, 2000));
+                        const durationMs = (cmd.data?.durationMinutes || 3) * 60 * 1000;
                         const minLikes = cmd.data?.minLikes || 0;
                         const minComments = cmd.data?.minComments || 0;
                         const keywords = cmd.data?.keywords ? cmd.data.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean) : [];
+                        const startTime = Date.now();
+                        console.log(`POLL-ALARM: Scrolling for ${cmd.data?.durationMinutes || 3} minutes...`);
+                        // Scroll continuously for the duration
+                        while (Date.now() - startTime < durationMs) {
+                            // Check if cancelled
+                            try {
+                                const statusRes = await fetch(`${apiUrl}/api/extension/command/all`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                                const statusData = await statusRes.json();
+                                const currentCmd = statusData.commands?.find(c => c.id === cmd.id);
+                                if (currentCmd && (currentCmd.status === 'cancelled' || currentCmd.status === 'failed')) {
+                                    console.log('POLL-ALARM: Scrape cancelled by user');
+                                    break;
+                                }
+                            } catch (e) {}
+                            await scrollAndLoadContent(tab.id, 1);
+                            await new Promise(r => setTimeout(r, 3000));
+                        }
+                        await new Promise(r => setTimeout(r, 2000));
                         const scrapeResult = await chrome.scripting.executeScript({
                             target: { tabId: tab.id },
                             func: (minL, minC, kws) => {
@@ -1525,12 +1544,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             }
                         }
 
-                        // Handle scrape_feed_now command from website
+                        // Handle scrape_feed_now command from website (time-based)
                         if (cmd.command === 'scrape_feed_now') {
-                            console.log('🔍 BACKGROUND: Executing scrape_feed_now command...');
+                            console.log('🔍 BACKGROUND: Executing scrape_feed_now (time-based)...');
                             let scrapeTab = null;
                             try {
-                                // Open LinkedIn feed and scrape posts
+                                // Mark as in_progress
+                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
                                 const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
                                 scrapeTab = tab;
                                 globalThis._commandLinkedInTabs.add(tab.id);
@@ -1546,14 +1566,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 });
                                 await new Promise(resolve => setTimeout(resolve, 5000));
 
-                                // Scroll and scrape posts
-                                const durationMs = (cmd.data?.durationMinutes || 5) * 60 * 1000;
+                                const durationMs = (cmd.data?.durationMinutes || 3) * 60 * 1000;
                                 const minLikes = cmd.data?.minLikes || 0;
                                 const minComments = cmd.data?.minComments || 0;
                                 const keywords = cmd.data?.keywords ? cmd.data.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean) : [];
+                                const startTime = Date.now();
+                                console.log(`BACKGROUND: Scrolling for ${cmd.data?.durationMinutes || 3} minutes...`);
 
-                                // Scroll a few times to load posts
-                                await scrollAndLoadContent(tab.id, 5);
+                                // Scroll continuously for the duration
+                                while (Date.now() - startTime < durationMs) {
+                                    // Check if cancelled
+                                    try {
+                                        const statusRes = await fetch(`${apiUrl}/api/extension/command/all`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                                        const statusData = await statusRes.json();
+                                        const currentCmd = statusData.commands?.find(c => c.id === cmd.id);
+                                        if (currentCmd && (currentCmd.status === 'cancelled' || currentCmd.status === 'failed')) {
+                                            console.log('BACKGROUND: Scrape cancelled by user');
+                                            break;
+                                        }
+                                    } catch (e) {}
+                                    await scrollAndLoadContent(tab.id, 1);
+                                    await new Promise(resolve => setTimeout(resolve, 3000));
+                                }
                                 await new Promise(resolve => setTimeout(resolve, 2000));
 
                                 // Scrape visible posts
@@ -1584,7 +1618,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                             const activityMatch = urn.match(/urn:li:activity:(\d+)/);
                                             const postUrl = activityMatch ? `https://www.linkedin.com/feed/update/urn:li:activity:${activityMatch[1]}/` : '';
 
-                                            // Scrape post image if present
                                             let imageUrl = null;
                                             const imgEl = el.querySelector('.update-components-image img, .feed-shared-image img, img.ivm-view-attr__img--centered[src*="feedshare"]');
                                             if (imgEl && imgEl.src && imgEl.src.includes('media.licdn.com')) {
@@ -1601,7 +1634,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 const scrapedPosts = scrapeResult?.[0]?.result || [];
                                 console.log(`BACKGROUND: Scraped ${scrapedPosts.length} posts from feed`);
 
-                                // Save to backend
                                 if (scrapedPosts.length > 0) {
                                     await fetch(`${apiUrl}/api/scraped-posts`, {
                                         method: 'POST',

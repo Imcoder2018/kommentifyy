@@ -110,7 +110,7 @@ export default function Footer() {
                         © 2026 Kommentify. All rights reserved.
                     </div>
                     <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>
-                        LinkedIn is a trademark of LinkedIn Corporation. Kommentify is not affiliated with LinkedIn.
+                        Developed by AR Webcrafts LLC.
                     </div>
                 </div>
             </div>

@@ -94,6 +94,7 @@ import { importScheduler } from './importScheduler.js';
 import { executeBulkProcessing, stopBulkProcessing } from './bulkProcessingExecutor.js';
 import { API_CONFIG } from '../shared/config.js';
 import { versionChecker } from './versionChecker.js';
+import { syncAllSettingsFromWebsite } from '../shared/services/settingsSync.js';
 
 // Force-clean old cached apiBaseUrl on startup (prevents hitting old backend URLs)
 (async () => {
@@ -113,6 +114,17 @@ try {
 } catch (error) {
     console.error("BACKGROUND: Error during initialization:", error);
 }
+
+// Sync settings from website on startup + every 5 minutes
+(async () => {
+    try {
+        await syncAllSettingsFromWebsite();
+        console.log("BACKGROUND: Initial settings sync completed");
+    } catch (e) { console.warn("BACKGROUND: Initial settings sync failed:", e); }
+})();
+setInterval(() => {
+    syncAllSettingsFromWebsite().catch(e => console.warn("BACKGROUND: Periodic settings sync failed:", e));
+}, 5 * 60 * 1000);
 
 // Initialize Post Scheduler
 let postScheduler = null;

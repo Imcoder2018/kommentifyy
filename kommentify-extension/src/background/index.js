@@ -441,18 +441,44 @@ async function pollCommandsDirectly() {
                         };
 
                         console.log('💬 POLL-ALARM: Starting bulk processing with config:', JSON.stringify(config).substring(0, 200));
-                        executeBulkProcessing(config);
-
+                        
+                        // Mark as in_progress on server (NOT completed — processing is async)
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
                             headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
+                            body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
                         });
-                        console.log('✅ POLL-ALARM: start_bulk_commenting launched');
+                        
+                        // Fire-and-forget: update status when processing finishes
+                        executeBulkProcessing(config).then(async (result) => {
+                            const finalStatus = (result && result.success) ? 'completed' : 'failed';
+                            console.log(`✅ POLL-ALARM: Bulk processing finished with status: ${finalStatus}`);
+                            try {
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
+                                });
+                            } catch (x) { console.error('Failed to update command status:', x); }
+                            globalThis._processingCommandIds.delete(cmd.id);
+                        }).catch(async (err) => {
+                            console.error('❌ POLL-ALARM: Bulk processing error:', err);
+                            try {
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
+                                });
+                            } catch (x) {}
+                            globalThis._processingCommandIds.delete(cmd.id);
+                        });
+                        
+                        console.log('✅ POLL-ALARM: start_bulk_commenting launched (in_progress)');
                     } catch (e) {
                         console.error('❌ POLL-ALARM: start_bulk_commenting failed:', e);
                         try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
-                    } finally { globalThis._processingCommandIds.delete(cmd.id); }
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
                 }
 
                 // --- start_import_automation ---
@@ -482,6 +508,13 @@ async function pollCommandsDirectly() {
                             pendingImportProfiles: profileUrls,
                         });
 
+                        // Mark as in_progress on server immediately
+                        await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                        });
+
                         // Trigger import automation
                         if (profileUrls.length > 0) {
                             console.log(`📥 POLL-ALARM: Starting import for ${profileUrls.length} profiles`);
@@ -496,19 +529,44 @@ async function pollCommandsDirectly() {
                                     share: cfgData.engageShares || false,
                                     follow: cfgData.engageFollows !== false,
                                 },
+                            }).then(async (result) => {
+                                const finalStatus = (result && (result.profilesProcessed > 0 || result.connectionsSuccessful > 0)) ? 'completed' : 'failed';
+                                console.log(`✅ POLL-ALARM: Import automation finished with status: ${finalStatus}`);
+                                try {
+                                    await fetch(`${apiUrl}/api/extension/command`, {
+                                        method: 'PUT',
+                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
+                                    });
+                                } catch (x) { console.error('Failed to update import command status:', x); }
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }).catch(async (err) => {
+                                console.error('❌ POLL-ALARM: Import automation error:', err);
+                                try {
+                                    await fetch(`${apiUrl}/api/extension/command`, {
+                                        method: 'PUT',
+                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
+                                    });
+                                } catch (x) {}
+                                globalThis._processingCommandIds.delete(cmd.id);
                             });
+                        } else {
+                            // No profiles to import — mark as failed
+                            await fetch(`${apiUrl}/api/extension/command`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
+                            });
+                            globalThis._processingCommandIds.delete(cmd.id);
                         }
 
-                        await fetch(`${apiUrl}/api/extension/command`, {
-                            method: 'PUT',
-                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
-                        });
-                        console.log('✅ POLL-ALARM: start_import_automation launched');
+                        console.log('✅ POLL-ALARM: start_import_automation launched (in_progress)');
                     } catch (e) {
                         console.error('❌ POLL-ALARM: start_import_automation failed:', e);
                         try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
-                    } finally { globalThis._processingCommandIds.delete(cmd.id); }
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
                 }
 
                 // --- unknown command ---
@@ -1424,7 +1482,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (data.success && data.commands && data.commands.length > 0) {
                     console.log(`📥 BACKGROUND: Found ${data.commands.length} pending commands from website`);
                     
+                    // Commands handled by alarm-based commandPoller — skip them here
+                    const alarmOnlyCommands = ['start_bulk_commenting', 'start_import_automation'];
+                    
                     for (const cmd of data.commands) {
+                        // Skip commands that are handled by the alarm-based poller
+                        if (alarmOnlyCommands.includes(cmd.command)) {
+                            console.log(`⏭️ BACKGROUND: Skipping ${cmd.command} - handled by alarm poller`);
+                            continue;
+                        }
                         // DEDUP: Skip if already being processed
                         if (globalThis._processingCommandIds.has(cmd.id)) {
                             console.log(`⏭️ BACKGROUND: Skipping command ${cmd.id} - already processing`);

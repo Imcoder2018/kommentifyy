@@ -791,6 +791,21 @@ function DashboardContent() {
         return () => clearInterval(interval);
     }, []);
 
+    // Load tab-specific data on initial mount when auth completes (fixes ?tab=import reload)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (loading || !user) return;
+        const tab = activeTab;
+        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); }
+        if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
+        if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
+        if (tab === 'tasks') loadTasks();
+        if (tab === 'history') loadHistory();
+        if (tab === 'limits') loadAutoSettings();
+        if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
+        if (tab === 'import') loadImportCfg();
+    }, [loading, user]);
+
     const stopAllTasks = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
@@ -1138,7 +1153,7 @@ function DashboardContent() {
                                     <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '600', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command === 'scrape_profile' ? 'Scrape Profile' : task.command}
+                                                {task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command === 'scrape_profile' ? 'Scrape Profile' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}
                                             </div>
                                             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{task.createdAt ? new Date(task.createdAt).toLocaleString() : ''}</div>
                                         </div>
@@ -1154,7 +1169,7 @@ function DashboardContent() {
                                                     window.dispatchEvent(new CustomEvent('kommentify-stop-all-tasks'));
                                                     await fetch('/api/extension/command', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: task.id, status: 'cancelled' }) });
                                                     await loadTasks(true);
-                                                    addTaskNotification(`Stopped: ${task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command}`, 'error');
+                                                    addTaskNotification(`Stopped: ${task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}`, 'error');
                                                 } catch {} finally { btn.style.opacity = '1'; }
                                             }}
                                                 onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.9)')}

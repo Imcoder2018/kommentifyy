@@ -90,6 +90,7 @@ async function syncAutomationSettings(token, apiUrl) {
         const randomIntervalSettings = {
             minInterval: s.randomIntervalMin,
             maxInterval: s.randomIntervalMax,
+            enabled: s.randomDelayEnabled !== false,
         };
 
         await chrome.storage.local.set({
@@ -98,6 +99,8 @@ async function syncAutomationSettings(token, apiUrl) {
             humanSimulation,
             randomIntervalSettings,
             accountPreset: s.accountPreset,
+            baseDelay: s.baseDelay || 5,
+            randomDelayEnabled: s.randomDelayEnabled !== false,
             limitsPresetApplied: true,
         });
 

@@ -421,10 +421,11 @@ async function pollCommandsDirectly() {
                         }
 
                         // Trigger bulk commenting via executeBulkProcessing
+                        // IMPORTANT: executeBulkProcessing expects: source, keywords, quota, ignoreKeywords (string)
                         const config = {
-                            postSource: cfgData.postSource || 'feed',
-                            searchKeywords: cfgData.searchKeywords ? cfgData.searchKeywords.split('\n').filter(k => k.trim()) : [],
-                            totalPosts: cfgData.totalPosts || 3,
+                            source: cfgData.postSource || 'feed',
+                            keywords: cfgData.searchKeywords ? (typeof cfgData.searchKeywords === 'string' ? cfgData.searchKeywords.split('\n').filter(k => k.trim()) : cfgData.searchKeywords) : [],
+                            quota: cfgData.totalPosts || 3,
                             actions: {
                                 save: cfgData.savePosts || false,
                                 like: cfgData.likePosts !== false,
@@ -435,7 +436,7 @@ async function pollCommandsDirectly() {
                             },
                             minLikes: cfgData.minLikes || 0,
                             minComments: cfgData.minComments || 0,
-                            ignoreKeywords: cfgData.ignoreKeywords ? cfgData.ignoreKeywords.split('\n').filter(k => k.trim()) : [],
+                            ignoreKeywords: cfgData.ignoreKeywords || '',
                             openInNewWindow: cfgData.openInNewWindow !== false,
                         };
 
@@ -484,15 +485,17 @@ async function pollCommandsDirectly() {
                         // Trigger import automation
                         if (profileUrls.length > 0) {
                             console.log(`📥 POLL-ALARM: Starting import for ${profileUrls.length} profiles`);
-                            importAutomation.startCombinedAutomation({
-                                profiles: profileUrls,
+                            // processCombinedAutomation(profiles, options) — profiles is array, options is object
+                            importAutomation.processCombinedAutomation(profileUrls, {
                                 sendConnections: cfgData.sendConnections !== false,
-                                engageLikes: cfgData.engageLikes !== false,
-                                engageComments: cfgData.engageComments !== false,
-                                engageShares: cfgData.engageShares || false,
-                                engageFollows: cfgData.engageFollows !== false,
-                                smartRandom: cfgData.smartRandom || false,
                                 postsPerProfile: cfgData.postsPerProfile || 2,
+                                randomMode: cfgData.smartRandom || false,
+                                actions: {
+                                    like: cfgData.engageLikes !== false,
+                                    comment: cfgData.engageComments !== false,
+                                    share: cfgData.engageShares || false,
+                                    follow: cfgData.engageFollows !== false,
+                                },
                             });
                         }
 
@@ -1473,8 +1476,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 // Check stop flag before continuing
                                 if (globalThis._stopAllTasks) { globalThis._processingCommandIds.delete(cmd.id); continue; }
 
-                                console.log('BACKGROUND: LinkedIn tab loaded, waiting 5s for render...');
-                                await new Promise(resolve => setTimeout(resolve, 5000));
+                                // Load post writer delay settings from Limits tab
+                                const { delaySettings: pwDelays } = await chrome.storage.local.get('delaySettings');
+                                const pageLoadWait = ((pwDelays && pwDelays.postWriterPageLoadDelay) || 5) * 1000;
+                                console.log(`BACKGROUND: LinkedIn tab loaded, waiting ${pageLoadWait/1000}s for render (from Limits)...`);
+                                await new Promise(resolve => setTimeout(resolve, pageLoadWait));
 
                                 // Step 3: Inject posting script into the LinkedIn tab
                                 const content = cmd.data.content;

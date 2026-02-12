@@ -293,7 +293,16 @@ class TrendingContentGenerator {
 
             console.log('TRENDING: Post content ready');
 
-            // Step 3: Publish to LinkedIn
+            // Step 3: Load delay settings from Limits tab
+            const { delaySettings: trendDelays } = await chrome.storage.local.get('delaySettings');
+            const postWriterDelays = {
+                postWriterPageLoadDelay: (trendDelays && trendDelays.postWriterPageLoadDelay) || 10,
+                postWriterClickDelay: (trendDelays && trendDelays.postWriterClickDelay) || 5,
+                postWriterTypingDelay: (trendDelays && trendDelays.postWriterTypingDelay) || 5,
+                postWriterSubmitDelay: (trendDelays && trendDelays.postWriterSubmitDelay) || 3,
+            };
+
+            // Step 4: Publish to LinkedIn
             const feedTabId = await browser.openTab('https://www.linkedin.com/feed/', false);
             if (!feedTabId) {
                 throw new Error('Failed to open LinkedIn feed');
@@ -304,7 +313,7 @@ class TrendingContentGenerator {
             const publishResult = await chrome.scripting.executeScript({
                 target: { tabId: feedTabId },
                 func: postToLinkedIn,
-                args: [postResult.content]
+                args: [postResult.content, postWriterDelays]
             });
 
             await new Promise(resolve => setTimeout(resolve, 5000));

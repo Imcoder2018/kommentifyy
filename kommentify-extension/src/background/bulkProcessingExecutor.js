@@ -320,8 +320,8 @@ export async function executeBulkProcessing(settings) {
         
         console.log("BULK PROCESSING: Business hours check passed, proceeding...");
         
-        // Load delay settings and automation preferences
-        const storageResult = await chrome.storage.local.get(['delaySettings', 'automationPreferences']);
+        // Load delay settings, automation preferences, and random interval settings
+        const storageResult = await chrome.storage.local.get(['delaySettings', 'automationPreferences', 'randomIntervalSettings', 'randomDelayEnabled']);
         const delaySettings = storageResult.delaySettings || {
             automationStartDelay: 0,
             searchMinDelay: 30,
@@ -333,6 +333,17 @@ export async function executeBulkProcessing(settings) {
             beforeFollowDelay: 2
         };
         const automationPreferences = storageResult.automationPreferences || { openSearchInWindow: true };
+        const randomIntervalSettings = storageResult.randomIntervalSettings || { minInterval: 15, maxInterval: 35, enabled: true };
+        const randomDelayEnabled = storageResult.randomDelayEnabled !== false;
+        
+        // Helper: add random jitter to a delay if enabled
+        const applyRandomJitter = (baseDelayMs) => {
+            if (!randomDelayEnabled || !randomIntervalSettings.enabled) return baseDelayMs;
+            const jitterMin = (randomIntervalSettings.minInterval || 15) * 1000;
+            const jitterMax = (randomIntervalSettings.maxInterval || 35) * 1000;
+            const jitter = Math.floor(Math.random() * (jitterMax - jitterMin + 1)) + jitterMin;
+            return baseDelayMs + jitter;
+        };
         
         console.log("🔧 BULK PROCESSING: Delay settings loaded:", delaySettings);
         console.log("🪟 BULK PROCESSING: Automation preferences:", automationPreferences);
@@ -350,9 +361,9 @@ export async function executeBulkProcessing(settings) {
         // Process all keywords or feed
         const allPostUrns = [];
         
-        // Parse ignore keywords from settings (newline-separated)
-        const ignoreKeywordsText = settings.ignoreKeywords || 'we\'re hiring\nnow hiring\napply now';
-        const ignoreKeywords = ignoreKeywordsText.split('\n').map(k => k.trim()).filter(k => k.length > 0);
+        // Parse ignore keywords from settings (string or array)
+        const rawIgnoreKw = settings.ignoreKeywords || 'we\'re hiring\nnow hiring\napply now';
+        const ignoreKeywords = Array.isArray(rawIgnoreKw) ? rawIgnoreKw.map(k => k.trim()).filter(k => k.length > 0) : rawIgnoreKw.split('\n').map(k => k.trim()).filter(k => k.length > 0);
         
         const qualification = {
             minLikes: settings.minLikes || 0,
@@ -1197,19 +1208,29 @@ export async function executeBulkProcessing(settings) {
                 processedCount++;
                 console.log(`BULK PROCESSING: Completed post ${i + 1}/${allPostUrns.length} - Actions: ${JSON.stringify(actionResults)}`);
                 
-                // Wait between posts - use longer delay if we commented to avoid spam detection
-                if (actionResults.commented && i < allPostUrns.length - 1) {
-                    console.log(`⏱️ BULK PROCESSING: Waiting ${commentDelay}s between posts (spam prevention)...`);
-                    // Show countdown in status indicator
-                    for (let remaining = commentDelay; remaining > 0; remaining -= 5) {
+                // Wait between posts — apply random jitter from Limits tab
+                if (i < allPostUrns.length - 1) {
+                    let betweenPostDelay;
+                    if (actionResults.commented) {
+                        // Use comment delay range from Limits tab
+                        const minDelay = (delaySettings.commentMinDelay || 60) * 1000;
+                        const maxDelay = (delaySettings.commentMaxDelay || 180) * 1000;
+                        betweenPostDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+                    } else {
+                        // Use search delay range from Limits tab for non-comment posts
+                        const minDelay = (delaySettings.searchMinDelay || 30) * 1000;
+                        const maxDelay = (delaySettings.searchMaxDelay || 60) * 1000;
+                        betweenPostDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+                    }
+                    // Apply random jitter on top if enabled
+                    betweenPostDelay = applyRandomJitter(betweenPostDelay);
+                    const delaySec = Math.round(betweenPostDelay / 1000);
+                    console.log(`⏱️ BULK PROCESSING: Waiting ${delaySec}s before next post (random jitter: ${randomDelayEnabled ? 'ON' : 'OFF'})...`);
+                    for (let remaining = delaySec; remaining > 0; remaining -= 5) {
                         if (stopProcessingFlag) break;
                         await broadcastStatus(`⏳ Next post in ${remaining}s...`, 'info');
                         await new Promise(resolve => setTimeout(resolve, Math.min(5000, remaining * 1000)));
                     }
-                } else if (i < allPostUrns.length - 1) {
-                    // Short delay if no comment
-                    await broadcastStatus(`⏳ Next post in 3s...`, 'info');
-                    await new Promise(resolve => setTimeout(resolve, 3000));
                 }
                 
             } catch (error) {

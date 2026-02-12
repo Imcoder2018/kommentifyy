@@ -969,7 +969,7 @@ function DashboardContent() {
         if (tabId === 'tasks') loadTasks();
         if (tabId === 'history') loadHistory();
         if (tabId === 'limits') loadAutoSettings();
-        if (tabId === 'commenter') loadCommenterCfg();
+        if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tabId === 'import') loadImportCfg();
     };
 
@@ -3149,7 +3149,44 @@ function DashboardContent() {
                 {/* Commenter Tab */}
                 {activeTab === 'commenter' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {commenterCfgLoading ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : commenterCfg && (<>
+                        {(commenterCfgLoading || csSettingsLoading) ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : commenterCfg && (<>
+
+                        {/* Auto-Schedule */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h3>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={commenterCfg.autoScheduleEnabled} onChange={e => setCommenterCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
+                                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>Enabled</span>
+                                </label>
+                            </div>
+                            <div style={{ marginBottom: '12px' }}>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 8px 0' }}>Schedules ({(() => { try { return JSON.parse(commenterCfg.schedules || '[]').length; } catch { return 0; } })()})</p>
+                                {(() => { try { const sches = JSON.parse(commenterCfg.schedules || '[]'); return sches.length > 0 ? sches.map((s: any, i: number) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '6px' }}>
+                                        <span style={{ color: '#a78bfa', fontSize: '13px', flex: 1 }}>🕐 {s.time} {s.ampm || ''}</span>
+                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
+                                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '2px 8px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
+                                    </div>
+                                )) : <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } catch { return <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } })()}
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input id="commenter-sched-time" type="time" defaultValue="09:00" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                                <select id="commenter-sched-ampm" defaultValue="AM" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                                    <option value="AM">AM</option><option value="PM">PM</option>
+                                </select>
+                                <button onClick={() => { const t = (document.getElementById('commenter-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('commenter-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(commenterCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
+                                    style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>+ Add Schedule</button>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '8px 0 0 0' }}>Schedule will use current settings</p>
+                        </div>
+
+                        {/* Start Bulk Commenting Button */}
+                        <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Bulk commenting task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                            style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
+                            🚀 Start Bulk Commenting
+                        </button>
+
                         {/* Post Source */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>📌 Post Source</h3>
@@ -3196,14 +3233,15 @@ function DashboardContent() {
                             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '12px 0 0 0' }}>&quot;Like OR Comment&quot; randomly chooses one action per post</p>
                         </div>
 
-                        {/* Processing Settings */}
+                        {/* Processing Settings & Post Qualification */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>⚙️ Processing Settings</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
                                 <div>
                                     <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Total Posts</label>
                                     <input type="number" min="1" max="50" value={commenterCfg.totalPosts} onChange={e => setCommenterCfg((p: any) => ({ ...p, totalPosts: parseInt(e.target.value) || 1 }))}
                                         style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Scrapes posts until quota reached</p>
                                 </div>
                                 <div>
                                     <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Min Likes</label>
@@ -3214,6 +3252,7 @@ function DashboardContent() {
                                     <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Min Comments</label>
                                     <input type="number" min="0" value={commenterCfg.minComments} onChange={e => setCommenterCfg((p: any) => ({ ...p, minComments: parseInt(e.target.value) || 0 }))}
                                         style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>0 = no minimum</p>
                                 </div>
                             </div>
                         </div>
@@ -3223,15 +3262,104 @@ function DashboardContent() {
                             <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>🚫 Ignore Posts Containing</h3>
                             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>One keyword per line. Posts containing any of these will be skipped (case-insensitive).</p>
                             <textarea value={commenterCfg.ignoreKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, ignoreKeywords: e.target.value }))}
-                                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', minHeight: '120px', resize: 'vertical', fontFamily: 'monospace' }} />
+                                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', minHeight: '100px', resize: 'vertical', fontFamily: 'monospace' }} />
                         </div>
 
-                        {/* Save Button */}
-                        <button onClick={() => saveCommenterCfg(commenterCfg)} disabled={commenterCfgSaving}
-                            style={{ width: '100%', padding: '16px', background: commenterCfgSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: commenterCfgSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
-                            {commenterCfgSaving ? 'Saving...' : '💾 Save Commenter Settings'}
+                        {/* AI Comment Settings */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🤖 AI Comment Settings</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                                <div>
+                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Comment Goal</label>
+                                    <select value={csGoal} onChange={e => setCsGoal(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                        <option value="AddValue">Add Value - Pure contribution, helpful insight</option>
+                                        <option value="Engagement">Engagement - Drive conversations and discussion</option>
+                                        <option value="Networking">Networking - Build relationships and connections</option>
+                                        <option value="ThoughtLeadership">Thought Leadership - Position as an expert</option>
+                                        <option value="Support">Support - Encourage and uplift the author</option>
+                                    </select>
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>What you want to achieve with this comment</p>
+                                </div>
+                                <div>
+                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Tone of Voice</label>
+                                    <select value={csTone} onChange={e => setCsTone(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                        <option value="Friendly">Friendly - Warm, conversational</option>
+                                        <option value="Professional">Professional - Polished, business-like</option>
+                                        <option value="Casual">Casual - Relaxed, informal</option>
+                                        <option value="Enthusiastic">Enthusiastic - Excited, energetic</option>
+                                        <option value="Analytical">Analytical - Data-driven, logical</option>
+                                    </select>
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Controls AI comment personality and style</p>
+                                </div>
+                                <div>
+                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Comment Length</label>
+                                    <select value={csLength} onChange={e => setCsLength(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                        <option value="Short">Short - 300 characters max</option>
+                                        <option value="Medium">Medium - 600 characters max</option>
+                                        <option value="Long">Long - 1000 characters max</option>
+                                    </select>
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Maximum length of generated comments</p>
+                                </div>
+                                <div>
+                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Comment Style</label>
+                                    <select value={csStyle} onChange={e => setCsStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                        <option value="direct">Direct &amp; Concise - Single paragraph, straight to the point</option>
+                                        <option value="storytelling">Storytelling - Narrative style with anecdotes</option>
+                                        <option value="questioning">Questioning - Ask thought-provoking questions</option>
+                                        <option value="structured">Structured - Organized with bullet points</option>
+                                    </select>
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>How your comments are structured</p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                                <div>
+                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Your Expertise/Niche</label>
+                                    <input type="text" value={csExpertise} onChange={e => setCsExpertise(e.target.value)} placeholder="e.g., SaaS Marketing, AI Development, Leadership Coach"
+                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }} />
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Your role, industry, or what you&#39;re known for</p>
+                                </div>
+                                <div>
+                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Your Background (Optional)</label>
+                                    <input type="text" value={csBackground} onChange={e => setCsBackground(e.target.value)} placeholder="e.g., Scaled 3 startups to $10M ARR, 15 years in B2B sales"
+                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }} />
+                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Specific experience or credentials that add authority</p>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: '16px' }}>
+                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>AI Button Behavior</label>
+                                <select value={csAutoPost} onChange={e => setCsAutoPost(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                    <option value="manual">Manual Review - Generate, paste, and wait for me to post</option>
+                                    <option value="auto">Auto Post - Generate and automatically post the comment</option>
+                                </select>
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Controls what happens when you click AI button on posts</p>
+                            </div>
+                        </div>
+
+                        {/* Window & Tab Preferences */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>🪟 Window &amp; Tab Preferences</h3>
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>Open search pages in new window or background tabs</p>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                {[{ val: true, label: '🪟 New Window' }, { val: false, label: '📑 Background Tabs' }].map(o => (
+                                    <button key={String(o.val)} onClick={() => setCommenterCfg((p: any) => ({ ...p, openInNewWindow: o.val }))}
+                                        style={{ flex: 1, padding: '12px', background: commenterCfg.openInNewWindow === o.val ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.openInNewWindow === o.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontWeight: commenterCfg.openInNewWindow === o.val ? '700' : '500', cursor: 'pointer', fontSize: '13px' }}>
+                                        {o.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Save All + Start Button */}
+                        <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
+                            style={{ width: '100%', padding: '16px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
+                            {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : '💾 Save All Commenter Settings'}
                         </button>
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', textAlign: 'center', margin: '0' }}>Use &quot;Start Bulk Commenting&quot; from the extension to run with these settings. Scheduling coming soon.</p>
+
+                        <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Bulk commenting task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                            style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
+                            🚀 Start Bulk Commenting
+                        </button>
+                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', textAlign: 'center', margin: '0' }}>Delay settings and daily limits are in the Limits tab</p>
                         </>)}
                     </div>
                 )}
@@ -3240,43 +3368,87 @@ function DashboardContent() {
                 {activeTab === 'import' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         {importCfgLoading ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : importCfg && (<>
-                        {/* Profile URLs */}
+
+                        {/* Paste Profile URLs */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>📋 Paste Profile URLs</h3>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>✏️ Paste Profile URLs</h3>
                             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>Paste LinkedIn profile URLs here, each on a new line</p>
                             <textarea value={importCfg.profileUrls} onChange={e => setImportCfg((p: any) => ({ ...p, profileUrls: e.target.value }))}
-                                placeholder="https://www.linkedin.com/in/john-doe-123456/&#10;https://www.linkedin.com/in/jane-smith-789012/"
+                                placeholder="https://www.linkedin.com/in/john-doe-123456/&#10;https://www.linkedin.com/in/jane-smith-789012/&#10;https://www.linkedin.com/in/example-profile/"
                                 style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', minHeight: '120px', resize: 'vertical', fontFamily: 'monospace' }} />
                             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '8px 0 0 0' }}>Profiles detected: <strong style={{ color: '#a78bfa' }}>{importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0}</strong></p>
                         </div>
 
-                        {/* Import Credits */}
-                        {user?.plan && (
-                            <div style={{ background: 'rgba(105,63,233,0.1)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>🎫 Import Credits</h3>
-                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#a78bfa' }}>{user.plan.monthlyImportCredits || 50}</div>
-                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Monthly Total</div>
-                                    </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#34d399' }}>{Math.max(0, (user.plan.monthlyImportCredits || 50) - (usage?.usage?.importProfiles || 0))}</div>
-                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Remaining</div>
-                                    </div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '24px', fontWeight: '800', color: 'white' }}>{usage?.usage?.importProfiles || 0}</div>
-                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Used</div>
-                                    </div>
-                                </div>
-                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '10px 0 0 0' }}>Each profile processed uses 1 credit</p>
-                            </div>
-                        )}
-
-                        {/* Automation Settings */}
+                        {/* Upload CSV File */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🤖 Smart Profile Automation</h3>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>📁 Upload CSV File</h3>
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>CSV should have profile URLs in the first column</p>
+                            <input type="file" accept=".csv" id="import-csv-upload" style={{ display: 'none' }}
+                                onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { const text = ev.target?.result as string; if (!text) return; const lines = text.split('\n').map(l => l.split(',')[0]?.trim()).filter(l => l.includes('linkedin.com/in/')); if (lines.length > 0) { const existing = importCfg.profileUrls ? importCfg.profileUrls.trim() : ''; const combined = existing ? existing + '\n' + lines.join('\n') : lines.join('\n'); setImportCfg((p: any) => ({ ...p, profileUrls: combined })); showToast(`✅ Imported ${lines.length} profiles from CSV`, 'success'); } else { showToast('No LinkedIn profile URLs found in CSV', 'error'); } }; reader.readAsText(file); e.target.value = ''; }} />
+                            <button onClick={() => document.getElementById('import-csv-upload')?.click()}
+                                style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', cursor: 'pointer', fontWeight: '600' }}>
+                                📂 Choose CSV File
+                            </button>
+                        </div>
+
+                        {/* Import Credits */}
+                        <div style={{ background: 'rgba(105,63,233,0.1)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>🎫 Import Credits</h3>
+                                {user?.plan && <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Plan: {user.plan.name}</span>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: '800', color: '#34d399' }}>{Math.max(0, (user?.plan?.monthlyImportCredits || 50) - (usage?.usage?.importProfiles || 0))}</div>
+                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Remaining</div>
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: '800', color: '#a78bfa' }}>{user?.plan?.monthlyImportCredits || 50}</div>
+                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Monthly Total</div>
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: '800', color: 'white' }}>{usage?.usage?.importProfiles || 0}</div>
+                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Used</div>
+                                </div>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '10px 0 0 0' }}>Each profile processed uses 1 credit, buy more 500 Credits per $1</p>
+                        </div>
+
+                        {/* Auto-Schedule */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h3>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={importCfg.autoScheduleEnabled} onChange={e => setImportCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
+                                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>Enabled</span>
+                                </label>
+                            </div>
+                            <div style={{ marginBottom: '12px' }}>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 8px 0' }}>Schedules ({(() => { try { return JSON.parse(importCfg.schedules || '[]').length; } catch { return 0; } })()})</p>
+                                {(() => { try { const sches = JSON.parse(importCfg.schedules || '[]'); return sches.length > 0 ? sches.map((s: any, i: number) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '6px' }}>
+                                        <span style={{ color: '#a78bfa', fontSize: '13px', flex: 1 }}>🕐 {s.time} {s.ampm || ''}</span>
+                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
+                                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '2px 8px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
+                                    </div>
+                                )) : <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } catch { return <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } })()}
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input id="import-sched-time" type="time" defaultValue="09:00" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                                <select id="import-sched-ampm" defaultValue="AM" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                                    <option value="AM">AM</option><option value="PM">PM</option>
+                                </select>
+                                <button onClick={() => { const t = (document.getElementById('import-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('import-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(importCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
+                                    style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>+ Add Schedule</button>
+                            </div>
+                        </div>
+
+                        {/* Smart Profile Automation */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>🤖 Smart Profile Automation</h3>
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 16px 0' }}>Engage with profiles - connect, like, comment &amp; grow network</p>
                             <div style={{ marginBottom: '16px' }}>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Profiles/Day</label>
+                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Profiles/Day:</label>
                                 <input type="number" min="1" max="100" value={importCfg.profilesPerDay} onChange={e => setImportCfg((p: any) => ({ ...p, profilesPerDay: parseInt(e.target.value) || 1 }))}
                                     style={{ width: '120px', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
                             </div>
@@ -3284,6 +3456,7 @@ function DashboardContent() {
                                 <input type="checkbox" checked={importCfg.sendConnections} onChange={e => setImportCfg((p: any) => ({ ...p, sendConnections: e.target.checked }))}
                                     style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
                                 🤝 Send Connection Requests
+                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginLeft: 'auto' }}>Automatically connect with each profile</span>
                             </label>
                             <h4 style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '12px' }}>⚡ Engagement Actions</h4>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
@@ -3292,28 +3465,71 @@ function DashboardContent() {
                                     { key: 'engageComments', label: '💬 AI Comments' },
                                     { key: 'engageShares', label: '🔄 Reshares' },
                                     { key: 'engageFollows', label: '➕ Follow' },
-                                    { key: 'smartRandom', label: '🎲 Smart Random' },
+                                    { key: 'smartRandom', label: '🎲 Smart Random', desc: 'Pick 1 random action per post' },
                                 ].map(f => (
                                     <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
                                         <input type="checkbox" checked={importCfg[f.key]} onChange={e => setImportCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
                                             style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                        {f.label}
+                                        <span>{f.label}</span>
+                                        {(f as any).desc && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', marginLeft: 'auto' }}>{(f as any).desc}</span>}
                                     </label>
                                 ))}
                             </div>
                             <div>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Posts per profile</label>
-                                <input type="number" min="1" max="10" value={importCfg.postsPerProfile} onChange={e => setImportCfg((p: any) => ({ ...p, postsPerProfile: parseInt(e.target.value) || 1 }))}
-                                    style={{ width: '120px', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Posts per profile:</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input type="number" min="1" max="10" value={importCfg.postsPerProfile} onChange={e => setImportCfg((p: any) => ({ ...p, postsPerProfile: parseInt(e.target.value) || 1 }))}
+                                        style={{ width: '80px', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>posts</span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Save Button */}
+                        {/* Save + Launch Buttons */}
                         <button onClick={() => saveImportCfg(importCfg)} disabled={importCfgSaving}
                             style={{ width: '100%', padding: '16px', background: importCfgSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: importCfgSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
                             {importCfgSaving ? 'Saving...' : '💾 Save Import Settings'}
                         </button>
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', textAlign: 'center', margin: '0' }}>Use &quot;Launch Automation&quot; from the extension to run import with these settings</p>
+
+                        <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveImportCfg(importCfg); showToast('🚀 Launching import automation...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_import_automation', data: importCfg }) }); const data = await res.json(); if (data.success) showToast('✅ Import automation task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                            style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
+                            🚀 Launch Automation
+                        </button>
+
+                        {/* Import Actions History */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>📊 Import Actions History</h3>
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                                {[
+                                    { label: 'Profiles', val: importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0, color: '#a78bfa' },
+                                    { label: 'Connections', val: 0, color: '#34d399' },
+                                    { label: 'Posts', val: 0, color: '#60a5fa' },
+                                    { label: 'Comments', val: 0, color: '#fbbf24' },
+                                    { label: 'Rate', val: '0%', color: '#f472b6' },
+                                ].map(s => (
+                                    <div key={s.label} style={{ textAlign: 'center', minWidth: '60px' }}>
+                                        <div style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{s.val}</div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                            {['Date', 'Profile', 'Link', 'Connection', 'Likes', 'Comments', 'Shares', 'Follows', 'Status'].map(h => (
+                                                <th key={h} style={{ padding: '8px 6px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colSpan={9} style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>No import actions yet. Start automation to see history here.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         </>)}
                     </div>
                 )}

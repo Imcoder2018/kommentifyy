@@ -386,6 +386,128 @@ async function pollCommandsDirectly() {
                     try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'queued' }) }); } catch (x) {}
                 }
 
+                // --- start_bulk_commenting ---
+                else if (cmd.command === 'start_bulk_commenting') {
+                    console.log('💬 POLL-ALARM: Executing start_bulk_commenting from website...');
+                    try {
+                        // Sync settings from website first
+                        const { syncAllSettingsFromWebsite } = await import('../shared/services/settingsSync.js');
+                        await syncAllSettingsFromWebsite();
+
+                        // Store commenter config + comment settings into chrome.storage.local
+                        const cfgData = cmd.data || {};
+                        await chrome.storage.local.set({
+                            commenterConfig: {
+                                postSource: cfgData.postSource || 'feed',
+                                searchKeywords: cfgData.searchKeywords || '',
+                                savePosts: cfgData.savePosts || false,
+                                likePosts: cfgData.likePosts !== false,
+                                commentOnPosts: cfgData.commentOnPosts !== false,
+                                likeOrComment: cfgData.likeOrComment || false,
+                                sharePosts: cfgData.sharePosts || false,
+                                followAuthors: cfgData.followAuthors || false,
+                                totalPosts: cfgData.totalPosts || 3,
+                                minLikes: cfgData.minLikes || 0,
+                                minComments: cfgData.minComments || 0,
+                                ignoreKeywords: cfgData.ignoreKeywords || '',
+                                openInNewWindow: cfgData.openInNewWindow !== false,
+                            }
+                        });
+
+                        if (cfgData.commentSettings) {
+                            await chrome.storage.local.set({
+                                commentSettings: cfgData.commentSettings
+                            });
+                        }
+
+                        // Trigger bulk commenting via executeBulkProcessing
+                        const config = {
+                            postSource: cfgData.postSource || 'feed',
+                            searchKeywords: cfgData.searchKeywords ? cfgData.searchKeywords.split('\n').filter(k => k.trim()) : [],
+                            totalPosts: cfgData.totalPosts || 3,
+                            actions: {
+                                save: cfgData.savePosts || false,
+                                like: cfgData.likePosts !== false,
+                                comment: cfgData.commentOnPosts !== false,
+                                likeOrComment: cfgData.likeOrComment || false,
+                                share: cfgData.sharePosts || false,
+                                follow: cfgData.followAuthors || false,
+                            },
+                            minLikes: cfgData.minLikes || 0,
+                            minComments: cfgData.minComments || 0,
+                            ignoreKeywords: cfgData.ignoreKeywords ? cfgData.ignoreKeywords.split('\n').filter(k => k.trim()) : [],
+                            openInNewWindow: cfgData.openInNewWindow !== false,
+                        };
+
+                        console.log('💬 POLL-ALARM: Starting bulk processing with config:', JSON.stringify(config).substring(0, 200));
+                        executeBulkProcessing(config);
+
+                        await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
+                        });
+                        console.log('✅ POLL-ALARM: start_bulk_commenting launched');
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: start_bulk_commenting failed:', e);
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally { globalThis._processingCommandIds.delete(cmd.id); }
+                }
+
+                // --- start_import_automation ---
+                else if (cmd.command === 'start_import_automation') {
+                    console.log('📥 POLL-ALARM: Executing start_import_automation from website...');
+                    try {
+                        // Sync settings from website first
+                        const { syncAllSettingsFromWebsite } = await import('../shared/services/settingsSync.js');
+                        await syncAllSettingsFromWebsite();
+
+                        // Store import config
+                        const cfgData = cmd.data || {};
+                        const profileUrls = cfgData.profileUrls ? cfgData.profileUrls.split('\n').map(u => u.trim()).filter(u => u.includes('linkedin.com/in/')) : [];
+
+                        await chrome.storage.local.set({
+                            importConfig: {
+                                profileUrls: cfgData.profileUrls || '',
+                                profilesPerDay: cfgData.profilesPerDay || 20,
+                                sendConnections: cfgData.sendConnections !== false,
+                                engageLikes: cfgData.engageLikes !== false,
+                                engageComments: cfgData.engageComments !== false,
+                                engageShares: cfgData.engageShares || false,
+                                engageFollows: cfgData.engageFollows !== false,
+                                smartRandom: cfgData.smartRandom || false,
+                                postsPerProfile: cfgData.postsPerProfile || 2,
+                            },
+                            pendingImportProfiles: profileUrls,
+                        });
+
+                        // Trigger import automation
+                        if (profileUrls.length > 0) {
+                            console.log(`📥 POLL-ALARM: Starting import for ${profileUrls.length} profiles`);
+                            importAutomation.startCombinedAutomation({
+                                profiles: profileUrls,
+                                sendConnections: cfgData.sendConnections !== false,
+                                engageLikes: cfgData.engageLikes !== false,
+                                engageComments: cfgData.engageComments !== false,
+                                engageShares: cfgData.engageShares || false,
+                                engageFollows: cfgData.engageFollows !== false,
+                                smartRandom: cfgData.smartRandom || false,
+                                postsPerProfile: cfgData.postsPerProfile || 2,
+                            });
+                        }
+
+                        await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
+                        });
+                        console.log('✅ POLL-ALARM: start_import_automation launched');
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: start_import_automation failed:', e);
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally { globalThis._processingCommandIds.delete(cmd.id); }
+                }
+
                 // --- unknown command ---
                 else {
                     console.log('⚠️ POLL-ALARM: Unknown command:', cmd.command);

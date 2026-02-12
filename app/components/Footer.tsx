@@ -110,7 +110,7 @@ export default function Footer() {
                         © 2026 Kommentify. All rights reserved.
                     </div>
                     <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>
-                        Developed by AR Webcrafts LLC.
+                        Developed by <a href="https://www.arwebcrafts.com/" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'underline' }}>AR Webcrafts LLC</a>.
                     </div>
                 </div>
             </div>

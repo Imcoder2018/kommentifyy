@@ -399,6 +399,9 @@ model AutomationSettings {
   userId                String   @unique
   // Preset
   accountPreset         String   @default("matured-safe")
+  // Global delay controls
+  baseDelay             Int      @default(5)      // single base delay (seconds) applied across actions
+  randomDelayEnabled    Boolean  @default(true)   // toggle random jitter on/off
   // Random interval
   randomIntervalMin     Int      @default(15)
   randomIntervalMax     Int      @default(35)

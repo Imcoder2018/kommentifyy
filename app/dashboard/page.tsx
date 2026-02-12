@@ -2968,564 +2968,466 @@ function DashboardContent() {
 
                 {/* Limits & Delays Tab */}
                 {activeTab === 'limits' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         {autoSettingsLoading ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : autoSettings && (<>
-                        {/* Preset Selector */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🛡️ Account Preset</h3>
-                            <select value={autoSettings.accountPreset} onChange={e => { const v = e.target.value; setAutoSettings((p: any) => ({ ...p, accountPreset: v })); }}
-                                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }}>
-                                <option value="your-choice">Your Choice (Custom)</option>
-                                <option value="new-conservative">New Account - Conservative</option>
-                                <option value="new-moderate">New Account - Moderate</option>
-                                <option value="matured-safe">Matured - Safe (Recommended)</option>
-                                <option value="matured-aggressive">Matured - Aggressive</option>
-                                <option value="premium-user">Premium LinkedIn User</option>
-                                <option value="sales-navigator">Sales Navigator</option>
-                                <option value="speed-mode">Speed Mode (Use at own risk)</option>
-                            </select>
-                        </div>
 
-                        {/* Random Time Interval */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>🎲 Random Time Interval</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 16px 0' }}>Adds a random delay between min and max to each action for more human-like behavior</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Min Interval (seconds)</label>
-                                    <input type="number" min="0" max="300" value={autoSettings.randomIntervalMin} onChange={e => setAutoSettings((p: any) => ({ ...p, randomIntervalMin: parseInt(e.target.value) || 0 }))}
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
-                                </div>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Max Interval (seconds)</label>
-                                    <input type="number" min="0" max="300" value={autoSettings.randomIntervalMax} onChange={e => setAutoSettings((p: any) => ({ ...p, randomIntervalMax: parseInt(e.target.value) || 0 }))}
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                        {/* Row 1: Preset + Global Base Delay + Random Toggle */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Account Preset</label>
+                                <select value={autoSettings.accountPreset} onChange={e => setAutoSettings((p: any) => ({ ...p, accountPreset: e.target.value }))}
+                                    style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                                    <option value="your-choice">Custom</option>
+                                    <option value="new-conservative">New - Conservative</option>
+                                    <option value="new-moderate">New - Moderate</option>
+                                    <option value="matured-safe">Matured - Safe</option>
+                                    <option value="matured-aggressive">Matured - Aggressive</option>
+                                    <option value="premium-user">Premium User</option>
+                                    <option value="sales-navigator">Sales Navigator</option>
+                                    <option value="speed-mode">Speed Mode</option>
+                                </select>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Base Delay (sec) — applied to all</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <input type="number" min="0" max="120" value={autoSettings.baseDelay ?? 5} onChange={e => { const v = parseInt(e.target.value) || 0; setAutoSettings((p: any) => ({ ...p, baseDelay: v })); }}
+                                        style={{ width: '70px', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '700' }} />
+                                    <button onClick={() => { const b = autoSettings.baseDelay ?? 5; setAutoSettings((p: any) => ({ ...p, automationStartDelay: b * 2, networkingStartDelay: b * 2, importStartDelay: b * 2, postWriterPageLoad: b, postWriterClick: Math.max(1, Math.round(b * 0.6)), postWriterTyping: Math.max(1, Math.round(b * 0.8)), postWriterSubmit: Math.max(1, Math.round(b * 0.6)), searchDelayMin: b * 6, searchDelayMax: b * 12, commentDelayMin: b * 8, commentDelayMax: b * 18, networkingDelayMin: b * 4, networkingDelayMax: b * 9, beforeOpeningDelay: b, postPageLoadDelay: Math.max(1, Math.round(b * 0.8)), beforeLikeDelay: Math.max(1, Math.round(b * 0.6)), beforeCommentDelay: Math.max(1, Math.round(b * 0.8)), beforeShareDelay: Math.max(1, Math.round(b * 0.6)), beforeFollowDelay: Math.max(1, Math.round(b * 0.6)) })); showToast('All delays set from base value', 'success'); }}
+                                        style={{ padding: '8px 12px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Apply to All</button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Daily Limits */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>📊 Daily Limits (Stops when reached)</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-                                {[
-                                    { key: 'dailyCommentLimit', label: '💬 Comments Limit', max: 200 },
-                                    { key: 'dailyLikeLimit', label: '👍 Likes Limit', max: 300 },
-                                    { key: 'dailyShareLimit', label: '🔄 Shares Limit', max: 100 },
-                                    { key: 'dailyFollowLimit', label: '➕ Follows Limit', max: 200 },
-                                ].map(f => (
-                                    <div key={f.key}>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>{f.label}</label>
-                                        <input type="number" min="0" max={f.max} value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
-                                    </div>
-                                ))}
-                            </div>
+                        {/* Random Delay Toggle + Range */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: '0 0 auto' }}>
+                                <input type="checkbox" checked={autoSettings.randomDelayEnabled !== false} onChange={e => setAutoSettings((p: any) => ({ ...p, randomDelayEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
+                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>Random Delay</span>
+                            </label>
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Add random jitter between</span>
+                            <input type="number" min="0" max="300" value={autoSettings.randomIntervalMin} onChange={e => setAutoSettings((p: any) => ({ ...p, randomIntervalMin: parseInt(e.target.value) || 0 }))}
+                                style={{ width: '55px', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>–</span>
+                            <input type="number" min="0" max="300" value={autoSettings.randomIntervalMax} onChange={e => setAutoSettings((p: any) => ({ ...p, randomIntervalMax: parseInt(e.target.value) || 0 }))}
+                                style={{ width: '55px', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>sec</span>
                         </div>
 
-                        {/* Starting Delays */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>⏱️ Starting Delays (seconds)</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                        {/* Daily Limits — compact row */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>Daily Limits</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                                 {[
-                                    { key: 'automationStartDelay', label: 'Automation Start' },
-                                    { key: 'networkingStartDelay', label: 'Networking Start' },
-                                    { key: 'importStartDelay', label: 'Import Start' },
+                                    { key: 'dailyCommentLimit', label: 'Comments', icon: '💬' },
+                                    { key: 'dailyLikeLimit', label: 'Likes', icon: '👍' },
+                                    { key: 'dailyShareLimit', label: 'Shares', icon: '🔄' },
+                                    { key: 'dailyFollowLimit', label: 'Follows', icon: '➕' },
                                 ].map(f => (
-                                    <div key={f.key}>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>{f.label}</label>
+                                    <div key={f.key} style={{ textAlign: 'center' }}>
+                                        <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', display: 'block', marginBottom: '4px' }}>{f.icon} {f.label}</label>
                                         <input type="number" min="0" max="300" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                            style={{ width: '100%', padding: '7px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', textAlign: 'center', fontWeight: '600' }} />
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Post Writer Delays */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>✍️ Post Writer Delays (seconds)</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                        {/* All Delays — compact 2-column sections */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            {/* Starting Delays */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>⏱️ Starting Delays</h4>
                                 {[
-                                    { key: 'postWriterPageLoad', label: 'After Page Load' },
-                                    { key: 'postWriterClick', label: 'After Click Button' },
-                                    { key: 'postWriterTyping', label: 'Before Typing' },
+                                    { key: 'automationStartDelay', label: 'Automation' },
+                                    { key: 'networkingStartDelay', label: 'Networking' },
+                                    { key: 'importStartDelay', label: 'Import' },
+                                ].map(f => (
+                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
+                                        <input type="number" min="0" max="300" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
+                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Post Writer Delays */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>✍️ Post Writer</h4>
+                                {[
+                                    { key: 'postWriterPageLoad', label: 'Page Load' },
+                                    { key: 'postWriterClick', label: 'Click Button' },
+                                    { key: 'postWriterTyping', label: 'Before Type' },
                                     { key: 'postWriterSubmit', label: 'Before Submit' },
                                 ].map(f => (
-                                    <div key={f.key}>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>{f.label}</label>
+                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
                                         <input type="number" min="0" max="120" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
                                     </div>
                                 ))}
                             </div>
-                        </div>
 
-                        {/* Automation Delay Intervals */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>⚙️ Automation Delay Intervals (seconds)</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                            {/* Automation Intervals */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>⚙️ Automation Intervals</h4>
                                 {[
-                                    { key: 'searchDelayMin', label: 'Search Delay Min' },
-                                    { key: 'searchDelayMax', label: 'Search Delay Max' },
-                                    { key: 'commentDelayMin', label: 'Comment Delay Min' },
-                                    { key: 'commentDelayMax', label: 'Comment Delay Max' },
+                                    { key: 'searchDelayMin', label: 'Search Min' },
+                                    { key: 'searchDelayMax', label: 'Search Max' },
+                                    { key: 'commentDelayMin', label: 'Comment Min' },
+                                    { key: 'commentDelayMax', label: 'Comment Max' },
                                 ].map(f => (
-                                    <div key={f.key}>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>{f.label}</label>
+                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
                                         <input type="number" min="0" max="600" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
                                     </div>
                                 ))}
                             </div>
-                        </div>
 
-                        {/* Networking Delay Intervals */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🤝 Networking Delay Intervals (seconds)</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                            {/* Networking Intervals */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>🤝 Networking</h4>
                                 {[
-                                    { key: 'networkingDelayMin', label: 'Connection Request Min' },
-                                    { key: 'networkingDelayMax', label: 'Connection Request Max' },
+                                    { key: 'networkingDelayMin', label: 'Connect Min' },
+                                    { key: 'networkingDelayMax', label: 'Connect Max' },
                                 ].map(f => (
-                                    <div key={f.key}>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>{f.label}</label>
+                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
                                         <input type="number" min="0" max="600" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Post Action Delays */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>📝 Post Action Delays (seconds)</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                        {/* Post Action Delays — single compact block */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>📝 Post Action Delays (sec)</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                                 {[
-                                    { key: 'beforeOpeningDelay', label: 'Before Opening' },
-                                    { key: 'postPageLoadDelay', label: 'After Opening' },
-                                    { key: 'beforeLikeDelay', label: 'Before Liking' },
-                                    { key: 'beforeCommentDelay', label: 'Before Commenting' },
-                                    { key: 'beforeShareDelay', label: 'Before Resharing' },
-                                    { key: 'beforeFollowDelay', label: 'Before Following' },
+                                    { key: 'beforeOpeningDelay', label: 'Open Post' },
+                                    { key: 'postPageLoadDelay', label: 'Page Load' },
+                                    { key: 'beforeLikeDelay', label: 'Like' },
+                                    { key: 'beforeCommentDelay', label: 'Comment' },
+                                    { key: 'beforeShareDelay', label: 'Reshare' },
+                                    { key: 'beforeFollowDelay', label: 'Follow' },
                                 ].map(f => (
-                                    <div key={f.key}>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>{f.label}</label>
+                                    <div key={f.key} style={{ textAlign: 'center' }}>
+                                        <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', display: 'block', marginBottom: '3px' }}>{f.label}</label>
                                         <input type="number" min="0" max="120" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
+                                            style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Human Simulation Features */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🧑 Human Simulation Features</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* Human Simulation — compact inline */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>🧑 Human Simulation</h4>
+                            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                                 {[
-                                    { key: 'mouseMovement', label: '🖱️ Mouse Trajectory Humanization (Bezier curves)' },
-                                    { key: 'scrollSimulation', label: '📜 In-Tab Simulation (Random scrolling behavior)' },
-                                    { key: 'readingPause', label: '👀 Reading Simulation (Pause and scroll patterns)' },
+                                    { key: 'mouseMovement', label: 'Mouse Curves' },
+                                    { key: 'scrollSimulation', label: 'Random Scroll' },
+                                    { key: 'readingPause', label: 'Reading Pause' },
                                 ].map(f => (
-                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer' }}>
+                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer' }}>
                                         <input type="checkbox" checked={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: e.target.checked }))}
-                                            style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
+                                            style={{ accentColor: '#693fe9', width: '15px', height: '15px' }} />
                                         {f.label}
                                     </label>
                                 ))}
                             </div>
-                            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '12px 0 0 0' }}>Makes automation appear more natural and human-like</p>
                         </div>
 
-                        {/* Save Button */}
+                        {/* Save */}
                         <button onClick={() => saveAutoSettings(autoSettings)} disabled={autoSettingsSaving}
-                            style={{ width: '100%', padding: '16px', background: autoSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: autoSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
+                            style={{ width: '100%', padding: '14px', background: autoSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: autoSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
                             {autoSettingsSaving ? 'Saving...' : '💾 Save All Settings'}
                         </button>
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', textAlign: 'center', margin: '0' }}>Extension will sync these settings automatically</p>
                         </>)}
                     </div>
                 )}
 
                 {/* Commenter Tab */}
                 {activeTab === 'commenter' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         {(commenterCfgLoading || csSettingsLoading) ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : commenterCfg && (<>
 
-                        {/* Auto-Schedule */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h3>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={commenterCfg.autoScheduleEnabled} onChange={e => setCommenterCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
-                                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>Enabled</span>
-                                </label>
-                            </div>
-                            <div style={{ marginBottom: '12px' }}>
-                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 8px 0' }}>Schedules ({(() => { try { return JSON.parse(commenterCfg.schedules || '[]').length; } catch { return 0; } })()})</p>
-                                {(() => { try { const sches = JSON.parse(commenterCfg.schedules || '[]'); return sches.length > 0 ? sches.map((s: any, i: number) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '6px' }}>
-                                        <span style={{ color: '#a78bfa', fontSize: '13px', flex: 1 }}>🕐 {s.time} {s.ampm || ''}</span>
-                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
-                                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '2px 8px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
-                                    </div>
-                                )) : <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } catch { return <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } })()}
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <input id="commenter-sched-time" type="time" defaultValue="09:00" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
-                                <select id="commenter-sched-ampm" defaultValue="AM" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                                    <option value="AM">AM</option><option value="PM">PM</option>
-                                </select>
-                                <button onClick={() => { const t = (document.getElementById('commenter-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('commenter-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(commenterCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
-                                    style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>+ Add Schedule</button>
-                            </div>
-                            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '8px 0 0 0' }}>Schedule will use current settings</p>
-                        </div>
-
-                        {/* Start Bulk Commenting Button */}
-                        <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Bulk commenting task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
-                            style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
-                            🚀 Start Bulk Commenting
-                        </button>
-
-                        {/* Post Source */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>📌 Post Source</h3>
-                            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                                {[{ val: 'search', label: '🔍 Search Keywords' }, { val: 'feed', label: '📰 LinkedIn Feed' }].map(s => (
-                                    <button key={s.val} onClick={() => setCommenterCfg((p: any) => ({ ...p, postSource: s.val }))}
-                                        style={{ flex: 1, padding: '14px', background: commenterCfg.postSource === s.val ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.postSource === s.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontWeight: commenterCfg.postSource === s.val ? '700' : '500', cursor: 'pointer', fontSize: '14px' }}>
-                                        {s.label}
-                                    </button>
-                                ))}
-                            </div>
-                            {commenterCfg.postSource === 'search' && (
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Search Keywords (one per line)</label>
-                                    <textarea value={commenterCfg.searchKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, searchKeywords: e.target.value }))}
-                                        placeholder="AI marketing&#10;SaaS growth&#10;startup tips"
-                                        style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', minHeight: '80px', resize: 'vertical' }} />
+                        {/* Row 1: Post Source + Processing Settings side-by-side */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            {/* Post Source */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>📌 Post Source</h4>
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                    {[{ val: 'search', label: '🔍 Search' }, { val: 'feed', label: '📰 Feed' }].map(s => (
+                                        <button key={s.val} onClick={() => setCommenterCfg((p: any) => ({ ...p, postSource: s.val }))}
+                                            style={{ flex: 1, padding: '8px', background: commenterCfg.postSource === s.val ? 'linear-gradient(135deg,#693fe9,#8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.postSource === s.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontWeight: commenterCfg.postSource === s.val ? '700' : '500', cursor: 'pointer', fontSize: '12px' }}>
+                                            {s.label}
+                                        </button>
+                                    ))}
                                 </div>
-                            )}
-                            {commenterCfg.postSource === 'feed' && (
-                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0' }}>📰 Feed mode processes posts from your home feed and automatically ignores ads/promoted posts</p>
-                            )}
+                                {commenterCfg.postSource === 'search' && (
+                                    <textarea value={commenterCfg.searchKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, searchKeywords: e.target.value }))}
+                                        placeholder="AI marketing&#10;SaaS growth&#10;startup tips" rows={3}
+                                        style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical' }} />
+                                )}
+                                {commenterCfg.postSource === 'feed' && (
+                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: 0 }}>Processes your home feed, ignores ads</p>
+                                )}
+                            </div>
+
+                            {/* Processing Settings */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>⚙️ Processing</h4>
+                                {[
+                                    { key: 'totalPosts', label: 'Total Posts', min: 1, max: 50 },
+                                    { key: 'minLikes', label: 'Min Likes', min: 0, max: 9999 },
+                                    { key: 'minComments', label: 'Min Comments', min: 0, max: 9999 },
+                                ].map(f => (
+                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{f.label}</span>
+                                        <input type="number" min={f.min} max={f.max} value={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
+                                            style={{ width: '65px', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
+                                    </div>
+                                ))}
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>0 = no minimum filter</p>
+                            </div>
                         </div>
 
-                        {/* Actions to Perform */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>⚡ Actions to Perform</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                        {/* Actions + Window Prefs — single compact row */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>⚡ Actions</h4>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {[{ val: true, label: '🪟 Window' }, { val: false, label: '📑 Tabs' }].map(o => (
+                                        <button key={String(o.val)} onClick={() => setCommenterCfg((p: any) => ({ ...p, openInNewWindow: o.val }))}
+                                            style={{ padding: '4px 10px', background: commenterCfg.openInNewWindow === o.val ? '#693fe9' : 'rgba(255,255,255,0.08)', border: commenterCfg.openInNewWindow === o.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '10px', fontWeight: commenterCfg.openInNewWindow === o.val ? '700' : '500', cursor: 'pointer' }}>
+                                            {o.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                                 {[
-                                    { key: 'savePosts', label: '💾 Save Posts' },
-                                    { key: 'likePosts', label: '👍 Like Posts' },
-                                    { key: 'commentOnPosts', label: '💬 Comment on Posts' },
-                                    { key: 'likeOrComment', label: '🎲 Like OR Comment' },
-                                    { key: 'sharePosts', label: '🔄 Share Posts' },
-                                    { key: 'followAuthors', label: '➕ Follow Authors' },
+                                    { key: 'savePosts', label: '💾 Save' },
+                                    { key: 'likePosts', label: '👍 Like' },
+                                    { key: 'commentOnPosts', label: '💬 Comment' },
+                                    { key: 'likeOrComment', label: '🎲 Like/Comment' },
+                                    { key: 'sharePosts', label: '🔄 Share' },
+                                    { key: 'followAuthors', label: '➕ Follow' },
                                 ].map(f => (
-                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', padding: '7px 8px', background: commenterCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '8px', border: commenterCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
                                         <input type="checkbox" checked={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
-                                            style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
+                                            style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
                                         {f.label}
                                     </label>
                                 ))}
                             </div>
-                            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '12px 0 0 0' }}>&quot;Like OR Comment&quot; randomly chooses one action per post</p>
                         </div>
 
-                        {/* Processing Settings & Post Qualification */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>⚙️ Processing Settings</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Total Posts</label>
-                                    <input type="number" min="1" max="50" value={commenterCfg.totalPosts} onChange={e => setCommenterCfg((p: any) => ({ ...p, totalPosts: parseInt(e.target.value) || 1 }))}
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Scrapes posts until quota reached</p>
-                                </div>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Min Likes</label>
-                                    <input type="number" min="0" value={commenterCfg.minLikes} onChange={e => setCommenterCfg((p: any) => ({ ...p, minLikes: parseInt(e.target.value) || 0 }))}
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
-                                </div>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Min Comments</label>
-                                    <input type="number" min="0" value={commenterCfg.minComments} onChange={e => setCommenterCfg((p: any) => ({ ...p, minComments: parseInt(e.target.value) || 0 }))}
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>0 = no minimum</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Ignore Keywords */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>🚫 Ignore Posts Containing</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>One keyword per line. Posts containing any of these will be skipped (case-insensitive).</p>
+                        {/* Ignore Keywords — collapsible-style compact */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>🚫 Ignore Keywords</h4>
                             <textarea value={commenterCfg.ignoreKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, ignoreKeywords: e.target.value }))}
-                                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', minHeight: '100px', resize: 'vertical', fontFamily: 'monospace' }} />
+                                placeholder="hiring&#10;we're hiring&#10;job opening&#10;apply now" rows={3}
+                                style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical', fontFamily: 'monospace' }} />
+                            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', margin: '4px 0 0 0' }}>One per line. Posts containing these are skipped.</p>
                         </div>
 
-                        {/* AI Comment Settings */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>🤖 AI Comment Settings</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Comment Goal</label>
-                                    <select value={csGoal} onChange={e => setCsGoal(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
-                                        <option value="AddValue">Add Value - Pure contribution, helpful insight</option>
-                                        <option value="Engagement">Engagement - Drive conversations and discussion</option>
-                                        <option value="Networking">Networking - Build relationships and connections</option>
-                                        <option value="ThoughtLeadership">Thought Leadership - Position as an expert</option>
-                                        <option value="Support">Support - Encourage and uplift the author</option>
-                                    </select>
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>What you want to achieve with this comment</p>
-                                </div>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Tone of Voice</label>
-                                    <select value={csTone} onChange={e => setCsTone(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
-                                        <option value="Friendly">Friendly - Warm, conversational</option>
-                                        <option value="Professional">Professional - Polished, business-like</option>
-                                        <option value="Casual">Casual - Relaxed, informal</option>
-                                        <option value="Enthusiastic">Enthusiastic - Excited, energetic</option>
-                                        <option value="Analytical">Analytical - Data-driven, logical</option>
-                                    </select>
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Controls AI comment personality and style</p>
-                                </div>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Comment Length</label>
-                                    <select value={csLength} onChange={e => setCsLength(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
-                                        <option value="Short">Short - 300 characters max</option>
-                                        <option value="Medium">Medium - 600 characters max</option>
-                                        <option value="Long">Long - 1000 characters max</option>
-                                    </select>
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Maximum length of generated comments</p>
-                                </div>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Comment Style</label>
-                                    <select value={csStyle} onChange={e => setCsStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
-                                        <option value="direct">Direct &amp; Concise - Single paragraph, straight to the point</option>
-                                        <option value="storytelling">Storytelling - Narrative style with anecdotes</option>
-                                        <option value="questioning">Questioning - Ask thought-provoking questions</option>
-                                        <option value="structured">Structured - Organized with bullet points</option>
-                                    </select>
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>How your comments are structured</p>
-                                </div>
+                        {/* Schedule — compact inline */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={commenterCfg.autoScheduleEnabled} onChange={e => setCommenterCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '15px', height: '15px' }} />
+                                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>Enabled</span>
+                                </label>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Your Expertise/Niche</label>
-                                    <input type="text" value={csExpertise} onChange={e => setCsExpertise(e.target.value)} placeholder="e.g., SaaS Marketing, AI Development, Leadership Coach"
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }} />
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Your role, industry, or what you&#39;re known for</p>
-                                </div>
-                                <div>
-                                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Your Background (Optional)</label>
-                                    <input type="text" value={csBackground} onChange={e => setCsBackground(e.target.value)} placeholder="e.g., Scaled 3 startups to $10M ARR, 15 years in B2B sales"
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }} />
-                                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Specific experience or credentials that add authority</p>
-                                </div>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                                {(() => { try { const sches = JSON.parse(commenterCfg.schedules || '[]'); return sches.map((s: any, i: number) => (
+                                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: 'rgba(167,139,250,0.15)', borderRadius: '6px', border: '1px solid rgba(167,139,250,0.3)', fontSize: '11px', color: '#a78bfa' }}>
+                                        {s.time} {s.ampm}
+                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
+                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}>✕</button>
+                                    </span>
+                                )); } catch { return null; } })()}
                             </div>
-                            <div style={{ marginTop: '16px' }}>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>AI Button Behavior</label>
-                                <select value={csAutoPost} onChange={e => setCsAutoPost(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
-                                    <option value="manual">Manual Review - Generate, paste, and wait for me to post</option>
-                                    <option value="auto">Auto Post - Generate and automatically post the comment</option>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <input id="commenter-sched-time" type="time" defaultValue="09:00" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }} />
+                                <select id="commenter-sched-ampm" defaultValue="AM" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }}>
+                                    <option value="AM">AM</option><option value="PM">PM</option>
                                 </select>
-                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>Controls what happens when you click AI button on posts</p>
+                                <button onClick={() => { const t = (document.getElementById('commenter-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('commenter-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(commenterCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
+                                    style={{ padding: '5px 10px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>+ Add</button>
                             </div>
                         </div>
 
-                        {/* Window & Tab Preferences */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>🪟 Window &amp; Tab Preferences</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>Open search pages in new window or background tabs</p>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                {[{ val: true, label: '🪟 New Window' }, { val: false, label: '📑 Background Tabs' }].map(o => (
-                                    <button key={String(o.val)} onClick={() => setCommenterCfg((p: any) => ({ ...p, openInNewWindow: o.val }))}
-                                        style={{ flex: 1, padding: '12px', background: commenterCfg.openInNewWindow === o.val ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.openInNewWindow === o.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontWeight: commenterCfg.openInNewWindow === o.val ? '700' : '500', cursor: 'pointer', fontSize: '13px' }}>
-                                        {o.label}
-                                    </button>
-                                ))}
-                            </div>
+                        {/* Save + Start Buttons */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
+                                style={{ padding: '14px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer' }}>
+                                {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : '💾 Save Settings'}
+                            </button>
+                            <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                                style={{ padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                                🚀 Start Commenting
+                            </button>
                         </div>
-
-                        {/* Save All + Start Button */}
-                        <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
-                            style={{ width: '100%', padding: '16px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
-                            {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : '💾 Save All Commenter Settings'}
-                        </button>
-
-                        <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Bulk commenting task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
-                            style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
-                            🚀 Start Bulk Commenting
-                        </button>
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', textAlign: 'center', margin: '0' }}>Delay settings and daily limits are in the Limits tab</p>
                         </>)}
                     </div>
                 )}
 
                 {/* Import Tab */}
                 {activeTab === 'import' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         {importCfgLoading ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : importCfg && (<>
 
-                        {/* Paste Profile URLs */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>✏️ Paste Profile URLs</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>Paste LinkedIn profile URLs here, each on a new line</p>
+                        {/* Profile URLs + CSV upload merged */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>✏️ Profile URLs</h4>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <input type="file" accept=".csv" id="import-csv-upload" style={{ display: 'none' }}
+                                        onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { const text = ev.target?.result as string; if (!text) return; const lines = text.split('\n').map(l => l.split(',')[0]?.trim()).filter(l => l.includes('linkedin.com/in/')); if (lines.length > 0) { const existing = importCfg.profileUrls ? importCfg.profileUrls.trim() : ''; const combined = existing ? existing + '\n' + lines.join('\n') : lines.join('\n'); setImportCfg((p: any) => ({ ...p, profileUrls: combined })); showToast(`Imported ${lines.length} profiles from CSV`, 'success'); } else { showToast('No LinkedIn URLs found in CSV', 'error'); } }; reader.readAsText(file); e.target.value = ''; }} />
+                                    <button onClick={() => document.getElementById('import-csv-upload')?.click()}
+                                        style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>
+                                        📂 CSV
+                                    </button>
+                                    <span style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '700' }}>{importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0} detected</span>
+                                </div>
+                            </div>
                             <textarea value={importCfg.profileUrls} onChange={e => setImportCfg((p: any) => ({ ...p, profileUrls: e.target.value }))}
-                                placeholder="https://www.linkedin.com/in/john-doe-123456/&#10;https://www.linkedin.com/in/jane-smith-789012/&#10;https://www.linkedin.com/in/example-profile/"
-                                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', minHeight: '120px', resize: 'vertical', fontFamily: 'monospace' }} />
-                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '8px 0 0 0' }}>Profiles detected: <strong style={{ color: '#a78bfa' }}>{importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0}</strong></p>
+                                placeholder="https://www.linkedin.com/in/john-doe/&#10;https://www.linkedin.com/in/jane-smith/" rows={4}
+                                style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical', fontFamily: 'monospace' }} />
                         </div>
 
-                        {/* Upload CSV File */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>📁 Upload CSV File</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 12px 0' }}>CSV should have profile URLs in the first column</p>
-                            <input type="file" accept=".csv" id="import-csv-upload" style={{ display: 'none' }}
-                                onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { const text = ev.target?.result as string; if (!text) return; const lines = text.split('\n').map(l => l.split(',')[0]?.trim()).filter(l => l.includes('linkedin.com/in/')); if (lines.length > 0) { const existing = importCfg.profileUrls ? importCfg.profileUrls.trim() : ''; const combined = existing ? existing + '\n' + lines.join('\n') : lines.join('\n'); setImportCfg((p: any) => ({ ...p, profileUrls: combined })); showToast(`✅ Imported ${lines.length} profiles from CSV`, 'success'); } else { showToast('No LinkedIn profile URLs found in CSV', 'error'); } }; reader.readAsText(file); e.target.value = ''; }} />
-                            <button onClick={() => document.getElementById('import-csv-upload')?.click()}
-                                style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', cursor: 'pointer', fontWeight: '600' }}>
-                                📂 Choose CSV File
-                            </button>
-                        </div>
-
-                        {/* Import Credits */}
-                        <div style={{ background: 'rgba(105,63,233,0.1)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>🎫 Import Credits</h3>
-                                {user?.plan && <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Plan: {user.plan.name}</span>}
-                            </div>
-                            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '24px', fontWeight: '800', color: '#34d399' }}>{Math.max(0, (user?.plan?.monthlyImportCredits || 50) - (usage?.usage?.importProfiles || 0))}</div>
-                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Remaining</div>
-                                </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '24px', fontWeight: '800', color: '#a78bfa' }}>{user?.plan?.monthlyImportCredits || 50}</div>
-                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Monthly Total</div>
-                                </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '24px', fontWeight: '800', color: 'white' }}>{usage?.usage?.importProfiles || 0}</div>
-                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Used</div>
-                                </div>
-                            </div>
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '10px 0 0 0' }}>Each profile processed uses 1 credit, buy more 500 Credits per $1</p>
-                        </div>
-
-                        {/* Auto-Schedule */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h3>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={importCfg.autoScheduleEnabled} onChange={e => setImportCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
-                                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>Enabled</span>
-                                </label>
-                            </div>
-                            <div style={{ marginBottom: '12px' }}>
-                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 8px 0' }}>Schedules ({(() => { try { return JSON.parse(importCfg.schedules || '[]').length; } catch { return 0; } })()})</p>
-                                {(() => { try { const sches = JSON.parse(importCfg.schedules || '[]'); return sches.length > 0 ? sches.map((s: any, i: number) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '6px' }}>
-                                        <span style={{ color: '#a78bfa', fontSize: '13px', flex: 1 }}>🕐 {s.time} {s.ampm || ''}</span>
-                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
-                                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '2px 8px', fontSize: '11px', cursor: 'pointer' }}>✕</button>
+                        {/* Credits + Settings side-by-side */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            {/* Import Credits */}
+                            <div style={{ background: 'rgba(105,63,233,0.1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(105,63,233,0.3)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>🎫 Credits {user?.plan ? `(${user.plan.name})` : ''}</h4>
+                                <div style={{ display: 'flex', gap: '16px' }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: '800', color: '#34d399' }}>{Math.max(0, (user?.plan?.monthlyImportCredits || 50) - (usage?.usage?.importProfiles || 0))}</div>
+                                        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)' }}>Left</div>
                                     </div>
-                                )) : <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } catch { return <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', margin: 0 }}>No schedules</p>; } })()}
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: '800', color: '#a78bfa' }}>{user?.plan?.monthlyImportCredits || 50}</div>
+                                        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)' }}>Total</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>{usage?.usage?.importProfiles || 0}</div>
+                                        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)' }}>Used</div>
+                                    </div>
+                                </div>
+                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', margin: '8px 0 0 0' }}>1 credit per profile</p>
                             </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <input id="import-sched-time" type="time" defaultValue="09:00" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
-                                <select id="import-sched-ampm" defaultValue="AM" style={{ padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                                    <option value="AM">AM</option><option value="PM">PM</option>
-                                </select>
-                                <button onClick={() => { const t = (document.getElementById('import-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('import-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(importCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
-                                    style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>+ Add Schedule</button>
+
+                            {/* Automation Config */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>🤖 Config</h4>
+                                {[
+                                    { key: 'profilesPerDay', label: 'Profiles/Day', min: 1, max: 100 },
+                                    { key: 'postsPerProfile', label: 'Posts/Profile', min: 1, max: 10 },
+                                ].map(f => (
+                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{f.label}</span>
+                                        <input type="number" min={f.min} max={f.max} value={importCfg[f.key]} onChange={e => setImportCfg((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || f.min }))}
+                                            style={{ width: '60px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Smart Profile Automation */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>🤖 Smart Profile Automation</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '0 0 16px 0' }}>Engage with profiles - connect, like, comment &amp; grow network</p>
-                            <div style={{ marginBottom: '16px' }}>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Profiles/Day:</label>
-                                <input type="number" min="1" max="100" value={importCfg.profilesPerDay} onChange={e => setImportCfg((p: any) => ({ ...p, profilesPerDay: parseInt(e.target.value) || 1 }))}
-                                    style={{ width: '120px', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
-                            </div>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer', marginBottom: '16px', padding: '12px', background: 'rgba(105,63,233,0.1)', borderRadius: '10px', border: '1px solid rgba(105,63,233,0.2)' }}>
-                                <input type="checkbox" checked={importCfg.sendConnections} onChange={e => setImportCfg((p: any) => ({ ...p, sendConnections: e.target.checked }))}
-                                    style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
-                                🤝 Send Connection Requests
-                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginLeft: 'auto' }}>Automatically connect with each profile</span>
-                            </label>
-                            <h4 style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '12px' }}>⚡ Engagement Actions</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                        {/* Engagement Actions — compact */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>⚡ Engagement Actions</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                                 {[
-                                    { key: 'engageLikes', label: '👍 Likes' },
-                                    { key: 'engageComments', label: '💬 AI Comments' },
-                                    { key: 'engageShares', label: '🔄 Reshares' },
+                                    { key: 'sendConnections', label: '🤝 Connect' },
+                                    { key: 'engageLikes', label: '👍 Like' },
+                                    { key: 'engageComments', label: '💬 Comment' },
+                                    { key: 'engageShares', label: '🔄 Share' },
                                     { key: 'engageFollows', label: '➕ Follow' },
-                                    { key: 'smartRandom', label: '🎲 Smart Random', desc: 'Pick 1 random action per post' },
+                                    { key: 'smartRandom', label: '🎲 Random' },
                                 ].map(f => (
-                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', padding: '7px 8px', background: importCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '8px', border: importCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
                                         <input type="checkbox" checked={importCfg[f.key]} onChange={e => setImportCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
-                                            style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                        <span>{f.label}</span>
-                                        {(f as any).desc && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', marginLeft: 'auto' }}>{(f as any).desc}</span>}
+                                            style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
+                                        {f.label}
                                     </label>
                                 ))}
                             </div>
-                            <div>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>Posts per profile:</label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input type="number" min="1" max="10" value={importCfg.postsPerProfile} onChange={e => setImportCfg((p: any) => ({ ...p, postsPerProfile: parseInt(e.target.value) || 1 }))}
-                                        style={{ width: '80px', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px' }} />
-                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>posts</span>
-                                </div>
+                        </div>
+
+                        {/* Schedule — compact inline */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={importCfg.autoScheduleEnabled} onChange={e => setImportCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '15px', height: '15px' }} />
+                                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>Enabled</span>
+                                </label>
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                                {(() => { try { const sches = JSON.parse(importCfg.schedules || '[]'); return sches.map((s: any, i: number) => (
+                                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: 'rgba(167,139,250,0.15)', borderRadius: '6px', border: '1px solid rgba(167,139,250,0.3)', fontSize: '11px', color: '#a78bfa' }}>
+                                        {s.time} {s.ampm}
+                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
+                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}>✕</button>
+                                    </span>
+                                )); } catch { return null; } })()}
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <input id="import-sched-time" type="time" defaultValue="09:00" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }} />
+                                <select id="import-sched-ampm" defaultValue="AM" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }}>
+                                    <option value="AM">AM</option><option value="PM">PM</option>
+                                </select>
+                                <button onClick={() => { const t = (document.getElementById('import-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('import-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(importCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
+                                    style={{ padding: '5px 10px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>+ Add</button>
                             </div>
                         </div>
 
                         {/* Save + Launch Buttons */}
-                        <button onClick={() => saveImportCfg(importCfg)} disabled={importCfgSaving}
-                            style={{ width: '100%', padding: '16px', background: importCfgSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: importCfgSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
-                            {importCfgSaving ? 'Saving...' : '💾 Save Import Settings'}
-                        </button>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <button onClick={() => saveImportCfg(importCfg)} disabled={importCfgSaving}
+                                style={{ padding: '14px', background: importCfgSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: importCfgSaving ? 'wait' : 'pointer' }}>
+                                {importCfgSaving ? 'Saving...' : '💾 Save Settings'}
+                            </button>
+                            <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveImportCfg(importCfg); showToast('🚀 Launching import...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_import_automation', data: importCfg }) }); const data = await res.json(); if (data.success) showToast('Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                                style={{ padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                                🚀 Launch Import
+                            </button>
+                        </div>
 
-                        <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveImportCfg(importCfg); showToast('🚀 Launching import automation...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_import_automation', data: importCfg }) }); const data = await res.json(); if (data.success) showToast('✅ Import automation task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
-                            style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
-                            🚀 Launch Automation
-                        </button>
-
-                        {/* Import Actions History */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>📊 Import Actions History</h3>
-                            </div>
-                            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                        {/* Import History — compact */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>📊 History</h4>
+                            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '10px' }}>
                                 {[
                                     { label: 'Profiles', val: importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0, color: '#a78bfa' },
-                                    { label: 'Connections', val: 0, color: '#34d399' },
+                                    { label: 'Connects', val: 0, color: '#34d399' },
                                     { label: 'Posts', val: 0, color: '#60a5fa' },
                                     { label: 'Comments', val: 0, color: '#fbbf24' },
                                     { label: 'Rate', val: '0%', color: '#f472b6' },
                                 ].map(s => (
-                                    <div key={s.label} style={{ textAlign: 'center', minWidth: '60px' }}>
-                                        <div style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{s.val}</div>
-                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
+                                    <div key={s.label} style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '16px', fontWeight: '800', color: s.color }}>{s.val}</div>
+                                        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
                                     </div>
                                 ))}
                             </div>
                             <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                            {['Date', 'Profile', 'Link', 'Connection', 'Likes', 'Comments', 'Shares', 'Follows', 'Status'].map(h => (
-                                                <th key={h} style={{ padding: '8px 6px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                                            {['Date', 'Profile', 'Connect', 'Likes', 'Comments', 'Status'].map(h => (
+                                                <th key={h} style={{ padding: '6px 4px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colSpan={9} style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>No import actions yet. Start automation to see history here.</td></tr>
+                                        <tr><td colSpan={6} style={{ padding: '14px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>No actions yet. Launch to see history.</td></tr>
                                     </tbody>
                                 </table>
                             </div>

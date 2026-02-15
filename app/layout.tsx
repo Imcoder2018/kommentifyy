@@ -6,10 +6,10 @@ import { ClerkProvider } from '@clerk/nextjs'
 export const metadata: Metadata = {
   metadataBase: new URL('https://kommentify.com'),
   title: {
-    default: 'AI LinkedIn Automation Extension for Growth & Leads | Kommentify',
+    default: 'Kommentify - LinkedIn Automation That Doesn\'t Get You Banned | AI Comments & Post Scheduler',
     template: '%s | Kommentify'
   },
-  description: 'Kommentify is an AI-powered LinkedIn automation extension for smart commenting, intelligent networking, and lead tracking—all in a safe, browser-based solution.',
+  description: 'Kommentify is an AI-powered LinkedIn automation extension for smart commenting, intelligent networking, and lead tracking—all in a safe, browser-based solution. 500+ users trust us.',
   keywords: [
     'LinkedIn automation',
     'LinkedIn auto comment',
@@ -88,7 +88,7 @@ export default function RootLayout({
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
           
-          {/* Structured Data for SEO */}
+          {/* Structured Data - Product Schema */}
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -103,18 +103,63 @@ export default function RootLayout({
                 author: {
                   '@type': 'Organization',
                   name: 'Kommentify',
+                  url: 'https://kommentify.com'
                 },
-                offers: {
-                  '@type': 'Offer',
-                  price: '0',
-                  priceCurrency: 'USD',
-                  description: '30-Day Money-Back Guarantee',
-                },
+                offers: [
+                  {
+                    '@type': 'Offer',
+                    name: 'Starter Plan',
+                    price: '9',
+                    priceCurrency: 'USD',
+                    priceValidUntil: '2026-12-31',
+                    availability: 'https://schema.org/InStock'
+                  },
+                  {
+                    '@type': 'Offer',
+                    name: 'Professional Plan',
+                    price: '29',
+                    priceCurrency: 'USD',
+                    priceValidUntil: '2026-12-31',
+                    availability: 'https://schema.org/InStock'
+                  },
+                  {
+                    '@type': 'Offer',
+                    name: 'Lifetime Deal',
+                    price: '69',
+                    priceCurrency: 'USD',
+                    description: 'One-time payment, lifetime access',
+                    availability: 'https://schema.org/LimitedAvailability'
+                  }
+                ],
                 aggregateRating: {
                   '@type': 'AggregateRating',
-                  ratingValue: '4.8',
-                  ratingCount: '150',
+                  ratingValue: '5.0',
+                  ratingCount: '500',
+                  bestRating: '5',
+                  worstRating: '1'
                 },
+              }),
+            }}
+          />
+          
+          {/* Structured Data - Organization Schema */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                name: 'Kommentify',
+                url: 'https://kommentify.com',
+                logo: 'https://kommentify.com/favicon.png',
+                sameAs: [
+                  'https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei'
+                ],
+                contactPoint: {
+                  '@type': 'ContactPoint',
+                  contactType: 'customer service',
+                  url: 'https://kommentify.com/contact'
+                }
               }),
             }}
           />

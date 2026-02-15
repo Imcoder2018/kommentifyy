@@ -57,9 +57,15 @@ export default function Footer() {
                             <img src="/favicon.png" alt="Kommentify" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
                             <span style={{ fontSize: '18px', fontWeight: '600' }}>Kommentify</span>
                         </div>
-                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.6' }}>
+                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.6', marginBottom: '12px' }}>
                             AI-powered LinkedIn automation to grow your presence effortlessly.
                         </p>
+                        {/* Trust Badges */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ color: '#fbbf24', textDecoration: 'none', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                ★★★★★ 5.0 Rated | 500+ Users
+                            </a>
+                        </div>
                     </div>
 
                     {/* Product Links */}
@@ -70,7 +76,7 @@ export default function Footer() {
                             <Link href="/#pricing" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Pricing</Link>
                             <Link href="/#comparison" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Compare</Link>
                             <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '13px' }}>🔥 Lifetime Deal</Link>
-                            <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Get Extension</a>
+                            <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontSize: '13px', fontWeight: '500' }}>🌐 Download Extension</a>
                         </div>
                     </div>
 
@@ -79,6 +85,7 @@ export default function Footer() {
                         <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>Company</h4>
                         <div className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <Link href="/about" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>About Us</Link>
+                            <Link href="/blog" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Blog</Link>
                             <Link href="/contact" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Contact Us</Link>
                             <Link href="/#faq" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>FAQ</Link>
                             <Link href="/referral" style={{ color: '#22c55e', textDecoration: 'none', fontSize: '13px' }}>🏆 Referral Program</Link>

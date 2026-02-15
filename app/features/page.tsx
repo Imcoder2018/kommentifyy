@@ -277,7 +277,7 @@ export default function FeaturesPage() {
                         Kommentify gives you the complete toolkit to grow your LinkedIn presence organically and safely.
                     </p>
 
-                    <div className="feature-badges" style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div className="feature-badges" style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '50px' }}>
                         {[
                             { icon: <IconShield size={16} />, text: '100% Safe' },
                             { icon: <IconBolt size={16} />, text: 'AI-Powered' },
@@ -296,6 +296,88 @@ export default function FeaturesPage() {
                                 color: 'rgba(255,255,255,0.8)'
                             }}>
                                 {badge.icon} {badge.text}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {/* Video Demo */}
+                    <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative' }}>
+                        <div style={{ 
+                            position: 'absolute', 
+                            top: '-12px', 
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            background: 'linear-gradient(135deg, #693fe9, #7c4dff)', 
+                            padding: '8px 20px', 
+                            borderRadius: '20px', 
+                            fontSize: '12px', 
+                            fontWeight: '600', 
+                            color: 'white',
+                            boxShadow: '0 4px 15px rgba(105, 63, 233, 0.4)',
+                            zIndex: 10
+                        }}>
+                            ▶ 2-Minute Demo
+                        </div>
+                        <div style={{ 
+                            background: 'rgba(255,255,255,0.05)', 
+                            borderRadius: '20px', 
+                            overflow: 'hidden',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 30px 100px rgba(0,0,0,0.5)'
+                        }}>
+                            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                                <iframe 
+                                    src="https://www.loom.com/embed/0f5fd7b490e840609f8e32cef8a0e602?sid=auto&hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true" 
+                                    frameBorder="0" 
+                                    allowFullScreen
+                                    loading="eager"
+                                    style={{ 
+                                        position: 'absolute', 
+                                        top: 0, 
+                                        left: 0, 
+                                        width: '100%', 
+                                        height: '100%',
+                                        borderRadius: '20px'
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            {/* Benefit-Focused Sections */}
+            <section style={{ background: '#0a0a0a', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }} className="section-padding">
+                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                    <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+                        {[
+                            { icon: <IconClock size={32} color="#10b981" />, title: 'Save 20+ Hours Per Week on LinkedIn', desc: 'Automate repetitive tasks like commenting, liking, and connecting while you focus on high-value work.', color: '#10b981' },
+                            { icon: <IconRocket size={32} color="#8b5cf6" />, title: 'AI That Sounds Human, Not Robotic', desc: 'Our AI generates personalized comments and posts that match your voice and engage authentically.', color: '#8b5cf6' },
+                            { icon: <IconShield size={32} color="#3b82f6" />, title: 'Browser-Based = Safer Than Cloud Tools', desc: 'Your data stays in your browser. No API access means no risk of LinkedIn detecting automation.', color: '#3b82f6' },
+                            { icon: <IconUsers size={32} color="#f59e0b" />, title: 'Works on Any LinkedIn Account Type', desc: 'New accounts, premium, free, business — Kommentify adapts limits to keep every account safe.', color: '#f59e0b' }
+                        ].map((benefit, i) => (
+                            <div key={i} style={{ 
+                                background: 'rgba(255,255,255,0.03)', 
+                                border: '1px solid rgba(255,255,255,0.08)', 
+                                borderRadius: '16px', 
+                                padding: '32px',
+                                textAlign: 'center'
+                            }}>
+                                <div style={{ 
+                                    width: '64px', 
+                                    height: '64px', 
+                                    background: `${benefit.color}15`, 
+                                    borderRadius: '16px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    margin: '0 auto 16px',
+                                    border: `1px solid ${benefit.color}30`
+                                }}>
+                                    {benefit.icon}
+                                </div>
+                                <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '12px', color: 'white' }}>{benefit.title}</h3>
+                                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.6', margin: 0 }}>{benefit.desc}</p>
                             </div>
                         ))}
                     </div>

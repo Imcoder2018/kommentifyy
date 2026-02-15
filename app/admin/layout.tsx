@@ -50,6 +50,7 @@ export default function AdminLayout({
     { href: '/admin', icon: '📊', label: 'Dashboard' },
     { href: '/admin/users', icon: '👥', label: 'Users' },
     { href: '/admin/plans', icon: '💎', label: 'Plans' },
+    { href: '/admin/blog', icon: '📝', label: 'Blog' },
     { href: '/admin/extension-versions', icon: '📦', label: 'Extensions' },
     { href: '/admin/referrals', icon: '🎁', label: 'Referrals' },
     { href: '/admin/email-sequences', icon: '📧', label: 'Email Sequences' },

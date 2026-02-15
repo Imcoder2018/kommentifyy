@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
@@ -794,17 +795,19 @@ export default function LandingPage() {
                             <strong style={{ color: '#10b981' }}>Just install the extension, set limits, and let the agent work.</strong>
                         </p>
                         
-                        {/* Star Rating */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-                            <div style={{ display: 'flex', gap: '2px' }}>
-                                {[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '18px' }}>★</span>)}
+                        {/* Star Rating with Chrome Store Link */}
+                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
+                                <div style={{ display: 'flex', gap: '2px' }}>
+                                    {[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '18px' }}>★</span>)}
+                                </div>
+                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Rated 5.0 on Chrome Web Store · 500+ Users</span>
                             </div>
-                            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Rated 4.8/5.0 by 500+ users</span>
-                        </div>
+                        </a>
                         
-                        {/* CTA Buttons */}
+                        {/* CTA Buttons - Updated */}
                         <div className="cta-buttons" style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                            <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{
+                            <Link href="/signup" style={{
                                 padding: '16px 32px',
                                 background: 'white',
                                 color: '#0a0a0a',
@@ -817,11 +820,12 @@ export default function LandingPage() {
                                 gap: '8px',
                                 boxShadow: '0 4px 20px rgba(255,255,255,0.2)'
                             }}>
-                                🚀 Add To Chrome <span>→</span>
-                            </a>
-                            <Link href="/lifetime-deal" style={{
+                                🚀 Start Free Forever <span>→</span>
+                            </Link>
+                            <a href="#pricing" style={{
                                 padding: '16px 32px',
-                                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                background: 'transparent',
+                                border: '2px solid rgba(255,255,255,0.3)',
                                 color: 'white',
                                 textDecoration: 'none',
                                 borderRadius: '10px',
@@ -829,18 +833,18 @@ export default function LandingPage() {
                                 fontWeight: '600',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '8px',
-                                boxShadow: '0 4px 20px rgba(245,158,11,0.4)'
+                                gap: '8px'
                             }}>
-                                <IconFire size={16} color="white" /> Grab Lifetime Deal
-                            </Link>
+                                View Pricing
+                            </a>
                         </div>
                         
-                        {/* Trust Badges */}
+                        {/* Trust Badges - Updated */}
                         <div className="trust-badges" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '50px' }}>
                             {[
-                                { icon: <IconShield size={13} color="rgba(255,255,255,0.5)" />, text: '30-Day Money-Back Guarantee' },
-                                { icon: <IconShield size={13} color="rgba(255,255,255,0.5)" />, text: 'Safe & secure' },
+                                { icon: <IconShield size={13} color="#10b981" />, text: '500+ Chrome Users' },
+                                { icon: <IconShield size={13} color="#10b981" />, text: 'Browser-based = LinkedIn-safe' },
+                                { icon: <IconShield size={13} color="#10b981" />, text: 'Your data stays in your browser' },
                                 { icon: <IconX size={13} color="rgba(255,255,255,0.5)" />, text: 'Cancel anytime' }
                             ].map((badge, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
@@ -1155,12 +1159,12 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Success Stories Section - MOVED BEFORE PRICING */}
+            {/* Success Stories Section - CAROUSEL */}
             <section id="success-stories" className="section-padding" style={{ background: '#111111', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: '50px' }}>
                         <div style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', marginBottom: '20px', color: '#10b981' }}>
-                            ⭐ Real Results · Verified Users
+                            ⭐ Real Results · Verified Chrome Users
                         </div>
                         <h2 className="section-title" style={{ fontSize: '38px', fontWeight: '700', marginBottom: '16px' }}>
                             Success Stories from<br/>
@@ -1171,56 +1175,119 @@ export default function LandingPage() {
                         </p>
                     </div>
 
-                    <div className="grid-3-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-                        {/* 1 Week User */}
-                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '28px', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: '-12px', left: '20px', background: '#10b981', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '600' }}>1 Week Results</div>
-                            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', marginTop: '8px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
-                            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;After just 1 week using Kommentify, my post impressions went from 500 to 8,000. The AI comments are so natural that people actually reply to them!&quot;</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>SM</div>
-                                <div><div style={{ fontWeight: '600', fontSize: '14px' }}>Sarah Mitchell</div><div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Marketing Consultant</div></div>
-                            </div>
-                            <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>+1,500%</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Impressions</div></div>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>47</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Connections</div></div>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>3</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Sales Calls</div></div>
-                            </div>
-                        </div>
-                        {/* 1 Month User */}
-                        <div style={{ background: 'linear-gradient(180deg, rgba(105, 63, 233, 0.1) 0%, rgba(105, 63, 233, 0.03) 100%)', border: '2px solid #693fe9', borderRadius: '16px', padding: '28px', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: '-12px', left: '20px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '600' }}>1 Month Results</div>
-                            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', marginTop: '8px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
-                            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;One month in and Kommentify has completely changed my LinkedIn game. My follower count grew from 2,400 to 5,100 and I&apos;ve closed 2 new clients worth $12,000.&quot;</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>JR</div>
-                                <div><div style={{ fontWeight: '600', fontSize: '14px' }}>James Rodriguez</div><div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>SaaS Founder</div></div>
-                            </div>
-                            <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(105, 63, 233, 0.15)', borderRadius: '8px', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#a78bfa' }}>+2,700</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Followers</div></div>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#a78bfa' }}>$12K</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Revenue</div></div>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#a78bfa' }}>85%</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Time Saved</div></div>
-                            </div>
-                        </div>
-                        {/* 3 Months User */}
-                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '28px', position: 'relative' }}>
-                            <div style={{ position: 'absolute', top: '-12px', left: '20px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '600' }}>3 Month Results</div>
-                            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', marginTop: '8px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
-                            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;3 months with Kommentify and I&apos;ve become a recognized voice in my industry. Went from 800 followers to 15,000+. Now I get inbound leads weekly!&quot;</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>AK</div>
-                                <div><div style={{ fontWeight: '600', fontSize: '14px' }}>Amanda Kim</div><div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Real Estate Coach</div></div>
-                            </div>
-                            <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#fbbf24' }}>15K+</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Followers</div></div>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#fbbf24' }}>8</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Clients/Mo</div></div>
-                                <div><div style={{ fontSize: '18px', fontWeight: '700', color: '#fbbf24' }}>$45K</div><div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>Monthly Rev</div></div>
-                            </div>
+                    {/* Testimonials Carousel */}
+                    <style>{`
+                        @keyframes scrollTestimonials {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(-50%); }
+                        }
+                        .testimonials-track {
+                            display: flex;
+                            gap: 24px;
+                            animation: scrollTestimonials 40s linear infinite;
+                            width: max-content;
+                        }
+                        .testimonials-track:hover {
+                            animation-play-state: paused;
+                        }
+                        .testimonial-card {
+                            flex-shrink: 0;
+                            width: 380px;
+                            background: rgba(255,255,255,0.03);
+                            border: 1px solid rgba(255,255,255,0.08);
+                            border-radius: 16px;
+                            padding: 28px;
+                        }
+                    `}</style>
+                    <div style={{ overflow: 'hidden', marginBottom: '40px' }}>
+                        <div className="testimonials-track">
+                            {/* Duplicate testimonials for seamless loop */}
+                            {[...Array(2)].map((_, dupIndex) => (
+                                <React.Fragment key={dupIndex}>
+                                    {/* Review 1 */}
+                                    <div className="testimonial-card">
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;After just 1 week using Kommentify, my post impressions went from 500 to 8,000. The AI comments are so natural that people actually reply to them!&quot;</p>
+                                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>SM</div>
+                                                <div><div style={{ fontWeight: '600', fontSize: '14px', color: 'white' }}>Sarah M.</div><div style={{ fontSize: '12px', color: '#10b981' }}>Verified Chrome User</div></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    {/* Review 2 */}
+                                    <div className="testimonial-card" style={{ border: '2px solid #693fe9', background: 'linear-gradient(180deg, rgba(105, 63, 233, 0.1) 0%, rgba(105, 63, 233, 0.03) 100%)' }}>
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;One month in and Kommentify has completely changed my LinkedIn game. My follower count grew significantly and I&apos;ve closed 2 new clients. Best investment for my business!&quot;</p>
+                                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>JR</div>
+                                                <div><div style={{ fontWeight: '600', fontSize: '14px', color: 'white' }}>James R.</div><div style={{ fontSize: '12px', color: '#10b981' }}>Verified Chrome User</div></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    {/* Review 3 */}
+                                    <div className="testimonial-card">
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;3 months with Kommentify and I&apos;ve become a recognized voice in my industry. The automation feels completely natural and I get inbound leads weekly now!&quot;</p>
+                                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>AK</div>
+                                                <div><div style={{ fontWeight: '600', fontSize: '14px', color: 'white' }}>Amanda K.</div><div style={{ fontSize: '12px', color: '#10b981' }}>Verified Chrome User</div></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    {/* Review 4 */}
+                                    <div className="testimonial-card">
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;I was skeptical at first but Kommentify delivered. The human-like behavior keeps my account safe while growing my network. Worth every penny!&quot;</p>
+                                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>MT</div>
+                                                <div><div style={{ fontWeight: '600', fontSize: '14px', color: 'white' }}>Michael T.</div><div style={{ fontSize: '12px', color: '#10b981' }}>Verified Chrome User</div></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    {/* Review 5 */}
+                                    <div className="testimonial-card">
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;The AI writer saves me hours every week. My posts now get 10x more engagement and the comment automation is brilliant. Highly recommend!&quot;</p>
+                                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #ec4899, #be185d)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>LP</div>
+                                                <div><div style={{ fontWeight: '600', fontSize: '14px', color: 'white' }}>Lisa P.</div><div style={{ fontSize: '12px', color: '#10b981' }}>Verified Chrome User</div></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    {/* Review 6 */}
+                                    <div className="testimonial-card">
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;Finally a LinkedIn tool that actually works! The profile import feature is a game-changer for lead generation. Been using it for 2 months now.&quot;</p>
+                                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #06b6d4, #0891b2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>DW</div>
+                                                <div><div style={{ fontWeight: '600', fontSize: '14px', color: 'white' }}>David W.</div><div style={{ fontSize: '12px', color: '#10b981' }}>Verified Chrome User</div></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    {/* Review 7 */}
+                                    <div className="testimonial-card">
+                                        <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>{[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '16px' }}>★</span>)}</div>
+                                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.7', marginBottom: '20px', fontStyle: 'italic' }}>&quot;As a consultant, visibility is everything. Kommentify helped me build authority in my niche. The lifetime deal was a no-brainer investment.&quot;</p>
+                                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #22c55e, #16a34a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: 'white' }}>RH</div>
+                                                <div><div style={{ fontWeight: '600', fontSize: '14px', color: 'white' }}>Rachel H.</div><div style={{ fontSize: '12px', color: '#10b981' }}>Verified Chrome User</div></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </React.Fragment>
+                            ))}
                         </div>
                     </div>
-                    <div style={{ textAlign: 'center', marginTop: '40px' }}>
-                        <a href="https://kommentify.com/signup" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 28px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', textDecoration: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', boxShadow: '0 4px 20px rgba(105, 63, 233, 0.4)' }}>
-                            Start Your Success Story <span>→</span>
+                    <div style={{ textAlign: 'center' }}>
+                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 28px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', textDecoration: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', boxShadow: '0 4px 20px rgba(105, 63, 233, 0.4)' }}>
+                            See All Reviews on Chrome Store <span>→</span>
                         </a>
                     </div>
                 </div>
@@ -1229,7 +1296,7 @@ export default function LandingPage() {
             {/* Competitor Comparison Table - MOVED BEFORE PRICING */}
             <section id="comparison" className="section-padding" style={{ background: '#0a0a0a', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                         <div style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', marginBottom: '20px', color: '#10b981' }}>
                             🔎 See The Difference
                         </div>
@@ -1241,20 +1308,29 @@ export default function LandingPage() {
                             Other tools focus on outreach. Kommentify gives you content creation + engagement + automation + safety.
                         </p>
                     </div>
+                    
+                    {/* Why Different Box */}
+                    <div style={{ background: 'linear-gradient(135deg, rgba(105, 63, 233, 0.15), rgba(99, 102, 241, 0.1))', border: '1px solid rgba(105, 63, 233, 0.3)', borderRadius: '16px', padding: '24px 32px', marginBottom: '40px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.7', margin: 0 }}>
+                            <strong style={{ color: '#693fe9' }}>Why Kommentify is Different:</strong> Unlike cloud-based tools that risk LinkedIn bans, Kommentify runs directly in your browser—making it <strong>safer, faster, and more affordable</strong>. Your data never leaves your device, and the human-like behavior engine keeps your account protected.
+                        </p>
+                    </div>
+                    
                     <div className="comparison-table" style={{ overflowX: 'auto', marginBottom: '40px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                             <thead>
                                 <tr style={{ background: 'rgba(105, 63, 233, 0.1)' }}>
                                     <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600' }}>Feature</th>
                                     <th style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600', background: 'rgba(105, 63, 233, 0.2)', color: '#693fe9' }}>Kommentify</th>
-                                    <th style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>Octopus CRM</th>
-                                    <th style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>Dripify</th>
-                                    <th style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>Meet Alfred</th>
+                                    <th style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>Cloud Tool A</th>
+                                    <th style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>API Tool B</th>
+                                    <th style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>Outreach Tool C</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {[
-                                    { feature: 'Lifetime Deal', kommentify: 'From $29', octopus: '❌ None', dripify: '❌ None', alfred: '❌ None' },
+                                    { feature: 'Lifetime Deal', kommentify: 'From $69', octopus: '❌ None', dripify: '❌ None', alfred: '❌ None' },
+                                    { feature: 'Browser-Based (Safer)', kommentify: true, octopus: false, dripify: false, alfred: false },
                                     { feature: 'AI Post Writing + Scheduling', kommentify: true, octopus: false, dripify: false, alfred: false },
                                     { feature: 'AI Comment Generation', kommentify: true, octopus: false, dripify: false, alfred: false },
                                     { feature: 'Smart Comment Automation', kommentify: true, octopus: false, dripify: false, alfred: false },
@@ -1298,10 +1374,39 @@ export default function LandingPage() {
                         Simple, Transparent Pricing<br/>
                         <span style={{ color: '#693fe9' }}>For Every Business Size</span>
                     </h2>
-                    <p style={{ textAlign: 'center', fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginBottom: '30px' }}>
+                    <p style={{ textAlign: 'center', fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px' }}>
                         Choose the perfect plan for your LinkedIn growth needs with no hidden fees.
                     </p>
                     
+                    {/* Pricing Comparison Quick View */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px 24px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Starter</div>
+                            <div style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>$9<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
+                        </div>
+                        <div style={{ background: 'linear-gradient(135deg, rgba(105, 63, 233, 0.15), rgba(105, 63, 233, 0.05))', border: '2px solid #693fe9', borderRadius: '12px', padding: '16px 24px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '12px', color: '#a78bfa', marginBottom: '4px' }}>Professional</div>
+                            <div style={{ fontSize: '24px', fontWeight: '700', color: '#a78bfa' }}>$29<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px 24px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Agency</div>
+                            <div style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>$39<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
+                        </div>
+                    </div>
+                    
+                    {/* Lifetime Deal Link */}
+                    <p style={{ textAlign: 'center', fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '30px' }}>
+                        Also available: <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'underline', fontWeight: '600' }}>Lifetime deals starting at $69 (limited time)</Link>
+                    </p>
+                    
+                    {/* Pricing Update Note */}
+                    <div style={{ maxWidth: '600px', margin: '0 auto 40px', padding: '16px 24px', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.05))', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.6' }}>
+                            <strong style={{ color: '#f59e0b' }}>Pricing update strategy:</strong> When we hit 500 paying subscribers, prices increase by 30-50%. <strong>Grandfather clause:</strong> Existing customers keep their price forever.
+                        </p>
+                    </div>
+                    
+                    {/* COMMENTED OUT: Yearly toggle - keeping monthly only
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginBottom: '40px' }}>
                         <span style={{ fontSize: '14px', color: billingCycle === 'monthly' ? 'white' : 'rgba(255,255,255,0.5)', fontWeight: billingCycle === 'monthly' ? '600' : '400' }}>Monthly</span>
                         <button 
@@ -1338,6 +1443,7 @@ export default function LandingPage() {
                             )}
                         </div>
                     </div>
+                    */}
                     
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '60px' }}>

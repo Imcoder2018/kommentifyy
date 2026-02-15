@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
       password: hashedPassword,
       createdAt: new Date().toISOString(),
       plan: {
-        id: 'free_plan',
-        name: 'Free',
+        id: 'starter_plan',
+        name: 'Starter',
         price: 0,
         dailyComments: 10,
         dailyLikes: 20,

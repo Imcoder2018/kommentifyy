@@ -411,7 +411,7 @@ function PlanModal({ plan, onClose, onSubmit }: any) {
                 }}
                 style={{ width: '18px', height: '18px', cursor: 'pointer' }}
               />
-              <span style={{ fontSize: '14px' }}>📋 Default Free Plan (after trial expires)</span>
+              <span style={{ fontSize: '14px' }}>📋 Default Starter Plan (after trial expires)</span>
             </label>
           </div>
           
@@ -429,7 +429,7 @@ function PlanModal({ plan, onClose, onSubmit }: any) {
                 style={{ width: '120px', padding: '8px', borderRadius: '6px', border: '1px solid #e0e0e0' }}
               />
               <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>
-                New users get this plan for {formData.trialDurationDays} days, then auto-switch to Free plan
+                New users get this plan for {formData.trialDurationDays} days, then auto-switch to Starter plan
               </span>
             </div>
           )}

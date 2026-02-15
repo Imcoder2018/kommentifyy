@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
                 joinedAt: r.createdAt,
                 hasPaid: r.hasPaid,
                 totalPaid: r.totalPaid,
-                planName: r.plan?.name || 'Free'
+                planName: r.plan?.name || 'Starter'
             }))
         });
     } catch (error) {

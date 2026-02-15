@@ -44,7 +44,7 @@ async function checkExpiredTrials(): Promise<{ downgradedCount: number }> {
     });
 
     if (!freePlan) {
-      console.error('❌ Free plan not found in database');
+      console.error('❌ Starter plan not found in database');
       return { downgradedCount: 0 };
     }
 
@@ -61,7 +61,7 @@ async function checkExpiredTrials(): Promise<{ downgradedCount: number }> {
       )
     );
 
-    console.log(`✅ Downgraded ${updates.length} users from trial to free plan`);
+    console.log(`✅ Downgraded ${updates.length} users from trial to starter plan`);
 
     // Schedule expired trial email sequence for each user
     for (const user of updates) {

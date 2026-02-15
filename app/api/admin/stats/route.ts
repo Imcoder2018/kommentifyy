@@ -88,7 +88,7 @@ async function handleGet(request: NextRequest) {
       totalActivities: 1247,
       usersToday: 8,
       planDistribution: [
-        { planName: 'Free', price: 0, userCount: 120 },
+        { planName: 'Starter', price: 0, userCount: 120 },
         { planName: 'Pro', price: 29.99, userCount: 30 },
         { planName: 'Enterprise', price: 99.99, userCount: 6 },
       ],

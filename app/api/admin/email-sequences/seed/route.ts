@@ -435,7 +435,7 @@ const sequences = [
           `<p style="margin:0 0 20px;color:#495057;font-size:18px;font-weight:600">Big update for you!</p>` +
           `<p style="margin:0 0 20px;color:#495057;font-size:16px"><strong style="color:#667eea;font-size:20px">Kommentify now writes viral LinkedIn posts!</strong></p>` +
           createHighlight('<strong style="color:#667eea">How it works:</strong><br><br>1. Enter a topic<br>2. Choose tone (Professional/Story/Educational)<br>3. Get 10 variations instantly<br>4. Schedule or post immediately') +
-          createAlert('This feature alone is worth <strong>$50/month</strong> elsewhere.<br><strong style="font-size:18px">You get it FREE with your plan!</strong>', 'success') +
+          createAlert('This feature alone is worth <strong>$50/month</strong> elsewhere.<br><strong style="font-size:18px">You get it included with your plan!</strong>', 'success') +
           createButton('Try It Now - Login to Kommentify', '{{loginUrl}}') +
           `<div style="background:#f8f9fa;padding:20px;border-radius:8px;margin:20px 0">` +
           `<p style="margin:0 0 10px;color:#495057;font-size:14px;font-weight:700">What is next:</p>` +

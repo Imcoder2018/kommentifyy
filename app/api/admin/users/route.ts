@@ -50,7 +50,7 @@ async function handleGet(request: NextRequest) {
       return {
         ...userWithoutPassword,
         status: 'active',
-        paymentStatus: user.plan?.name === 'Free' ? 'free' : 'paid',
+        paymentStatus: user.plan?.name === 'Starter' ? 'starter' : 'paid',
         monthlyUsage,
       };
     });
@@ -85,8 +85,8 @@ async function handleGet(request: NextRequest) {
         email: 'jane@example.com',
         status: 'active',
         createdAt: '2024-02-20T15:45:00.000Z',
-        plan: { id: 'plan-1', name: 'Free', price: 0 },
-        paymentStatus: 'free'
+        plan: { id: 'plan-1', name: 'Starter', price: 0 },
+        paymentStatus: 'starter'
       },
       {
         id: 'user-3',

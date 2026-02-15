@@ -30,7 +30,7 @@ async function handleGet(request: NextRequest) {
     const fallbackPlans = [
       {
         id: 'plan-1',
-        name: 'Free',
+        name: 'Starter',
         price: 0,
         stripePaymentLink: null,
         monthlyComments: 150,

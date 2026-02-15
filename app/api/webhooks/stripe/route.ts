@@ -293,13 +293,13 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
   const stripeCustomerId = subscription.customer as string;
 
   try {
-    // Downgrade to free plan
+    // Downgrade to starter plan
     const freePlan = await prisma.plan.findFirst({
       where: { isDefaultFreePlan: true }
     });
 
     if (!freePlan) {
-      console.error('❌ No free plan found for downgrade');
+      console.error('❌ No starter plan found for downgrade');
       return;
     }
 
@@ -310,7 +310,7 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
       }
     });
 
-    console.log(`✅ User ${user.email} downgraded to Free plan`);
+    console.log(`✅ User ${user.email} downgraded to Starter plan`);
   } catch (error) {
     console.error('❌ Error handling subscription cancellation:', error);
   }
@@ -322,7 +322,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   // Payment tracking can be added here if needed
 }
 
-// Handle failed payment - downgrade to free plan after trial if payment fails
+// Handle failed payment - downgrade to starter plan after trial if payment fails
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('⚠️ Payment failed for invoice:', invoice.id);
   
@@ -341,7 +341,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       const now = new Date();
       const trialEnded = user.trialEndsAt && new Date(user.trialEndsAt) < now;
       
-      // If trial ended or this is a recurring payment failure, downgrade to free plan
+      // If trial ended or this is a recurring payment failure, downgrade to starter plan
       if (trialEnded || !user.hasPaid) {
         const freePlan = await prisma.plan.findFirst({
           where: { isDefaultFreePlan: true }
@@ -355,7 +355,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
               trialEndsAt: null
             }
           });
-          console.log(`✅ User ${user.email} downgraded to Free plan due to payment failure`);
+          console.log(`✅ User ${user.email} downgraded to Starter plan due to payment failure`);
         }
       }
       

@@ -13,7 +13,6 @@ export default function PlansPage() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // Check if user is logged in and get their info
     const token = localStorage.getItem('authToken');
     if (token) {
       fetch('/api/auth/validate', {
@@ -32,7 +31,6 @@ export default function PlansPage() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          // Filter out free plan and separate lifetime deals
           const filteredPlans = data.plans.filter((p: any) => p.price > 0 && !p.isLifetime && !p.isDefaultFreePlan);
           const lifetimePlans = data.lifetimeDeals || [];
           setPlans(filteredPlans);
@@ -67,7 +65,6 @@ export default function PlansPage() {
       const data = await response.json();
       
       if (data.success && data.url) {
-        // Open Stripe checkout in new tab
         window.open(data.url, '_blank');
       } else {
         alert(data.error || 'Failed to create checkout session');
@@ -97,7 +94,6 @@ export default function PlansPage() {
     );
   }
 
-  // Determine popular plan (middle plan or Growth)
   const popularPlanIndex = plans.length > 1 ? 1 : 0;
 
   return (
@@ -175,8 +171,8 @@ export default function PlansPage() {
           </p>
         </div>
 
-        {/* MONTHLY/YEARLY PLANS - HIDDEN FOR LIFETIME DEALS ONLY - Set to false to hide, true to show */}
-        {false && (
+        {/* MONTHLY/YEARLY PLANS */}
+        {true && (
           <>
             {/* Billing Toggle */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '50px' }}>
@@ -567,6 +563,29 @@ export default function PlansPage() {
                     </div>
                   </div>
 
+                  {/* LinkedIn Premium Bonus */}
+                  {(plan.name.toLowerCase().includes('pro') || plan.name.toLowerCase().includes('growth') || plan.name.toLowerCase().includes('grow')) && (
+                    <div style={{ 
+                      marginBottom: '16px',
+                      padding: '12px 14px', 
+                      background: 'rgba(0, 119, 181, 0.15)', 
+                      border: '1px solid rgba(0, 119, 181, 0.4)', 
+                      borderRadius: '10px'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '10px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#0077b5'
+                      }}>
+                        <span style={{ fontSize: '18px' }}>👑</span>
+                        <span>LinkedIn Business {plan.name.toLowerCase().includes('pro') ? '12' : '6'} Months FREE</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Lifetime Features */}
                   <div style={{ flex: 1, marginBottom: '24px' }}>
                     <div style={{ 
@@ -628,6 +647,22 @@ export default function PlansPage() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* LinkedIn Premium Activation Note */}
+            <div style={{ 
+              maxWidth: '700px', 
+              margin: '40px auto 0', 
+              padding: '16px 24px', 
+              background: 'linear-gradient(135deg, rgba(0, 119, 181, 0.15), rgba(0, 119, 181, 0.05))', 
+              border: '1px solid rgba(0, 119, 181, 0.3)', 
+              borderRadius: '12px',
+              textAlign: 'center'
+            }}>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.6' }}>
+                <span style={{ fontSize: '16px', marginRight: '6px' }}>📱</span>
+                <strong style={{ color: '#0077b5' }}>LinkedIn Premium Bonus:</strong> After you buy, connect with our support team through WhatsApp — they&apos;ll help you activate the LinkedIn Business plan on your account.
+              </p>
             </div>
           </div>
         )}

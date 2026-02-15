@@ -111,6 +111,18 @@ const IconShield = ({ size = 16, color = 'currentColor' }: { size?: number; colo
     </svg>
 );
 
+const IconCrown = ({ size = 16, color = 'currentColor' }: { size?: number; color?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/>
+    </svg>
+);
+
+const IconBrandWhatsapp = ({ size = 16, color = '#25D366', style }: { size?: number; color?: string; style?: React.CSSProperties }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none" style={style}>
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+);
+
 const IconCalendar = ({ size = 16, color = 'currentColor' }: { size?: number; color?: string }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
@@ -1280,13 +1292,8 @@ export default function LandingPage() {
             </section>
 
             {/* Pricing - Dark Theme - Show ALL Features */}
-            {/* <section id="pricing" className="section-padding" style={{ background: '#0a0a0a', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <section id="monthly-pricing" className="section-padding" style={{ background: '#0a0a0a', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                        <div style={{ display: 'inline-block', background: 'rgba(105, 63, 233, 0.1)', border: '1px solid rgba(105, 63, 233, 0.3)', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', marginBottom: '20px', color: '#693fe9' }}>
-                            🎁 3-Day Free Trial — Full Access · Cancel Anytime
-                        </div>
-                    </div>
                     <h2 className="section-title" style={{ fontSize: '38px', fontWeight: '700', textAlign: 'center', marginBottom: '16px' }}>
                         Simple, Transparent Pricing<br/>
                         <span style={{ color: '#693fe9' }}>For Every Business Size</span>
@@ -1295,7 +1302,6 @@ export default function LandingPage() {
                         Choose the perfect plan for your LinkedIn growth needs with no hidden fees.
                     </p>
                     
-                    // Billing Cycle Toggle
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginBottom: '40px' }}>
                         <span style={{ fontSize: '14px', color: billingCycle === 'monthly' ? 'white' : 'rgba(255,255,255,0.5)', fontWeight: billingCycle === 'monthly' ? '600' : '400' }}>Monthly</span>
                         <button 
@@ -1414,7 +1420,6 @@ export default function LandingPage() {
                                         </div>
                                         
                                         <div style={{ marginBottom: '20px' }}>
-                                            // Show pricing based on billing cycle
                                             {billingCycle === 'monthly' ? (
                                                 <>
                                                     {plan.price > 0 && (
@@ -1450,14 +1455,9 @@ export default function LandingPage() {
                                                     )}
                                                 </>
                                             )}
-                                            {plan.trialDurationDays > 0 && (
-                                                <div style={{ fontSize: '11px', color: '#10b981', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <IconCheck size={12} color="#10b981" /> {plan.trialDurationDays}-day free trial
-                                                </div>
-                                            )}
+
                                         </div>
 
-                                        // Limits with SVG Icons
                                         <div style={{ marginBottom: '16px', flex: 1 }}>
                                             <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Limits</div>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px' }}>
@@ -1471,7 +1471,6 @@ export default function LandingPage() {
                                             </div>
                                         </div>
 
-                                        // Boolean Features with Icons
                                         <div style={{ marginBottom: '16px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</div>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
@@ -1524,7 +1523,6 @@ export default function LandingPage() {
                         </div>
                     )}
 
-                    // Trust Badges
                     <div className="trust-badges" style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '40px', flexWrap: 'wrap' }}>
                         {['14-Day Money-Back', 'No Credit Card Required', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
                             <div key={i} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1533,7 +1531,7 @@ export default function LandingPage() {
                         ))}
                     </div>
                 </div>
-            </section> */}
+            </section>
 
             {/* Lifetime Deals Pricing Section */}
             <section id="pricing" className="section-padding" style={{ background: '#0a0a0a', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -1582,6 +1580,8 @@ export default function LandingPage() {
                             {lifetimeDeals.sort((a, b) => a.price - b.price).map((plan, index) => {
                                 const isPopular = index === Math.floor(lifetimeDeals.length / 2) || lifetimeDeals.length === 1;
                                 const spotsLeft = plan.lifetimeSpotsRemaining ?? (plan.lifetimeMaxSpots ? plan.lifetimeMaxSpots - plan.lifetimeSoldSpots : 100);
+                                const isPro = plan.name.toLowerCase().includes('pro');
+                                const isGrowth = plan.name.toLowerCase().includes('growth') || plan.name.toLowerCase().includes('grow');
                                 
                                 const features = [
                                     { icon: <IconMessage size={14} color="#693fe9" />, text: `${plan.limits.aiCommentsPerMonth >= 100000 ? 'Unlimited' : formatNumber(plan.limits.aiCommentsPerMonth)} AI Comments/mo` },
@@ -1591,9 +1591,11 @@ export default function LandingPage() {
                                     { icon: <IconUsers size={14} color="#3b82f6" />, text: `${plan.limits.monthlyFollows >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyFollows)} Auto Follows` },
                                     { icon: <IconHandshake size={14} color="#f59e0b" />, text: `${plan.limits.monthlyConnections >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyConnections)} Connections` },
                                     plan.monthlyImportCredits > 0 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: plan.monthlyImportCredits >= 100000 ? 'Unlimited Imports' : `${formatNumber(plan.monthlyImportCredits)} Imports` } : null,
+                                    isPro ? { icon: <IconCrown size={14} color="#0077b5" />, text: 'LinkedIn Business 12 Months FREE', highlight: true } : 
+                                    isGrowth ? { icon: <IconCrown size={14} color="#0077b5" />, text: 'LinkedIn Business 6 Months FREE', highlight: true } : null,
                                     { icon: <IconRocket size={14} color="#22c55e" />, text: 'Lifetime Updates' },
                                     { icon: <IconShield size={14} color="#3b82f6" />, text: 'Priority Support' },
-                                ].filter(Boolean) as { icon: JSX.Element; text: string }[];
+                                ].filter(Boolean) as { icon: JSX.Element; text: string; highlight?: boolean }[];
 
                                 return (
                                     <div key={plan.id} className="pricing-card" style={{ 
@@ -1639,8 +1641,19 @@ export default function LandingPage() {
                                             <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>What&apos;s Included</div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                 {features.map((feat, i) => (
-                                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>
-                                                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }}>{feat.icon}</span>
+                                                    <div key={i} style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '10px', 
+                                                        fontSize: '13px', 
+                                                        color: feat.highlight ? '#0077b5' : 'rgba(255,255,255,0.8)',
+                                                        fontWeight: feat.highlight ? '600' : '400',
+                                                        background: feat.highlight ? 'rgba(0, 119, 181, 0.1)' : 'transparent',
+                                                        padding: feat.highlight ? '8px 10px' : '0',
+                                                        borderRadius: feat.highlight ? '8px' : '0',
+                                                        border: feat.highlight ? '1px solid rgba(0, 119, 181, 0.3)' : 'none'
+                                                    }}>
+                                                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', background: feat.highlight ? 'rgba(0, 119, 181, 0.2)' : 'rgba(255,255,255,0.05)', borderRadius: '6px' }}>{feat.icon}</span>
                                                         {feat.text}
                                                     </div>
                                                 ))}
@@ -1678,6 +1691,22 @@ export default function LandingPage() {
                             <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)' }}>We&apos;re preparing exclusive lifetime offers. Check back soon!</p>
                         </div>
                     )}
+
+                    {/* LinkedIn Premium Activation Note */}
+                    <div style={{ 
+                        maxWidth: '700px', 
+                        margin: '30px auto 0', 
+                        padding: '16px 24px', 
+                        background: 'linear-gradient(135deg, rgba(0, 119, 181, 0.15), rgba(0, 119, 181, 0.05))', 
+                        border: '1px solid rgba(0, 119, 181, 0.3)', 
+                        borderRadius: '12px',
+                        textAlign: 'center'
+                    }}>
+                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.6' }}>
+                            <IconBrandWhatsapp size={16} color="#25D366" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+                            <strong style={{ color: '#0077b5' }}>LinkedIn Premium Bonus:</strong> After you buy, connect with our support team through WhatsApp — they&apos;ll help you activate the LinkedIn Business plan on your account.
+                        </p>
+                    </div>
 
                     {/* Trust Badges */}
                     <div className="trust-badges" style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '40px', flexWrap: 'wrap' }}>

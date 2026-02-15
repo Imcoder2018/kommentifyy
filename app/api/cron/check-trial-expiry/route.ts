@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Free plan not found in database');
       return NextResponse.json({ 
         success: false, 
-        error: 'Free plan not configured' 
+        error: 'Starter plan not configured' 
       }, { status: 500 });
     }
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       )
     );
 
-    console.log(`✅ Successfully downgraded ${updates.length} users from trial to free plan`);
+    console.log(`✅ Successfully downgraded ${updates.length} users from trial to starter plan`);
     console.log('Downgraded users:', updates.map(u => u.email).join(', '));
 
     // Schedule expired trial email sequence for each user
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      message: `Downgraded ${updates.length} users from trial to free plan`,
+      message: `Downgraded ${updates.length} users from trial to starter plan`,
       downgradedCount: updates.length,
       users: updates.map(u => ({ email: u.email, id: u.id }))
     });

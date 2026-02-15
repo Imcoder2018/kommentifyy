@@ -93,8 +93,8 @@ export async function GET(request: NextRequest) {
     // Fallback plans data when database is not available
     const fallbackPlans = [
       {
-        id: 'plan-free',
-        name: 'Free',
+        id: 'plan-starter',
+        name: 'Starter',
         price: 0,
         period: 'monthly',
         stripeLink: null,

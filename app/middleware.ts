@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
       // Verify token
       const payload = await verifyJWT(token);
       
-      // If user doesn't have a plan ID (free user), redirect to plans page
+      // If user doesn't have a plan ID, redirect to plans page
       if (!payload.planId || payload.planId === 'free') {
         return NextResponse.redirect(new URL('/plans', request.url));
       }

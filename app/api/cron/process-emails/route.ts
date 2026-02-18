@@ -34,7 +34,7 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
     
     for (const post of duePosts) {
       try {
-        // Create command for extension
+        // Create command for extension using Activity model
         const commandPayload = {
           command: 'post_scheduled_content',
           content: post.content,
@@ -45,13 +45,16 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
           draftId: post.id
         };
 
-        const command = await (prisma as any).command.create({
+        const activity = await prisma.activity.create({
           data: {
             userId: post.userId,
-            command: 'post_scheduled_content',
-            payload: JSON.stringify(commandPayload),
-            status: 'pending',
-            scheduledFor: post.scheduledFor
+            type: 'extension_command_post_scheduled_content',
+            metadata: JSON.stringify({
+              ...commandPayload,
+              status: 'pending',
+              createdAt: new Date().toISOString(),
+            }),
+            timestamp: new Date(),
           }
         });
 
@@ -59,13 +62,13 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
         await (prisma as any).postDraft.update({
           where: { id: post.id },
           data: { 
-            taskId: command.id,
+            taskId: activity.id,
             taskSentAt: new Date(),
             taskStatus: 'pending'
           }
         });
 
-        console.log(`✅ Triggered scheduled post for user ${post.user.email}, task ID: ${command.id}`);
+        console.log(`✅ Triggered scheduled post for user ${post.user.email}, task ID: ${activity.id}`);
         triggeredCount++;
       } catch (error) {
         console.error(`❌ Failed to trigger scheduled post ${post.id}:`, error);

@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
       // Only set status to scheduled if time is in the future
       if (scheduledTime > now) {
         // Don't create command here - cron will handle it when time arrives
-        console.log(` Post scheduled for ${scheduledTime.toISOString()}, cron will create task when time arrives`);
+        console.log(`📅 Post scheduled for ${scheduledTime.toISOString()}, cron will create task when time arrives`);
       } else {
-        // If scheduled time is in the past, create command immediately
+        // If scheduled time is in the past, create command immediately using Activity model
         const commandPayload = {
           command: 'post_scheduled_content',
           content: content,
@@ -79,13 +79,16 @@ export async function POST(request: NextRequest) {
           draftId: draft.id
         };
 
-        const command = await (prisma as any).command.create({
+        const activity = await prisma.activity.create({
           data: {
             userId: payload.userId,
-            command: 'post_scheduled_content',
-            payload: JSON.stringify(commandPayload),
-            status: 'pending',
-            scheduledFor: scheduledTime
+            type: 'extension_command_post_scheduled_content',
+            metadata: JSON.stringify({
+              ...commandPayload,
+              status: 'pending',
+              createdAt: new Date().toISOString(),
+            }),
+            timestamp: new Date(),
           }
         });
 
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
         await (prisma as any).postDraft.update({
           where: { id: draft.id },
           data: { 
-            taskId: command.id,
+            taskId: activity.id,
             taskSentAt: new Date(),
             taskStatus: 'pending'
           }

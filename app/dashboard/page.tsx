@@ -837,19 +837,9 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         try {
-            // Parse JSON fields safely
-            let experience = [];
-            let skills = [];
-            try {
-                experience = JSON.parse(linkedInProfile.experience || '[]');
-            } catch (e) {
-                console.error('Error parsing experience:', e);
-            }
-            try {
-                skills = JSON.parse(linkedInProfile.skills || '[]');
-            } catch (e) {
-                console.error('Error parsing skills:', e);
-            }
+            // Use arrays directly - they're already parsed by the API
+            const experience = Array.isArray(linkedInProfile.experience) ? linkedInProfile.experience : [];
+            const skills = Array.isArray(linkedInProfile.skills) ? linkedInProfile.skills : [];
             
             const res = await fetch('/api/ai/generate-topics', {
                 method: 'POST',
@@ -1006,15 +996,45 @@ function DashboardContent() {
         } catch {} finally { if (!silent) setTasksLoading(false); }
     };
 
-    // Check extension connectivity via heartbeat endpoint
+    const loadReferralData = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/referrals', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) {
+                setReferralData(data);
+            }
+        } catch {}
+    };
+
+    const loadAccountSettings = async () => {
+        // Account settings are loaded in the main auth useEffect
+    };
+
+    // Check extension connectivity via heartbeat endpoint and recent activity
     const checkExtensionConnectivity = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         try {
             const res = await fetch('/api/extension/heartbeat', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            setExtensionConnected(!!data.connected);
-            if (data.connected) setExtensionLastSeen(new Date());
+            
+            // Consider extension connected if:
+            // 1. Recent heartbeat (within 5 minutes)
+            // 2. Recent successful task completion (within 10 minutes)
+            const heartbeatConnected = !!data.connected;
+            const now = new Date();
+            const recentTasks = tasks.filter(task => 
+                task.status === 'completed' && 
+                new Date(task.updatedAt) > new Date(now.getTime() - 10 * 60 * 1000)
+            );
+            
+            const taskActivityConnected = recentTasks.length > 0;
+            const isConnected = heartbeatConnected || taskActivityConnected;
+            
+            setExtensionConnected(isConnected);
+            if (isConnected) setExtensionLastSeen(new Date());
         } catch {}
     };
 
@@ -1842,21 +1862,58 @@ function DashboardContent() {
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {/* Extension Connection Status */}
-                    {extensionConnected ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'rgba(16,185,129,0.1)', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.3)' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#34d399' }}>Extension Connected</span>
-                            {extensionLastSeen && <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>· {extensionLastSeen.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
-                        </div>
-                    ) : (
-                        <div title="Open the Kommentify Chrome extension and click 'Connect to Dashboard'" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'rgba(239,68,68,0.12)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.4)', cursor: 'default' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
-                            <div>
-                                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171', lineHeight: 1 }}>Extension Offline</div>
-                                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Open extension → click Connect</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {extensionConnected ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(16,185,129,0.1)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.6)' }} />
+                                <span style={{ fontSize: '11px', fontWeight: '600', color: '#34d399' }}>Extension Active</span>
+                                {extensionLastSeen && <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>· {extensionLastSeen.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(251,191,36,0.1)', borderRadius: '8px', border: '1px solid rgba(251,191,36,0.3)' }}>
+                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#fbbf24' }}>Extension Idle</span>
+                                </div>
+                                <button
+                                    onClick={checkExtensionConnectivity}
+                                    style={{ 
+                                        padding: '4px 8px', 
+                                        background: 'rgba(255,255,255,0.1)', 
+                                        border: '1px solid rgba(255,255,255,0.2)', 
+                                        borderRadius: '6px', 
+                                        color: 'rgba(255,255,255,0.8)', 
+                                        fontSize: '10px', 
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                                    title="Check extension connection"
+                                >
+                                    🔄 Check
+                                </button>
+                            </div>
+                        )}
+                        <button
+                            onClick={() => window.open('https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei', '_blank')}
+                            style={{ 
+                                padding: '4px 8px', 
+                                background: 'rgba(59,130,246,0.1)', 
+                                border: '1px solid rgba(59,130,246,0.3)', 
+                                borderRadius: '6px', 
+                                color: '#60a5fa', 
+                                fontSize: '10px', 
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
+                            onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)'; }}
+                        >
+                            🧩 Get Extension
+                        </button>
+                    </div>
                     {/* Theme Toggle */}
                     <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
                         {(['current', 'light', 'dark'] as const).map(t => (
@@ -1868,23 +1925,6 @@ function DashboardContent() {
                     </div>
                     </div>
                 </div>
-
-                {/* Extension Offline Banner */}
-                {!extensionConnected && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(220,38,38,0.08) 100%)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', marginBottom: '20px' }}>
-                        <span style={{ fontSize: '20px' }}>🔌</span>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ color: '#f87171', fontWeight: '700', fontSize: '13px', marginBottom: '2px' }}>Chrome Extension Not Connected</div>
-                            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>
-                                To use automation features, open the <strong style={{ color: 'white' }}>Kommentify Chrome Extension</strong> and make sure you&apos;re logged in with this account. The connection is established <strong style={{ color: '#a78bfa' }}>automatically</strong> once the extension is active.
-                            </div>
-                        </div>
-                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer"
-                            style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '8px', color: '#f87171', fontSize: '12px', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                            Get Extension ↗
-                        </a>
-                    </div>
-                )}
 
                 {/* Overview Tab Content */}
                 {activeTab === 'overview' && (
@@ -2508,26 +2548,27 @@ function DashboardContent() {
                                             .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
                                             .map((post: any, idx: number) => {
                                                 const scheduledDate = new Date(post.scheduledFor);
-                                                const statusColor = {
+                                                const statusColor: { [key: string]: string } = {
                                                     pending: '#f59e0b',
                                                     in_progress: '#3b82f6',
                                                     completed: '#10b981',
                                                     failed: '#ef4444'
-                                                }[post.taskStatus] || '#f59e0b';
+                                                };
+                                                const color = statusColor[post.taskStatus || 'pending'] || '#f59e0b';
                                                 
                                                 return (
                                                     <div key={idx} style={{ 
                                                         background: 'rgba(255,255,255,0.05)', 
                                                         padding: '14px', 
                                                         borderRadius: '10px', 
-                                                        border: `1px solid ${statusColor}33`,
-                                                        borderLeft: `4px solid ${statusColor}`
+                                                        border: `1px solid ${color}33`,
+                                                        borderLeft: `4px solid ${color}`
                                                     }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                                                             <div style={{ flex: 1 }}>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                                                                     <span style={{ 
-                                                                        background: statusColor, 
+                                                                        background: color, 
                                                                         color: 'white', 
                                                                         padding: '2px 8px', 
                                                                         borderRadius: '12px', 
@@ -4632,71 +4673,59 @@ function DashboardContent() {
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Skills ({(() => { try { return JSON.parse(linkedInProfile.skills || '[]').length; } catch { return 0; } })()}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Skills ({Array.isArray(linkedInProfile.skills) ? linkedInProfile.skills.length : 0}):</strong>
                                 <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {(() => { 
-                                        try { 
-                                            return JSON.parse(linkedInProfile.skills || '[]').map((skill: string, idx: number) => (
-                                                <li key={idx}>{skill}</li>
-                                            ));
-                                        } catch { 
-                                            return <li>Error loading skills</li>;
-                                        } 
-                                    })()}
+                                    {Array.isArray(linkedInProfile.skills) ? 
+                                        linkedInProfile.skills.map((skill: string, idx: number) => (
+                                            <li key={idx}>{skill}</li>
+                                        )) : 
+                                        <li>Error loading skills</li>
+                                    }
                                 </ul>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Experience ({(() => { try { return JSON.parse(linkedInProfile.experience || '[]').length; } catch { return 0; } })()}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Experience ({Array.isArray(linkedInProfile.experience) ? linkedInProfile.experience.length : 0}):</strong>
                                 <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {(() => { 
-                                        try { 
-                                            return JSON.parse(linkedInProfile.experience || '[]').map((exp: string, idx: number) => (
-                                                <li key={idx} style={{ marginBottom: '8px' }}>{exp}</li>
-                                            ));
-                                        } catch { 
-                                            return <li>Error loading experience</li>;
-                                        } 
-                                    })()}
+                                    {Array.isArray(linkedInProfile.experience) ? 
+                                        linkedInProfile.experience.map((exp: string, idx: number) => (
+                                            <li key={idx} style={{ marginBottom: '8px' }}>{exp}</li>
+                                        )) : 
+                                        <li>Error loading experience</li>
+                                    }
                                 </ul>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Education ({(() => { try { return JSON.parse(linkedInProfile.education || '[]').length; } catch { return 0; } })()}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Education ({Array.isArray(linkedInProfile.education) ? linkedInProfile.education.length : 0}):</strong>
                                 <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {(() => { 
-                                        try { 
-                                            return JSON.parse(linkedInProfile.education || '[]').map((edu: string, idx: number) => (
-                                                <li key={idx}>{edu}</li>
-                                            ));
-                                        } catch { 
-                                            return <li>Error loading education</li>;
-                                        } 
-                                    })()}
+                                    {Array.isArray(linkedInProfile.education) ? 
+                                        linkedInProfile.education.map((edu: string, idx: number) => (
+                                            <li key={idx}>{edu}</li>
+                                        )) : 
+                                        <li>Error loading education</li>
+                                    }
                                 </ul>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Posts ({(() => { try { return JSON.parse(linkedInProfile.posts || '[]').length; } catch { return 0; } })()}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Posts ({Array.isArray(linkedInProfile.posts) ? linkedInProfile.posts.length : 0}):</strong>
                                 <div style={{ maxHeight: '200px', overflow: 'auto', margin: '4px 0' }}>
-                                    {(() => { 
-                                        try { 
-                                            return JSON.parse(linkedInProfile.posts || '[]').map((post: string, idx: number) => (
-                                                <div key={idx} style={{ 
-                                                    padding: '8px', 
-                                                    margin: '4px 0', 
-                                                    background: 'rgba(255,255,255,0.05)', 
-                                                    borderRadius: '4px',
-                                                    fontSize: '12px',
-                                                    whiteSpace: 'pre-wrap'
-                                                }}>
-                                                    {post}
-                                                </div>
-                                            ));
-                                        } catch { 
-                                            return <div>Error loading posts</div>;
-                                        } 
-                                    })()}
+                                    {Array.isArray(linkedInProfile.posts) ? 
+                                        linkedInProfile.posts.map((post: string, idx: number) => (
+                                            <div key={idx} style={{ 
+                                                padding: '8px', 
+                                                margin: '4px 0', 
+                                                background: 'rgba(255,255,255,0.05)', 
+                                                borderRadius: '4px',
+                                                fontSize: '12px',
+                                                whiteSpace: 'pre-wrap'
+                                            }}>
+                                                {post}
+                                            </div>
+                                        )) : 
+                                        <div>Error loading posts</div>
+                                    }
                                 </div>
                             </div>
                             

@@ -35,17 +35,77 @@ export async function GET(request: NextRequest) {
 
     const payload = verifyToken(token);
 
-    const latest = await prisma.activity.findFirst({
+    // Check 1: Recent heartbeat
+    const latestHeartbeat = await prisma.activity.findFirst({
       where: { userId: payload.userId, type: 'extension_heartbeat' },
       orderBy: { timestamp: 'desc' },
     });
 
-    if (!latest) return NextResponse.json({ connected: false, lastSeen: null });
+    // Check 2: Recent successful command completion (using Activity model)
+    const latestCommand = await prisma.activity.findFirst({
+      where: { 
+        userId: payload.userId,
+        type: { startsWith: 'extension_command_' },
+        timestamp: { gte: new Date(Date.now() - 10 * 60 * 1000) } // Within last 10 minutes
+      },
+      orderBy: { timestamp: 'desc' },
+    });
 
-    const diffMs = Date.now() - new Date(latest.timestamp).getTime();
-    const connected = diffMs < 5 * 60 * 1000; // 5-minute window for more reliability
+    // Parse command metadata to check if completed
+    let commandCompleted = false;
+    if (latestCommand) {
+      const meta = typeof latestCommand.metadata === 'string' ? JSON.parse(latestCommand.metadata) : latestCommand.metadata;
+      commandCompleted = meta.status === 'completed';
+    }
 
-    return NextResponse.json({ connected, lastSeen: latest.timestamp, secondsAgo: Math.floor(diffMs / 1000) });
+    // Check 3: Recent scheduled post activity
+    const latestScheduledPost = await (prisma as any).postDraft.findFirst({
+      where: { 
+        userId: payload.userId,
+        taskStatus: 'completed',
+        taskCompletedAt: { gte: new Date(Date.now() - 10 * 60 * 1000) } // Within last 10 minutes
+      },
+      orderBy: { taskCompletedAt: 'desc' },
+    });
+
+    let connected = false;
+    let lastSeen: Date | null = null;
+    let connectionType = '';
+
+    if (latestHeartbeat) {
+      const diffMs = Date.now() - new Date(latestHeartbeat.timestamp).getTime();
+      if (diffMs < 5 * 60 * 1000) { // 5-minute window
+        connected = true;
+        lastSeen = latestHeartbeat.timestamp;
+        connectionType = 'heartbeat';
+      }
+    }
+
+    if (!connected && commandCompleted && latestCommand) {
+      connected = true;
+      lastSeen = latestCommand.timestamp;
+      connectionType = 'command';
+    }
+
+    if (!connected && latestScheduledPost) {
+      connected = true;
+      lastSeen = latestScheduledPost.taskCompletedAt;
+      connectionType = 'scheduled_post';
+    }
+
+    const secondsAgo = lastSeen ? Math.floor((Date.now() - lastSeen.getTime()) / 1000) : null;
+
+    return NextResponse.json({ 
+      connected, 
+      lastSeen, 
+      secondsAgo,
+      connectionType,
+      checks: {
+        heartbeat: !!latestHeartbeat,
+        command: !!latestCommand && commandCompleted,
+        scheduledPost: !!latestScheduledPost
+      }
+    });
   } catch {
     return NextResponse.json({ connected: false });
   }

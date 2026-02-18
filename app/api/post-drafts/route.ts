@@ -58,6 +58,49 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // If this is a scheduled post, just set the status - cron will create the task
+    if (scheduledFor) {
+      const scheduledTime = new Date(scheduledFor);
+      const now = new Date();
+      
+      // Only set status to scheduled if time is in the future
+      if (scheduledTime > now) {
+        // Don't create command here - cron will handle it when time arrives
+        console.log(` Post scheduled for ${scheduledTime.toISOString()}, cron will create task when time arrives`);
+      } else {
+        // If scheduled time is in the past, create command immediately
+        const commandPayload = {
+          command: 'post_scheduled_content',
+          content: content,
+          topic: topic || '',
+          template: template || '',
+          tone: tone || '',
+          scheduledFor: scheduledTime.toISOString(),
+          draftId: draft.id
+        };
+
+        const command = await (prisma as any).command.create({
+          data: {
+            userId: payload.userId,
+            command: 'post_scheduled_content',
+            payload: JSON.stringify(commandPayload),
+            status: 'pending',
+            scheduledFor: scheduledTime
+          }
+        });
+
+        // Update draft with task ID
+        await (prisma as any).postDraft.update({
+          where: { id: draft.id },
+          data: { 
+            taskId: command.id,
+            taskSentAt: new Date(),
+            taskStatus: 'pending'
+          }
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, draft });
   } catch (error: any) {
     console.error('Create post draft error:', error);
@@ -74,7 +117,7 @@ export async function PUT(request: NextRequest) {
     }
     const payload = verifyToken(token);
 
-    const { id, content, topic, template, tone, status, scheduledFor } = await request.json();
+    const { id, content, topic, template, tone, status, scheduledFor, taskSentAt } = await request.json();
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'Draft ID required' }, { status: 400 });
@@ -95,6 +138,7 @@ export async function PUT(request: NextRequest) {
         ...(tone !== undefined && { tone }),
         ...(status !== undefined && { status }),
         ...(scheduledFor !== undefined && { scheduledFor: scheduledFor ? new Date(scheduledFor) : null }),
+        ...(taskSentAt !== undefined && { taskSentAt: taskSentAt ? new Date(taskSentAt) : null }),
       },
     });
 

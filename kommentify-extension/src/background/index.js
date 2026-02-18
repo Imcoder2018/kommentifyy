@@ -667,7 +667,171 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- unknown command ---
+                // --- post_scheduled_content command ---
+                else if (cmd.command === 'post_scheduled_content') {
+                    console.log('📅 POLL-ALARM: Executing post_scheduled_content...');
+                    try {
+                        // Mark as in_progress
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+                        
+                        // Update draft task status to in_progress and mark as sent
+                        const payload = JSON.parse(cmd.payload || '{}');
+                        if (payload.draftId) {
+                            await fetch(`${apiUrl}/api/scheduled-posts`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    taskId: cmd.id, 
+                                    status: 'in_progress' 
+                                })
+                            });
+                            
+                            // Also update the draft to mark task as sent
+                            await fetch(`${apiUrl}/api/post-drafts`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    id: payload.draftId,
+                                    taskSentAt: new Date().toISOString()
+                                })
+                            });
+                        }
+
+                        // Open LinkedIn tab
+                        const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/', active: false });
+                        console.log('📅 POLL-ALARM: Opened LinkedIn tab for posting:', tab.id);
+
+                        // Wait for page to load
+                        await new Promise((resolve) => {
+                            const checkComplete = (tabId, changeInfo) => {
+                                if (tabId === tab.id && changeInfo.status === 'complete') {
+                                    chrome.tabs.onUpdated.removeListener(checkComplete);
+                                    resolve();
+                                }
+                            };
+                            chrome.tabs.onUpdated.addListener(checkComplete);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
+                        });
+
+                        // Give LinkedIn a moment to render
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+
+                        // Execute posting script
+                        const postResult = await chrome.scripting.executeScript({
+                            target: { tabId: tab.id },
+                            func: (content, topic, template, tone) => {
+                                // This function will post the content to LinkedIn
+                                // Implementation depends on LinkedIn's current UI
+                                try {
+                                    // Find the post creation area
+                                    const postBox = document.querySelector('[data-test-id="share-box"]') || 
+                                                   document.querySelector('.share-box-feed__inner') ||
+                                                   document.querySelector('[role="textbox"]') ||
+                                                   document.querySelector('div[contenteditable="true"]');
+                                    
+                                    if (!postBox) {
+                                        return { success: false, error: 'Could not find post creation area' };
+                                    }
+
+                                    // Click on the post box to activate it
+                                    postBox.click();
+                                    
+                                    // Type the content
+                                    if (postBox.contentEditable === 'true') {
+                                        postBox.innerText = content;
+                                    } else {
+                                        postBox.value = content;
+                                    }
+
+                                    // Wait a moment (simulate with setTimeout)
+                                    setTimeout(() => {
+                                        // Find and click the post button
+                                        const postButton = document.querySelector('button[data-test-id="post-submit"]') ||
+                                                          document.querySelector('button[aria-label*="Post"]') ||
+                                                          document.querySelector('.share-actions__primary button') ||
+                                                          Array.from(document.querySelectorAll('button')).find(btn => btn.textContent.includes('Post'));
+
+                                        if (!postButton) {
+                                            return { success: false, error: 'Could not find post button' };
+                                        }
+
+                                        // Click post button
+                                        postButton.click();
+                                    }, 1000);
+
+                                    return { success: true, message: 'Post published successfully' };
+                                } catch (error) {
+                                    return { success: false, error: error.message };
+                                }
+                            },
+                            args: [payload.content, payload.topic || '', payload.template || '', payload.tone || '']
+                        });
+
+                        const result = postResult?.[0]?.result;
+                        console.log('📅 POLL-ALARM: Post result:', result);
+
+                        // Wait a moment for the post to complete
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+
+                        if (result?.success) {
+                            // Update draft task status to completed
+                            if (payload.draftId) {
+                                await fetch(`${apiUrl}/api/scheduled-posts`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        taskId: cmd.id, 
+                                        status: 'completed' 
+                                    })
+                                });
+                            }
+                            
+                            // Mark command as completed
+                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                            console.log('✅ POLL-ALARM: post_scheduled_content completed');
+                        } else {
+                            // Update draft task status to failed
+                            if (payload.draftId) {
+                                await fetch(`${apiUrl}/api/scheduled-posts`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        taskId: cmd.id, 
+                                        status: 'failed',
+                                        failureReason: result?.error || 'Unknown posting error'
+                                    })
+                                });
+                            }
+                            
+                            // Mark command as failed
+                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) });
+                            console.log('❌ POLL-ALARM: post_scheduled_content failed');
+                        }
+
+                        // Close the LinkedIn tab
+                        await chrome.tabs.remove(tab.id);
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: post_scheduled_content failed:', e);
+                        
+                        // Update draft task status to failed
+                        const payload = JSON.parse(cmd.payload || '{}');
+                        if (payload.draftId) {
+                            await fetch(`${apiUrl}/api/scheduled-posts`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    taskId: cmd.id, 
+                                    status: 'failed',
+                                    failureReason: e.message || 'Extension error'
+                                })
+                            });
+                        }
+                        
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally {
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
+                }
                 else {
                     console.log('⚠️ POLL-ALARM: Unknown command:', cmd.command);
                     globalThis._processingCommandIds.delete(cmd.id);

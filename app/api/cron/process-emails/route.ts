@@ -8,6 +8,104 @@ export const dynamic = 'force-dynamic';
 // Secret key for cron authentication (set in Vercel environment)
 const CRON_SECRET = process.env.CRON_SECRET || 'kommentify-cron-secret-2024';
 
+// Trigger scheduled posts whose time has arrived
+async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
+  try {
+    const now = new Date();
+    
+    // Find scheduled posts that are due and still pending
+    const duePosts = await (prisma as any).postDraft.findMany({
+      where: {
+        status: 'scheduled',
+        taskStatus: 'pending',
+        scheduledFor: { lte: now },
+        taskId: null // Not yet sent to extension
+      },
+      include: { user: true }
+    });
+
+    if (duePosts.length === 0) {
+      return { triggeredCount: 0 };
+    }
+
+    console.log(`📅 Found ${duePosts.length} scheduled posts due for posting`);
+
+    let triggeredCount = 0;
+    
+    for (const post of duePosts) {
+      try {
+        // Create command for extension
+        const commandPayload = {
+          command: 'post_scheduled_content',
+          content: post.content,
+          topic: post.topic || '',
+          template: post.template || '',
+          tone: post.tone || '',
+          scheduledFor: post.scheduledFor.toISOString(),
+          draftId: post.id
+        };
+
+        const command = await (prisma as any).command.create({
+          data: {
+            userId: post.userId,
+            command: 'post_scheduled_content',
+            payload: JSON.stringify(commandPayload),
+            status: 'pending',
+            scheduledFor: post.scheduledFor
+          }
+        });
+
+        // Update draft with task ID and mark as sent
+        await (prisma as any).postDraft.update({
+          where: { id: post.id },
+          data: { 
+            taskId: command.id,
+            taskSentAt: new Date(),
+            taskStatus: 'pending'
+          }
+        });
+
+        console.log(`✅ Triggered scheduled post for user ${post.user.email}, task ID: ${command.id}`);
+        triggeredCount++;
+      } catch (error) {
+        console.error(`❌ Failed to trigger scheduled post ${post.id}:`, error);
+      }
+    }
+
+    return { triggeredCount };
+  } catch (error) {
+    console.error('❌ Error triggering scheduled posts:', error);
+    return { triggeredCount: 0 };
+  }
+}
+async function checkFailedScheduledPosts(): Promise<{ failedCount: number }> {
+  try {
+    // Find tasks that were sent more than 15 minutes ago but not completed
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    
+    const failedTasks = await (prisma as any).postDraft.updateMany({
+      where: {
+        taskStatus: 'in_progress',
+        taskSentAt: { lt: fifteenMinutesAgo }
+      },
+      data: {
+        taskStatus: 'failed',
+        taskFailedAt: new Date(),
+        taskFailureReason: 'Extension Inactive - No response received within 15 minutes'
+      }
+    });
+
+    if (failedTasks.count > 0) {
+      console.log(`⚠️ Marked ${failedTasks.count} scheduled posts as failed due to extension inactivity`);
+    }
+
+    return { failedCount: failedTasks.count };
+  } catch (error) {
+    console.error('❌ Error checking failed scheduled posts:', error);
+    return { failedCount: 0 };
+  }
+}
+
 // Check and downgrade expired trials
 async function checkExpiredTrials(): Promise<{ downgradedCount: number }> {
   try {
@@ -96,13 +194,19 @@ export async function GET(request: NextRequest) {
 
     console.log('🕐 Starting cron job processing...');
     
-    // 1. Check expired trials (runs every 10 minutes)
+    // 1. Trigger scheduled posts whose time has arrived
+    const triggerResult = await triggerScheduledPosts();
+    
+    // 2. Check failed scheduled posts (runs every minute)
+    const failedPostsResult = await checkFailedScheduledPosts();
+    
+    // 3. Check expired trials (runs every 10 minutes)
     const trialResult = await checkExpiredTrials();
     
-    // 2. Process email queue
+    // 4. Process email queue
     const emailResult = await processEmailQueue(20);
 
-    console.log(`✅ Cron complete: ${emailResult.processed} emails sent, ${emailResult.failed} failed, ${trialResult.downgradedCount} trials downgraded`);
+    console.log(`✅ Cron complete: ${emailResult.processed} emails sent, ${emailResult.failed} failed, ${trialResult.downgradedCount} trials downgraded, ${triggerResult.triggeredCount} posts triggered, ${failedPostsResult.failedCount} posts failed`);
 
     return NextResponse.json({
       success: true,
@@ -113,6 +217,10 @@ export async function GET(request: NextRequest) {
       },
       trials: {
         downgraded: trialResult.downgradedCount
+      },
+      scheduledPosts: {
+        triggered: triggerResult.triggeredCount,
+        failed: failedPostsResult.failedCount
       },
       timestamp: new Date().toISOString()
     });

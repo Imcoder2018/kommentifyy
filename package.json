@@ -11,7 +11,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "node prisma/seed.js"
+    "prisma:seed": "node prisma/seed.js",
+    "check-failed-tasks": "node scripts/check-failed-tasks.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.1",

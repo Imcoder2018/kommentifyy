@@ -65,6 +65,7 @@ function DashboardContent() {
     const [writerScheduleTime, setWriterScheduleTime] = useState('');
     const [writerDrafts, setWriterDrafts] = useState<any[]>([]);
     const [writerScheduledPosts, setWriterScheduledPosts] = useState<any[]>([]);
+    const [taskCounts, setTaskCounts] = useState({ pending: 0, in_progress: 0, completed: 0, failed: 0 });
     const [writerStatus, setWriterStatus] = useState('');
     const [writerShowAdvanced, setWriterShowAdvanced] = useState(false);
     const [writerModel, setWriterModel] = useState<string>('gpt-4o');
@@ -370,6 +371,19 @@ function DashboardContent() {
         } catch {}
     };
 
+    const loadScheduledPosts = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/scheduled-posts', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) {
+                setWriterScheduledPosts(data.scheduledPosts || []);
+                setTaskCounts(data.taskCounts || { pending: 0, in_progress: 0, completed: 0, failed: 0 });
+            }
+        } catch {}
+    };
+
     const [writerPosting, setWriterPosting] = useState(false);
     const sendToExtension = async () => {
         const token = localStorage.getItem('authToken');
@@ -413,7 +427,16 @@ function DashboardContent() {
                 body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor }),
             });
             const data = await res.json();
-            if (data.success) { setWriterStatus('Post scheduled!'); loadDrafts(); }
+            if (data.success) { 
+                setWriterStatus('✅ Post scheduled! Task created for extension.'); 
+                loadScheduledPosts(); // Refresh scheduled posts
+                // Clear schedule inputs
+                setWriterScheduleDate('');
+                setWriterScheduleTime('');
+                // Clear content
+                setWriterContent('');
+                setWriterTopic('');
+            }
             else setWriterStatus(data.error || 'Failed to schedule');
         } catch (e: any) { setWriterStatus('Error: ' + e.message); }
     };
@@ -1009,18 +1032,17 @@ function DashboardContent() {
     useEffect(() => {
         if (loading || !user) return;
         const tab = activeTab;
-        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); }
+        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); }
         if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
-        if (tab === 'history') loadHistory();
-        if (tab === 'limits') loadAutoSettings();
-        if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
-        if (tab === 'import') loadImportCfg();
-    }, [loading, user]);
+        if (tab === 'referrals') loadReferralData();
+        if (tab === 'account') loadAccountSettings();
+    }, [loading, user, activeTab]);
 
     const stopAllTasks = async () => {
         const token = localStorage.getItem('authToken');
+// ... (rest of the code remains the same)
         if (!token) return;
         try {
             // Tell extension to stop
@@ -2396,6 +2418,253 @@ function DashboardContent() {
                             </div>
                         )}
                     </div>
+                    
+                    {/* Scheduled Posts Calendar & Task Status */}
+                    {(writerScheduledPosts.length > 0 || taskCounts.pending > 0 || taskCounts.in_progress > 0 || taskCounts.completed > 0 || taskCounts.failed > 0) ? (
+                        <div style={{ marginTop: '24px' }}>
+                            {/* Task Status Overview */}
+                            <div style={{ 
+                                background: 'rgba(255,255,255,0.05)', 
+                                padding: '20px', 
+                                borderRadius: '16px', 
+                                border: '1px solid rgba(255,255,255,0.1)', 
+                                marginBottom: '20px' 
+                            }}>
+                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span>📊</span> Task Status Overview
+                                </h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                                    {[
+                                        { label: 'Pending', count: taskCounts.pending, color: '#f59e0b', icon: '⏳' },
+                                        { label: 'In Progress', count: taskCounts.in_progress, color: '#3b82f6', icon: '🔄' },
+                                        { label: 'Completed', count: taskCounts.completed, color: '#10b981', icon: '✅' },
+                                        { label: 'Failed', count: taskCounts.failed, color: '#ef4444', icon: '❌' }
+                                    ].map((status, idx) => (
+                                        <div key={idx} style={{ 
+                                            background: 'rgba(255,255,255,0.05)', 
+                                            padding: '12px', 
+                                            borderRadius: '10px', 
+                                            border: `1px solid ${status.color}33`,
+                                            textAlign: 'center'
+                                        }}>
+                                            <div style={{ fontSize: '20px', marginBottom: '4px' }}>{status.icon}</div>
+                                            <div style={{ fontSize: '18px', fontWeight: '700', color: status.color, marginBottom: '2px' }}>
+                                                {status.count}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+                                                {status.label}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                {taskCounts.failed > 0 && (
+                                    <div style={{ 
+                                        marginTop: '12px', 
+                                        padding: '10px', 
+                                        background: 'rgba(239,68,68,0.1)', 
+                                        border: '1px solid rgba(239,68,68,0.3)', 
+                                        borderRadius: '8px',
+                                        color: '#f87171',
+                                        fontSize: '12px',
+                                        textAlign: 'center'
+                                    }}>
+                                        ⚠️ {taskCounts.failed} task{taskCounts.failed > 1 ? 's' : ''} failed due to extension inactivity. Consider rescheduling.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Calendar View */}
+                            {writerScheduledPosts.length > 0 && (
+                                <div style={{ 
+                                    background: 'rgba(255,255,255,0.05)', 
+                                    padding: '20px', 
+                                    borderRadius: '16px', 
+                                    border: '1px solid rgba(255,255,255,0.1)' 
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span>📅</span> Scheduled Posts Calendar
+                                        </h3>
+                                        <button
+                                            onClick={loadScheduledPosts}
+                                            style={{ 
+                                                background: 'rgba(255,255,255,0.1)', 
+                                                border: '1px solid rgba(255,255,255,0.2)', 
+                                                borderRadius: '6px', 
+                                                padding: '6px 12px', 
+                                                color: 'rgba(255,255,255,0.8)', 
+                                                fontSize: '12px', 
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}
+                                        >
+                                            🔄 Refresh
+                                        </button>
+                                    </div>
+                                    <div style={{ display: 'grid', gap: '12px' }}>
+                                        {writerScheduledPosts
+                                            .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
+                                            .map((post: any, idx: number) => {
+                                                const scheduledDate = new Date(post.scheduledFor);
+                                                const statusColor = {
+                                                    pending: '#f59e0b',
+                                                    in_progress: '#3b82f6',
+                                                    completed: '#10b981',
+                                                    failed: '#ef4444'
+                                                }[post.taskStatus] || '#f59e0b';
+                                                
+                                                return (
+                                                    <div key={idx} style={{ 
+                                                        background: 'rgba(255,255,255,0.05)', 
+                                                        padding: '14px', 
+                                                        borderRadius: '10px', 
+                                                        border: `1px solid ${statusColor}33`,
+                                                        borderLeft: `4px solid ${statusColor}`
+                                                    }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                                    <span style={{ 
+                                                                        background: statusColor, 
+                                                                        color: 'white', 
+                                                                        padding: '2px 8px', 
+                                                                        borderRadius: '12px', 
+                                                                        fontSize: '10px', 
+                                                                        fontWeight: '600',
+                                                                        textTransform: 'uppercase'
+                                                                    }}>
+                                                                        {post.taskStatus || 'pending'}
+                                                                    </span>
+                                                                    {post.taskId && post.taskStatus === 'pending' && (
+                                                                        <span style={{ 
+                                                                            background: '#8b5cf6', 
+                                                                            color: 'white', 
+                                                                            padding: '2px 6px', 
+                                                                            borderRadius: '8px', 
+                                                                            fontSize: '9px', 
+                                                                            fontWeight: '600'
+                                                                        }}>
+                                                                            📤 Sent
+                                                                        </span>
+                                                                    )}
+                                                                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                                                                        {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                    </span>
+                                                                </div>
+                                                                {post.topic && (
+                                                                    <div style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
+                                                                        📝 {post.topic}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                                {post.taskStatus === 'failed' && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            // Reschedule failed post
+                                                                            const newDate = new Date();
+                                                                            newDate.setDate(newDate.getDate() + 1);
+                                                                            setWriterScheduleDate(newDate.toISOString().split('T')[0]);
+                                                                            setWriterScheduleTime('12:00');
+                                                                            setWriterContent(post.content);
+                                                                            setWriterTopic(post.topic || '');
+                                                                            setWriterTemplate(post.template || '');
+                                                                            setWriterTone(post.tone || '');
+                                                                        }}
+                                                                        style={{ 
+                                                                            background: 'rgba(239,68,68,0.2)', 
+                                                                            border: '1px solid rgba(239,68,68,0.3)', 
+                                                                            borderRadius: '4px', 
+                                                                            padding: '4px 8px', 
+                                                                            color: '#ef4444', 
+                                                                            fontSize: '10px', 
+                                                                            cursor: 'pointer' 
+                                                                        }}
+                                                                        title="Reschedule this post"
+                                                                    >
+                                                                        🔄 Reschedule
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (confirm('Delete this scheduled post?')) {
+                                                                            // Delete the post
+                                                                            fetch('/api/post-drafts', {
+                                                                                method: 'DELETE',
+                                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+                                                                                body: JSON.stringify({ id: post.id })
+                                                                            }).then(() => loadScheduledPosts());
+                                                                        }
+                                                                    }}
+                                                                    style={{ 
+                                                                        background: 'rgba(239,68,68,0.1)', 
+                                                                        border: '1px solid rgba(239,68,68,0.2)', 
+                                                                        borderRadius: '4px', 
+                                                                        padding: '4px 8px', 
+                                                                        color: '#ef4444', 
+                                                                        fontSize: '10px', 
+                                                                        cursor: 'pointer' 
+                                                                    }}
+                                                                    title="Delete this post"
+                                                                >
+                                                                    ×
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ 
+                                                            color: 'rgba(255,255,255,0.8)', 
+                                                            fontSize: '12px', 
+                                                            lineHeight: '1.4',
+                                                            maxHeight: '60px',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}>
+                                                            {post.content}
+                                                        </div>
+                                                        {post.taskFailureReason && (
+                                                            <div style={{ 
+                                                                marginTop: '8px', 
+                                                                padding: '6px', 
+                                                                background: 'rgba(239,68,68,0.1)', 
+                                                                borderRadius: '4px', 
+                                                                color: '#f87171', 
+                                                                fontSize: '11px' 
+                                                            }}>
+                                                                ❌ {post.taskFailureReason}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div style={{ marginTop: '24px', textAlign: 'center', padding: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>No Scheduled Posts</h3>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
+                                Schedule posts using the date and time inputs above. Your posts will appear here with their current status.
+                            </p>
+                            <button
+                                onClick={loadScheduledPosts}
+                                style={{ 
+                                    background: 'rgba(255,255,255,0.1)', 
+                                    border: '1px solid rgba(255,255,255,0.2)', 
+                                    borderRadius: '6px', 
+                                    padding: '8px 16px', 
+                                    color: 'rgba(255,255,255,0.8)', 
+                                    fontSize: '12px', 
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                🔄 Refresh
+                            </button>
+                        </div>
+                    )}
                     </>
                 )}
 
@@ -4363,47 +4632,71 @@ function DashboardContent() {
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Skills ({JSON.parse(linkedInProfile.skills || '[]').length}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Skills ({(() => { try { return JSON.parse(linkedInProfile.skills || '[]').length; } catch { return 0; } })()}):</strong>
                                 <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {JSON.parse(linkedInProfile.skills || '[]').map((skill: string, idx: number) => (
-                                        <li key={idx}>{skill}</li>
-                                    ))}
+                                    {(() => { 
+                                        try { 
+                                            return JSON.parse(linkedInProfile.skills || '[]').map((skill: string, idx: number) => (
+                                                <li key={idx}>{skill}</li>
+                                            ));
+                                        } catch { 
+                                            return <li>Error loading skills</li>;
+                                        } 
+                                    })()}
                                 </ul>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Experience ({JSON.parse(linkedInProfile.experience || '[]').length}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Experience ({(() => { try { return JSON.parse(linkedInProfile.experience || '[]').length; } catch { return 0; } })()}):</strong>
                                 <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {JSON.parse(linkedInProfile.experience || '[]').map((exp: string, idx: number) => (
-                                        <li key={idx} style={{ marginBottom: '8px' }}>{exp}</li>
-                                    ))}
+                                    {(() => { 
+                                        try { 
+                                            return JSON.parse(linkedInProfile.experience || '[]').map((exp: string, idx: number) => (
+                                                <li key={idx} style={{ marginBottom: '8px' }}>{exp}</li>
+                                            ));
+                                        } catch { 
+                                            return <li>Error loading experience</li>;
+                                        } 
+                                    })()}
                                 </ul>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Education ({JSON.parse(linkedInProfile.education || '[]').length}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Education ({(() => { try { return JSON.parse(linkedInProfile.education || '[]').length; } catch { return 0; } })()}):</strong>
                                 <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {JSON.parse(linkedInProfile.education || '[]').map((edu: string, idx: number) => (
-                                        <li key={idx}>{edu}</li>
-                                    ))}
+                                    {(() => { 
+                                        try { 
+                                            return JSON.parse(linkedInProfile.education || '[]').map((edu: string, idx: number) => (
+                                                <li key={idx}>{edu}</li>
+                                            ));
+                                        } catch { 
+                                            return <li>Error loading education</li>;
+                                        } 
+                                    })()}
                                 </ul>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Posts ({JSON.parse(linkedInProfile.posts || '[]').length}):</strong>
+                                <strong style={{ color: '#0077b5' }}>Posts ({(() => { try { return JSON.parse(linkedInProfile.posts || '[]').length; } catch { return 0; } })()}):</strong>
                                 <div style={{ maxHeight: '200px', overflow: 'auto', margin: '4px 0' }}>
-                                    {JSON.parse(linkedInProfile.posts || '[]').map((post: string, idx: number) => (
-                                        <div key={idx} style={{ 
-                                            padding: '8px', 
-                                            margin: '4px 0', 
-                                            background: 'rgba(255,255,255,0.05)', 
-                                            borderRadius: '4px',
-                                            fontSize: '12px',
-                                            color: 'rgba(255,255,255,0.8)'
-                                        }}>
-                                            {post}
-                                        </div>
-                                    ))}
+                                    {(() => { 
+                                        try { 
+                                            return JSON.parse(linkedInProfile.posts || '[]').map((post: string, idx: number) => (
+                                                <div key={idx} style={{ 
+                                                    padding: '8px', 
+                                                    margin: '4px 0', 
+                                                    background: 'rgba(255,255,255,0.05)', 
+                                                    borderRadius: '4px',
+                                                    fontSize: '12px',
+                                                    whiteSpace: 'pre-wrap'
+                                                }}>
+                                                    {post}
+                                                </div>
+                                            ));
+                                        } catch { 
+                                            return <div>Error loading posts</div>;
+                                        } 
+                                    })()}
                                 </div>
                             </div>
                             

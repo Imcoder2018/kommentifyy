@@ -330,12 +330,23 @@ model PostDraft {
   status          String   @default("draft")  // draft, scheduled, posted
   scheduledFor    DateTime?
   postedAt        DateTime?
+  // Task tracking fields
+  taskId          String?  // Extension command ID
+  taskStatus      String   @default("pending")  // pending, in_progress, completed, failed
+  taskSentAt      DateTime?
+  taskCompletedAt DateTime?
+  taskFailedAt    DateTime?
+  taskFailureReason String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
   @@index([scheduledFor])
+  @@index([taskId])
+  @@index([taskStatus])
+  @@index([taskSentAt])
+  @@index([taskFailedAt])
 }
 
 // Comment Style Profile - LinkedIn profiles to learn commenting style from

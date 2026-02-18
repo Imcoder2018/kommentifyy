@@ -355,8 +355,12 @@ export default function LifetimeDealPage() {
                                         <h3 className="plan-title" style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px' }}>{plan.name}</h3>
                                         
                                         <div style={{ marginBottom: '20px' }}>
-                                            <span style={{ fontSize: '16px', textDecoration: 'line-through', opacity: 0.5, marginRight: '10px' }}>${(plan.price * 12).toFixed(0)}/year</span>
-                                            <span style={{ background: '#22c55e', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>Save ${((plan.price * 12) - plan.price).toFixed(0)}</span>
+                                            <span style={{ fontSize: '16px', textDecoration: 'line-through', opacity: 0.5, marginRight: '10px' }}>
+                                                ${plan.price === 69 ? '828' : plan.price === 149 ? '1788' : plan.price === 299 ? '3588' : (plan.price * 12).toFixed(0)}/year
+                                            </span>
+                                            <span style={{ background: '#22c55e', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                                                Save ${plan.price === 69 ? '759' : plan.price === 149 ? '1639' : plan.price === 299 ? '3289' : ((plan.price * 12) - plan.price).toFixed(0)}
+                                            </span>
                                         </div>
                                         
                                         <div className="plan-price" style={{ fontSize: '56px', fontWeight: '800', marginBottom: '8px' }}>
@@ -375,7 +379,7 @@ export default function LifetimeDealPage() {
                                         }}>
                                             <div style={{ fontSize: '14px', color: '#a78bfa', marginBottom: '4px' }}>💎 AI Comments Refill</div>
                                             <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
-                                                {aiCommentsPerDollar} AI Comments / $1
+                                                $5 for 200 AI Comments
                                             </div>
                                             <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
                                                 Purchase additional AI comments anytime

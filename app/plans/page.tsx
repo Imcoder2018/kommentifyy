@@ -152,6 +152,39 @@ export default function PlansPage() {
               }}>Required</span>
             </span>
           </a>
+          
+          {/* Dashboard Button for logged-in users */}
+          {user && (
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 20px',
+                background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)',
+                borderRadius: '50px',
+                border: 'none',
+                color: 'white',
+                fontWeight: '600',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(105,63,233,0.4)',
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 25px rgba(105,63,233,0.5)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(105,63,233,0.4)';
+              }}
+            >
+              <span style={{ fontSize: '16px' }}>🚀</span>
+              <span>Go to Dashboard</span>
+            </button>
+          )}
         </div>
 
         <div className="plans-title" style={{ textAlign: 'center', marginBottom: '50px' }}>
@@ -581,7 +614,7 @@ export default function PlansPage() {
                         color: '#0077b5'
                       }}>
                         <span style={{ fontSize: '18px' }}>👑</span>
-                        <span>LinkedIn Business {plan.name.toLowerCase().includes('pro') ? '12' : '6'} Months FREE</span>
+                        <span>LinkedIn Business {plan.name.toLowerCase().includes('professional') || plan.name.toLowerCase().includes('pro') ? '3' : plan.name.toLowerCase().includes('agency') ? '12' : '0'} Months FREE</span>
                       </div>
                     </div>
                   )}

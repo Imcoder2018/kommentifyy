@@ -88,6 +88,7 @@ export default function PricingPage() {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [totalSpots, setTotalSpots] = useState(200);
     const [soldSpots, setSoldSpots] = useState(0);
+    const [aiCommentsPerDollar, setAiCommentsPerDollar] = useState(100);
 
     useEffect(() => {
         fetch('/api/plans')
@@ -113,6 +114,16 @@ export default function PricingPage() {
                 setLoading(false);
             })
             .catch(() => setLoading(false));
+
+        // Fetch settings for AI comments per dollar
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setAiCommentsPerDollar(data.settings.aiCommentsPerDollar || 100);
+                }
+            })
+            .catch(() => console.log('Failed to fetch settings'));
     }, []);
 
     const formatNumber = (num: number) => {
@@ -167,62 +178,289 @@ export default function PricingPage() {
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '60px' }}>Loading plans...</div>
                     ) : (
-                        <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(plans.filter(p => !p.isTrialPlan).length, 4)}, 1fr)`, gap: '24px' }}>
-                            {plans.filter(p => !p.isTrialPlan).sort((a, b) => a.price - b.price).map((plan, index) => {
-                                const isPopular = plan.name.toLowerCase().includes('gold') || plan.name.toLowerCase().includes('professional');
-                                
-                                return (
-                                    <div key={plan.id} style={{ 
-                                        padding: '32px', 
-                                        background: isPopular ? 'linear-gradient(180deg, rgba(105, 63, 233, 0.12) 0%, rgba(105, 63, 233, 0.04) 100%)' : 'rgba(255,255,255,0.02)', 
-                                        border: isPopular ? '2px solid #693fe9' : '1px solid rgba(255,255,255,0.1)', 
-                                        borderRadius: '20px', 
-                                        position: 'relative'
-                                    }}>
-                                        {isPopular && (
-                                            <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
-                                                <IconStar size={12} color="white" /> MOST POPULAR
-                                            </div>
-                                        )}
-                                        
-                                        <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '8px', color: isPopular ? '#a78bfa' : 'white' }}>{plan.name}</h3>
-                                        <div style={{ marginBottom: '24px' }}>
-                                            <span style={{ fontSize: '42px', fontWeight: '800' }}>${plan.price}</span>
-                                            <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)' }}>/month</span>
-                                        </div>
-                                        
-                                        <div style={{ marginBottom: '24px' }}>
-                                            {[
-                                                `${formatNumber(plan.limits.aiCommentsPerMonth)} AI Comments`,
-                                                `${formatNumber(plan.limits.aiPostsPerMonth)} AI Posts`,
-                                                `${formatNumber(plan.limits.monthlyLikes)} Auto Likes`,
-                                                `${formatNumber(plan.limits.monthlyConnections)} Connections`,
-                                                plan.monthlyImportCredits > 0 ? `${formatNumber(plan.monthlyImportCredits)} Imports` : null,
-                                            ].filter(Boolean).map((feature, i) => (
-                                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>
-                                                    <IconCheck size={16} color="#10b981" /> {feature}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        
-                                        <Link href={plan.stripeLink || '/signup'} target={plan.stripeLink ? '_blank' : undefined} style={{
-                                            display: 'block',
-                                            width: '100%',
-                                            padding: '14px',
-                                            background: isPopular ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'transparent',
-                                            border: isPopular ? 'none' : '1px solid rgba(255,255,255,0.3)',
-                                            color: 'white',
-                                            textDecoration: 'none',
-                                            borderRadius: '12px',
-                                            fontSize: '15px',
-                                            fontWeight: '600',
-                                            textAlign: 'center'
-                                        }}>
-                                            Get Started
-                                        </Link>
+                        <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                            {/* Starter Package */}
+                            <div style={{ 
+                                padding: '32px', 
+                                background: 'rgba(255,255,255,0.02)', 
+                                border: '1px solid rgba(255,255,255,0.1)', 
+                                borderRadius: '20px', 
+                                position: 'relative'
+                            }}>
+                                <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '8px', color: 'white' }}>Starter</h3>
+                                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px 0' }}>For growing professionals</p>
+                                <div style={{ marginBottom: '24px' }}>
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$29</span>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                                        <span style={{ fontSize: '42px', fontWeight: '800', color: 'white' }}>$9</span>
+                                        <span style={{ fontSize: '16px', fontWeight: '400', color: 'rgba(255,255,255,0.5)' }}>/mo</span>
                                     </div>
-                                );
-                            })}
+                                </div>
+                                
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Limits</div>
+                                    {[
+                                        { label: 'AI Comments', value: '200' },
+                                        { label: 'Monthly Likes', value: '500' },
+                                        { label: 'Monthly Shares', value: '500' },
+                                        { label: 'Monthly Follows', value: '500' },
+                                        { label: 'Connections', value: '100' },
+                                        { label: 'AI Posts', value: '15' },
+                                        { label: 'Topic Lines', value: '20' },
+                                        { label: 'Import Credits', value: '50' },
+                                    ].map((item, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>
+                                            <IconCheck size={16} color="#10b981" /> <span style={{ fontWeight: '600' }}>{item.value}</span> {item.label}
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Scheduling', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
+                                            <span key={i} style={{ 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center', 
+                                                gap: '4px', 
+                                                padding: '4px 8px', 
+                                                borderRadius: '16px', 
+                                                fontSize: '10px',
+                                                fontWeight: '500',
+                                                background: 'rgba(16, 185, 129, 0.12)',
+                                                color: '#10b981',
+                                                border: '1px solid rgba(16, 185, 129, 0.25)'
+                                            }}>
+                                                <IconCheck size={11} color="#10b981" /> {feature}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                {/* AI Comments Refill Info */}
+                                <div style={{
+                                    background: 'linear-gradient(135deg, rgba(105, 63, 233, 0.1), rgba(139, 92, 246, 0.1))',
+                                    border: '1px solid rgba(105, 63, 233, 0.3)',
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    marginBottom: '24px',
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '14px', color: '#a78bfa', marginBottom: '4px' }}>💎 AI Comments Refill</div>
+                                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
+                                        $5 for 200 AI Comments
+                                    </div>
+                                    <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                        Purchase additional AI comments anytime
+                                    </div>
+                                </div>
+                                
+                                <Link href={plans.find(p => p.name.toLowerCase().includes('starter'))?.stripeLink || '/signup'} target={plans.find(p => p.name.toLowerCase().includes('starter'))?.stripeLink ? '_blank' : undefined} style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '14px',
+                                    background: 'transparent',
+                                    border: '1px solid rgba(255,255,255,0.3)',
+                                    color: 'white',
+                                    textDecoration: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '15px',
+                                    fontWeight: '600',
+                                    textAlign: 'center'
+                                }}>
+                                    Get Started
+                                </Link>
+                            </div>
+
+                            {/* Professional Package */}
+                            <div style={{ 
+                                padding: '32px', 
+                                background: 'linear-gradient(180deg, rgba(105, 63, 233, 0.12) 0%, rgba(105, 63, 233, 0.04) 100%)', 
+                                border: '2px solid #693fe9', 
+                                borderRadius: '20px', 
+                                position: 'relative'
+                            }}>
+                                <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
+                                    <IconStar size={12} color="white" /> MOST POPULAR
+                                </div>
+                                
+                                <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '8px', color: '#a78bfa' }}>Professional</h3>
+                                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px 0' }}>For growing professionals</p>
+                                <div style={{ marginBottom: '24px' }}>
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$58</span>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                                        <span style={{ fontSize: '42px', fontWeight: '800', color: '#a78bfa' }}>$29</span>
+                                        <span style={{ fontSize: '16px', fontWeight: '400', color: 'rgba(255,255,255,0.5)' }}>/mo</span>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Limits</div>
+                                    {[
+                                        { label: 'AI Comments', value: '500' },
+                                        { label: 'Monthly Likes', value: '1,000' },
+                                        { label: 'Monthly Shares', value: '1,000' },
+                                        { label: 'Monthly Follows', value: '1,000' },
+                                        { label: 'Connections', value: '1,000' },
+                                        { label: 'AI Posts', value: '40' },
+                                        { label: 'Topic Lines', value: '60' },
+                                        { label: 'Import Credits', value: '500' },
+                                    ].map((item, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>
+                                            <IconCheck size={16} color="#10b981" /> <span style={{ fontWeight: '600' }}>{item.value}</span> {item.label}
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Scheduling', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
+                                            <span key={i} style={{ 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center', 
+                                                gap: '4px', 
+                                                padding: '4px 8px', 
+                                                borderRadius: '16px', 
+                                                fontSize: '10px',
+                                                fontWeight: '500',
+                                                background: 'rgba(16, 185, 129, 0.12)',
+                                                color: '#10b981',
+                                                border: '1px solid rgba(16, 185, 129, 0.25)'
+                                            }}>
+                                                <IconCheck size={11} color="#10b981" /> {feature}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                {/* AI Comments Refill Info */}
+                                <div style={{
+                                    background: 'linear-gradient(135deg, rgba(105, 63, 233, 0.1), rgba(139, 92, 246, 0.1))',
+                                    border: '1px solid rgba(105, 63, 233, 0.3)',
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    marginBottom: '24px',
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '14px', color: '#a78bfa', marginBottom: '4px' }}>💎 AI Comments Refill</div>
+                                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
+                                        $5 for 200 AI Comments
+                                    </div>
+                                    <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                        Purchase additional AI comments anytime
+                                    </div>
+                                </div>
+                                
+                                <Link href={plans.find(p => p.name.toLowerCase().includes('professional') || p.name.toLowerCase().includes('gold'))?.stripeLink || '/signup'} target={plans.find(p => p.name.toLowerCase().includes('professional') || p.name.toLowerCase().includes('gold'))?.stripeLink ? '_blank' : undefined} style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '14px',
+                                    background: 'linear-gradient(135deg, #693fe9, #8b5cf6)',
+                                    border: 'none',
+                                    color: 'white',
+                                    textDecoration: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '15px',
+                                    fontWeight: '600',
+                                    textAlign: 'center'
+                                }}>
+                                    Get Started
+                                </Link>
+                            </div>
+
+                            {/* Agency Package */}
+                            <div style={{ 
+                                padding: '32px', 
+                                background: 'rgba(255,255,255,0.02)', 
+                                border: '1px solid rgba(255,255,255,0.1)', 
+                                borderRadius: '20px', 
+                                position: 'relative'
+                            }}>
+                                <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '8px', color: 'white' }}>Agency</h3>
+                                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px 0' }}>For growing professionals</p>
+                                <div style={{ marginBottom: '24px' }}>
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$78</span>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                                        <span style={{ fontSize: '42px', fontWeight: '800', color: 'white' }}>$39</span>
+                                        <span style={{ fontSize: '16px', fontWeight: '400', color: 'rgba(255,255,255,0.5)' }}>/mo</span>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Limits</div>
+                                    {[
+                                        { label: 'AI Comments', value: '1,000' },
+                                        { label: 'Monthly Likes', value: '3,000' },
+                                        { label: 'Monthly Shares', value: '3,000' },
+                                        { label: 'Monthly Follows', value: '3,000' },
+                                        { label: 'Connections', value: '3,000' },
+                                        { label: 'AI Posts', value: '100' },
+                                        { label: 'Topic Lines', value: '150' },
+                                        { label: 'Import Credits', value: '1,500' },
+                                    ].map((item, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>
+                                            <IconCheck size={16} color="#10b981" /> <span style={{ fontWeight: '600' }}>{item.value}</span> {item.label}
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Scheduling', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
+                                            <span key={i} style={{ 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center', 
+                                                gap: '4px', 
+                                                padding: '4px 8px', 
+                                                borderRadius: '16px', 
+                                                fontSize: '10px',
+                                                fontWeight: '500',
+                                                background: 'rgba(16, 185, 129, 0.12)',
+                                                color: '#10b981',
+                                                border: '1px solid rgba(16, 185, 129, 0.25)'
+                                            }}>
+                                                <IconCheck size={11} color="#10b981" /> {feature}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                {/* AI Comments Refill Info */}
+                                <div style={{
+                                    background: 'linear-gradient(135deg, rgba(105, 63, 233, 0.1), rgba(139, 92, 246, 0.1))',
+                                    border: '1px solid rgba(105, 63, 233, 0.3)',
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    marginBottom: '24px',
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '14px', color: '#a78bfa', marginBottom: '4px' }}>💎 AI Comments Refill</div>
+                                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
+                                        $5 for 200 AI Comments
+                                    </div>
+                                    <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                        Purchase additional AI comments anytime
+                                    </div>
+                                </div>
+                                
+                                <Link href={plans.find(p => p.name.toLowerCase().includes('agency') || p.name.toLowerCase().includes('diamond'))?.stripeLink || '/signup'} target={plans.find(p => p.name.toLowerCase().includes('agency') || p.name.toLowerCase().includes('diamond'))?.stripeLink ? '_blank' : undefined} style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    padding: '14px',
+                                    background: 'transparent',
+                                    border: '1px solid rgba(255,255,255,0.3)',
+                                    color: 'white',
+                                    textDecoration: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '15px',
+                                    fontWeight: '600',
+                                    textAlign: 'center'
+                                }}>
+                                    Get Started
+                                </Link>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -314,8 +552,12 @@ export default function PricingPage() {
                                         <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px' }}>One-time payment</p>
                                         
                                         <div style={{ marginBottom: '8px' }}>
-                                            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>${plan.price * 12}/year</span>
-                                            <span style={{ marginLeft: '10px', background: '#22c55e', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>Save ${(plan.price * 12) - plan.price}</span>
+                                            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
+                                                ${plan.price === 69 ? '828' : plan.price === 149 ? '1788' : plan.price === 299 ? '3588' : (plan.price * 12)}/year
+                                            </span>
+                                            <span style={{ marginLeft: '10px', background: '#22c55e', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>
+                                                Save ${plan.price === 69 ? '759' : plan.price === 149 ? '1639' : plan.price === 299 ? '3289' : (plan.price * 12) - plan.price}
+                                            </span>
                                         </div>
                                         <div style={{ marginBottom: '24px' }}>
                                             <span style={{ fontSize: '52px', fontWeight: '800', color: isPopular ? '#fbbf24' : 'white' }}>${plan.price}</span>
@@ -414,7 +656,7 @@ export default function PricingPage() {
             {/* Trust Badges */}
             <section style={{ padding: '40px 60px', background: '#111111', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
-                    {['30-Day Money-Back Guarantee', 'No Credit Card Required', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
+                    {['30-Day Money-Back Guarantee', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
                             <IconCheck size={16} color="#10b981" /> {badge}
                         </div>

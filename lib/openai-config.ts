@@ -69,7 +69,8 @@ export function getModelForSettings(tone: string, length: string, useCheapModel:
 }
 
 /**
- * Generate world-class comment prompt for LinkedIn engagement
+ * Generate high-quality comment prompt for LinkedIn engagement
+ * Strictly enforces the user's selected Comment Style, Comment Goal, and Tone of Voice
  */
 export function generateCommentPrompt(
     postText: string, 
@@ -82,314 +83,217 @@ export function generateCommentPrompt(
     commentStyle: string = 'direct',
     styleExamples: string[] = []
 ): string {
-    // Style-specific instructions
-    const styleMap: Record<string, string> = {
-        'direct': 'DIRECT: Single paragraph, straight to the point, no line breaks',
-        'structured': 'STRUCTURED: 2-3 short paragraphs with clear flow',
-        'storyteller': 'STORYTELLER: Lead with brief personal anecdote, connect to their point',
-        'challenger': 'CHALLENGER: Respectfully offer different perspective, stay constructive',
-        'supporter': 'SUPPORTER: Strongly validate with evidence, amplify their message',
-        'expert': 'EXPERT: Reference data/experience, use industry terminology naturally',
-        'conversational': 'CONVERSATIONAL: Casual, friendly, like talking to a colleague'
+    // ── STYLE: detailed structural instructions per style ──
+    const styleInstructions: Record<string, string> = {
+        'direct': `STYLE = "Direct & Concise"
+STRUCTURE: Write the ENTIRE comment as a SINGLE paragraph. No line breaks. Straight to the point.
+EXAMPLE SHAPE: "[Name], [specific reference to their point]. [Your added value in 1-2 sentences]. [Optional short closer]."
+DO NOT split into multiple paragraphs. One flowing block of text.`,
+
+        'structured': `STYLE = "Structured"
+STRUCTURE: Write EXACTLY 2-3 short paragraphs. MANDATORY: separate each paragraph with a blank line.
+Paragraph 1 (required): Acknowledge a specific point from their post. 1-2 sentences.
+Paragraph 2 (required): Add your insight, data, or experience. 1-2 sentences.
+Paragraph 3 (optional): A question or forward-looking statement. 1 sentence.
+
+OUTPUT MUST LOOK LIKE THIS (blank line between every paragraph):
+[First paragraph sentence(s).]
+
+[Second paragraph sentence(s).]
+
+[Optional third paragraph sentence.]
+
+DO NOT merge into one paragraph. If you do not include blank lines, you have failed.`,
+
+        'storyteller': `STYLE = "Storyteller"
+STRUCTURE: LEAD with a brief personal anecdote (1-2 sentences). Then connect it back to their post's point.
+Opening sentence MUST start with a personal experience: "Last month I...", "A few years ago...", "I remember when...", "Early in my career..."
+The story must be specific (names, numbers, timeframes) and directly relevant.
+End by tying your story back to the author's message.`,
+
+        'challenger': `STYLE = "Challenger"
+STRUCTURE: Respectfully offer a DIFFERENT perspective. You are NOT agreeing - you are adding productive tension.
+Opening: Acknowledge their point briefly, then pivot with "However...", "One thing I'd push back on...", "The counterargument worth considering...", "I see this differently because..."
+Body: Present your alternative view with specific evidence or reasoning.
+Tone: Respectful but firm. You have a clear position.`,
+
+        'supporter': `STYLE = "Supporter"
+STRUCTURE: Strongly VALIDATE their message with concrete evidence from your own experience.
+Opening: Affirm their specific point (not generic praise).
+Body: Back it up with YOUR data, results, or concrete example that proves they're right.
+Pattern: "You're spot on about X. In my experience with [specific], I saw [specific result]. This is exactly why..."`,
+
+        'expert': `STYLE = "Expert"
+STRUCTURE: Reference data, research, or deep domain experience. Use industry terminology naturally.
+Opening: Reference a specific claim from their post.
+Body: Add expert-level context - cite a study, share a metric, reference a framework, or provide insider knowledge.
+Language: Use precise domain vocabulary. Show you live and breathe this topic.
+Pattern: "The data backs this up - [specific stat/study]. In [X] years working in [domain], the pattern I keep seeing is..."`,
+
+        'conversational': `STYLE = "Conversational"
+STRUCTURE: Write like you're talking to a colleague over coffee. Casual, warm, human.
+Use contractions (I've, don't, it's). Use informal transitions ("honestly", "the thing is", "here's what gets me").
+Can include a light rhetorical question. Keep it flowing and natural.
+Pattern: "Honestly [Name], this hits home. I've been thinking about [topic] a lot lately and [casual observation]. What's been your take on [specific aspect]?"`
     };
-    const selectedStyle = styleMap[commentStyle] || styleMap['direct'];
+
+    // ── GOAL: specific behavioral instructions per goal ──
+    const goalInstructions: Record<string, string> = {
+        'AddValue': `GOAL = "Add Value"
+YOUR MISSION: Contribute something genuinely USEFUL that wasn't in the original post. Zero self-promotion.
+You must add ONE of: a complementary data point, a tactical tip, an alternative framework, a relevant resource, or an insight from adjacent experience.
+The reader should think "That's a great point I hadn't considered."
+DO NOT mention yourself, your company, or anything self-serving.`,
+
+        'ShareExperience': `GOAL = "Share Experience"
+YOUR MISSION: Tell a brief, specific personal story that adds perspective to their point.
+Your story MUST include at least 2 of: a specific timeframe, a named company/person/event, a measurable outcome, a concrete lesson learned.
+Pattern: "When I [specific experience], I learned that [specific insight]. The result was [specific outcome]."
+The story must DIRECTLY relate to the post's topic.`,
+
+        'AskQuestion': `GOAL = "Ask Question"
+YOUR MISSION: Deepen the discussion by asking a genuinely thought-provoking question the author hasn't addressed.
+Your question should make the author AND other readers stop and think. It should NOT be answerable with yes/no.
+Pattern: Briefly reference what they said, then ask something that extends the conversation into new territory.
+The question should reveal YOUR expertise through what you choose to ask about.`,
+
+        'DifferentPerspective': `GOAL = "Different Perspective"
+YOUR MISSION: Respectfully challenge or add important nuance. You are NOT here to agree.
+Present a specific counterpoint backed by evidence or reasoning. Be constructive, not combative.
+Pattern: "I'd add one nuance here - [your counterpoint]. In [context], I've seen [different outcome] because [reasoning]."
+Make the reader think "That's a fair point" even if they initially disagreed.`,
+
+        'BuildRelationship': `GOAL = "Build Relationship"
+YOUR MISSION: Warm, supportive engagement that makes the author feel seen and valued.
+Reference something SPECIFIC about their journey, growth, or perspective that shows you pay attention.
+Pattern: "[Name], the way you framed [specific point] really captures something most people miss. [Add personal connection or genuine observation]."
+Feel like a trusted peer, not a fan.`,
+
+        'SubtlePitch': `GOAL = "Subtle Pitch"
+YOUR MISSION: Position yourself strategically with a soft CTA. No hard selling.
+Lead with genuine value first (80% of the comment). Then naturally mention your relevant expertise.
+Pattern: "[Value-adding observation]. This is something I work on with [audience] - [soft CTA like 'happy to share the framework' or 'wrote about this recently']."
+The value must stand alone even without the CTA.`
+    };
+
+    // ── TONE: voice and personality instructions per tone ──
+    const toneInstructions: Record<string, string> = {
+        'Professional': `TONE = "Professional"
+VOICE: Polished, formal, business-appropriate. Like a senior executive writing to peers.
+Vocabulary: precise, measured, authoritative. No slang, no casual phrases.
+Sentence structure: well-constructed, grammatically impeccable.
+Energy: calm confidence, not enthusiastic. Statements over exclamations.`,
+
+        'Friendly': `TONE = "Friendly"
+VOICE: Warm, conversational, approachable. Like a helpful colleague.
+Use contractions naturally (I've, don't, that's). Occasional exclamation is OK.
+Energy: genuinely warm but not over-the-top. Supportive without being sycophantic.
+Feel: "This person seems really nice and smart."`,
+
+        'ThoughtProvoking': `TONE = "Thought Provoking"
+VOICE: Intellectual, contemplative, philosophical. Makes people pause and reflect.
+Use conditional language: "What if...", "Consider that...", "The interesting tension here is..."
+Energy: measured, deliberate. Every word chosen carefully.
+Feel: "This person thinks deeply about things."`,
+
+        'Supportive': `TONE = "Supportive"
+VOICE: Encouraging, validating, positive. Champion the author's message.
+Acknowledge their effort/insight specifically. Amplify what they said well.
+Energy: warm enthusiasm but backed with substance (not just "great post!").
+Feel: "This person genuinely cares and also knows their stuff."`,
+
+        'Contrarian': `TONE = "Contrarian"
+VOICE: Respectfully challenging, intellectually provocative, constructive disagreement.
+Use "devil's advocate" framing. Push back with evidence, not attitude.
+Energy: confident but not aggressive. Firm but fair.
+Feel: "This person disagrees but makes a compelling case."`,
+
+        'Humorous': `TONE = "Humorous"
+VOICE: Light, witty, entertaining. Smart humor, not forced jokes.
+Use observational humor, gentle irony, or clever wordplay related to the topic.
+Energy: playful but still substantive underneath. The humor serves the point.
+Feel: "This person is funny AND insightful."
+IMPORTANT: Humor must fit the post's topic. Never joke about serious/sensitive topics.`
+    };
+
+    const selectedStyleInstr = styleInstructions[commentStyle] || styleInstructions['direct'];
+    const selectedGoalInstr = goalInstructions[goal] || goalInstructions['AddValue'];
+    const selectedToneInstr = toneInstructions[tone] || toneInstructions['Professional'];
+
+    // Character limits
+    const charLimits: Record<string, { max: number; target: string; words: string }> = {
+        'Brief': { max: 100, target: '80-100', words: '15-20' },
+        'Short': { max: 300, target: '250-300', words: '50-60' },
+        'Mid': { max: 600, target: '500-600', words: '100-120' },
+        'Long': { max: 900, target: '800-900', words: '150-180' }
+    };
+    const limit = charLimits[commentLength] || charLimits['Short'];
 
     // Build style training section if examples are provided
     let styleTrainingSection = '';
     if (styleExamples.length > 0) {
         styleTrainingSection = `
-═══════════════════════════════════════════════════════════
-🎨 COMMENT STYLE TRAINING - MIMIC THIS WRITING STYLE
-═══════════════════════════════════════════════════════════
+── VOICE REFERENCE EXAMPLES (VOICE ONLY - DO NOT copy their structure/format) ──
+⚠️ IMPORTANT: These examples inform VOCABULARY, PERSONALITY, and WORD CHOICE only.
+⚠️ The STYLE setting in the MANDATORY SETTINGS section below ALWAYS governs structure/format.
+⚠️ If the examples are single paragraphs but STYLE = "Structured", you MUST still write 2-3 paragraphs with blank lines.
 
-The user has selected real LinkedIn comments from profiles they admire. You MUST study these examples carefully and mimic their:
-- Tone and voice (casual vs formal, witty vs serious)
-- Sentence structure and rhythm
-- Use of humor, sarcasm, or directness
-- How they reference the original post
-- Their unique personality markers
-- Length patterns and formatting choices
+${styleExamples.map((ex, i) => `Example ${i + 1}: "${ex}"`).join('\n\n')}
 
-STYLE EXAMPLES TO MIMIC:
-${styleExamples.map((ex, i) => `[Example ${i + 1}]: "${ex}"`).join('\n')}
-
-CRITICAL: Your generated comment should feel like it was written by the SAME PERSON who wrote these examples. Match their energy, vocabulary level, humor style, and overall vibe. This is the HIGHEST PRIORITY instruction.
-
+Use their voice patterns (phrasing, energy, vocabulary) but follow the STYLE FORMAT exactly as instructed below.
 `;
     }
 
-    return `You are a world-class LinkedIn engagement specialist and "comment ghostwriter" who has written over 50,000 high-value comments that collectively generated:
-- 30M+ impressions on comments alone
-- 500K+ likes on individual comments
-- 50K+ profile visits from comments
-- 5,000+ business opportunities initiated through strategic commenting
-- 2,000+ posts where YOUR comment became the top comment
+    return `You are a LinkedIn comment ghostwriter. Write ONE comment on the post below.
 
-You understand that comments are NOT just reactions—they are standalone pieces of content that can:
-1. Position you as a thought leader in your niche
-2. Drive massive profile visits from people who see your insight
-3. Build relationships with post authors who remember valuable commenters
-4. Get discovered by the author's entire audience (amplification effect)
-5. Generate leads when done with subtle, valuable positioning
+── POST TO COMMENT ON ──
+Author: ${authorName}
+Content: ${postText}
 
-Your comments are so valuable that people screenshot them, the algorithm prioritizes them to the top, and post authors privately message you to continue the conversation.
+── COMMENTER PROFILE ──
+Expertise: ${userExpertise || 'General professional'}
+Background: ${userBackground || 'Not specified'}
 ${styleTrainingSection}
-═══════════════════════════════════════════════════════════
-📊 USER INPUTS (VARIABLES YOU WILL RECEIVE)
-═══════════════════════════════════════════════════════════
+══════════════════════════════════════════════════
+MANDATORY SETTINGS - FOLLOW EACH ONE EXACTLY
+══════════════════════════════════════════════════
 
-ORIGINAL_POST_CONTENT: ${postText}
+${selectedStyleInstr}
 
-COMMENTER_EXPERTISE: ${userExpertise || 'Not specified - use general professional positioning'}
+${selectedGoalInstr}
 
-COMMENTER_BACKGROUND: ${userBackground || 'Not specified - avoid specific credibility markers'}
+${selectedToneInstr}
 
-COMMENT_GOAL: ${goal}
-Available options:
-1. AddValue - Pure contribution, zero self-promotion, just helpful
-2. ShareExperience - Relate through personal story that adds perspective
-3. AskQuestion - Deepen discussion with genuine curiosity
-4. DifferentPerspective - Respectfully challenge or add nuance
-5. BuildRelationship - Warm, supportive engagement with post author
-6. SubtlePitch - Strategic positioning with soft CTA (no spam)
+── LENGTH ──
+HARD MAXIMUM: ${limit.max} characters (${commentLength})
+Target: ${limit.target} characters (~${limit.words} words)
+${commentLength === 'Brief' ? 'Be extremely concise - one impactful sentence only.' : ''}
 
-TONE: ${tone}
-Available options:
-1. Professional - Polished, formal, business-appropriate
-2. Friendly - Warm, conversational, supportive
-3. ThoughtProvoking - Intellectual, makes people think deeper
-4. Supportive - Encouraging, validating, positive
-5. Contrarian - Respectfully challenges, adds different angle
-6. Humorous - Light, witty, entertaining (when appropriate)
+══════════════════════════════════════════════════
+QUALITY RULES
+══════════════════════════════════════════════════
 
-POST_AUTHOR_NAME: ${authorName}
+1. SPECIFICITY: Reference at least ONE exact detail from the post (a quote, stat, example, or specific claim). Never write something that could apply to any post.
 
-═══════════════════════════════════════════════════════════
-🧠 PSYCHOLOGY OF HIGH-IMPACT COMMENTS
-═══════════════════════════════════════════════════════════
+2. VALUE: Add something NEW - an insight, data point, experience, or question not already in the post.
 
-**WHY MOST COMMENTS FAIL:**
-95% of comments are worthless noise:
-- "Great post! Thanks for sharing! 🙌"
-- "I totally agree with this!"
-- "Very insightful. Thanks!"
-- "Love this! 💯"
+3. HUMAN VOICE: Write like a real person, not a chatbot. Vary sentence lengths. Use natural phrasing.
 
-These get ignored by everyone including the algorithm. They add zero value and make you invisible.
+4. NO EMOJIS: Zero emojis. None.
 
-**WHAT MAKES COMMENTS GO VIRAL:**
+5. NO BANNED WORDS: Never use "curious", "intrigued", "fascinating", "insightful", "resonates", "love this", "game-changer", "deep dive", "unpack".
 
-1. **SPECIFICITY SIGNAL**: Reference an EXACT detail from the post (quote a line, mention a specific point, cite their example). This proves you actually read it and separates you from generic commenters.
+6. NO BANNED PUNCTUATION: No em dashes "—" or en dashes "–". Use commas, periods, or hyphens "-" instead.
 
-2. **VALUE ADDITION**: Contribute something NEW that wasn't in the original post:
-   - A complementary data point or research finding
-   - A personal story that illustrates their point differently
-   - A tactical tip or framework that extends their idea
-   - A contrarian perspective that adds healthy debate
-   - A thoughtful question that makes others think deeper
+7. NO GENERIC OPENERS: Never start with "Great post", "Thanks for sharing", "I agree", "Well said", "This is so true".
 
-3. **CREDIBILITY MARKERS**: Subtly demonstrate expertise through:
-   - Specific numbers from your experience ("In 40+ projects...")
-   - Named references ("When I worked with [company/person]...")
-   - Unique insights only an expert would know
-   - Terminology used correctly in your niche
+8. AUTHOR NAME: Use ${authorName}'s first name naturally (not forced into every sentence).
 
-4. **ENGAGEMENT INVITATION**: End with something that makes people want to respond to YOUR comment, creating a sub-thread that boosts your visibility
+9. LANGUAGE: Write in the SAME language as the original post. If the post is in Spanish, write in Spanish. Non-negotiable.
 
-5. **PROFILE CURIOSITY**: Make readers think "Who is this person?" and click your profile without being salesy
+══════════════════════════════════════════════════
 
-═══════════════════════════════════════════════════════════
-🎯 THE 5-PART COMMENT FRAMEWORK
-═══════════════════════════════════════════════════════════
-
-**PART 1: SPECIFIC ACKNOWLEDGMENT (1 sentence)**
-
-Purpose: Prove you read the post and connect with author
-
-FORMULAS:
-→ Quote + React: "${authorName}, your point about '[specific quote]' hits differently when you've experienced it."
-→ Specific Detail: "The example you shared about [specific detail] reminded me of..."
-→ Call-Out: "${authorName}, the part about [specific point] is something nobody else is talking about."
-
-DON'T:
-❌ "Great post!" (generic, could comment this anywhere)
-❌ "This is so true!" (no specificity)
-❌ "Thanks for sharing your thoughts!" (meaningless filler)
-
-**PART 2: VALUE BOMB (2-3 sentences)**
-
-Purpose: Add something NEW that wasn't in the original post
-
-Choose ONE approach based on GOAL:
-
-**OPTION A - Complementary Insight:**
-Add a related data point, study, or insight that deepens their point
-
-**OPTION B - Personal Experience Story (Mini-narrative):**
-Share a 2-3 sentence story that illustrates or extends their point
-
-**OPTION C - Contrarian Perspective:**
-Respectfully challenge or add important nuance to their argument
-
-**OPTION D - Tactical Framework/Tip:**
-Share one specific, actionable technique related to their topic
-
-**OPTION E - Thought-Provoking Question:**
-Ask a question that makes everyone (including the author) think deeper
-
-**PART 3: SUBTLE CREDIBILITY MARKER (Optional, 1 sentence)**
-
-Purpose: Demonstrate expertise without being braggy
-
-Only include if GOAL is "SubtlePitch" or if it genuinely adds value.
-
-FORMULAS:
-→ "In [number]+ projects helping [audience] with [problem]..."
-→ "When I [past relevant experience], the pattern was always..."
-→ "After analyzing [number] of [relevant data]..."
-
-DON'T:
-❌ "I'm a hiring expert with 10 years experience." (too direct, braggy)
-❌ "At my company, we've perfected this process." (self-promotional)
-
-**PART 4: ENGAGEMENT HOOK (1 sentence - OPTIONAL)**
-
-Purpose: Invite responses to YOUR comment, creating a sub-conversation
-
-FORMULAS:
-→ "Have you seen this pattern too?"
-→ "Would love to hear if others experienced something different."
-→ "What's been your approach to [specific challenge]?"
-→ "Wondering if you've noticed the same thing?"
-
-**PART 5: SOFT CTA (1 sentence - ONLY for "SubtlePitch" goal)**
-
-Purpose: Open door for conversation without being salesy
-
-FORMULAS:
-→ "Happy to share the [framework/process] if helpful."
-→ "I've documented this into a [resource]—DM me if you want it."
-
-DON'T:
-❌ "DM me to learn how we can help you!" (spammy sales pitch)
-❌ "Check out my profile for more insights!" (desperate)
-
-═══════════════════════════════════════════════════════════
-📐 COMMENT FORMATTING RULES
-═══════════════════════════════════════════════════════════
-
-**LENGTH - CRITICAL REQUIREMENT:**
-You MUST strictly adhere to the character limit. This is NON-NEGOTIABLE.
-${commentLength === 'Brief' ? '- HARD MAXIMUM: 100 characters (Brief)\n- Target: 80-100 characters\n- This is ~15-20 words\n- Be extremely concise - one impactful sentence' : ''}
-${commentLength === 'Short' ? '- HARD MAXIMUM: 300 characters (Short)\n- Target: 250-300 characters\n- This is ~50-60 words' : ''}
-${commentLength === 'Mid' ? '- HARD MAXIMUM: 600 characters (Mid)\n- Target: 500-600 characters\n- This is ~100-120 words' : ''}
-${commentLength === 'Long' ? '- HARD MAXIMUM: 900 characters (Long)\n- Target: 800-900 characters\n- This is ~150-180 words' : ''}
-
-⚠️ NEVER exceed ${commentLength === 'Brief' ? '100' : commentLength === 'Short' ? '300' : commentLength === 'Mid' ? '600' : '900'} characters. Count every character carefully before responding.
-
-**STRUCTURE - FOLLOW SELECTED STYLE:**
-COMMENT_STYLE: ${selectedStyle}
-
-**EMOJIS - ABSOLUTELY FORBIDDEN:**
-- NEVER use emojis in your comment - zero emojis allowed
-- No 🙌 no 💯 no 🔥 no 🤔 no ✅ - NONE whatsoever
-- This is a strict professional requirement
-
-**MENTIONS:**
-- Tag the author by name in first sentence
-- Format: "${authorName}, your point about..."
-- Only tag others if directly relevant
-
-═══════════════════════════════════════════════════════════
-✅ COMMENT QUALITY CHECKLIST
-═══════════════════════════════════════════════════════════
-
-Before submitting your comment, verify:
-
-□ References SPECIFIC detail from original post (not generic)
-□ Adds NEW value not present in original post
-□ Demonstrates expertise through specifics (numbers, experience, examples)
-□ Length is 50-120 words (optimal engagement range)
-□ Tone matches the selected TONE input
-□ NO generic phrases ("great post," "thanks for sharing," "I agree")
-□ NO hard sales pitches or desperate self-promotion
-□ Uses author's first name in opening
-□ Could stand alone as valuable mini-post
-□ Makes readers curious about commenter's profile
-□ Zero typos or grammatical errors (credibility killer)
-
-═══════════════════════════════════════════════════════════
-🚫 CRITICAL DON'TS - COMMENT KILLERS
-═══════════════════════════════════════════════════════════
-
-NEVER write comments like these:
-
-❌ "Great insights! Thanks for sharing this valuable post! 🙌"
-❌ "I completely agree with everything you said here. Well put!"
-❌ "This is so true! Everyone should read this!"
-❌ "Love this! 💯💯💯 Following for more content like this!"
-
-═══════════════════════════════════════════════════════════
-🚫 BANNED WORDS AND CHARACTERS - NEVER USE
-═══════════════════════════════════════════════════════════
-
-**BANNED WORDS (overused, sound robotic):**
-- "curious" - NEVER use this word in any form (curious, curiosity, etc.)
-- "intrigued" - overused alternative to curious
-- "fascinating" - sounds fake and robotic
-- "insightful" - generic and overused
-- "resonates" - cliché LinkedIn speak
-- "love this" - too generic
-
-**BANNED PUNCTUATION:**
-- "—" (em dash) - NEVER use em dashes, use regular dashes "-" or commas instead
-- "–" (en dash) - avoid, use regular dash "-" instead
-- Don't use fancy Unicode punctuation
-
-**USE INSTEAD:**
-- Instead of "curious" → "wondering", "interested to know", "would love to hear"
-- Instead of em dash "—" → comma "," or regular dash "-" or period "."
-
-═══════════════════════════════════════════════════════════
-🌍 LANGUAGE DETECTION (CRITICAL)
-═══════════════════════════════════════════════════════════
-
-Before writing, detect the language of the ORIGINAL_POST_CONTENT.
-
-**RULE: Write your comment in the SAME language as the original post.**
-
-Examples:
-- Post in English → Comment in English
-- Post in Spanish → Comment in Spanish
-- Post in French → Comment in French
-- Post in Arabic → Comment in Arabic
-- Post in Urdu → Comment in Urdu
-- Post in any other language → Match that language
-
-This is NON-NEGOTIABLE. Language mismatch destroys engagement.
-
-═══════════════════════════════════════════════════════════
-📤 OUTPUT FORMAT
-═══════════════════════════════════════════════════════════
-
-[First name], [specific acknowledgment from post].
-
-[Value-add sentence 1]. [Value-add sentence 2]. [Optional value-add sentence 3].
-
-[Optional: Credibility marker, engagement hook, or soft CTA].
-
-═══════════════════════════════════════════════════════════
-
-Now, using ALL the principles, psychology, structure, and quality standards above, write a high-value LinkedIn comment that will:
-- Get noticed by the post author
-- Drive profile visits from other readers
-- Position you as an expert in your niche
-- Potentially become the top comment
-- Be written in the SAME LANGUAGE as the original post
-- NEVER exceed ${commentLength === 'Brief' ? '100' : commentLength === 'Short' ? '300' : commentLength === 'Mid' ? '600' : '900'} characters
-- NO EMOJIS - zero emojis allowed
-
-Think deeply about what unique value YOU can add. Make this comment memorable. Write it now.`;
+Output ONLY the comment text. No labels, no quotes, no explanation.`;
 }
 
 /**
@@ -442,118 +346,222 @@ export function generatePostPrompt(
     const postType = postTypeMap[template] || postTypeMap['advice'];
     const toneStyle = toneMap[tone] || toneMap['professional'];
 
-    return `You are an elite LinkedIn content strategist and ghostwriter with 15+ years of experience. You have written over 10,000 viral LinkedIn posts that collectively generated 500M+ impressions, 5M+ engagements, and $50M+ in business opportunities for clients. You understand human psychology, the 2025 LinkedIn algorithm at a molecular level, and exactly what makes people stop scrolling, read completely, engage deeply, and take action.
+    return `You are a LinkedIn ghostwriter. Write ONE post about the topic below.
 
-Your posts consistently achieve:
-- 100,000+ impressions per post
-- 2,000+ reactions (likes, celebrates, loves)
-- 300+ meaningful comments (not just "great post!")
-- 50+ shares and reposts
-- 20+ new connection requests and 10+ DMs from ideal prospects
+══════════════════════════════════════════════════
+USER INPUTS
+══════════════════════════════════════════════════
 
-═══════════════════════════════════════════════════════════
-📊 USER INPUTS
-═══════════════════════════════════════════════════════════
-
-POST_TYPE: ${postType}
+POST TYPE: ${postType}
 TONE: ${toneStyle}
 TOPIC: ${topic}
-TARGET_AUDIENCE: ${targetAudience || 'Professionals and business leaders'}
-KEY_MESSAGE_OR_CTA: ${keyMessage || 'Engage with the content and share thoughts'}
-USER_BACKGROUND: ${userBackground || 'Not specified - use general professional positioning'}
+TARGET AUDIENCE: ${targetAudience || 'Professionals and business leaders'}
+KEY MESSAGE/CTA: ${keyMessage || 'Engage with the content and share thoughts'}
+AUTHOR BACKGROUND: ${userBackground || 'Not specified'}
 
-═══════════════════════════════════════════════════════════
-🧠 PSYCHOLOGICAL PRINCIPLES TO EMBED
-═══════════════════════════════════════════════════════════
+══════════════════════════════════════════════════
+POST STRUCTURE
+══════════════════════════════════════════════════
 
-1. **CURIOSITY GAP**: Create information gaps that the brain MUST close. Open loops in the hook that only get closed in the body.
-2. **PATTERN INTERRUPT**: Break the reader's scroll pattern in the first 3 seconds with unexpected statements, counterintuitive claims, or bold numbers.
-3. **SOCIAL PROOF**: Design the post to invite immediate comments when people see others engaging.
-4. **PERSONAL VULNERABILITY**: Include personal stories - struggle, failure, and transformation connect better than perfection.
-5. **RECIPROCITY**: Give extreme value upfront before asking for anything.
-6. **SPECIFICITY**: Use specific numbers, names, timeframes, and details - vague claims are ignored.
-7. **RELATABILITY**: Reflect the audience's fears, hopes, challenges, and desires.
+1. HOOK (first line): 4-8 words. Stop the scroll. Use a bold claim, specific number, counterintuitive statement, or personal confession. This line alone must make someone click "see more".
 
-═══════════════════════════════════════════════════════════
-🎯 2025 LINKEDIN ALGORITHM OPTIMIZATION
-═══════════════════════════════════════════════════════════
+2. OPENING (lines 2-4): Bridge to the body. Add specific context - a timeframe, situation, or problem. Front-load value before the "see more" fold (~150 chars).
 
-**RELEVANCE (40%)**: Topic alignment, 3-5 niche hashtags at END, keywords in first 3 lines
-**EXPERTISE (30%)**: Depth of insight, unique perspective, specific examples
-**ENGAGEMENT QUALITY (30%)**: Meaningful comments (8+ words) worth 10x more than reactions
+3. BODY: Deliver substance based on the post type.
+   - Short paragraphs (1-2 sentences each), separated by blank lines
+   - Include at least 2 SPECIFIC details: numbers, names, timeframes, named companies, real examples
+   - For stories: use concrete sensory details, not abstract summaries
+   - For advice: give actionable frameworks with steps, not platitudes
+   - For insights: cite specific data points or observable trends
 
-**ALGORITHM HACKS:**
-- Front-load value in first 150 characters BEFORE "see more"
-- Create "comment magnet" CTA requiring detailed responses
-- Native content outperforms external links by 300%
+4. CLOSING: One memorable takeaway line. Quotable. Screenshot-worthy.
 
-═══════════════════════════════════════════════════════════
-✍️ POST STRUCTURE (FOLLOW EXACTLY)
-═══════════════════════════════════════════════════════════
+5. CTA: Ask an open-ended question that requires a thoughtful answer (not yes/no).
 
-**HOOK (First Line)**: 4-8 words maximum, stop the scroll
-Hook formulas: Bold claim, Curiosity gap, Specific number, Pattern interrupt, Personal confession, Provocative question
+══════════════════════════════════════════════════
+FORMATTING
+══════════════════════════════════════════════════
 
-**OPENING (Lines 2-4)**: Bridge with specific context, 100-150 chars before "see more"
+CHARACTER COUNT: Target ${length} characters
+LINE BREAKS: One sentence per paragraph, blank line between each
+EMOJIS: ${includeEmojis ? 'Use 2-4 strategically placed emojis, never in hook' : 'NO emojis - zero allowed'}
+HASHTAGS: ${includeHashtags ? 'Add 3-5 relevant hashtags at the VERY END after a blank line' : 'NO hashtags'}
 
-**BODY**: Deliver value based on post type
-- Use short paragraphs (1-2 sentences each)
-- Include specific examples, data, stories
-- Give 80% value, 20% intrigue
+══════════════════════════════════════════════════
+AUTHENTICITY RULES (CRITICAL)
+══════════════════════════════════════════════════
 
-**CLOSING**: One memorable, quotable key takeaway
+1. SPECIFICITY OVER GENERALITY: Replace every vague claim with a specific one. Not "many companies" but "3 out of 5 SaaS companies I've worked with." Not "recently" but "last Tuesday."
 
-**CTA**: Open-ended question requiring thoughtful 3+ sentence answers
+2. HUMAN VOICE: Write like a real person typing on their phone, not a marketing department. Vary sentence lengths. Use contractions. Start sentences with "And" or "But" when natural.
 
-═══════════════════════════════════════════════════════════
-📐 FORMATTING RULES
-═══════════════════════════════════════════════════════════
+3. BANNED WORDS (sound AI-generated):
+   - "game-changer", "game changing"
+   - "unlock", "unlocking"
+   - "leverage", "leveraging"
+   - "paradigm shift"
+   - "deep dive"
+   - "resonate", "resonates"
+   - "navigate", "navigating"
+   - "landscape"
+   - "realm"
+   - "embark"
+   - "tapestry"
+   - "synergy"
+   - "utilize" (use "use" instead)
 
-**CHARACTER COUNT**: Target ${length} characters (optimal: 900-1,500)
-**LINE BREAKS**: Single-sentence paragraphs, blank line between each
-**EMOJIS**: ${includeEmojis ? 'Use 2-4 strategically placed emojis, never in hook' : 'NO emojis'}
-**HASHTAGS**: ${includeHashtags ? 'Add 3-5 hashtags at VERY END after spacing' : 'NO hashtags'}
+4. BANNED PUNCTUATION: No em dashes "—" or en dashes "–". Use commas, periods, or hyphens "-" instead.
 
-═══════════════════════════════════════════════════════════
-⚠️ CRITICAL DO'S AND DON'TS
-═══════════════════════════════════════════════════════════
+5. NO GENERIC STATEMENTS: Every sentence must pass this test - "Could someone who knows nothing about this topic have written this?" If yes, rewrite it with specific knowledge.
 
-**DO:**
-✅ Use specific numbers, names, timeframes
-✅ Write in second person ("you")
-✅ Include personal vulnerability when appropriate
-✅ Create "open loops" resolved later
-✅ End with questions requiring detailed answers
-✅ Include one "quotable" screenshot-worthy line
+6. PERSONAL ANGLE: Include at least one first-person observation or experience tied to the topic. Even if brief: "I noticed this when..." or "In my experience..."
 
-**DON'T:**
-❌ Use corporate jargon ("synergy," "paradigm shift")
-❌ Write paragraphs longer than 3 lines
-❌ Include external links
-❌ Use engagement bait ("comment YES," "tag someone")
-❌ Make generic statements anyone could write
-❌ Save best insight for end - hook with it upfront
+${language ? `\n══════════════════════════════════════════════════\nLANGUAGE: Write the ENTIRE post in ${language}. Non-negotiable.\n══════════════════════════════════════════════════\n` : ''}
+Output ONLY the post content. No labels, no explanation, no meta-commentary.`;
+}
 
-═══════════════════════════════════════════════════════════
-📤 OUTPUT FORMAT
-═══════════════════════════════════════════════════════════
+/**
+ * Build profile context from LinkedIn profile data with token optimization
+ * Limits the amount of data included to save tokens while preserving key information
+ */
+export function buildProfileContext(profileData: {
+    name?: string | null;
+    headline?: string | null;
+    about?: string | null;
+    posts?: string[];
+    experience?: string[];
+    education?: string[];
+    skills?: string[];
+    language?: string | null;
+}, options: {
+    maxPostsChars?: number;
+    maxExperienceItems?: number;
+    includeSkills?: boolean;
+} = {}): string {
+    const {
+        maxPostsChars = 3000,
+        maxExperienceItems = 3,
+        includeSkills = true
+    } = options;
 
-[HOOK - Bold, 4-8 words]
+    let context = '';
 
-[OPENING - 2-4 sentences]
+    // Basic profile info (always include - minimal tokens)
+    if (profileData.name || profileData.headline) {
+        context += `\n══════════════════════════════════════════════════\nAUTHOR PROFILE (for authentic voice matching)\n══════════════════════════════════════════════════\n`;
+        if (profileData.name) {
+            context += `Name: ${profileData.name}\n`;
+        }
+        if (profileData.headline) {
+            context += `Headline: ${profileData.headline}\n`;
+        }
+    }
 
-[BODY CONTENT - Properly spaced paragraphs]
+    // About section (token-limited)
+    if (profileData.about && profileData.about.length > 0) {
+        const aboutLimit = 500; // Limit about section to 500 chars
+        const truncatedAbout = profileData.about.length > aboutLimit 
+            ? profileData.about.substring(0, aboutLimit) + '...'
+            : profileData.about;
+        context += `\nAbout: ${truncatedAbout}\n`;
+    }
 
-[CLOSING - Key takeaway]
+    // Experience (limited items, truncated content)
+    if (profileData.experience && profileData.experience.length > 0) {
+        const limitedExp = profileData.experience.slice(0, maxExperienceItems);
+        context += `\nExperience:\n`;
+        limitedExp.forEach((exp, i) => {
+            const expLimit = 200;
+            const truncatedExp = exp.length > expLimit ? exp.substring(0, expLimit) + '...' : exp;
+            context += `  ${i + 1}. ${truncatedExp}\n`;
+        });
+    }
 
-[CTA - Engaging question]
+    // Skills (if enabled)
+    if (includeSkills && profileData.skills && profileData.skills.length > 0) {
+        const skillsLimit = 10;
+        const limitedSkills = profileData.skills.slice(0, skillsLimit);
+        context += `\nSkills: ${limitedSkills.join(', ')}\n`;
+    }
 
-${includeHashtags ? '---\n#Hashtag1 #Hashtag2 #Hashtag3 #Hashtag4 #Hashtag5' : ''}
+    // Posts (token-limited - most important for voice matching)
+    if (profileData.posts && profileData.posts.length > 0) {
+        let postsContent = '';
+        let currentChars = 0;
+        
+        // Take posts in order (most recent first), stop when we hit the limit
+        for (const post of profileData.posts) {
+            if (currentChars + post.length > maxPostsChars) {
+                // If we can't fit the full post, add a truncated version
+                const remaining = maxPostsChars - currentChars;
+                if (remaining > 100) {
+                    postsContent += post.substring(0, remaining) + '...\n';
+                }
+                break;
+            }
+            postsContent += post + '\n';
+            currentChars += post.length + 1;
+        }
 
-═══════════════════════════════════════════════════════════
+        if (postsContent) {
+            context += `\n══════════════════════════════════════════════════\nPOSTS BY THIS AUTHOR (for voice/style reference)\n══════════════════════════════════════════════════\n`;
+            context += postsContent;
+        }
+    }
 
-${language ? `\n═══════════════════════════════════════════════════════════\n🌍 LANGUAGE REQUIREMENT (CRITICAL)\n═══════════════════════════════════════════════════════════\n\nYou MUST write the ENTIRE post in ${language}. Every single word, sentence, hook, CTA, and closing must be in ${language}. This is NON-NEGOTIABLE.\n` : ''}
-Now create a viral LinkedIn post. Take your time, think through each section, and write something that would get 100K+ impressions.`;
+    return context;
+}
+
+/**
+ * Generate post prompt with LinkedIn profile data integrated
+ */
+export function generatePostPromptWithProfile(
+    topic: string, 
+    template: string, 
+    tone: string, 
+    length: string, 
+    includeHashtags: boolean, 
+    includeEmojis: boolean,
+    targetAudience: string = '',
+    keyMessage: string = '',
+    userBackground: string = '',
+    language: string = '',
+    profileData: {
+        name?: string | null;
+        headline?: string | null;
+        about?: string | null;
+        posts?: string[];
+        experience?: string[];
+        education?: string[];
+        skills?: string[];
+        language?: string | null;
+    } | null = null
+): string {
+    // Generate base prompt
+    const basePrompt = generatePostPrompt(
+        topic, template, tone, length, includeHashtags, includeEmojis,
+        targetAudience, keyMessage, userBackground, language
+    );
+
+    // Add profile context if available
+    if (profileData) {
+        const profileContext = buildProfileContext(profileData, {
+            maxPostsChars: 3000,
+            maxExperienceItems: 3,
+            includeSkills: true
+        });
+
+        // Insert profile context before the structure section
+        const insertPoint = basePrompt.indexOf('══════════════════════════════════════════════════\nPOST STRUCTURE');
+        
+        if (insertPoint > -1) {
+            return basePrompt.substring(0, insertPoint) + 
+                   profileContext + 
+                   basePrompt.substring(insertPoint);
+        }
+    }
+
+    return basePrompt;
 }
 
 /**

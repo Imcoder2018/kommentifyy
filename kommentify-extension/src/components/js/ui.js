@@ -496,8 +496,29 @@ export async function initializeUI() {
         // Initialize version checker UI and check for updates
         initializeVersionChecker();
 
+        // Ping heartbeat to signal extension is connected to the website
+        pingHeartbeat();
+        setInterval(() => pingHeartbeat(), 15 * 1000); // Ping every 15 seconds to prevent disconnection
+
     } catch (e) {
         console.error("Error loading state:", e);
+    }
+}
+
+// Send heartbeat ping to the backend so the website dashboard shows extension as connected
+async function pingHeartbeat() {
+    try {
+        const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+        const token = storage.authToken;
+        if (!token) return;
+        const apiUrl = storage.apiBaseUrl || 'https://kommentify.com';
+        await fetch(`${apiUrl}/api/extension/heartbeat`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ts: Date.now() }),
+        });
+    } catch (e) {
+        // Silent - non-critical
     }
 }
 
@@ -582,6 +603,44 @@ async function initializeVersionChecker() {
             });
         }
         
+        // Set up Connect to Dashboard button
+        const connectDashboardBtn = document.getElementById('connect-to-dashboard-btn');
+        if (connectDashboardBtn) {
+            connectDashboardBtn.addEventListener('click', async () => {
+                const originalText = connectDashboardBtn.innerHTML;
+                connectDashboardBtn.innerHTML = '⏳ Connecting...';
+                connectDashboardBtn.style.opacity = '0.7';
+                connectDashboardBtn.disabled = true;
+                try {
+                    await pingHeartbeat();
+                    connectDashboardBtn.innerHTML = '✓ Connected!';
+                    connectDashboardBtn.style.background = 'rgba(16,185,129,0.35)';
+                    connectDashboardBtn.style.borderColor = 'rgba(16,185,129,0.6)';
+                    setTimeout(() => {
+                        chrome.tabs.create({ url: 'https://kommentify.com/dashboard' });
+                    }, 600);
+                    setTimeout(() => {
+                        connectDashboardBtn.innerHTML = originalText;
+                        connectDashboardBtn.style.background = 'rgba(255,255,255,0.18)';
+                        connectDashboardBtn.style.borderColor = 'rgba(255,255,255,0.35)';
+                        connectDashboardBtn.style.opacity = '1';
+                        connectDashboardBtn.disabled = false;
+                    }, 2500);
+                } catch {
+                    connectDashboardBtn.innerHTML = originalText;
+                    connectDashboardBtn.style.opacity = '1';
+                    connectDashboardBtn.disabled = false;
+                    chrome.tabs.create({ url: 'https://kommentify.com/dashboard' });
+                }
+            });
+            connectDashboardBtn.addEventListener('mouseenter', () => {
+                if (!connectDashboardBtn.disabled) connectDashboardBtn.style.background = 'rgba(255,255,255,0.28)';
+            });
+            connectDashboardBtn.addEventListener('mouseleave', () => {
+                if (!connectDashboardBtn.disabled) connectDashboardBtn.style.background = 'rgba(255,255,255,0.18)';
+            });
+        }
+
         console.log('VERSION CHECKER UI: Initialized');
     } catch (error) {
         console.error('VERSION CHECKER UI: Error initializing:', error);

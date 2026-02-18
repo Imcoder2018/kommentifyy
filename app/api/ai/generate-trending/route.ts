@@ -5,6 +5,20 @@ import { limitService } from '@/lib/limit-service';
 import OpenAI from 'openai';
 import { formatForLinkedIn } from '@/lib/linkedin-formatter';
 
+// Developer emails that can see token usage and costs
+const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
+
+// Model pricing per 1M tokens (USD)
+const MODEL_PRICING: Record<string, { input: number; output: number; name: string }> = {
+  'o1': { input: 15.00, output: 60.00, name: 'o1 (Reasoning - Best)' },
+  'o1-mini': { input: 3.00, output: 12.00, name: 'o1-mini (Fast Reasoning)' },
+  'gpt-4o': { input: 2.50, output: 10.00, name: 'GPT-4o (Best Quality)' },
+  'gpt-4o-mini': { input: 0.15, output: 0.60, name: 'GPT-4o Mini (Fast & Cheap)' },
+  'gpt-4-turbo': { input: 10.00, output: 30.00, name: 'GPT-4 Turbo (Premium)' },
+  'gpt-4': { input: 30.00, output: 60.00, name: 'GPT-4 (Legacy Premium)' },
+  'gpt-3.5-turbo': { input: 0.50, output: 1.50, name: 'GPT-3.5 Turbo (Budget)' },
+};
+
 let openai: OpenAI | null = null;
 try {
   if (process.env.OPENAI_API_KEY) {
@@ -35,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Daily AI post limit reached' }, { status: 429 });
     }
 
-    const { trendingPosts, customPrompt, includeHashtags, language } = await request.json();
+    const { trendingPosts, customPrompt, includeHashtags, language, model: requestedModel } = await request.json();
 
     if (!trendingPosts || trendingPosts.length === 0) {
       return NextResponse.json({ success: false, error: 'No trending posts provided' }, { status: 400 });
@@ -45,63 +59,147 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'OpenAI not configured' }, { status: 500 });
     }
 
-    // Build the trending posts context
-    const postsContext = trendingPosts.slice(0, 10).map((p: any, i: number) => 
-      `POST ${i + 1} (${p.likes || 0} likes, ${p.comments || 0} comments):\n${(p.postContent || '').substring(0, 800)}`
-    ).join('\n\n---\n\n');
+    // Select model - default to gpt-4o for best quality voice matching
+    const selectedModel = requestedModel && MODEL_PRICING[requestedModel] ? requestedModel : 'gpt-4o';
+    const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
 
-    const customInstruction = customPrompt ? `\n\nADDITIONAL USER INSTRUCTION: ${customPrompt}` : '';
+    // Build detailed trending posts context with structural analysis
+    const postsContext = trendingPosts.slice(0, 10).map((p: any, i: number) => {
+      const content = (p.postContent || '').substring(0, 1200);
+      const lines = content.split('\n').filter((l: string) => l.trim());
+      const firstLine = lines[0] || '';
+      const lastLine = lines[lines.length - 1] || '';
+      
+      return `═══ POST ${i + 1} ═══
+ENGAGEMENT: ${p.likes || 0} likes, ${p.comments || 0} comments
+AUTHOR: ${p.authorName || 'Unknown'}
+HOOK (First line): "${firstLine}"
+CLOSING (Last line): "${lastLine}"
+FULL CONTENT:
+${content}`;
+    }).join('\n\n');
 
-    const systemPrompt = `You are an elite LinkedIn ghostwriter who has studied thousands of viral posts. Your job is to analyze trending posts and create NEW posts that will go viral.
+    const customInstruction = customPrompt ? `\n\n🎯 USER'S SPECIFIC INSTRUCTION (HIGHEST PRIORITY):\n${customPrompt}` : '';
 
-RULES:
-- Write like a REAL human, not AI. No corporate jargon. No fluff.
-- Use pattern interrupts, bold opening hooks, and emotional storytelling
-- Keep sentences short. Use line breaks liberally. White space is your friend.
-- Include a strong call-to-action or thought-provoking question at the end
-- ${includeHashtags ? 'Include 3-5 relevant hashtags at the END of each post, separated by spaces' : 'NO hashtags at all. Do not include any # symbols.'}
-- NO emojis overload (1-2 max per post)
-- Each post MUST be unique in angle, structure, and voice
-- Study the PATTERNS in the trending posts: what hooks work, what structures get engagement, what topics resonate
-- Then create something BETTER and MORE AUTHENTIC than what's trending
-- CRITICAL: Do NOT use any markdown formatting. No ** for bold, no * for italic, no # for headers, no _ for underline. LinkedIn does not support markdown.
-- Instead of bold markers, use UPPERCASE for emphasis or just write naturally without any special formatting characters.
-- Never output asterisks (*) around words. Write plain text only.`;
+    // Significantly improved system prompt focused on VOICE MATCHING not just topic
+    const systemPrompt = `You are an expert LinkedIn voice analyst and ghostwriter. Your specialty is DEEP VOICE CLONING - you don't just write about similar topics, you BECOME the writer.
 
-    const userPrompt = `Here are ${trendingPosts.length} currently trending LinkedIn posts with high engagement:
+YOUR UNIQUE SKILL: You can analyze 5-10 posts and extract the writer's complete "voice DNA":
+- Their EXACT sentence rhythm (short punchy vs flowing vs mixed)
+- Their opening patterns (question? bold claim? story? statistic?)
+- Their closing style (CTA? question? mic-drop statement? reflection?)
+- Their vocabulary fingerprint (specific phrases, word choices, jargon level)
+- Their emotional texture (vulnerable? authoritative? playful? intense?)
+- Their formatting signature (line breaks, spacing, list style)
+- Their specificity level (vague concepts vs concrete examples/numbers/names)
+
+CRITICAL: The user received feedback that the previous output felt "generic" and was "modelling topic more than voice." You MUST fix this by:
+
+1. STRUCTURAL PATTERNS - Copy their EXACT opening/building/closing formula
+2. VOCABULARY FINGERPRINT - Use their actual phrases, not generic LinkedIn language
+3. SPECIFICITY LEVEL - If they use stats/names/events, YOU MUST TOO. If abstract, stay abstract
+4. EMOTIONAL TONE - Match their energy exactly (reflective vs declarative, story-led vs abstract)
+
+CRITICAL RULES:
+- You are NOT writing "LinkedIn posts about similar topics"
+- You ARE becoming a ghostwriter who has internalized this specific voice
+- Every sentence should pass the test: "Would THIS author write it THIS way?"
+- ${includeHashtags ? 'Add 3-5 relevant hashtags at the very END only' : 'NO hashtags whatsoever'}
+- Maximum 2 emojis per post, placed naturally (not at start)
+- NO markdown formatting (no **, no *, no #, no _)
+- Use UPPERCASE sparingly for emphasis instead of bold
+- Plain text only - this goes directly to LinkedIn`;
+
+    const userPrompt = `VOICE ANALYSIS TASK - CRITICAL FOR AUTHENTICITY:
+
+Study these ${trendingPosts.length} high-performing posts from LinkedIn creators. Your job is to DEEPLY ANALYZE their collective voice patterns, then write 3 NEW posts that could have been written by these same authors.
 
 ${postsContext}
 
-Based on the patterns, hooks, structures, and topics you see in these trending posts, generate EXACTLY 3 new LinkedIn posts that would go viral.
+═══════════════════════════════════════════════════════════
+STEP 1: DEEP VOICE DNA EXTRACTION (Do this analysis internally)
+═══════════════════════════════════════════════════════════
 
-Each post should:
-1. Use a different angle/perspective than the others
-2. Have a killer opening hook (first line must stop the scroll)
-3. Feel genuinely human and authentic - not AI-generated
-4. Be 150-400 words
-5. Include natural engagement triggers (questions, controversial takes, relatable stories)
-${language ? `6. CRITICAL: Write the ENTIRE post in ${language}. Every word must be in ${language}.` : ''}
+Before writing, analyze these patterns across ALL posts:
 
+1. STRUCTURAL PATTERNS (CRITICAL - most important):
+   - How do they OPEN? (Question? Bold statement? "I" statement? Story? Statistic?)
+   - How do they BUILD the middle? (List? Story arc? Problem→Solution? Examples? Data?)
+   - How do they CLOSE? (Question? CTA? Mic-drop? Reflection? Call to action?)
+   - COPY their exact structure - if they open with a question, YOU open with a question
+
+2. VOCABULARY FINGERPRINT (CRITICAL):
+   - What SPECIFIC phrases do they repeat? (List 5-10)
+   - What's their jargon level? (Technical? Simple? Mixed?)
+   - Do they use "I" or "you" more? First person stories or second person advice?
+   - Any signature expressions or verbal tics?
+   - AVOID generic LinkedIn words: "game-changer", "unlock", "resonates", "deep dive"
+
+3. SPECIFICITY LEVEL (CRITICAL):
+   - Do they use specific numbers, names, dates, events, companies?
+   - Or do they speak in abstract concepts?
+   - YOU MUST match their specificity EXACTLY - if they use real data, so must you
+
+4. EMOTIONAL TEXTURE:
+   - Reflective and introspective? Or declarative and confident?
+   - Story-led emotional? Or data-led logical?
+   - Vulnerable admissions? Or authoritative pronouncements?
+   - Match their emotional register exactly
+
+5. RHYTHM & FORMATTING:
+   - Sentence length patterns (all short? mixed? long flowing?)
+   - Line break frequency and placement
+   - Use of lists vs paragraphs
+   - White space patterns
+   - Do they use ALL CAPS for emphasis? Emojis? Where?
+
+═══════════════════════════════════════════════════════════
+STEP 2: GENERATE 3 POSTS IN THEIR VOICE
+═══════════════════════════════════════════════════════════
+
+Now write 3 LinkedIn posts that:
+- Sound like they were written by the SAME PERSON(S) who wrote the examples
+- Cover DIFFERENT topics/angles (not rehashing the same content)
+- Match the voice DNA you extracted: structure, vocabulary, specificity, emotion, rhythm
+- Feel 100% human and authentic - zero AI-smell
+- Are 150-400 words each
+${language ? `- MUST be written entirely in ${language}` : ''}
 ${customInstruction}
 
-Return your response in this EXACT JSON format (no markdown, no code blocks, just raw JSON):
+AUTHENTICITY TEST for each post (MUST PASS ALL):
+□ Would the original authors recognize this as "their" writing style?
+□ Does it have their specific quirks and patterns?
+□ Is the specificity level matched (real examples, numbers, or abstract as appropriate)?
+□ Does the STRUCTURE match exactly (how they open, build, close)?
+□ Does it use their actual vocabulary/fingerprint phrases?
+□ Does it feel like a human wrote it, not an AI?
+
+Return ONLY this JSON (no markdown, no explanation):
 [
-  {"title": "Brief descriptive title", "content": "Full post content here"},
-  {"title": "Brief descriptive title", "content": "Full post content here"},
-  {"title": "Brief descriptive title", "content": "Full post content here"}
+  {"title": "Topic/angle description", "content": "Full post matching their voice"},
+  {"title": "Topic/angle description", "content": "Full post matching their voice"},
+  {"title": "Topic/angle description", "content": "Full post matching their voice"}
 ]`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: selectedModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.9,
-      max_tokens: 4000,
+      temperature: 0.85,
+      max_tokens: 4500,
     });
 
     let responseText = completion.choices[0].message.content || '';
+    
+    // Extract token usage
+    const inputTokens = completion.usage?.prompt_tokens || 0;
+    const outputTokens = completion.usage?.completion_tokens || 0;
+    const pricing = MODEL_PRICING[selectedModel] || MODEL_PRICING['gpt-4o-mini'];
+    const inputCost = (inputTokens / 1000000) * pricing.input;
+    const outputCost = (outputTokens / 1000000) * pricing.output;
+    const totalCost = inputCost + outputCost;
     
     // Clean up response - extract JSON
     responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -129,10 +227,27 @@ Return your response in this EXACT JSON format (no markdown, no code blocks, jus
 
     await limitService.incrementUsage(user.id, 'aiPosts');
 
-    return NextResponse.json({
+    // Build response - include token info only for developers
+    const response: any = {
       success: true,
       posts: generatedPosts,
-    });
+      model: selectedModel,
+    };
+
+    if (isDeveloper) {
+      response.tokenUsage = {
+        inputTokens,
+        outputTokens,
+        totalTokens: inputTokens + outputTokens,
+        inputCost: `$${inputCost.toFixed(6)}`,
+        outputCost: `$${outputCost.toFixed(6)}`,
+        totalCost: `$${totalCost.toFixed(6)}`,
+        model: selectedModel,
+        modelName: pricing.name,
+      };
+    }
+
+    return NextResponse.json(response);
   } catch (error: any) {
     console.error('Generate trending error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

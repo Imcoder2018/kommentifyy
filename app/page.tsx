@@ -470,6 +470,7 @@ export default function LandingPage() {
     const [soldLifetimeSpots, setSoldLifetimeSpots] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [aiCommentsPerDollar, setAiCommentsPerDollar] = useState(100);
     
     // Yearly discount tiers: 18.17% for Starter, 24.24% for Growth, 33.64% for Pro+
     const getYearlyDiscount = (paidPlanIndex: number) => {
@@ -519,6 +520,16 @@ export default function LandingPage() {
                 setLoading(false);
             })
             .catch(() => setLoading(false));
+
+        // Fetch settings for AI comments per dollar
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setAiCommentsPerDollar(data.settings.aiCommentsPerDollar || 100);
+                }
+            })
+            .catch(() => console.log('Failed to fetch settings'));
     }, []);
 
     // Load Cal.com embed script
@@ -592,7 +603,7 @@ export default function LandingPage() {
                     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
                     animation: 'shimmer 2s infinite'
                 }}></div>
-                <a href="/lifetime-deal" target="_blank" rel="noopener noreferrer" style={{ 
+                <a href="/pricing" target="_blank" rel="noopener noreferrer" style={{ 
                     fontSize: '14px', 
                     fontWeight: '700', 
                     color: 'white',
@@ -688,7 +699,8 @@ export default function LandingPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <Link href="#features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Features</Link>
                         <Link href="#why-kommentify" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Why Kommentify</Link>
-                        <Link href="#pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pricing</Link>
+                        <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pricing</Link>
+                        <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Blog</Link>
                         <Link href="/lifetime-deal" onClick={() => setMobileMenuOpen(false)} style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '18px', fontWeight: '600', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}><IconFire size={18} /> Lifetime Deal</Link>
                         <Link href="#comparison" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Compare</Link>
                         <Link href="#faq" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>FAQ</Link>
@@ -741,7 +753,8 @@ export default function LandingPage() {
                 <div className="desktop-nav" style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
                     <Link href="#features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Features</Link>
                     <Link href="#why-kommentify" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Why Us</Link>
-                    <Link href="#pricing" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Pricing</Link>
+                    <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Pricing</Link>
+                    <Link href="/blog" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Blog</Link>
                     <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><IconFire size={14} /> Lifetime Deal</Link>
                     <Link href="#comparison" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Compare</Link>
                     <Link href="#faq" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>FAQ</Link>
@@ -822,7 +835,7 @@ export default function LandingPage() {
                             }}>
                                 🚀 Start Free Forever <span>→</span>
                             </Link>
-                            <a href="#pricing" style={{
+                            <a href="/pricing" style={{
                                 padding: '16px 32px',
                                 background: 'transparent',
                                 border: '2px solid rgba(255,255,255,0.3)',
@@ -1355,12 +1368,12 @@ export default function LandingPage() {
                     </div>
                     <div style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.1))', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '12px', padding: '24px', textAlign: 'center' }}>
                         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.8)', marginBottom: '8px' }}>
-                            <strong style={{ color: '#f59e0b' }}>🔥 Limited Time:</strong> Get <strong>Lifetime Access</strong> starting at just <strong style={{ color: '#10b981' }}>$29</strong> — Pay once, use forever!
+                            <strong style={{ color: '#f59e0b' }}>🔥 Limited Time:</strong> Get <strong>Lifetime Access</strong> starting at just <strong style={{ color: '#10b981' }}>$69</strong> — Pay once, use forever!
                         </p>
                         <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>
                             <strong style={{ color: '#693fe9' }}>Kommentify</strong> is the only tool that combines <strong>AI content creation + intelligent engagement + full automation + human-like safety</strong> — with lifetime deals no competitor offers.
                         </p>
-                        <a href="#pricing" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)' }}>
+                        <a href="/pricing" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)' }}>
                             🚀 Get Lifetime Access <span>→</span>
                         </a>
                     </div>
@@ -1530,7 +1543,7 @@ export default function LandingPage() {
                                                 <>
                                                     {plan.price > 0 && (
                                                         <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>
-                                                            ${plan.name.toLowerCase().includes('starter') ? '9.99' : plan.name.toLowerCase().includes('gold') ? '24.99' : plan.name.toLowerCase().includes('diamond') ? '49.99' : Math.round(plan.price * 2)}
+                                                            ${plan.name.toLowerCase().includes('starter') ? '29' : plan.name.toLowerCase().includes('gold') ? '58' : plan.name.toLowerCase().includes('diamond') ? '78' : Math.round(plan.price * 2)}
                                                         </span>
                                                     )}
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
@@ -1600,6 +1613,26 @@ export default function LandingPage() {
                                             </div>
                                         </div>
                                         
+                                        {/* AI Comments Refill Info */}
+                                        {!isFree && !isTrial && (
+                                            <div style={{
+                                                background: 'linear-gradient(135deg, rgba(105, 63, 233, 0.1), rgba(139, 92, 246, 0.1))',
+                                                border: '1px solid rgba(105, 63, 233, 0.3)',
+                                                borderRadius: '12px',
+                                                padding: '12px',
+                                                marginBottom: '16px',
+                                                textAlign: 'center'
+                                            }}>
+                                                <div style={{ fontSize: '12px', color: '#a78bfa', marginBottom: '2px' }}>💎 AI Comments Refill</div>
+                                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#8b5cf6' }}>
+                                                    $5 for 200 AI Comments
+                                                </div>
+                                                <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '2px' }}>
+                                                    Purchase additional AI comments anytime
+                                                </div>
+                                            </div>
+                                        )}
+                                        
                                         <Link 
                                             href={(billingCycle === 'yearly' && plan.stripeYearlyLink) ? plan.stripeYearlyLink : (plan.stripeLink || '/signup')} 
                                             target={(billingCycle === 'yearly' && plan.stripeYearlyLink) || plan.stripeLink ? '_blank' : undefined}
@@ -1630,7 +1663,7 @@ export default function LandingPage() {
                     )}
 
                     <div className="trust-badges" style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '40px', flexWrap: 'wrap' }}>
-                        {['14-Day Money-Back', 'No Credit Card Required', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
+                        {['14-Day Money-Back', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
                             <div key={i} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <IconCheck size={14} color="#10b981" /> {badge}
                             </div>
@@ -1686,8 +1719,11 @@ export default function LandingPage() {
                             {lifetimeDeals.sort((a, b) => a.price - b.price).map((plan, index) => {
                                 const isPopular = index === Math.floor(lifetimeDeals.length / 2) || lifetimeDeals.length === 1;
                                 const spotsLeft = plan.lifetimeSpotsRemaining ?? (plan.lifetimeMaxSpots ? plan.lifetimeMaxSpots - plan.lifetimeSoldSpots : 100);
-                                const isPro = plan.name.toLowerCase().includes('pro');
-                                const isGrowth = plan.name.toLowerCase().includes('growth') || plan.name.toLowerCase().includes('grow');
+                                
+                                // Determine LinkedIn Business months based on tier position (sorted by price)
+                                const isHighestTier = index === lifetimeDeals.length - 1; // Last/most expensive = 12 months
+                                const isMiddleTier = index === Math.floor(lifetimeDeals.length / 2); // Middle = 3 months
+                                const linkedInMonths = isHighestTier ? 12 : isMiddleTier ? 3 : 0;
                                 
                                 const features = [
                                     { icon: <IconMessage size={14} color="#693fe9" />, text: `${plan.limits.aiCommentsPerMonth >= 100000 ? 'Unlimited' : formatNumber(plan.limits.aiCommentsPerMonth)} AI Comments/mo` },
@@ -1697,8 +1733,7 @@ export default function LandingPage() {
                                     { icon: <IconUsers size={14} color="#3b82f6" />, text: `${plan.limits.monthlyFollows >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyFollows)} Auto Follows` },
                                     { icon: <IconHandshake size={14} color="#f59e0b" />, text: `${plan.limits.monthlyConnections >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyConnections)} Connections` },
                                     plan.monthlyImportCredits > 0 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: plan.monthlyImportCredits >= 100000 ? 'Unlimited Imports' : `${formatNumber(plan.monthlyImportCredits)} Imports` } : null,
-                                    isPro ? { icon: <IconCrown size={14} color="#0077b5" />, text: 'LinkedIn Business 12 Months FREE', highlight: true } : 
-                                    isGrowth ? { icon: <IconCrown size={14} color="#0077b5" />, text: 'LinkedIn Business 6 Months FREE', highlight: true } : null,
+                                    linkedInMonths > 0 ? { icon: <IconCrown size={14} color="#0077b5" />, text: `LinkedIn Business ${linkedInMonths} Months FREE`, highlight: true } : null,
                                     { icon: <IconRocket size={14} color="#22c55e" />, text: 'Lifetime Updates' },
                                     { icon: <IconShield size={14} color="#3b82f6" />, text: 'Priority Support' },
                                 ].filter(Boolean) as { icon: JSX.Element; text: string; highlight?: boolean }[];
@@ -1733,8 +1768,12 @@ export default function LandingPage() {
                                         
                                         <div style={{ marginBottom: '20px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                                                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>${(plan.price * 12).toFixed(0)}/year</span>
-                                                <span style={{ background: '#22c55e', color: 'white', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>Save ${((plan.price * 12) - plan.price).toFixed(0)}</span>
+                                                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through' }}>
+                                                    ${plan.price === 69 ? '828' : plan.price === 149 ? '1788' : plan.price === 299 ? '3588' : (plan.price * 12).toFixed(0)}/year
+                                                </span>
+                                                <span style={{ background: '#22c55e', color: 'white', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>
+                                                    Save ${plan.price === 69 ? '759' : plan.price === 149 ? '1639' : plan.price === 299 ? '3289' : ((plan.price * 12) - plan.price).toFixed(0)}
+                                                </span>
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
                                                 <span style={{ fontSize: '42px', fontWeight: '800', color: isPopular ? '#fbbf24' : 'white' }}>${plan.price}</span>

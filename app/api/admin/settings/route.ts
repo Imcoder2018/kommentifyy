@@ -12,7 +12,10 @@ async function handleGet(request: NextRequest) {
       settings = await prisma.globalSettings.create({
         data: {
           aiCommentsPerDollar: 100,
-        },
+          postEmbeddingsCount: 8,
+          commentEmbeddingsCount: 5,
+          profileStyleMode: true,
+        } as any,
       });
     }
 
@@ -20,6 +23,9 @@ async function handleGet(request: NextRequest) {
       success: true,
       settings: {
         aiCommentsPerDollar: settings.aiCommentsPerDollar,
+        postEmbeddingsCount: (settings as any).postEmbeddingsCount ?? 8,
+        commentEmbeddingsCount: (settings as any).commentEmbeddingsCount ?? 5,
+        profileStyleMode: (settings as any).profileStyleMode ?? true,
       },
     });
   } catch (error: any) {
@@ -35,11 +41,26 @@ async function handleGet(request: NextRequest) {
 async function handlePut(request: NextRequest) {
   try {
     const data = await request.json();
-    const { aiCommentsPerDollar } = data;
+    const { aiCommentsPerDollar, postEmbeddingsCount, commentEmbeddingsCount, profileStyleMode } = data;
 
-    if (typeof aiCommentsPerDollar !== 'number' || aiCommentsPerDollar < 1) {
+    // Build update data - only include provided fields
+    const updateData: any = {};
+    if (typeof aiCommentsPerDollar === 'number' && aiCommentsPerDollar >= 1) {
+      updateData.aiCommentsPerDollar = aiCommentsPerDollar;
+    }
+    if (typeof postEmbeddingsCount === 'number' && postEmbeddingsCount >= 1 && postEmbeddingsCount <= 20) {
+      updateData.postEmbeddingsCount = postEmbeddingsCount;
+    }
+    if (typeof commentEmbeddingsCount === 'number' && commentEmbeddingsCount >= 1 && commentEmbeddingsCount <= 20) {
+      updateData.commentEmbeddingsCount = commentEmbeddingsCount;
+    }
+    if (typeof profileStyleMode === 'boolean') {
+      updateData.profileStyleMode = profileStyleMode;
+    }
+
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { success: false, error: 'AI comments per dollar must be a positive number' },
+        { success: false, error: 'No valid settings provided' },
         { status: 400 }
       );
     }
@@ -48,16 +69,12 @@ async function handlePut(request: NextRequest) {
 
     if (!settings) {
       settings = await prisma.globalSettings.create({
-        data: {
-          aiCommentsPerDollar,
-        },
+        data: { aiCommentsPerDollar: 100, ...updateData },
       });
     } else {
       settings = await prisma.globalSettings.update({
         where: { id: settings.id },
-        data: {
-          aiCommentsPerDollar,
-        },
+        data: updateData,
       });
     }
 
@@ -65,6 +82,9 @@ async function handlePut(request: NextRequest) {
       success: true,
       settings: {
         aiCommentsPerDollar: settings.aiCommentsPerDollar,
+        postEmbeddingsCount: (settings as any).postEmbeddingsCount ?? 8,
+        commentEmbeddingsCount: (settings as any).commentEmbeddingsCount ?? 5,
+        profileStyleMode: (settings as any).profileStyleMode ?? true,
       },
     });
   } catch (error: any) {

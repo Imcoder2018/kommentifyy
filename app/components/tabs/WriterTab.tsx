@@ -5,7 +5,43 @@ import { IconCalendar, IconChart, IconClock, IconEdit, IconLightbulb, IconRocket
 export default function WriterTab() {
     return (
         <>
-            {/* TAB CONTENT: POST WRITER */} {/* Main 2-Column Layout */}
+            {/* TAB CONTENT: POST WRITER */}
+            {/* LinkedIn Profile Scan Card */}
+            <div className="card" style={{"background":"linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)","marginBottom":"15px"}}>
+                <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","marginBottom":"12px"}}>
+                    <div style={{"display":"flex","alignItems":"center","gap":"10px"}}>
+                        <span style={{"fontSize":"24px"}}>🔗</span>
+                        <h4 style={{"margin":0,"color":"white","fontSize":"15px"}}>LinkedIn Profile Data</h4>
+                    </div>
+                    <button id="scan-linkedin-profile" style={{"background":"white","color":"#0077b5","border":"none","padding":"8px 16px","borderRadius":"6px","fontSize":"12px","fontWeight":600,"cursor":"pointer"}}>
+                        📡 Scan My Profile
+                    </button>
+                </div>
+                <div id="profile-scan-status" style={{"fontSize":"12px","color":"rgba(255,255,255,0.8)","marginBottom":"10px"}}>
+                    Scan your LinkedIn profile to use your data for AI-generated content that matches your style.
+                </div>
+                {/* Profile Data Display (hidden by default) */}
+                <div id="profile-data-container" style={{"display":"none","background":"rgba(255,255,255,0.1)","borderRadius":"8px","padding":"12px","marginTop":"10px"}}>
+                    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","marginBottom":"10px"}}>
+                        <span id="profile-name" style={{"color":"white","fontWeight":600,"fontSize":"13px"}}></span>
+                        <label style={{"display":"flex","alignItems":"center","gap":"6px","cursor":"pointer"}}>
+                            <input type="checkbox" id="use-profile-data" defaultChecked={true} style={{"width":"16px","height":"16px","cursor":"pointer"}} />
+                            <span style={{"color":"white","fontSize":"11px"}}>Use for AI</span>
+                        </label>
+                    </div>
+                    <div id="profile-preview" style={{"fontSize":"11px","color":"rgba(255,255,255,0.7)","maxHeight":"80px","overflowY":"auto"}}></div>
+                    <div style={{"display":"flex","gap":"8px","marginTop":"10px"}}>
+                        <button id="view-full-profile" style={{"background":"rgba(255,255,255,0.2)","color":"white","border":"1px solid rgba(255,255,255,0.3)","padding":"6px 12px","borderRadius":"4px","fontSize":"11px","cursor":"pointer"}}>
+                            View Full Data
+                        </button>
+                        <button id="rescan-profile" style={{"background":"rgba(255,255,255,0.2)","color":"white","border":"1px solid rgba(255,255,255,0.3)","padding":"6px 12px","borderRadius":"4px","fontSize":"11px","cursor":"pointer"}}>
+                            Re-scan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main 2-Column Layout */}
             <div style={{"display":"grid","gridTemplateColumns":"380px 1fr","gap":"15px","marginBottom":"20px"}}>
                 {/* LEFT COLUMN: Controls & Settings */}
                 <div style={{"display":"flex","flexDirection":"column","gap":"15px"}}>

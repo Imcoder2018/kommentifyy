@@ -6,6 +6,19 @@ import OpenAI from 'openai';
 import { OpenAIConfig, getModelForSettings, generateCommentPrompt } from '@/lib/openai-config';
 import { formatCommentForLinkedIn } from '@/lib/linkedin-formatter';
 
+// Developer emails that can see token usage and costs
+const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
+
+// Model pricing per 1M tokens (USD)
+const modelPricing: Record<string, { input: number; output: number; name: string }> = {
+  'o1': { input: 15.00, output: 60.00, name: 'o1 (Reasoning - Best)' },
+  'o1-mini': { input: 3.00, output: 12.00, name: 'o1-mini (Fast Reasoning)' },
+  'gpt-4o': { input: 2.50, output: 10.00, name: 'GPT-4o (Best Quality)' },
+  'gpt-4o-mini': { input: 0.15, output: 0.60, name: 'GPT-4o Mini (Fast & Cheap)' },
+  'gpt-4-turbo': { input: 10.00, output: 30.00, name: 'GPT-4 Turbo (Premium)' },
+  'gpt-3.5-turbo': { input: 0.50, output: 1.50, name: 'GPT-3.5 Turbo (Budget)' },
+};
+
 // Initialize OpenAI client with proper error handling
 let openai: OpenAI | null = null;
 try {
@@ -42,7 +55,8 @@ export async function POST(request: NextRequest) {
       userExpertise, 
       userBackground,
       authorName,
-      useProfileStyle: reqUseProfileStyle
+      useProfileStyle: reqUseProfileStyle,
+      model: requestedModel
     } = await request.json();
 
     if (!postText) {
@@ -109,6 +123,20 @@ export async function POST(request: NextRequest) {
     console.log('Calling OpenAI API for comment generation...');
     console.log('Parameters:', { tone, goal, commentLength, commentStyle, userExpertise, authorName });
     
+    // Fetch global admin settings for AI generation
+    let adminProfileStyleMode = true;
+    let adminCommentEmbeddingsCount = 5;
+    try {
+      const globalSettings = await prisma.globalSettings.findFirst();
+      if (globalSettings) {
+        adminProfileStyleMode = (globalSettings as any).profileStyleMode ?? true;
+        adminCommentEmbeddingsCount = (globalSettings as any).commentEmbeddingsCount ?? 5;
+      }
+      console.log('🔧 Admin settings:', { profileStyleMode: adminProfileStyleMode, commentEmbeddingsCount: adminCommentEmbeddingsCount });
+    } catch (adminErr) {
+      console.warn('Could not load admin settings, using defaults:', adminErr);
+    }
+
     // Fetch user's saved comment settings from DB
     let finalTone = tone;
     let finalGoal = goal;
@@ -116,14 +144,15 @@ export async function POST(request: NextRequest) {
     let finalStyle = commentStyle;
     let finalExpertise = userExpertise;
     let finalBackground = userBackground;
-    let useProfileStyle = reqUseProfileStyle === true ? true : false;
+    // Use admin global setting as default, user/request can override
+    let useProfileStyle = reqUseProfileStyle === true ? true : adminProfileStyleMode;
     try {
       const savedSettings = await (prisma as any).commentSettings.findUnique({
         where: { userId: user.id },
       });
       if (savedSettings) {
-        // Request body override takes priority, then DB value
-        useProfileStyle = reqUseProfileStyle === true ? true : (savedSettings.useProfileStyle === true);
+        // Request body override takes priority, then DB value, then admin global setting
+        useProfileStyle = reqUseProfileStyle === true ? true : (savedSettings.useProfileStyle != null ? savedSettings.useProfileStyle === true : adminProfileStyleMode);
         finalTone = finalTone || savedSettings.tone;
         finalGoal = finalGoal || savedSettings.goal;
         finalLength = finalLength || savedSettings.commentLength;
@@ -149,7 +178,7 @@ export async function POST(request: NextRequest) {
       
       if (selectedProfiles.length > 0) {
         const profileIds = selectedProfiles.map((p: any) => p.id);
-        const maxComments = useProfileStyle ? 20 : 10;
+        const maxComments = useProfileStyle ? Math.max(20, adminCommentEmbeddingsCount * 2) : Math.max(10, adminCommentEmbeddingsCount);
         
         // First try top-starred comments
         let comments = await (prisma as any).scrapedComment.findMany({
@@ -237,8 +266,9 @@ Post: ${postText}
       console.log(`📝 PROMPT: NORMAL MODE, length: ${prompt.length}, style examples: ${styleExamples.length}`);
     }
 
-    // Use premium model for best quality comments
-    const model = 'gpt-4o';
+    // Select model - default to gpt-4o for best quality
+    const selectedModel = requestedModel && modelPricing[requestedModel] ? requestedModel : 'gpt-4o';
+    const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
 
     // Set max tokens based on comment length (tighter limits to enforce char counts)
     const lengthSettings: Record<string, number> = {
@@ -247,35 +277,98 @@ Post: ${postText}
       Mid: 250,    // ~600 characters
       Long: 400    // ~900 characters
     };
+    const styleTokenMultiplier: Record<string, number> = {
+      direct: 1.0,
+      structured: 1.9,
+      storyteller: 1.5,
+      challenger: 1.4,
+      supporter: 1.4,
+      expert: 1.4,
+      conversational: 1.2,
+    };
+    const baseTokens = lengthSettings[finalLength || 'Short'] || 120;
+    const maxTokens = useProfileStyle ? 300 : Math.ceil(baseTokens * (styleTokenMultiplier[finalStyle || 'direct'] || 1.0));
     const charLimits: Record<string, number> = {
       Brief: 100,
       Short: 300,
       Mid: 600,
       Long: 900
     };
-    const maxTokens = useProfileStyle ? 300 : (lengthSettings[finalLength || 'Short'] || 120);
 
     let content;
+    let tokenUsage: any = null;
     try {
       // Generate comment with OpenAI
+      const styleLabel: Record<string, string> = { direct: 'Direct & Concise (single paragraph)', structured: 'Structured (2-3 paragraphs)', storyteller: 'Storyteller (personal anecdote lead)', challenger: 'Challenger (different perspective)', supporter: 'Supporter (validate with evidence)', expert: 'Expert (data/experience refs)', conversational: 'Conversational (casual, colleague-like)' };
+      const goalLabel: Record<string, string> = { AddValue: 'Add Value', ShareExperience: 'Share Experience', AskQuestion: 'Ask Question', DifferentPerspective: 'Different Perspective', BuildRelationship: 'Build Relationship', SubtlePitch: 'Subtle Pitch' };
+      const toneLabel: Record<string, string> = { Professional: 'Professional', Friendly: 'Friendly', ThoughtProvoking: 'Thought Provoking', Supportive: 'Supportive', Contrarian: 'Contrarian', Humorous: 'Humorous' };
+      const lengthLabel: Record<string, string> = { Brief: 'Brief (max 100 chars)', Short: 'Short (max 300 chars)', Mid: 'Medium (max 600 chars)', Long: 'Long (max 900 chars)' };
+      // Explicit structural requirements per style (not just labels)
+      const styleFormatInstruction: Record<string, string> = {
+        direct: 'ONE single paragraph. No line breaks between sentences. Everything in one flowing block.',
+        structured: 'EXACTLY 2-3 separate paragraphs with a BLANK LINE between each one. Do NOT put all text in one paragraph. The output MUST look like:\n\nParagraph one text here.\n\nParagraph two text here.\n\nOptional paragraph three.',
+        storyteller: 'MUST open with a personal anecdote ("Last month I...", "A few years ago...", "I remember when..."). Then connect to the post.',
+        challenger: 'MUST respectfully challenge with a different perspective. Open with brief acknowledgment, then pivot with "However..." or "One thing I\'d push back on...".',
+        supporter: 'MUST validate their message with concrete evidence or specific personal experience that proves they\'re right.',
+        expert: 'MUST reference specific data, a metric, a study, or deep domain knowledge. Use precise industry vocabulary.',
+        conversational: 'Casual and warm, like talking to a colleague over coffee. Use contractions, natural transitions.',
+      };
+      const systemMsg = useProfileStyle && styleExamples.length > 0
+        ? `You are a LinkedIn comment ghostwriter. Your ONLY job: mimic the EXACT writing style from the provided examples. Match their tone, rhythm, vocabulary, structure, and personality precisely. Output ONLY the comment text. No labels, no quotes, no explanation.`
+        : `You are a LinkedIn comment ghostwriter. Follow ALL mandatory settings below EXACTLY:
+
+STYLE FORMAT (HIGHEST PRIORITY - structure your output exactly as described):
+${styleFormatInstruction[finalStyle || 'direct'] || styleFormatInstruction['direct']}
+
+GOAL: ${goalLabel[finalGoal || 'AddValue'] || finalGoal}
+TONE: ${toneLabel[finalTone || 'Professional'] || finalTone}
+LENGTH: ${lengthLabel[finalLength || 'Short'] || finalLength}
+
+CRITICAL RULES:
+- STYLE FORMAT is non-negotiable. Structured = blank lines between paragraphs. Single paragraph = no line breaks.
+- GOAL defines what the comment must achieve. If "Ask Question", end with a question.
+- TONE defines the voice. If "Humorous", write with wit. If "Professional", no casual language.
+- LENGTH is a hard cap. Do not exceed it.
+- NOTE: Any style voice examples in the instructions are for vocabulary/personality ONLY. The STYLE FORMAT above always governs structure.
+Output ONLY the comment text. No labels, no quotes, no preamble.`;
+
       const completion = await openai.chat.completions.create({
-        model: model,
+        model: selectedModel,
         messages: [
           {
             role: 'system',
-            content: `You are a world-class LinkedIn engagement specialist. Write high-value comments that drive engagement and position the commenter as a thought leader. Follow the comprehensive framework provided.`,
+            content: systemMsg,
           },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.8,
+        temperature: 0.82,
         max_tokens: maxTokens,
       });
 
       content = completion.choices[0].message.content?.trim() || '';
       console.log('✅ OpenAI comment generation successful');
+      
+      // Extract token usage for developers
+      if (isDeveloper && completion.usage) {
+        const inputTokens = completion.usage.prompt_tokens || 0;
+        const outputTokens = completion.usage.completion_tokens || 0;
+        const pricing = modelPricing[selectedModel] || modelPricing['gpt-4o-mini'];
+        const inputCost = (inputTokens / 1000000) * pricing.input;
+        const outputCost = (outputTokens / 1000000) * pricing.output;
+        tokenUsage = {
+          inputTokens,
+          outputTokens,
+          totalTokens: inputTokens + outputTokens,
+          inputCost: `$${inputCost.toFixed(6)}`,
+          outputCost: `$${outputCost.toFixed(6)}`,
+          totalCost: `$${(inputCost + outputCost).toFixed(6)}`,
+          model: selectedModel,
+          modelName: pricing.name,
+        };
+      }
       
     } catch (openaiError: any) {
       console.error('OpenAI API Error for comment:', openaiError);
@@ -294,6 +387,28 @@ Post: ${postText}
 
     // Format comment for LinkedIn
     content = formatCommentForLinkedIn(content);
+
+    // POST-PROCESSING: Enforce structured format if AI ignored it (compatibility with old extension versions)
+    if (!useProfileStyle && finalStyle === 'structured') {
+      const hasBlankLines = content.includes('\n\n');
+      if (!hasBlankLines) {
+        console.log('🔧 POST-PROCESS: AI ignored structured format, forcing 2-3 paragraphs with blank lines');
+        // Split into sentences first, then group into 2-3 paragraphs
+        const sentences = content.match(/[^.!?]+[.!?]+/g) || [content];
+        const targetParagraphs = Math.min(Math.max(2, Math.ceil(sentences.length / 2)), 3);
+        const sentencesPerPara = Math.ceil(sentences.length / targetParagraphs);
+        const paragraphs = [];
+        for (let i = 0; i < targetParagraphs; i++) {
+          const start = i * sentencesPerPara;
+          const paraSentences = sentences.slice(start, start + sentencesPerPara);
+          if (paraSentences.length > 0) {
+            paragraphs.push(paraSentences.join(' ').trim());
+          }
+        }
+        content = paragraphs.join('\n\n');
+        console.log(`🔧 POST-PROCESS: Split into ${paragraphs.length} paragraphs`);
+      }
+    }
     
     // HARD enforce character limit - truncate if AI exceeded it
     const hardLimit = charLimits[finalLength || 'Short'] || 300;
@@ -329,9 +444,11 @@ Post: ${postText}
       },
     });
 
-    return NextResponse.json({
+    // Build response
+    const response: any = {
       success: true,
       content,
+      model: selectedModel,
       debug: {
         styleExamplesUsed: styleExamples.length,
         selectedProfiles: styleDebugInfo.selectedProfiles,
@@ -340,7 +457,13 @@ Post: ${postText}
         mode: useProfileStyle && styleExamples.length > 0 ? 'PROFILE_STYLE' : 'NORMAL',
         settingsUsed: useProfileStyle ? { mode: 'profile_style_only' } : { tone: finalTone, goal: finalGoal, length: finalLength, style: finalStyle },
       },
-    });
+    };
+
+    if (tokenUsage) {
+      response.tokenUsage = tokenUsage;
+    }
+
+    return NextResponse.json(response);
   } catch (error: any) {
     console.error('Generate comment error:', error);
     return NextResponse.json(

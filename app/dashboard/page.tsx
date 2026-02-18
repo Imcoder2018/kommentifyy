@@ -64,8 +64,13 @@ function DashboardContent() {
     const [writerScheduleDate, setWriterScheduleDate] = useState('');
     const [writerScheduleTime, setWriterScheduleTime] = useState('');
     const [writerDrafts, setWriterDrafts] = useState<any[]>([]);
+    const [writerScheduledPosts, setWriterScheduledPosts] = useState<any[]>([]);
     const [writerStatus, setWriterStatus] = useState('');
     const [writerShowAdvanced, setWriterShowAdvanced] = useState(false);
+    const [writerModel, setWriterModel] = useState<string>('gpt-4o');
+    const [writerTokenUsage, setWriterTokenUsage] = useState<any>(null);
+    const [writerUseInspirationSources, setWriterUseInspirationSources] = useState(true);
+    const [writerInspirationSourceNames, setWriterInspirationSourceNames] = useState<string[]>([]);
 
     // Saved posts tab state
     const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -104,6 +109,22 @@ function DashboardContent() {
     const [trendingGeneratedPosts, setTrendingGeneratedPosts] = useState<any[]>([]);
     const [trendingShowGenPreview, setTrendingShowGenPreview] = useState(false);
     const [trendingStatus, setTrendingStatus] = useState('');
+    const [trendingModel, setTrendingModel] = useState<string>('gpt-4o');
+    const [trendingTokenUsage, setTrendingTokenUsage] = useState<any>(null);
+    
+    // Developer emails for showing token costs
+    const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
+    const isDeveloper = user?.email ? DEVELOPER_EMAILS.includes(user.email) : false;
+    
+    // Model options with pricing - best models first, cheap ones at end
+    const MODEL_OPTIONS = [
+        { id: 'o1', name: 'o1 (Reasoning - Best)', inputCost: '$15.00/1M', outputCost: '$60.00/1M' },
+        { id: 'o1-mini', name: 'o1-mini (Fast Reasoning)', inputCost: '$3.00/1M', outputCost: '$12.00/1M' },
+        { id: 'gpt-4o', name: 'GPT-4o (Best Quality)', inputCost: '$2.50/1M', outputCost: '$10.00/1M' },
+        { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast)', inputCost: '$0.15/1M', outputCost: '$0.60/1M' },
+        { id: 'gpt-4-turbo', name: 'GPT-4 Turbo (Premium)', inputCost: '$10.00/1M', outputCost: '$30.00/1M' },
+        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Budget)', inputCost: '$0.50/1M', outputCost: '$1.50/1M' },
+    ];
     
     // Analysis state
     const [analysisResults, setAnalysisResults] = useState<any[]>([]);
@@ -148,6 +169,7 @@ function DashboardContent() {
     const [csTone, setCsTone] = useState('Friendly');
     const [csLength, setCsLength] = useState('Short');
     const [csStyle, setCsStyle] = useState('direct');
+    const [csModel, setCsModel] = useState<string>('gpt-4o');
     const [csExpertise, setCsExpertise] = useState('');
     const [csBackground, setCsBackground] = useState('');
     const [csAutoPost, setCsAutoPost] = useState('manual');
@@ -175,6 +197,16 @@ function DashboardContent() {
     const [importCfgLoading, setImportCfgLoading] = useState(false);
     const [importCfgSaving, setImportCfgSaving] = useState(false);
 
+    // LinkedIn Profile Data state
+    const [linkedInProfile, setLinkedInProfile] = useState<any>(null);
+    const [linkedInProfileLoading, setLinkedInProfileLoading] = useState(false);
+    const [linkedInProfileScanning, setLinkedInProfileScanning] = useState(false);
+    const [linkedInProfileStatus, setLinkedInProfileStatus] = useState('');
+    const [linkedInUseProfileData, setLinkedInUseProfileData] = useState(true);
+    const [linkedInTopicSuggestions, setLinkedInTopicSuggestions] = useState<string[]>([]);
+    const [linkedInGeneratingTopics, setLinkedInGeneratingTopics] = useState(false);
+    const [showLinkedInDataModal, setShowLinkedInDataModal] = useState(false);
+
     // Analytics tab state
     const [analyticsData, setAnalyticsData] = useState<any>({ engagements: { total: 0, comments: 0, likes: 0, shares: 0, follows: 0 }, automationHistory: [], networkingHistory: [], importHistory: [], leads: [] });
     const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -185,6 +217,10 @@ function DashboardContent() {
     const [analyticsLeadsSearch, setAnalyticsLeadsSearch] = useState('');
     const [analyticsAutoFilter, setAnalyticsAutoFilter] = useState('all');
     const [analyticsNetworkFilter, setAnalyticsNetworkFilter] = useState('all');
+
+    // Extension connectivity state
+    const [extensionConnected, setExtensionConnected] = useState(false);
+    const [extensionLastSeen, setExtensionLastSeen] = useState<Date | null>(null);
 
     // Theme state
     const [theme, setTheme] = useState<'current' | 'light' | 'dark'>('current');
@@ -272,7 +308,8 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token || !writerTopic.trim()) { setWriterStatus('Please enter a topic'); return; }
         setWriterGenerating(true);
-        setWriterStatus('Generating...');
+        setWriterStatus('Analyzing inspiration sources and generating post...');
+        setWriterTokenUsage(null);
         try {
             const res = await fetch('/api/ai/generate-post', {
                 method: 'POST',
@@ -283,12 +320,20 @@ function DashboardContent() {
                     language: writerLanguage,
                     targetAudience: writerTargetAudience, keyMessage: writerKeyMessage, userBackground: writerBackground,
                     useInspirationSources: inspirationSources.length > 0 && (inspirationUseAll || inspirationSelected.length > 0),
-                    inspirationSourceNames: inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected
+                    inspirationSourceNames: inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected,
+                    model: writerModel
                 }),
             });
             const data = await res.json();
-            if (data.success) { setWriterContent(data.content); setWriterStatus('Post generated!'); }
-            else setWriterStatus(data.error || 'Failed to generate');
+            if (data.success && data.content) {
+                setWriterContent(data.content);
+                setWriterStatus(`✅ Post generated using ${data.model || writerModel}! Review and edit as needed.`);
+                // Capture token usage for developers
+                if (data.tokenUsage) {
+                    setWriterTokenUsage(data.tokenUsage);
+                }
+                await saveToHistory('ai_generated', `AI Generated Post: ${writerTopic}`, data.content, { template: writerTemplate, tone: writerTone, length: writerLength, model: data.model });
+            } else setWriterStatus(data.error || 'Generation failed');
         } catch (e: any) { setWriterStatus('Error: ' + e.message); }
         finally { setWriterGenerating(false); }
     };
@@ -314,7 +359,14 @@ function DashboardContent() {
         try {
             const res = await fetch('/api/post-drafts', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            if (data.success) setWriterDrafts(data.drafts || []);
+            if (data.success) {
+                const drafts = data.drafts || [];
+                // Separate scheduled posts from regular drafts
+                const scheduled = drafts.filter((d: any) => d.status === 'scheduled' && d.scheduledFor);
+                const regularDrafts = drafts.filter((d: any) => d.status !== 'scheduled' || !d.scheduledFor);
+                setWriterScheduledPosts(scheduled);
+                setWriterDrafts(regularDrafts);
+            }
         } catch {}
     };
 
@@ -659,6 +711,7 @@ function DashboardContent() {
                 setCsTone(data.settings.tone || 'Friendly');
                 setCsLength(data.settings.commentLength || 'Short');
                 setCsStyle(data.settings.commentStyle || 'direct');
+                setCsModel(data.settings.model || 'gpt-4o');
                 setCsExpertise(data.settings.userExpertise || '');
                 setCsBackground(data.settings.userBackground || '');
                 setCsAutoPost(data.settings.aiAutoPost || 'manual');
@@ -674,13 +727,146 @@ function DashboardContent() {
             const res = await fetch('/api/comment-settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ useProfileStyle: csUseProfileStyle, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }),
+                body: JSON.stringify({ 
+                    useProfileStyle: csUseProfileStyle, 
+                    goal: csGoal, 
+                    tone: csTone, 
+                    commentLength: csLength, 
+                    commentStyle: csStyle, 
+                    model: csModel, 
+                    userExpertise: csExpertise, 
+                    userBackground: csBackground, 
+                    aiAutoPost: csAutoPost 
+                }),
             });
             const data = await res.json();
             if (data.success) showToast('Comment settings saved!', 'success');
             else showToast('Failed to save settings', 'error');
         } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
         finally { setCsSettingsSaving(false); }
+    };
+
+    // LinkedIn Profile Data functions
+    const loadLinkedInProfile = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setLinkedInProfileLoading(true);
+        try {
+            const res = await fetch('/api/linkedin-profile', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success && data.data) {
+                setLinkedInProfile(data.data);
+                setLinkedInUseProfileData(data.data.isSelected !== false);
+            }
+        } catch {} finally { setLinkedInProfileLoading(false); }
+    };
+
+    const deleteLinkedInProfile = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        if (!confirm('Are you sure you want to delete your LinkedIn profile data?')) return;
+        
+        try {
+            const res = await fetch('/api/linkedin-profile', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setLinkedInProfile(null);
+                setLinkedInTopicSuggestions([]);
+                showToast('LinkedIn profile data deleted successfully', 'success');
+            } else {
+                showToast(data.error || 'Failed to delete profile data', 'error');
+            }
+        } catch (e: any) {
+            showToast('Error: ' + e.message, 'error');
+        }
+    };
+
+    const scanLinkedInProfile = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setLinkedInProfileScanning(true);
+        setLinkedInProfileStatus('Scanning LinkedIn profile... Extension will open LinkedIn feed, find your profile, and extract data.');
+        try {
+            // Send command to extension to scan profile
+            const res = await fetch('/api/extension/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ command: 'scan_my_linkedin_profile' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setLinkedInProfileStatus('Profile scan started! Check extension popup for progress. Data will appear here when complete.');
+                showToast('📡 Profile scan started! Check extension popup.', 'info');
+            } else {
+                setLinkedInProfileStatus(data.error || 'Failed to start scan');
+            }
+        } catch (e: any) {
+            setLinkedInProfileStatus('Error: ' + e.message);
+        } finally { setLinkedInProfileScanning(false); }
+    };
+
+    const generateTopicSuggestions = async () => {
+        if (!linkedInProfile) return;
+        setLinkedInGeneratingTopics(true);
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            // Parse JSON fields safely
+            let experience = [];
+            let skills = [];
+            try {
+                experience = JSON.parse(linkedInProfile.experience || '[]');
+            } catch (e) {
+                console.error('Error parsing experience:', e);
+            }
+            try {
+                skills = JSON.parse(linkedInProfile.skills || '[]');
+            } catch (e) {
+                console.error('Error parsing skills:', e);
+            }
+            
+            const res = await fetch('/api/ai/generate-topics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    profileData: {
+                        headline: linkedInProfile.headline,
+                        about: linkedInProfile.about,
+                        experience,
+                        skills
+                    }
+                }),
+            });
+            const data = await res.json();
+            if (data.success && data.topics) {
+                setLinkedInTopicSuggestions(data.topics);
+            } else {
+                showToast(data.error || 'Failed to generate topics', 'error');
+            }
+        } catch (e: any) {
+            showToast('Error: ' + e.message, 'error');
+        } finally { setLinkedInGeneratingTopics(false); }
+    };
+
+    const selectTopicSuggestion = (topic: string) => {
+        setWriterTopic(topic);
+        showToast('Topic added to input!', 'success');
+    };
+
+    const toggleLinkedInProfileData = async (enabled: boolean) => {
+        setLinkedInUseProfileData(enabled);
+        const token = localStorage.getItem('authToken');
+        if (!token || !linkedInProfile) return;
+        try {
+            await fetch('/api/linkedin-profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ isSelected: enabled }),
+            });
+        } catch {}
     };
 
     // Automation settings functions
@@ -791,15 +977,31 @@ function DashboardContent() {
                 }
                 prevTasksRef.current = newTasks;
                 setTasks(newTasks);
+                
+                // Connectivity is handled by heartbeat polling (see checkExtensionConnectivity)
             }
         } catch {} finally { if (!silent) setTasksLoading(false); }
+    };
+
+    // Check extension connectivity via heartbeat endpoint
+    const checkExtensionConnectivity = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/extension/heartbeat', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            setExtensionConnected(!!data.connected);
+            if (data.connected) setExtensionLastSeen(new Date());
+        } catch {}
     };
 
     // Poll tasks every 15 seconds for live notifications - empty deps so interval is created once
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        const interval = setInterval(() => loadTasks(true), 15000);
-        return () => clearInterval(interval);
+        checkExtensionConnectivity();
+        const taskInterval = setInterval(() => loadTasks(true), 15000);
+        const heartbeatInterval = setInterval(() => checkExtensionConnectivity(), 15000); // Check every 15 seconds
+        return () => { clearInterval(taskInterval); clearInterval(heartbeatInterval); };
     }, []);
 
     // Load tab-specific data on initial mount when auth completes (fixes ?tab=import reload)
@@ -807,7 +1009,7 @@ function DashboardContent() {
     useEffect(() => {
         if (loading || !user) return;
         const tab = activeTab;
-        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); }
+        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); }
         if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
@@ -841,22 +1043,33 @@ function DashboardContent() {
         if (selected.length === 0) { setTrendingStatus('Please select at least 1 trending post'); return; }
         if (selected.length > 10) { setTrendingStatus('Maximum 10 posts allowed'); return; }
         setTrendingGenerating(true);
-        setTrendingStatus('Generating viral posts from trending patterns...');
+        setTrendingStatus('Analyzing voice patterns and generating posts...');
         setTrendingShowGenPreview(false);
+        setTrendingTokenUsage(null);
         try {
             const res = await fetch('/api/ai/generate-trending', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ trendingPosts: selected, customPrompt: trendingCustomPrompt, includeHashtags: trendingIncludeHashtags, language: trendingLanguage }),
+                body: JSON.stringify({ 
+                    trendingPosts: selected, 
+                    customPrompt: trendingCustomPrompt, 
+                    includeHashtags: trendingIncludeHashtags, 
+                    language: trendingLanguage,
+                    model: trendingModel 
+                }),
             });
             const data = await res.json();
             if (data.success && data.posts) {
                 setTrendingGeneratedPosts(data.posts);
                 setTrendingShowGenPreview(true);
-                setTrendingStatus(`✅ Generated ${data.posts.length} viral posts!`);
+                setTrendingStatus(`✅ Generated ${data.posts.length} viral posts using ${data.model || trendingModel}!`);
                 setGeneratedPostImages({});
+                // Capture token usage for developers
+                if (data.tokenUsage) {
+                    setTrendingTokenUsage(data.tokenUsage);
+                }
                 // Save to history
-                await saveToHistory('ai_generated', `AI Generated ${data.posts.length} Posts`, data.posts, { customPrompt: trendingCustomPrompt, selectedCount: selected.length });
+                await saveToHistory('ai_generated', `AI Generated ${data.posts.length} Posts`, data.posts, { customPrompt: trendingCustomPrompt, selectedCount: selected.length, model: data.model });
             } else setTrendingStatus(data.error || 'Generation failed');
         } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
         finally { setTrendingGenerating(false); }
@@ -1069,16 +1282,20 @@ function DashboardContent() {
         </svg>
     );
 
+    // Navigation items with grouped sections
     const navItems = [
-        { id: 'overview', label: 'Overview', icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10') },
-        { id: 'trending-posts', label: 'Trending Posts', icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z') },
-        { id: 'writer', label: 'Post Writer', icon: svgIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z') },
-        { id: 'commenter', label: 'Commenter', icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z') },
-        { id: 'import', label: 'Import Profiles', icon: svgIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6') },
-        { id: 'limits', label: 'Limits & Delays', icon: svgIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z') },
-        { id: 'comments', label: 'Comments', icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z') },
-        { id: 'tasks', label: 'Tasks', icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11') },
-        { id: 'history', label: 'History', icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z') },
+        { id: 'overview', label: 'Overview', icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'), section: 'dashboard' },
+        // Posts section
+        { id: 'trending-posts', label: 'Viral Posts Writer', icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z'), section: 'posts' },
+        { id: 'writer', label: 'Personalized Post Writer', icon: svgIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'), section: 'posts' },
+        // Comments section
+        { id: 'commenter', label: 'Auto Commenter', icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'), section: 'comments' },
+        { id: 'comments', label: 'Comments Settings', icon: svgIcon('M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'), section: 'comments' },
+        { id: 'import', label: 'Import Profiles', icon: svgIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6'), section: 'comments' },
+        // Other
+        { id: 'limits', label: 'Limits & Delays', icon: svgIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), section: 'management' },
+        { id: 'tasks', label: 'Tasks', icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'), section: 'management' },
+        { id: 'history', label: 'History', icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'), section: 'management' },
     ];
 
     const accountItems = [
@@ -1347,56 +1564,6 @@ function DashboardContent() {
                     )}
                 </div>
 
-                {/* User Profile Card */}
-                {!sidebarCollapsed && (
-                    <div style={{ 
-                        margin: '20px 16px', 
-                        padding: '16px',
-                        background: 'linear-gradient(135deg, rgba(105,63,233,0.2) 0%, rgba(139,92,246,0.1) 100%)',
-                        borderRadius: '16px',
-                        border: '1px solid rgba(105,63,233,0.3)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                            <div style={{ 
-                                width: '44px', 
-                                height: '44px', 
-                                borderRadius: '12px', 
-                                background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                color: 'white',
-                                fontSize: '18px',
-                                fontWeight: '700',
-                                boxShadow: '0 4px 15px rgba(105,63,233,0.4)'
-                            }}>
-                                {user?.name?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                            <div style={{ flex: 1, overflow: 'hidden' }}>
-                                <div style={{ fontSize: '14px', fontWeight: '600', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {user?.name || 'User'}
-                                </div>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {user?.email || ''}
-                                </div>
-                            </div>
-                        </div>
-                        <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            padding: '8px 12px',
-                            background: 'rgba(16,185,129,0.15)',
-                            borderRadius: '8px',
-                            border: '1px solid rgba(16,185,129,0.3)'
-                        }}>
-                            <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
-                                {user?.plan?.name || 'Starter'} Plan
-                            </span>
-                        </div>
-                    </div>
-                )}
-
                 {/* Collapsed User Avatar */}
                 {sidebarCollapsed && (
                     <div style={{ padding: '20px 0', display: 'flex', justifyContent: 'center' }}>
@@ -1420,36 +1587,43 @@ function DashboardContent() {
                 {/* Navigation */}
                 <div style={{ flex: 1, padding: '0 12px', overflowY: 'auto' }}>
                     {!sidebarCollapsed && (
-                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', marginBottom: '12px', paddingLeft: '12px', letterSpacing: '1.5px', fontWeight: '600' }}>
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', marginBottom: '8px', paddingLeft: '12px', letterSpacing: '1.5px', fontWeight: '600' }}>
                             Dashboard
                         </div>
                     )}
-                    
-                    {navItems.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => handleTabChange(item.id)}
-                            title={sidebarCollapsed ? item.label : undefined}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                                width: '100%',
-                                padding: sidebarCollapsed ? '14px' : '12px 16px',
-                                background: activeTab === item.id 
-                                    ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
-                                    : 'transparent',
-                                color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'),
-                                border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                marginBottom: '6px',
-                                transition: 'all 0.2s ease',
-                                fontWeight: activeTab === item.id ? '600' : '500',
-                                fontSize: '14px',
-                                gap: '12px'
-                            }}
-                        >
+                    {navItems.filter(i => i.section === 'dashboard').map(item => (
+                        <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
+                            {!sidebarCollapsed && item.label}
+                        </button>
+                    ))}
+
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>Posts</div>}
+                    {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
+                    {navItems.filter(i => i.section === 'posts').map(item => (
+                        <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
+                            {!sidebarCollapsed && item.label}
+                        </button>
+                    ))}
+
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>Comments</div>}
+                    {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
+                    {navItems.filter(i => i.section === 'comments').map(item => (
+                        <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
+                            {!sidebarCollapsed && item.label}
+                        </button>
+                    ))}
+
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>Management</div>}
+                    {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
+                    {navItems.filter(i => i.section === 'management').map(item => (
+                        <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
                             {!sidebarCollapsed && item.label}
                         </button>
@@ -1612,13 +1786,13 @@ function DashboardContent() {
                             margin: '0 0 8px 0',
                         }}>
                             {activeTab === 'overview' && 'Overview'}
-                            {activeTab === 'writer' && 'Post Writer'}
-                            {activeTab === 'comments' && 'Comments'}
-                            {activeTab === 'trending-posts' && 'Trending Posts'}
+                            {activeTab === 'writer' && 'Personalized Post Writer'}
+                            {activeTab === 'comments' && 'Comments Settings'}
+                            {activeTab === 'trending-posts' && 'Viral Posts Writer'}
                             {activeTab === 'tasks' && 'Tasks'}
                             {activeTab === 'history' && 'History'}
                             {activeTab === 'limits' && 'Limits & Delays'}
-                            {activeTab === 'commenter' && 'Commenter'}
+                            {activeTab === 'commenter' && 'Auto Commenter'}
                             {activeTab === 'import' && 'Import Profiles'}
                             {activeTab === 'analytics' && 'Analytics'}
                             {activeTab === 'usage' && 'Usage & Limits'}
@@ -1628,13 +1802,13 @@ function DashboardContent() {
                         </h1>
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '15px', margin: 0 }}>
                             {activeTab === 'overview' && 'Here\'s what\'s happening with your LinkedIn automation'}
-                            {activeTab === 'writer' && 'Create AI-powered LinkedIn posts and publish via extension'}
-                            {activeTab === 'trending-posts' && 'Scrape, analyze and generate viral posts from trending content'}
-                            {activeTab === 'comments' && 'Configure AI comment generation settings and style profiles'}
+                            {activeTab === 'writer' && 'Create personalized AI posts that match your unique voice and style'}
+                            {activeTab === 'trending-posts' && 'Generate viral posts inspired by top-performing LinkedIn content'}
+                            {activeTab === 'comments' && 'Configure AI comment style, tone, goal, and voice profiles'}
                             {activeTab === 'tasks' && 'View and manage extension tasks'}
                             {activeTab === 'history' && 'Browse your generation and publishing history'}
                             {activeTab === 'limits' && 'LinkedIn-safe automation limits and timing controls'}
-                            {activeTab === 'commenter' && 'AI-powered bulk commenting and engagement'}
+                            {activeTab === 'commenter' && 'AI-powered bulk commenting and automated engagement'}
                             {activeTab === 'import' && 'Import LinkedIn profiles for automated engagement'}
                             {activeTab === 'analytics' && 'Track engagement metrics, automation history, networking sessions, and import activities'}
                             {activeTab === 'usage' && 'Monitor your daily usage and plan limits'}
@@ -1644,6 +1818,23 @@ function DashboardContent() {
                         </p>
                     </div>
                     
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {/* Extension Connection Status */}
+                    {extensionConnected ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'rgba(16,185,129,0.1)', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.6)' }} />
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#34d399' }}>Extension Connected</span>
+                            {extensionLastSeen && <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>· {extensionLastSeen.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+                        </div>
+                    ) : (
+                        <div title="Open the Kommentify Chrome extension and click 'Connect to Dashboard'" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'rgba(239,68,68,0.12)', borderRadius: '10px', border: '1px solid rgba(239,68,68,0.4)', cursor: 'default' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
+                            <div>
+                                <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171', lineHeight: 1 }}>Extension Offline</div>
+                                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Open extension → click Connect</div>
+                            </div>
+                        </div>
+                    )}
                     {/* Theme Toggle */}
                     <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
                         {(['current', 'light', 'dark'] as const).map(t => (
@@ -1653,7 +1844,25 @@ function DashboardContent() {
                             </button>
                         ))}
                     </div>
+                    </div>
                 </div>
+
+                {/* Extension Offline Banner */}
+                {!extensionConnected && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px', background: 'linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(220,38,38,0.08) 100%)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', marginBottom: '20px' }}>
+                        <span style={{ fontSize: '20px' }}>🔌</span>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ color: '#f87171', fontWeight: '700', fontSize: '13px', marginBottom: '2px' }}>Chrome Extension Not Connected</div>
+                            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>
+                                To use automation features, open the <strong style={{ color: 'white' }}>Kommentify Chrome Extension</strong> and make sure you&apos;re logged in with this account. The connection is established <strong style={{ color: '#a78bfa' }}>automatically</strong> once the extension is active.
+                            </div>
+                        </div>
+                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer"
+                            style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '8px', color: '#f87171', fontSize: '12px', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                            Get Extension ↗
+                        </a>
+                    </div>
+                )}
 
                 {/* Overview Tab Content */}
                 {activeTab === 'overview' && (
@@ -1779,84 +1988,102 @@ function DashboardContent() {
                 {/* Writer Tab */}
                 {activeTab === 'writer' && (
                     <>
-                    {/* Inspiration Sources Section */}
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><span>✨</span> Inspiration Sources</h3>
-                            <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>🔄 Refresh</button>
-                        </div>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '14px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic the style of your saved sources.</p>
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '14px' }}>
-                            <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={2}
-                                style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif', lineHeight: '1.5' }} />
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <select value={inspirationPostCount} onChange={e => setInspirationPostCount(parseInt(e.target.value))} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                                    <option value="5">5 posts</option><option value="10">10 posts</option><option value="15">15 posts</option><option value="20">20 posts</option><option value="30">30 posts</option>
-                                </select>
-                                <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '8px 16px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
-                                    {inspirationScraping ? '⏳ Scraping...' : '🔍 Scrape'}
-                                </button>
-                            </div>
-                        </div>
-                        {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 14px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
-                        {inspirationSources.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: inspirationSources.length > 0 ? '12px' : '0' }}>
-                                {inspirationSources.map((src: any, i: number) => {
-                                    const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
-                                    return (
-                                    <div key={i} onClick={() => {
-                                        if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
-                                        else if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== src.name));
-                                        else setInspirationSelected([...inspirationSelected, src.name]);
-                                    }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: isChecked ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                        <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '15px', height: '15px', cursor: 'pointer' }} />
-                                        <span style={{ fontSize: '12px' }}>👤</span>
-                                        <span style={{ color: isChecked ? '#a78bfa' : 'white', fontSize: '13px', fontWeight: '600' }}>{src.name}</span>
-                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
-                                        <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
-                                    </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                        {inspirationSources.length === 0 && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', textAlign: 'center', margin: '8px 0 0' }}>No sources yet. Add LinkedIn profiles above to get started.</p>}
-                        {inspirationSources.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(105,63,233,0.1)', borderRadius: '10px', border: '1px solid rgba(105,63,233,0.25)' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                    <strong>Use All Sources</strong>
-                                </label>
-                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>AI will mimic their writing style when generating posts</span>
-                            </div>
-                        )}
-                        {/* Kommentify Shared Profiles */}
-                        {sharedInspProfiles.length > 0 && (
-                            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.08)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
-                                <div style={{ color: '#fbbf24', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>⭐ Kommentify Shared Profiles</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {sharedInspProfiles.map((p: any, i: number) => {
-                                        const isChecked = inspirationSelected.includes(p.profileName);
-                                        return (
-                                        <div key={i} onClick={() => {
-                                            if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== p.profileName));
-                                            else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
-                                        }}
-                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isChecked ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: isChecked ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                            <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '14px', height: '14px', cursor: 'pointer' }} />
-                                            <span style={{ fontSize: '11px' }}>👤</span>
-                                            <span style={{ color: isChecked ? '#fbbf24' : 'white', fontSize: '12px', fontWeight: '600' }}>{p.profileName}</span>
-                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{p.postCount} posts</span>
-                                        </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                         {/* Left Column: Settings */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* LinkedIn Profile Scan Card */}
+                            <div style={{ background: 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '24px' }}>🔗</span>
+                                        <h4 style={{ margin: 0, color: 'white', fontSize: '15px', fontWeight: '700' }}>LinkedIn Profile Data</h4>
+                                    </div>
+                                    <button onClick={scanLinkedInProfile} disabled={linkedInProfileScanning}
+                                        style={{ background: 'white', color: '#0077b5', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: linkedInProfileScanning ? 'wait' : 'pointer' }}>
+                                        {linkedInProfileScanning ? '⏳ Scanning...' : '📡 Scan My Profile'}
+                                    </button>
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '12px' }}>
+                                    {linkedInProfileStatus || 'Scan your LinkedIn profile to use your data for AI-generated content that matches your style.'}
+                                </div>
+                                
+                                {/* Toggle for using profile data */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 }}>
+                                        <input type="checkbox" checked={linkedInUseProfileData} onChange={e => toggleLinkedInProfileData(e.target.checked)}
+                                            style={{ width: '18px', height: '18px', accentColor: '#0077b5' }} />
+                                        <span style={{ color: 'white', fontSize: '13px', fontWeight: '500' }}>Use my profile data in AI prompts</span>
+                                    </label>
+                                    <button onClick={loadLinkedInProfile} disabled={linkedInProfileLoading}
+                                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '6px 12px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
+                                        {linkedInProfileLoading ? '...' : '🔄'}
+                                    </button>
+                                </div>
+
+                                {/* Profile Data Display */}
+                                {linkedInProfile ? (
+                                    <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                            <div>
+                                                <h4 style={{ color: 'white', fontSize: '14px', fontWeight: '600', margin: '0' }}>
+                                                    {linkedInProfile.name || 'LinkedIn Profile'}
+                                                </h4>
+                                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>
+                                                    {linkedInProfile.lastScannedAt ? `Scanned: ${new Date(linkedInProfile.lastScannedAt).toLocaleDateString()}` : ''}
+                                                </span>
+                                            </div>
+                                            <button 
+                                                onClick={deleteLinkedInProfile}
+                                                style={{ 
+                                                    background: 'rgba(239, 68, 68, 0.2)', 
+                                                    border: '1px solid rgba(239, 68, 68, 0.3)', 
+                                                    borderRadius: '4px', 
+                                                    padding: '4px 8px', 
+                                                    color: '#ef4444', 
+                                                    fontSize: '16px', 
+                                                    cursor: 'pointer',
+                                                    lineHeight: '1'
+                                                }}
+                                                title="Delete profile data"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', margin: '0 0 10px 0', lineHeight: '1.4' }}>
+                                            {linkedInProfile.headline || ''}
+                                        </p>
+                                        
+                                        {/* Topic Suggestions */}
+                                        <div style={{ marginTop: '12px' }}>
+                                            <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
+                                                style={{ width: '100%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', padding: '8px', color: 'white', fontSize: '12px', cursor: 'pointer', marginBottom: '8px' }}>
+                                                {linkedInGeneratingTopics ? '⏳ Generating...' : '💡 Get Topic Ideas from My Profile'}
+                                            </button>
+                                            
+                                            {/* View All Data Button */}
+                                            <button onClick={() => setShowLinkedInDataModal(true)}
+                                                style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>
+                                                📊 View All Profile Data
+                                            </button>
+                                            {linkedInTopicSuggestions.length > 0 && (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                    {linkedInTopicSuggestions.map((topic, idx) => (
+                                                        <button key={idx} onClick={() => selectTopicSuggestion(topic)}
+                                                            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', padding: '6px 10px', color: 'white', fontSize: '11px', cursor: 'pointer', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {topic}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '16px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                                        No profile data scanned yet. Click "Scan My Profile" to get started.
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Post Settings */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1903,15 +2130,26 @@ function DashboardContent() {
                                         </select>
                                     </div>
                                 </div>
-                                <div style={{ marginBottom: '16px' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>📏 Post Length</label>
-                                    <select value={writerLength} onChange={e => setWriterLength(e.target.value)}
-                                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
-                                        <option value="500">Short (500 chars)</option>
-                                        <option value="900">Medium (900 chars)</option>
-                                        <option value="1500">Long (1500 chars)</option>
-                                        <option value="2500">Extra Long (2500 chars)</option>
-                                    </select>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>📏 Post Length</label>
+                                        <select value={writerLength} onChange={e => setWriterLength(e.target.value)}
+                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                            <option value="500">Short (500 chars)</option>
+                                            <option value="900">Medium (900 chars)</option>
+                                            <option value="1500">Long (1500 chars)</option>
+                                            <option value="2500">Extra Long (2500 chars)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>🤖 AI Model</label>
+                                        <select value={writerModel} onChange={e => setWriterModel(e.target.value)}
+                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                            {MODEL_OPTIONS.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                                 {/* Advanced Settings */}
                                 <div style={{ marginBottom: '16px' }}>
@@ -1970,28 +2208,6 @@ function DashboardContent() {
                                     {writerGenerating ? '⏳ Generating...' : '✨ Generate AI Post'}
                                 </button>
                             </div>
-                            {/* Schedule Post */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span>📅</span> Schedule Post
-                                </h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                                    <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '6px' }}>Date</label>
-                                        <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }} />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginBottom: '6px' }}>Time</label>
-                                        <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }} />
-                                    </div>
-                                </div>
-                                <button onClick={schedulePost}
-                                    style={{ width: '100%', padding: '12px', background: 'rgba(168,85,247,0.3)', border: '1px solid rgba(168,85,247,0.5)', borderRadius: '12px', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
-                                    📅 Schedule Post
-                                </button>
-                            </div>
                         </div>
                         {/* Right Column: Content Editor */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -2011,16 +2227,62 @@ function DashboardContent() {
                                         {writerStatus}
                                     </div>
                                 )}
+                                {/* Token Usage Display - Developer Only */}
+                                {isDeveloper && writerTokenUsage && (
+                                    <div style={{ marginTop: '12px', padding: '14px 18px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                            {miniIcon('M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z', '#60a5fa', 16)}
+                                            <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '700' }}>🔧 Developer Token Usage</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                            <div>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Model</span>
+                                                <div style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>{writerTokenUsage.modelName}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Input Tokens</span>
+                                                <div style={{ color: '#34d399', fontSize: '13px', fontWeight: '600' }}>{writerTokenUsage.inputTokens?.toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Output Tokens</span>
+                                                <div style={{ color: '#fbbf24', fontSize: '13px', fontWeight: '600' }}>{writerTokenUsage.outputTokens?.toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Input Cost</span>
+                                                <div style={{ color: '#34d399', fontSize: '13px', fontWeight: '600' }}>{writerTokenUsage.inputCost}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Output Cost</span>
+                                                <div style={{ color: '#fbbf24', fontSize: '13px', fontWeight: '600' }}>{writerTokenUsage.outputCost}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Total Cost</span>
+                                                <div style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '700' }}>{writerTokenUsage.totalCost}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 {/* Action Buttons */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '16px' }}>
                                     <button onClick={sendToExtension} disabled={writerPosting}
-                                        style={{ padding: '14px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 15px rgba(105,63,233,0.4)', opacity: writerPosting ? 0.7 : 1, transition: 'all 0.2s', transform: writerPosting ? 'scale(0.97)' : 'scale(1)' }}>
+                                        style={{ padding: '13px 8px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '13px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 15px rgba(105,63,233,0.4)', opacity: writerPosting ? 0.7 : 1, transition: 'all 0.2s' }}>
                                         {writerPosting ? '⏳ Sending...' : '🚀 Post to LinkedIn'}
                                     </button>
                                     <button onClick={saveDraft}
-                                        style={{ padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
+                                        style={{ padding: '13px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
                                         💾 Save Draft
                                     </button>
+                                    <button onClick={schedulePost}
+                                        style={{ padding: '13px 8px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '12px', color: '#c4b5fd', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+                                        📅 Schedule
+                                    </button>
+                                </div>
+                                {/* Inline Schedule Controls */}
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px', alignItems: 'center' }}>
+                                    <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
+                                        style={{ flex: 1, padding: '8px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontSize: '12px' }} />
+                                    <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
+                                        style={{ flex: 1, padding: '8px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontSize: '12px' }} />
                                 </div>
                             </div>
                             {/* Saved Drafts */}
@@ -2059,105 +2321,78 @@ function DashboardContent() {
                             </div>
                         </div>
                     </div>
-                    {/* Inspiration Sources Section - moved to top */}
-                    <div style={{ display: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>✨</span> Inspiration Sources
-                            </h3>
-                            <button onClick={loadInspirationSources}
-                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
-                                🔄 Refresh
-                            </button>
+                    {/* Inspiration Sources Section - Below Grid */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><span>✨</span> Inspiration Sources</h3>
+                            <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>🔄 Refresh</button>
                         </div>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginBottom: '20px' }}>
-                            Add LinkedIn profiles to learn from their writing style. AI will mimic the style of your saved sources.
-                        </p>
-                        {/* Add Profile Links */}
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '20px' }}>
-                            <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '600', marginBottom: '10px' }}>🔗 Add Profile Links (one per line)</label>
-                            <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)}
-                                placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2\nhttps://linkedin.com/in/username3"}
-                                rows={4}
-                                style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif', lineHeight: '1.6' }} />
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>
-                                    Posts per profile:
-                                    <select value={inspirationPostCount} onChange={e => setInspirationPostCount(parseInt(e.target.value))}
-                                        style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                                        <option value="5">5</option>
-                                        <option value="10">10</option>
-                                        <option value="15">15</option>
-                                        <option value="20">20</option>
-                                        <option value="30">30</option>
-                                    </select>
-                                </label>
-                                <span style={{ flex: 1 }} />
-                                <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping}
-                                    style={{ padding: '10px 20px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: inspirationScraping ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.3)' }}>
-                                    {inspirationScraping ? '⏳ Scraping...' : '🔍 Scrape & Add Profiles'}
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '14px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic the style of your saved sources.</p>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '14px' }}>
+                            <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={2}
+                                style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif', lineHeight: '1.5' }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <select value={inspirationPostCount} onChange={e => setInspirationPostCount(parseInt(e.target.value))} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                                    <option value="5">5 posts</option><option value="10">10 posts</option><option value="15">15 posts</option><option value="20">20 posts</option><option value="30">30 posts</option>
+                                </select>
+                                <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '8px 16px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                    {inspirationScraping ? '⏳ Scraping...' : '🔍 Scrape'}
                                 </button>
                             </div>
-                            {inspirationStatus && (
-                                <div style={{ marginTop: '12px', padding: '10px 16px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '13px' }}>
-                                    {inspirationStatus}
-                                </div>
-                            )}
                         </div>
-                        {/* Saved Sources */}
-                        <div style={{ marginBottom: '20px' }}>
-                            <h4 style={{ color: 'white', fontSize: '15px', fontWeight: '700', marginBottom: '14px' }}>📚 Saved Inspiration Sources</h4>
-                            {inspirationLoading ? (
-                                <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading sources...</div>
-                            ) : inspirationSources.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '30px 0' }}>
-                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>No inspiration sources yet. Add LinkedIn profiles above to get started.</p>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {inspirationSources.map((src: any, i: number) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,0.05)', padding: '14px 18px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                            <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>
-                                                👤
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{src.name}</div>
-                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{src.count} posts saved</div>
-                                            </div>
-                                            <button onClick={() => deleteInspirationSource(src.name)}
-                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {/* Use Inspiration Context */}
+                        {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 14px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
                         {inspirationSources.length > 0 && (
-                            <div style={{ background: 'rgba(105,63,233,0.1)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                                <h4 style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '700', marginBottom: '12px' }}>🎯 Use Inspiration Context</h4>
-                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '14px' }}>AI will mimic the style of your saved sources when generating posts.</p>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer', marginBottom: '12px' }}>
-                                    <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }}
-                                        style={{ accentColor: '#693fe9', width: '18px', height: '18px' }} />
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                                {inspirationSources.map((src: any, i: number) => {
+                                    const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
+                                    return (
+                                    <div key={i} onClick={() => {
+                                        if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
+                                        else if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== src.name));
+                                        else setInspirationSelected([...inspirationSelected, src.name]);
+                                    }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: isChecked ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                        <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '15px', height: '15px', cursor: 'pointer' }} />
+                                        <span style={{ fontSize: '12px' }}>👤</span>
+                                        <span style={{ color: isChecked ? '#a78bfa' : 'white', fontSize: '13px', fontWeight: '600' }}>{src.name}</span>
+                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
+                                        <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
+                                    </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        {inspirationSources.length === 0 && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', textAlign: 'center', margin: '8px 0 0' }}>No sources yet. Add LinkedIn profiles above to get started.</p>}
+                        {inspirationSources.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(105,63,233,0.1)', borderRadius: '10px', border: '1px solid rgba(105,63,233,0.25)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
                                     <strong>Use All Sources</strong>
                                 </label>
-                                {!inspirationUseAll && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '28px' }}>
-                                        {inspirationSources.map((src: any, i: number) => (
-                                            <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
-                                                <input type="checkbox" checked={inspirationSelected.includes(src.name)}
-                                                    onChange={e => {
-                                                        if (e.target.checked) setInspirationSelected([...inspirationSelected, src.name]);
-                                                        else setInspirationSelected(inspirationSelected.filter(n => n !== src.name));
-                                                    }}
-                                                    style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                                {src.name}
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
+                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>AI will mimic their writing style when generating posts</span>
+                            </div>
+                        )}
+                        {/* Kommentify Shared Profiles */}
+                        {sharedInspProfiles.length > 0 && (
+                            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.08)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
+                                <div style={{ color: '#fbbf24', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>⭐ Kommentify Shared Profiles</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {sharedInspProfiles.map((p: any, i: number) => {
+                                        const isChecked = inspirationSelected.includes(p.profileName);
+                                        return (
+                                        <div key={i} onClick={() => {
+                                            if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== p.profileName));
+                                            else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
+                                        }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isChecked ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: isChecked ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                            <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '14px', height: '14px', cursor: 'pointer' }} />
+                                            <span style={{ fontSize: '11px' }}>👤</span>
+                                            <span style={{ color: isChecked ? '#fbbf24' : 'white', fontSize: '12px', fontWeight: '600' }}>{p.profileName}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{p.postCount} posts</span>
+                                        </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -2203,61 +2438,66 @@ function DashboardContent() {
                                         </p>
                                     </div>
                                 )}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', opacity: csUseProfileStyle ? 0.4 : 1, pointerEvents: csUseProfileStyle ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
+                                <div style={{ opacity: csUseProfileStyle ? 0.4 : 1, pointerEvents: csUseProfileStyle ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
+
                                     {/* Comment Goal */}
-                                    <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Goal</label>
-                                        <select value={csGoal} onChange={e => setCsGoal(e.target.value)} disabled={csUseProfileStyle}
-                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
-                                            <option value="AddValue" style={{ background: '#1a1a3e' }}>Add Value - Pure contribution, helpful insight</option>
-                                            <option value="ShareExperience" style={{ background: '#1a1a3e' }}>Share Experience - Personal story that adds perspective</option>
-                                            <option value="AskQuestion" style={{ background: '#1a1a3e' }}>Ask Question - Deepen discussion with curiosity</option>
-                                            <option value="DifferentPerspective" style={{ background: '#1a1a3e' }}>Different Perspective - Respectfully challenge</option>
-                                            <option value="BuildRelationship" style={{ background: '#1a1a3e' }}>Build Relationship - Warm, supportive engagement</option>
-                                            <option value="SubtlePitch" style={{ background: '#1a1a3e' }}>Subtle Pitch - Strategic positioning with soft CTA</option>
-                                        </select>
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>What you want to achieve with this comment</p>
+                                    <div style={{ marginBottom: '18px' }}>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Goal <span style={{ color: 'rgba(255,255,255,0.35)', textTransform: 'none', letterSpacing: 0, fontWeight: '400' }}>— what you want to achieve</span></label>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+                                            {[{v:'AddValue',l:'Add Value',d:'Pure contribution, helpful insight',e:'💡'},{v:'ShareExperience',l:'Share Experience',d:'Personal story adds perspective',e:'💭'},{v:'AskQuestion',l:'Ask Question',d:'Deepen discussion with curiosity',e:'❓'},{v:'DifferentPerspective',l:'Different Perspective',d:'Respectfully challenge',e:'🔄'},{v:'BuildRelationship',l:'Build Relationship',d:'Warm, supportive engagement',e:'🤝'},{v:'SubtlePitch',l:'Subtle Pitch',d:'Strategic positioning with soft CTA',e:'🎯'}].map(o => (
+                                                <button key={o.v} onClick={() => setCsGoal(o.v)} style={{ padding:'8px 14px', background: csGoal===o.v ? 'linear-gradient(135deg,rgba(105,63,233,0.4),rgba(139,92,246,0.3))' : 'rgba(255,255,255,0.05)', border: csGoal===o.v ? '1px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csGoal===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csGoal===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', transition:'all 0.2s' }}>
+                                                    <span>{o.e}</span><span>{o.l}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    {/* Tone */}
-                                    <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Tone of Voice</label>
-                                        <select value={csTone} onChange={e => setCsTone(e.target.value)} disabled={csUseProfileStyle}
-                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
-                                            <option value="Professional" style={{ background: '#1a1a3e' }}>Professional - Polished, formal</option>
-                                            <option value="Friendly" style={{ background: '#1a1a3e' }}>Friendly - Warm, conversational</option>
-                                            <option value="ThoughtProvoking" style={{ background: '#1a1a3e' }}>Thought Provoking - Makes people think deeper</option>
-                                            <option value="Supportive" style={{ background: '#1a1a3e' }}>Supportive - Encouraging, validating</option>
-                                            <option value="Contrarian" style={{ background: '#1a1a3e' }}>Contrarian - Respectfully challenges</option>
-                                            <option value="Humorous" style={{ background: '#1a1a3e' }}>Humorous - Light, witty, entertaining</option>
-                                        </select>
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Controls AI comment personality and style</p>
+
+                                    {/* Tone of Voice */}
+                                    <div style={{ marginBottom: '18px' }}>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tone of Voice <span style={{ color: 'rgba(255,255,255,0.35)', textTransform: 'none', letterSpacing: 0, fontWeight: '400' }}>— AI comment personality</span></label>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+                                            {[{v:'Professional',l:'Professional',e:'💼'},{v:'Friendly',l:'Friendly',e:'😊'},{v:'ThoughtProvoking',l:'Thought Provoking',e:'🤔'},{v:'Supportive',l:'Supportive',e:'🌟'},{v:'Contrarian',l:'Contrarian',e:'⚡'},{v:'Humorous',l:'Humorous',e:'😄'}].map(o => (
+                                                <button key={o.v} onClick={() => setCsTone(o.v)} style={{ padding:'8px 14px', background: csTone===o.v ? 'linear-gradient(135deg,rgba(59,130,246,0.4),rgba(37,99,235,0.3))' : 'rgba(255,255,255,0.05)', border: csTone===o.v ? '1px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csTone===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csTone===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', transition:'all 0.2s' }}>
+                                                    <span>{o.e}</span><span>{o.l}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
+
                                     {/* Comment Length */}
-                                    <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Length</label>
-                                        <select value={csLength} onChange={e => setCsLength(e.target.value)} disabled={csUseProfileStyle}
-                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
-                                            <option value="Brief" style={{ background: '#1a1a3e' }}>Brief - 100 characters max</option>
-                                            <option value="Short" style={{ background: '#1a1a3e' }}>Short - 300 characters max</option>
-                                            <option value="Mid" style={{ background: '#1a1a3e' }}>Mid - 600 characters max</option>
-                                            <option value="Long" style={{ background: '#1a1a3e' }}>Long - 900 characters max</option>
-                                        </select>
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Maximum length of generated comments</p>
+                                    <div style={{ marginBottom: '18px' }}>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Length</label>
+                                        <div style={{ display: 'flex', gap: '7px' }}>
+                                            {[{v:'Brief',l:'Brief',d:'≤100 chars'},{v:'Short',l:'Short',d:'≤300 chars'},{v:'Mid',l:'Medium',d:'≤600 chars'},{v:'Long',l:'Long',d:'≤900 chars'}].map(o => (
+                                                <button key={o.v} onClick={() => setCsLength(o.v)} style={{ flex:1, padding:'10px 8px', background: csLength===o.v ? 'linear-gradient(135deg,rgba(16,185,129,0.3),rgba(5,150,105,0.2))' : 'rgba(255,255,255,0.05)', border: csLength===o.v ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csLength===o.v ? '#34d399' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csLength===o.v ? '700' : '500', cursor:'pointer', textAlign:'center', transition:'all 0.2s' }}>
+                                                    <div>{o.l}</div><div style={{ fontSize:'10px', opacity:0.7, marginTop:'2px' }}>{o.d}</div>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
+
                                     {/* Comment Style */}
+                                    <div style={{ marginBottom: '18px' }}>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Style <span style={{ color: 'rgba(255,255,255,0.35)', textTransform: 'none', letterSpacing: 0, fontWeight: '400' }}>— structure of your comments</span></label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '7px' }}>
+                                            {[{v:'direct',l:'Direct & Concise',d:'Single paragraph',e:'📝'},{v:'structured',l:'Structured',d:'2-3 short paragraphs',e:'📑'},{v:'storyteller',l:'Storyteller',d:'Personal anecdote lead',e:'📖'},{v:'challenger',l:'Challenger',d:'Different perspective',e:'⚡'},{v:'supporter',l:'Supporter',d:'Validate with evidence',e:'🤜'},{v:'expert',l:'Expert',d:'Data/experience refs',e:'🎓'},{v:'conversational',l:'Conversational',d:'Casual, colleague-like',e:'💬'}].map(o => (
+                                                <button key={o.v} onClick={() => setCsStyle(o.v)} style={{ padding:'10px 12px', background: csStyle===o.v ? 'linear-gradient(135deg,rgba(245,158,11,0.3),rgba(217,119,6,0.2))' : 'rgba(255,255,255,0.05)', border: csStyle===o.v ? '1px solid rgba(245,158,11,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csStyle===o.v ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csStyle===o.v ? '700' : '500', cursor:'pointer', textAlign:'left', transition:'all 0.2s' }}>
+                                                    <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'2px' }}><span>{o.e}</span><span>{o.l}</span></div>
+                                                    <div style={{ fontSize:'10px', opacity:0.65 }}>{o.d}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* AI Model */}
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Comment Style</label>
-                                        <select value={csStyle} onChange={e => setCsStyle(e.target.value)} disabled={csUseProfileStyle}
-                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
-                                            <option value="direct" style={{ background: '#1a1a3e' }}>Direct & Concise - Single paragraph</option>
-                                            <option value="structured" style={{ background: '#1a1a3e' }}>Structured - 2-3 short paragraphs</option>
-                                            <option value="storyteller" style={{ background: '#1a1a3e' }}>Storyteller - Personal anecdote lead</option>
-                                            <option value="challenger" style={{ background: '#1a1a3e' }}>Challenger - Different perspective</option>
-                                            <option value="supporter" style={{ background: '#1a1a3e' }}>Supporter - Validate with evidence</option>
-                                            <option value="expert" style={{ background: '#1a1a3e' }}>Expert - Data/experience references</option>
-                                            <option value="conversational" style={{ background: '#1a1a3e' }}>Conversational - Casual, colleague-like</option>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Model</label>
+                                        <select value={csModel} onChange={e => setCsModel(e.target.value)}
+                                            style={{ width: '100%', maxWidth: '400px', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none' }}>
+                                            {MODEL_OPTIONS.map(m => (
+                                                <option key={m.id} value={m.id} style={{ background: '#1a1a3e' }}>{m.name} ({m.inputCost} in / {m.outputCost} out)</option>
+                                            ))}
                                         </select>
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>How your comments are structured</p>
                                     </div>
                                 </div>
                                 {/* Expertise, Background, AI Behavior - always enabled */}
@@ -2592,20 +2832,73 @@ function DashboardContent() {
                                     </button>
                                 </div>
                             </div>
-                            <div>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>{miniIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z', 'rgba(255,255,255,0.6)', 12)} Custom AI Instruction (optional)</label>
-                                <input type="text" value={trendingCustomPrompt} onChange={e => setTrendingCustomPrompt(e.target.value)}
-                                    placeholder="e.g., Focus on SaaS topics, write for tech founders, keep it under 200 words..."
-                                    style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(105,63,233,0.3)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', margin: '6px 0 0 0' }}>Select trending posts above, then click &quot;AI Generate Posts&quot; to create 3 new posts inspired by them. Use &quot;Analyze Posts&quot; to score their viral potential.</p>
-                                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={trendingIncludeHashtags} onChange={e => setTrendingIncludeHashtags(e.target.checked)} style={{ accentColor: '#693fe9' }} />
-                                        #️⃣ Include Hashtags
+                            {/* Custom AI Instruction - Redesigned as textarea */}
+                            <div style={{ marginTop: '16px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a78bfa', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
+                                    {miniIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z', '#a78bfa', 14)} 
+                                    Custom AI Instructions
+                                </label>
+                                <textarea 
+                                    value={trendingCustomPrompt} 
+                                    onChange={e => setTrendingCustomPrompt(e.target.value)}
+                                    placeholder="Write specific instructions for the AI here...&#10;&#10;Examples:&#10;• Focus on SaaS and B2B topics&#10;• Write for tech founders and startup CEOs&#10;• Keep posts under 200 words&#10;• Use more storytelling and personal anecdotes&#10;• Include specific numbers and data points"
+                                    rows={4}
+                                    style={{ 
+                                        width: '100%', 
+                                        padding: '14px 16px', 
+                                        background: 'rgba(105,63,233,0.08)', 
+                                        border: '2px solid rgba(105,63,233,0.25)', 
+                                        borderRadius: '12px', 
+                                        color: 'white', 
+                                        fontSize: '14px', 
+                                        outline: 'none',
+                                        resize: 'vertical',
+                                        minHeight: '100px',
+                                        lineHeight: '1.5',
+                                        fontFamily: 'inherit'
+                                    }} 
+                                />
+                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '8px 0 0 0', lineHeight: '1.4' }}>
+                                    💡 Tip: Be specific about tone, topics, audience, and style preferences. The AI will analyze the voice patterns from selected posts and apply your instructions.
+                                </p>
+                            </div>
+                            
+                            {/* Model Selection & Options Row */}
+                            <div style={{ display: 'flex', gap: '16px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                                {/* AI Model Selection */}
+                                <div style={{ flex: '1', minWidth: '200px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '6px' }}>
+                                        {miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'rgba(255,255,255,0.6)', 12)}
+                                        AI Model
+                                    </label>
+                                    <select 
+                                        value={trendingModel} 
+                                        onChange={e => setTrendingModel(e.target.value)}
+                                        style={{ 
+                                            width: '100%',
+                                            padding: '10px 14px', 
+                                            background: 'rgba(255,255,255,0.08)', 
+                                            border: '1px solid rgba(255,255,255,0.15)', 
+                                            borderRadius: '10px', 
+                                            color: 'white', 
+                                            fontSize: '13px' 
+                                        }}
+                                    >
+                                        {MODEL_OPTIONS.map(m => (
+                                            <option key={m.id} value={m.id}>{m.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {/* Language Selection */}
+                                <div style={{ minWidth: '150px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '6px' }}>
+                                        {miniIcon('M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129', 'rgba(255,255,255,0.6)', 12)}
+                                        Language
                                     </label>
                                     <select value={trendingLanguage} onChange={e => setTrendingLanguage(e.target.value)}
-                                        style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '12px' }}>
-                                        <option value="">Language: Auto-detect</option>
+                                        style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                        <option value="">Auto-detect</option>
                                         <option value="English">English</option>
                                         <option value="Spanish">Spanish</option>
                                         <option value="French">French</option>
@@ -2628,12 +2921,53 @@ function DashboardContent() {
                                         <option value="Vietnamese">Vietnamese</option>
                                     </select>
                                 </div>
+                                
+                                {/* Hashtags Toggle */}
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer', padding: '10px 0' }}>
+                                    <input type="checkbox" checked={trendingIncludeHashtags} onChange={e => setTrendingIncludeHashtags(e.target.checked)} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
+                                    #️⃣ Hashtags
+                                </label>
                             </div>
                         </div>
                         {/* Status */}
                         {trendingStatus && (
                             <div style={{ marginBottom: '16px', padding: '10px 16px', background: trendingStatus.includes('Error') || trendingStatus.includes('fail') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${trendingStatus.includes('Error') || trendingStatus.includes('fail') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: trendingStatus.includes('Error') || trendingStatus.includes('fail') ? '#f87171' : '#34d399', fontSize: '13px' }}>
                                 {trendingStatus}
+                            </div>
+                        )}
+                        {/* Token Usage Display - Developer Only */}
+                        {isDeveloper && trendingTokenUsage && (
+                            <div style={{ marginBottom: '16px', padding: '14px 18px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                    {miniIcon('M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z', '#60a5fa', 16)}
+                                    <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '700' }}>🔧 Developer Token Usage</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                    <div>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Model</span>
+                                        <div style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>{trendingTokenUsage.modelName}</div>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Input Tokens</span>
+                                        <div style={{ color: '#34d399', fontSize: '13px', fontWeight: '600' }}>{trendingTokenUsage.inputTokens?.toLocaleString()}</div>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Output Tokens</span>
+                                        <div style={{ color: '#fbbf24', fontSize: '13px', fontWeight: '600' }}>{trendingTokenUsage.outputTokens?.toLocaleString()}</div>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Input Cost</span>
+                                        <div style={{ color: '#34d399', fontSize: '13px', fontWeight: '600' }}>{trendingTokenUsage.inputCost}</div>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Output Cost</span>
+                                        <div style={{ color: '#fbbf24', fontSize: '13px', fontWeight: '600' }}>{trendingTokenUsage.outputCost}</div>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>Total Cost</span>
+                                        <div style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '700' }}>{trendingTokenUsage.totalCost}</div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                         {/* Analysis Results Table - shown on TOP */}
@@ -2835,6 +3169,15 @@ function DashboardContent() {
                                 </div>
                             ))}
                         </div>
+                        {/* Queue Info Banner */}
+                        {tasks.filter(t => t.status === 'pending').length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'rgba(245,158,11,0.1)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.25)', marginBottom: '16px' }}>
+                                <span>⏱️</span>
+                                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
+                                    <strong style={{ color: '#fbbf24' }}>{tasks.filter(t => t.status === 'pending').length} task(s) queued</strong> — only one task runs at a time. Each pending task waits for the current one to finish before starting.
+                                </span>
+                            </div>
+                        )}
                         {/* Task List */}
                         {tasksLoading ? (
                             <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.5)' }}>Loading tasks...</div>
@@ -2845,7 +3188,7 @@ function DashboardContent() {
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {tasks.map((task: any) => {
+                                {tasks.map((task: any, taskIdx: number) => {
                                     const statusConfig: Record<string, { icon: string; color: string; bg: string }> = {
                                         pending: { icon: '⏳', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
                                         in_progress: { icon: '🔄', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
@@ -2855,23 +3198,44 @@ function DashboardContent() {
                                         cancelled: { icon: '🛑', color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
                                     };
                                     const sc = statusConfig[task.status] || statusConfig.pending;
+                                    const cmdLabel = task.command === 'post_to_linkedin' ? '🚀 Post to LinkedIn' :
+                                        task.command === 'scrape_feed_now' ? '🔍 Scrape Feed' :
+                                        task.command === 'scrape_profile' ? '👤 Scrape Profile' :
+                                        task.command === 'bulk_comment' ? '💬 Bulk Comment' :
+                                        task.command === 'networking' ? '🤝 Networking' :
+                                        task.command === 'import_profiles' ? '📥 Import Profiles' : task.command;
+                                    // Calculate pending countdown
+                                    let pendingCountdown = '';
+                                    if (task.status === 'pending' && task.createdAt) {
+                                        const startDelaySec = autoSettings?.automationStartDelay ?? 30;
+                                        const created = new Date(task.createdAt).getTime();
+                                        const executeAt = created + (startDelaySec * 1000);
+                                        const remaining = Math.max(0, Math.round((executeAt - Date.now()) / 1000));
+                                        pendingCountdown = remaining > 0 ? `Starts in ${remaining}s` : 'Starting soon...';
+                                    }
                                     return (
-                                        <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(255,255,255,0.05)', padding: '16px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                            <span style={{ fontSize: '20px' }}>{sc.icon}</span>
+                                        <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', background: task.status === 'pending' ? 'rgba(245,158,11,0.07)' : 'rgba(255,255,255,0.05)', padding: '16px 20px', borderRadius: '14px', border: task.status === 'pending' ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(255,255,255,0.08)' }}>
+                                            {task.status === 'in_progress' ? (
+                                                <span style={{ fontSize: '20px', animation: 'spin 1s linear infinite', display: 'inline-block' }}>{sc.icon}</span>
+                                            ) : (
+                                                <span style={{ fontSize: '20px' }}>{sc.icon}</span>
+                                            )}
                                             <div style={{ flex: 1 }}>
-                                                <div style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>
-                                                    {task.command === 'post_to_linkedin' ? '🚀 Post to LinkedIn' :
-                                                     task.command === 'scrape_feed_now' ? '🔍 Scrape Feed' :
-                                                     task.command === 'scrape_profile' ? '👤 Scrape Profile' : task.command}
+                                                <div style={{ color: 'white', fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {cmdLabel}
+                                                    {taskIdx === 0 && task.status === 'pending' && <span style={{ fontSize: '10px', background: 'rgba(245,158,11,0.2)', color: '#fbbf24', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>NEXT</span>}
                                                 </div>
-                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '2px' }}>
                                                     {task.createdAt ? new Date(task.createdAt).toLocaleString() : ''}
-                                                    {task.data?.content && <span> - {task.data.content.substring(0, 60)}...</span>}
-                                                    {task.data?.profileUrl && <span> - {task.data.profileUrl}</span>}
+                                                    {task.data?.content && <span> · {task.data.content.substring(0, 50)}…</span>}
+                                                    {task.data?.profileUrl && <span> · {task.data.profileUrl}</span>}
                                                 </div>
+                                                {task.status === 'pending' && pendingCountdown && (
+                                                    <div style={{ color: '#fbbf24', fontSize: '11px', marginTop: '3px', fontWeight: '600' }}>⏱ {pendingCountdown}</div>
+                                                )}
                                             </div>
-                                            <span style={{ padding: '4px 12px', background: sc.bg, color: sc.color, borderRadius: '20px', fontSize: '12px', fontWeight: '600', border: `1px solid ${sc.color}33` }}>
-                                                {task.status}
+                                            <span style={{ padding: '4px 12px', background: sc.bg, color: sc.color, borderRadius: '20px', fontSize: '12px', fontWeight: '600', border: `1px solid ${sc.color}33`, whiteSpace: 'nowrap' }}>
+                                                {task.status.replace('_', ' ')}
                                             </span>
                                         </div>
                                     );
@@ -3079,92 +3443,88 @@ function DashboardContent() {
                             </div>
                         </div>
 
-                        {/* All Delays — compact 2-column sections */}
+                        {/* Automation + Networking Intervals — preset range buttons */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            {/* Starting Delays */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>⏱️ Starting Delays</h4>
-                                {[
-                                    { key: 'automationStartDelay', label: 'Automation' },
-                                    { key: 'networkingStartDelay', label: 'Networking' },
-                                    { key: 'importStartDelay', label: 'Import' },
-                                ].map(f => (
-                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
-                                        <input type="number" min="0" max="300" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 10px 0' }}>⚙️ Automation Intervals</h4>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Search delay (sec)</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {[[30,60],[60,120],[90,180],[120,240],[180,360]].map(([mn,mx]) => {
+                                            const on = autoSettings.searchDelayMin===mn && autoSettings.searchDelayMax===mx;
+                                            return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,searchDelayMin:mn,searchDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
+                                        })}
                                     </div>
-                                ))}
+                                </div>
+                                <div>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Comment delay (sec)</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {[[60,120],[90,180],[120,240],[150,300],[180,360]].map(([mn,mx]) => {
+                                            const on = autoSettings.commentDelayMin===mn && autoSettings.commentDelayMax===mx;
+                                            return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,commentDelayMin:mn,commentDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
+                                        })}
+                                    </div>
+                                </div>
                             </div>
-
-                            {/* Post Writer Delays */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>✍️ Post Writer</h4>
-                                {[
-                                    { key: 'postWriterPageLoad', label: 'Page Load' },
-                                    { key: 'postWriterClick', label: 'Click Button' },
-                                    { key: 'postWriterTyping', label: 'Before Type' },
-                                    { key: 'postWriterSubmit', label: 'Before Submit' },
-                                ].map(f => (
-                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
-                                        <input type="number" min="0" max="120" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Automation Intervals */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>⚙️ Automation Intervals</h4>
-                                {[
-                                    { key: 'searchDelayMin', label: 'Search Min' },
-                                    { key: 'searchDelayMax', label: 'Search Max' },
-                                    { key: 'commentDelayMin', label: 'Comment Min' },
-                                    { key: 'commentDelayMax', label: 'Comment Max' },
-                                ].map(f => (
-                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
-                                        <input type="number" min="0" max="600" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Networking Intervals */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>🤝 Networking</h4>
-                                {[
-                                    { key: 'networkingDelayMin', label: 'Connect Min' },
-                                    { key: 'networkingDelayMax', label: 'Connect Max' },
-                                ].map(f => (
-                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{f.label}</span>
-                                        <input type="number" min="0" max="600" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '55px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
-                                    </div>
-                                ))}
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 10px 0' }}>🤝 Networking Intervals</h4>
+                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Connect delay (sec)</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                    {[[30,60],[60,120],[90,180],[120,240],[180,360]].map(([mn,mx]) => {
+                                        const on = autoSettings.networkingDelayMin===mn && autoSettings.networkingDelayMax===mx;
+                                        return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,networkingDelayMin:mn,networkingDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
+                                    })}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Post Action Delays — single compact block */}
+                        {/* Post Writer Delays — delay mode toggle */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>📝 Post Action Delays (sec)</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                {[
-                                    { key: 'beforeOpeningDelay', label: 'Open Post' },
-                                    { key: 'postPageLoadDelay', label: 'Page Load' },
-                                    { key: 'beforeLikeDelay', label: 'Like' },
-                                    { key: 'beforeCommentDelay', label: 'Comment' },
-                                    { key: 'beforeShareDelay', label: 'Reshare' },
-                                    { key: 'beforeFollowDelay', label: 'Follow' },
-                                ].map(f => (
-                                    <div key={f.key} style={{ textAlign: 'center' }}>
-                                        <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', display: 'block', marginBottom: '3px' }}>{f.label}</label>
-                                        <input type="number" min="0" max="120" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
-                                    </div>
-                                ))}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>✍️ Post Writer Delays</h4>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {[{v:'base',l:'Base Delay'},{v:'random',l:'Random Delay'}].map(o => (
+                                        <button key={o.v} onClick={() => setAutoSettings((p:any)=>({...p,postWriterDelayMode:o.v}))}
+                                            style={{ padding:'4px 10px', background:(autoSettings.postWriterDelayMode??'base')===o.v?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border:'none', borderRadius:'6px', color:'white', fontSize:'11px', fontWeight:'600', cursor:'pointer' }}>{o.l}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
+                                {['Page Load','Click Btn','Before Type','Before Submit'].map(lbl => {
+                                    const mode = autoSettings.postWriterDelayMode??'base';
+                                    const val = mode==='random' ? `${autoSettings.randomIntervalMin??5}–${autoSettings.randomIntervalMax??15}s` : `${autoSettings.baseDelay??5}s`;
+                                    return (
+                                        <div key={lbl} style={{ textAlign:'center', padding:'8px', background:'rgba(255,255,255,0.04)', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                                            <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'10px', marginBottom:'4px' }}>{lbl}</div>
+                                            <div style={{ color: mode==='random'?'#a78bfa':'#34d399', fontSize:'13px', fontWeight:'700' }}>{val}</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Post Action Delays — delay mode toggle */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>📝 Post Action Delays</h4>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {[{v:'base',l:'Base Delay'},{v:'random',l:'Random Delay'}].map(o => (
+                                        <button key={o.v} onClick={() => setAutoSettings((p:any)=>({...p,postActionDelayMode:o.v}))}
+                                            style={{ padding:'4px 10px', background:(autoSettings.postActionDelayMode??'base')===o.v?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border:'none', borderRadius:'6px', color:'white', fontSize:'11px', fontWeight:'600', cursor:'pointer' }}>{o.l}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+                                {['Open Post','Page Load','Like','Comment','Reshare','Follow'].map(lbl => {
+                                    const mode = autoSettings.postActionDelayMode??'base';
+                                    const val = mode==='random' ? `${autoSettings.randomIntervalMin??5}–${autoSettings.randomIntervalMax??15}s` : `${autoSettings.baseDelay??5}s`;
+                                    return (
+                                        <div key={lbl} style={{ textAlign:'center', padding:'8px', background:'rgba(255,255,255,0.04)', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                                            <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'10px', marginBottom:'4px' }}>{lbl}</div>
+                                            <div style={{ color: mode==='random'?'#a78bfa':'#34d399', fontSize:'13px', fontWeight:'700' }}>{val}</div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -3939,6 +4299,124 @@ function DashboardContent() {
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
             </button>
+            
+            {/* LinkedIn Profile Data Modal */}
+            {showLinkedInDataModal && linkedInProfile && (
+                <div style={{ 
+                    position: 'fixed', 
+                    top: 0, 
+                    left: 0, 
+                    right: 0, 
+                    bottom: 0, 
+                    background: 'rgba(0,0,0,0.8)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    zIndex: 10000 
+                }}>
+                    <div style={{ 
+                        background: '#1a1a1a', 
+                        borderRadius: '12px', 
+                        padding: '24px', 
+                        maxWidth: '600px', 
+                        maxHeight: '80vh', 
+                        overflow: 'auto', 
+                        color: 'white',
+                        width: '90%'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ margin: 0, fontSize: '18px' }}>LinkedIn Profile Data</h3>
+                            <button 
+                                onClick={() => setShowLinkedInDataModal(false)}
+                                style={{ 
+                                    background: 'none', 
+                                    border: 'none', 
+                                    color: 'white', 
+                                    fontSize: '24px', 
+                                    cursor: 'pointer',
+                                    padding: '0'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gap: '16px' }}>
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Name:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.name || 'N/A'}</p>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Headline:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.headline || 'N/A'}</p>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>About:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)', whiteSpace: 'pre-wrap' }}>{linkedInProfile.about || 'N/A'}</p>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Language:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.language || 'N/A'}</p>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Skills ({JSON.parse(linkedInProfile.skills || '[]').length}):</strong>
+                                <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
+                                    {JSON.parse(linkedInProfile.skills || '[]').map((skill: string, idx: number) => (
+                                        <li key={idx}>{skill}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Experience ({JSON.parse(linkedInProfile.experience || '[]').length}):</strong>
+                                <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
+                                    {JSON.parse(linkedInProfile.experience || '[]').map((exp: string, idx: number) => (
+                                        <li key={idx} style={{ marginBottom: '8px' }}>{exp}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Education ({JSON.parse(linkedInProfile.education || '[]').length}):</strong>
+                                <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
+                                    {JSON.parse(linkedInProfile.education || '[]').map((edu: string, idx: number) => (
+                                        <li key={idx}>{edu}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Posts ({JSON.parse(linkedInProfile.posts || '[]').length}):</strong>
+                                <div style={{ maxHeight: '200px', overflow: 'auto', margin: '4px 0' }}>
+                                    {JSON.parse(linkedInProfile.posts || '[]').map((post: string, idx: number) => (
+                                        <div key={idx} style={{ 
+                                            padding: '8px', 
+                                            margin: '4px 0', 
+                                            background: 'rgba(255,255,255,0.05)', 
+                                            borderRadius: '4px',
+                                            fontSize: '12px',
+                                            color: 'rgba(255,255,255,0.8)'
+                                        }}>
+                                            {post}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Last Scanned:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>
+                                    {linkedInProfile.lastScannedAt ? new Date(linkedInProfile.lastScannedAt).toLocaleString() : 'N/A'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

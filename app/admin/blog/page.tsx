@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface BlogPost {
   id: string;
@@ -23,6 +23,9 @@ export default function AdminBlogPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imageInputMode, setImageInputMode] = useState<'url' | 'upload'>('url');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -65,6 +68,45 @@ export default function AdminBlogPage() {
     setPublished(false);
     setAuthorName('Kommentify Team');
     setEditingPost(null);
+    setImageInputMode('url');
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Convert to base64 for storage (you can replace this with cloud storage like Cloudinary/S3)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setFeaturedImage(base64);
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        alert('Failed to read image file');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image');
+      setUploading(false);
+    }
   };
 
   const handleEdit = (post: BlogPost) => {
@@ -239,16 +281,117 @@ export default function AdminBlogPage() {
                 </div>
 
                 <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>Featured Image URL</label>
-                  <input
-                    type="url"
-                    value={featuredImage}
-                    onChange={(e) => setFeaturedImage(e.target.value)}
-                    style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px' }}
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#333' }}>Featured Image</label>
+                  
+                  {/* Toggle between URL and Upload */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setImageInputMode('url')}
+                      style={{
+                        padding: '8px 16px',
+                        background: imageInputMode === 'url' ? '#693fe9' : '#f0f0f0',
+                        color: imageInputMode === 'url' ? 'white' : '#333',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔗 Image URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageInputMode('upload')}
+                      style={{
+                        padding: '8px 16px',
+                        background: imageInputMode === 'upload' ? '#693fe9' : '#f0f0f0',
+                        color: imageInputMode === 'upload' ? 'white' : '#333',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📤 Upload Image
+                    </button>
+                  </div>
+                  
+                  {imageInputMode === 'url' ? (
+                    <input
+                      type="url"
+                      value={featuredImage.startsWith('data:') ? '' : featuredImage}
+                      onChange={(e) => setFeaturedImage(e.target.value)}
+                      style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px' }}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        style={{
+                          width: '100%',
+                          padding: '24px',
+                          background: '#f8f9fa',
+                          border: '2px dashed #ddd',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          color: '#666',
+                          cursor: uploading ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        {uploading ? (
+                          <>Uploading...</>
+                        ) : (
+                          <>
+                            <span style={{ fontSize: '24px' }}>📷</span>
+                            <span>Click to upload image (max 5MB)</span>
+                            <span style={{ fontSize: '12px', color: '#999' }}>JPG, PNG, GIF, WebP</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                  
                   {featuredImage && (
-                    <img src={featuredImage} alt="Preview" style={{ marginTop: '10px', maxHeight: '150px', borderRadius: '8px' }} />
+                    <div style={{ marginTop: '12px', position: 'relative', display: 'inline-block' }}>
+                      <img src={featuredImage} alt="Preview" style={{ maxHeight: '150px', borderRadius: '8px', display: 'block' }} />
+                      <button
+                        type="button"
+                        onClick={() => setFeaturedImage('')}
+                        style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          right: '-8px',
+                          width: '24px',
+                          height: '24px',
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
                   )}
                 </div>
 

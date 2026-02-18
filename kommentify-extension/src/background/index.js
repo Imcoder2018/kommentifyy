@@ -95,6 +95,7 @@ import { executeBulkProcessing, stopBulkProcessing } from './bulkProcessingExecu
 import { API_CONFIG } from '../shared/config.js';
 import { versionChecker } from './versionChecker.js';
 import { syncAllSettingsFromWebsite } from '../shared/services/settingsSync.js';
+import { profileScanner } from './profileScanner.js';
 
 // Force-clean old cached apiBaseUrl on startup (prevents hitting old backend URLs)
 (async () => {
@@ -569,6 +570,103 @@ async function pollCommandsDirectly() {
                     }
                 }
 
+                // --- scan_my_linkedin_profile command ---
+                else if (cmd.command === 'scan_my_linkedin_profile') {
+                    console.log('🔗 POLL-ALARM: Executing scan_my_linkedin_profile...');
+                    try {
+                        // Mark as in_progress
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+
+                        // Navigate to LinkedIn profile root (generic /in/ redirects to the user's slug)
+                        const profileUrl = 'https://www.linkedin.com/in/';
+                        const tab = await chrome.tabs.create({ url: profileUrl, active: true });
+                        console.log('🔗 POLL-ALARM: Opened LinkedIn profile tab:', tab.id);
+
+                        // Wait for page to load
+                        await new Promise((resolve) => {
+                            const checkComplete = (tabId, changeInfo) => {
+                                if (tabId === tab.id && changeInfo.status === 'complete') {
+                                    chrome.tabs.onUpdated.removeListener(checkComplete);
+                                    resolve();
+                                }
+                            };
+                            chrome.tabs.onUpdated.addListener(checkComplete);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
+                        });
+
+                        // Give LinkedIn a moment to render
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+
+                        // If we've landed on a /details/... subpage, redirect back to canonical profile URL
+                        try {
+                            const navInfo = await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                func: () => {
+                                    const canonical = document.querySelector('link[rel="canonical"]')?.href || null;
+                                    return { href: window.location.href, canonical };
+                                }
+                            });
+                            const nav = navInfo?.[0]?.result;
+                            if (nav?.canonical && nav?.href && nav.href.includes('/details/') && nav.canonical !== nav.href) {
+                                console.log('🔗 POLL-ALARM: Redirecting from details page to canonical profile:', nav);
+                                await chrome.tabs.update(tab.id, { url: nav.canonical });
+
+                                // Wait again for profile root to load
+                                await new Promise((resolve) => {
+                                    const checkComplete2 = (tabId, changeInfo) => {
+                                        if (tabId === tab.id && changeInfo.status === 'complete') {
+                                            chrome.tabs.onUpdated.removeListener(checkComplete2);
+                                            resolve();
+                                        }
+                                    };
+                                    chrome.tabs.onUpdated.addListener(checkComplete2);
+                                    setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete2); resolve(); }, 30000);
+                                });
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                            }
+                        } catch (navErr) {
+                            console.warn('🔗 POLL-ALARM: Could not normalize profile URL:', navErr);
+                        }
+
+                        // Final small delay before extraction
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                        // Extract using the same logic as your working browser script
+                        const scanData = await scanLinkedInProfileInTab(tab.id);
+                        console.log('🔗 POLL-ALARM: Scan result:', scanData);
+
+                        if (scanData?.success) {
+                            // Save to database - add profileUrl from the tab
+                            const profileUrl = (await chrome.tabs.get(tab.id)).url;
+                            const saveData = { ...scanData.data, profileUrl };
+                            await fetch(`${apiUrl}/api/linkedin-profile`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify(saveData)
+                            });
+                            console.log('🔗 POLL-ALARM: Profile data saved to database');
+                            
+                            // Keep the LinkedIn tab open after successful scan
+                            console.log('🔗 POLL-ALARM: LinkedIn tab kept open for user');
+                        } else {
+                            // Close the tab if scan failed
+                            await chrome.tabs.remove(tab.id);
+                            console.log('🔗 POLL-ALARM: Closed LinkedIn tab due to scan failure');
+                        }
+
+                        // Mark command as completed
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                        console.log('✅ POLL-ALARM: scan_my_linkedin_profile completed');
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: scan_my_linkedin_profile failed:', e);
+                        // Close the LinkedIn tab on error
+                        try { await chrome.tabs.remove(tab.id); } catch (tabError) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally {
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
+                }
+
                 // --- unknown command ---
                 else {
                     console.log('⚠️ POLL-ALARM: Unknown command:', cmd.command);
@@ -581,6 +679,137 @@ async function pollCommandsDirectly() {
     } finally {
         globalThis._pollCommandsRunning = false;
     }
+}
+
+// LinkedIn profile scan helper - uses the same logic as the working browser script
+async function scanLinkedInProfileInTab(tabId) {
+    const execResult = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const data = {
+                name: "",
+                headline: "",
+                about: "",
+                posts: [],
+                experience: [],
+                education: [],
+                certifications: [],
+                projects: [],
+                skills: [],
+                language: "",
+            };
+
+            function clean(text) {
+                if (!text) return "";
+                return text
+                    .replace(/…\s?more|Show all|See more|^\s*[\r\n]/gm, "")
+                    .replace(/\s+/g, " ")
+                    .trim();
+            }
+
+            // --- 1. NAME & HEADLINE ---
+            const nameEl = document.querySelector('h2._2cda7f44._00316ad5') || document.querySelector('h2');
+            if (nameEl) {
+                data.name = clean(nameEl.innerText);
+
+                const topCard = nameEl.closest('section') || nameEl.closest('div.d9511fd4');
+                if (topCard) {
+                    const headlineEl = topCard.querySelector('p.f53b12a2');
+                    if (headlineEl && headlineEl !== nameEl) {
+                        data.headline = clean(headlineEl.innerText);
+                    }
+                }
+            }
+
+            // --- 2. ABOUT ---
+            const aboutEl = document.querySelector('[data-testid="expandable-text-box"]');
+            if (aboutEl) {
+                data.about = clean(aboutEl.innerText);
+            } else {
+                const aboutHeader = Array.from(document.querySelectorAll('h2')).find(h => h.innerText.includes("About"));
+                if (aboutHeader) {
+                    const container = aboutHeader.closest('section');
+                    const text = container ? container.innerText.replace("About", "") : "";
+                    if (text.length > 50) data.about = clean(text);
+                }
+            }
+
+            // --- 3. SKILLS ---
+            const skillsHeader = Array.from(document.querySelectorAll('h2, span')).find(h => h.innerText.trim() === "Skills");
+            if (skillsHeader) {
+                const skillsSection = skillsHeader.closest('section') || skillsHeader.closest('div.e574b0ac');
+                if (skillsSection) {
+                    const items = skillsSection.querySelectorAll('[componentkey*="profile.skill"]');
+                    items.forEach(item => {
+                        const txt = clean(item.innerText);
+                        if (txt) data.skills.push(txt);
+                    });
+
+                    if (data.skills.length === 0) {
+                        const pTags = skillsSection.querySelectorAll('p');
+                        pTags.forEach(p => {
+                            const t = clean(p.innerText);
+                            if (t && t !== "Skills" && !t.includes("Show all")) {
+                                data.skills.push(t);
+                            }
+                        });
+                    }
+                }
+                data.skills = [...new Set(data.skills)];
+            }
+
+            // --- 4. GENERIC SECTIONS (Experience, Education, etc) ---
+            function extractList(sectionTitle, targetArray) {
+                const header = Array.from(document.querySelectorAll('h2, span')).find(h => h.innerText.includes(sectionTitle));
+                if (header) {
+                    const section = header.closest('section') || header.parentElement?.parentElement;
+                    if (section) {
+                        const listItems = section.querySelectorAll('li, .pvs-list__item--line-separated, [componentkey*="entity-collection-item"]');
+                        listItems.forEach(item => {
+                            const txt = clean(item.innerText);
+                            if (txt) {
+                                targetArray.push(txt);
+                            }
+                        });
+                    }
+                }
+            }
+
+            extractList("Experience", data.experience);
+            extractList("Education", data.education);
+            extractList("Licenses", data.certifications);
+            extractList("Projects", data.projects);
+
+            // --- 5. POSTS ---
+            const postEls = document.querySelectorAll('[data-view-name="feed-commentary"]');
+            postEls.forEach(el => {
+                const txt = clean(el.innerText);
+                if (txt && !data.posts.includes(txt)) {
+                    data.posts.push(txt);
+                }
+            });
+
+            // --- 6. LANGUAGE ---
+            const langHeader = Array.from(document.querySelectorAll('h2')).find(h => h.innerText.includes("Profile language"));
+            if (langHeader) {
+                const container = langHeader.closest('div')?.parentElement;
+                const val = container?.querySelector('p:not(.f53b12a2)');
+                if (val) {
+                    data.language = clean(val.innerText);
+                } else {
+                    const nextDiv = langHeader.closest('div')?.nextElementSibling;
+                    if (nextDiv) data.language = clean(nextDiv.innerText);
+                }
+            }
+
+            return {
+                success: true,
+                data: { ...data, lastScannedAt: new Date().toISOString() },
+            };
+        },
+    });
+
+    return execResult?.[0]?.result;
 }
 
 // Helper function to wait for content to load
@@ -2031,6 +2260,104 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     await safeTabClose(commentTab.id, 'scrape comments tab');
                                     globalThis._commandLinkedInTabs.delete(commentTab.id);
                                 }
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // Handle scan_my_linkedin_profile command
+                        if (cmd.command === 'scan_my_linkedin_profile') {
+                            console.log('🔗 BACKGROUND: Executing scan_my_linkedin_profile...');
+                            let scanTab = null;
+                            try {
+                                // Mark as in_progress
+                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+
+                                // Navigate to LinkedIn profile root
+                                const profileUrl = 'https://www.linkedin.com/in/';
+                                scanTab = await chrome.tabs.create({ url: profileUrl, active: true });
+                                console.log('🔗 BACKGROUND: Opened LinkedIn profile tab:', scanTab.id);
+
+                                // Wait for page to load
+                                await new Promise((resolve) => {
+                                    const checkComplete = (tabId, changeInfo) => {
+                                        if (tabId === scanTab.id && changeInfo.status === 'complete') {
+                                            chrome.tabs.onUpdated.removeListener(checkComplete);
+                                            resolve();
+                                        }
+                                    };
+                                    chrome.tabs.onUpdated.addListener(checkComplete);
+                                    setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
+                                });
+
+                                // Give LinkedIn a moment to render
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                                // Normalize URL back to canonical profile if we landed on a details subpage
+                                try {
+                                    const navInfo = await chrome.scripting.executeScript({
+                                        target: { tabId: scanTab.id },
+                                        func: () => {
+                                            const canonical = document.querySelector('link[rel="canonical"]')?.href || null;
+                                            return { href: window.location.href, canonical };
+                                        }
+                                    });
+                                    const nav = navInfo?.[0]?.result;
+                                    if (nav?.canonical && nav?.href && nav.href.includes('/details/') && nav.canonical !== nav.href) {
+                                        console.log('🔗 BACKGROUND: Redirecting from details page to canonical profile:', nav);
+                                        await chrome.tabs.update(scanTab.id, { url: nav.canonical });
+
+                                        // Wait again for profile root to load
+                                        await new Promise((resolve) => {
+                                            const checkComplete2 = (tabId, changeInfo) => {
+                                                if (tabId === scanTab.id && changeInfo.status === 'complete') {
+                                                    chrome.tabs.onUpdated.removeListener(checkComplete2);
+                                                    resolve();
+                                                }
+                                            };
+                                            chrome.tabs.onUpdated.addListener(checkComplete2);
+                                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete2); resolve(); }, 30000);
+                                        });
+                                        await new Promise(resolve => setTimeout(resolve, 2000));
+                                    }
+                                } catch (navErr) {
+                                    console.warn('🔗 BACKGROUND: Could not normalize profile URL:', navErr);
+                                }
+
+                                // Final small delay before extraction
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                                // Extract profile data using the same logic as your working browser script
+                                const scanData = await scanLinkedInProfileInTab(scanTab.id);
+                                console.log('🔗 BACKGROUND: Scan result:', scanData);
+
+                                if (scanData?.success) {
+                                    // Save to database - add profileUrl from the tab
+                                    const profileUrl = (await chrome.tabs.get(scanTab.id)).url;
+                                    const saveData = { ...scanData.data, profileUrl };
+                                    await fetch(`${apiUrl}/api/linkedin-profile`, {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(saveData)
+                                    });
+                                    console.log('🔗 BACKGROUND: Profile data saved to database');
+                                    
+                                    // Keep the LinkedIn tab open after successful scan
+                                    console.log('🔗 BACKGROUND: LinkedIn tab kept open for user');
+                                } else {
+                                    // Close the tab if scan failed
+                                    await chrome.tabs.remove(scanTab.id);
+                                    console.log('🔗 BACKGROUND: Closed LinkedIn tab due to scan failure');
+                                }
+
+                                // Mark command as completed
+                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                                console.log('✅ BACKGROUND: scan_my_linkedin_profile completed');
+                            } catch (e) {
+                                console.error('❌ BACKGROUND: scan_my_linkedin_profile failed:', e);
+                                // Close the LinkedIn tab on error
+                                try { await chrome.tabs.remove(scanTab.id); } catch (tabError) {}
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                            } finally {
                                 globalThis._processingCommandIds.delete(cmd.id);
                             }
                         }

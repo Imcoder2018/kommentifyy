@@ -256,6 +256,9 @@ model EmailAutomationSettings {
 model GlobalSettings {
   id                    String   @id @default(cuid())
   aiCommentsPerDollar   Int      @default(100)  // Number of AI comments users get for $1
+  postEmbeddingsCount   Int      @default(8)    // How many inspiration posts to use for post generation
+  commentEmbeddingsCount Int     @default(5)    // How many style examples to use for comment generation
+  profileStyleMode      Boolean  @default(true) // Use profile style mode for AI comment generation
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
@@ -384,6 +387,7 @@ model CommentSettings {
   tone            String   @default("Friendly")
   commentLength   String   @default("Short")
   commentStyle    String   @default("direct")
+  model           String   @default("gpt-4o")
   userExpertise   String   @default("")
   userBackground  String   @default("")
   aiAutoPost      String   @default("manual")
@@ -530,4 +534,30 @@ model BlogPost {
 
   @@index([slug])
   @@index([published, publishedAt])
+}
+
+// User's own LinkedIn profile data - scanned and stored for AI content generation
+model LinkedInProfileData {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  profileUrl      String?
+  name            String?
+  headline        String?
+  about           String?  @db.Text
+  language        String?
+  // Stored as JSON strings to handle arrays
+  posts           String   @default("[]") @db.Text
+  experience      String   @default("[]") @db.Text
+  education       String   @default("[]") @db.Text
+  certifications  String   @default("[]") @db.Text
+  projects        String   @default("[]") @db.Text
+  skills          String   @default("[]") @db.Text
+  // Token optimization: store truncated versions for AI prompts
+  postsTokenLimit Int      @default(3000)  // Max characters from posts to include in AI prompt
+  isSelected      Boolean  @default(true)  // Whether to use this data in AI generation
+  lastScannedAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
 }

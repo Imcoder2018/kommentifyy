@@ -26,6 +26,11 @@ export default function AdminScrapedPostsPage() {
   const [commentLoading, setCommentLoading] = useState(true);
   const [selectedCommentProfiles, setSelectedCommentProfiles] = useState<Set<string>>(new Set());
 
+  // Tab 4: AI Settings state
+  const [aiSettings, setAiSettings] = useState<any>({ postEmbeddingsCount: 8, commentEmbeddingsCount: 5, profileStyleMode: true, aiCommentsPerDollar: 100 });
+  const [aiSettingsLoading, setAiSettingsLoading] = useState(false);
+  const [aiSettingsSaving, setAiSettingsSaving] = useState(false);
+
   const [status, setStatus] = useState('');
 
   const getToken = () => localStorage.getItem('adminToken');
@@ -120,11 +125,36 @@ export default function AdminScrapedPostsPage() {
     } catch (e: any) { setStatus('Error: ' + e.message); }
   };
 
+  // ---- Tab 4: AI Settings ----
+  const fetchAiSettings = useCallback(async () => {
+    setAiSettingsLoading(true);
+    try {
+      const res = await fetch('/api/admin/settings', { headers: { 'Authorization': `Bearer ${getToken()}` } });
+      const data = await res.json();
+      if (data.success) setAiSettings(data.settings);
+    } catch (e) { console.error(e); }
+    finally { setAiSettingsLoading(false); }
+  }, []);
+  const saveAiSettings = async () => {
+    setAiSettingsSaving(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify(aiSettings),
+      });
+      const data = await res.json();
+      if (data.success) { setStatus('AI settings saved successfully'); setAiSettings(data.settings); }
+      else setStatus('Error: ' + (data.error || 'Failed to save'));
+    } catch (e: any) { setStatus('Error: ' + e.message); }
+    finally { setAiSettingsSaving(false); }
+  };
+
   useEffect(() => {
     if (activeTab === 'feed-posts') fetchPosts();
     else if (activeTab === 'inspiration') fetchInspProfiles();
     else if (activeTab === 'comments') fetchCommentProfiles();
-  }, [activeTab, fetchPosts, fetchInspProfiles, fetchCommentProfiles]);
+    else if (activeTab === 'ai-settings') fetchAiSettings();
+  }, [activeTab, fetchPosts, fetchInspProfiles, fetchCommentProfiles, fetchAiSettings]);
 
   const postsTotalPages = Math.ceil(postsTotal / 30);
   const tabStyle = (t: string) => ({
@@ -150,6 +180,7 @@ export default function AdminScrapedPostsPage() {
         <button onClick={() => setActiveTab('feed-posts')} style={tabStyle('feed-posts')}>📰 Feed Posts</button>
         <button onClick={() => setActiveTab('inspiration')} style={tabStyle('inspiration')}>✨ Inspiration Profiles</button>
         <button onClick={() => setActiveTab('comments')} style={tabStyle('comments')}>💬 Comment Profiles</button>
+        <button onClick={() => setActiveTab('ai-settings')} style={tabStyle('ai-settings')}>🤖 AI Settings</button>
       </div>
 
       {/* ===== TAB 1: FEED POSTS ===== */}
@@ -347,6 +378,87 @@ export default function AdminScrapedPostsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+      )}
+      {/* ===== TAB 4: AI SETTINGS ===== */}
+      {activeTab === 'ai-settings' && (
+        <div>
+          {aiSettingsLoading ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#999' }}>Loading AI settings...</div> : (
+            <div style={{ maxWidth: '700px' }}>
+              {/* Embeddings Configuration */}
+              <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', padding: '28px', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 4px 0', color: '#333' }}>🧠 Embeddings Configuration</h3>
+                <p style={{ color: '#666', fontSize: '13px', marginBottom: '24px' }}>Set how many items are fetched from vector embeddings per mode. <strong>Normal Mode</strong> never fetches from the vector database.</p>
+
+                {/* Post Generation */}
+                <div style={{ marginBottom: '20px', padding: '18px', background: '#f8f9fa', borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#333', marginBottom: '14px' }}>📝 Post Generation</div>
+
+                  {/* Profile Style Mode slider */}
+                  <div style={{ marginBottom: '10px', padding: '14px 16px', background: '#f0ecff', borderRadius: '10px', border: '1px solid #d8d0ff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <div style={{ fontWeight: '600', fontSize: '13px', color: '#693fe9' }}>👤 Profile Style Mode</div>
+                      <div style={{ background: '#693fe9', color: 'white', fontWeight: '800', fontSize: '16px', padding: '4px 14px', borderRadius: '20px', minWidth: '50px', textAlign: 'center', boxShadow: '0 2px 8px rgba(105,63,233,0.35)' }}>
+                        {aiSettings.postEmbeddingsCount}
+                      </div>
+                    </div>
+                    <input type="range" min="1" max="20" value={aiSettings.postEmbeddingsCount}
+                      onChange={e => setAiSettings({ ...aiSettings, postEmbeddingsCount: parseInt(e.target.value) })}
+                      style={{ width: '100%', accentColor: '#693fe9', height: '6px' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#aaa', marginTop: '4px' }}>
+                      <span>1 — faster</span><span>10 — balanced</span><span>20 — more context</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#693fe9', marginTop: '6px', opacity: 0.8 }}>Fetches <strong>{aiSettings.postEmbeddingsCount}</strong> inspiration post(s) from vector DB for post generation</div>
+                  </div>
+
+                  {/* Normal Mode info */}
+                  <div style={{ padding: '12px 14px', background: '#fff8e1', borderRadius: '8px', border: '1px solid #ffe082', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '18px' }}>🚫</span>
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: '12px', color: '#e65100' }}>Normal Mode — No vector DB fetching</div>
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Uses standard prompt with user settings only (topic, tone, template). Zero embedding calls.</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comment Generation */}
+                <div style={{ padding: '18px', background: '#f8f9fa', borderRadius: '12px', border: '1px solid #e0e0e0' }}>
+                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#333', marginBottom: '14px' }}>💬 Comment Generation</div>
+
+                  {/* Profile Style Mode slider */}
+                  <div style={{ marginBottom: '10px', padding: '14px 16px', background: '#f0ecff', borderRadius: '10px', border: '1px solid #d8d0ff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <div style={{ fontWeight: '600', fontSize: '13px', color: '#693fe9' }}>👤 Profile Style Mode</div>
+                      <div style={{ background: '#693fe9', color: 'white', fontWeight: '800', fontSize: '16px', padding: '4px 14px', borderRadius: '20px', minWidth: '50px', textAlign: 'center', boxShadow: '0 2px 8px rgba(105,63,233,0.35)' }}>
+                        {aiSettings.commentEmbeddingsCount}
+                      </div>
+                    </div>
+                    <input type="range" min="1" max="20" value={aiSettings.commentEmbeddingsCount}
+                      onChange={e => setAiSettings({ ...aiSettings, commentEmbeddingsCount: parseInt(e.target.value) })}
+                      style={{ width: '100%', accentColor: '#693fe9', height: '6px' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#aaa', marginTop: '4px' }}>
+                      <span>1 — faster</span><span>10 — balanced</span><span>20 — more context</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#693fe9', marginTop: '6px', opacity: 0.8 }}>Loads <strong>{aiSettings.commentEmbeddingsCount}</strong> style example(s) from selected comment profiles to match voice</div>
+                  </div>
+
+                  {/* Normal Mode info */}
+                  <div style={{ padding: '12px 14px', background: '#fff8e1', borderRadius: '8px', border: '1px solid #ffe082', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '18px' }}>🚫</span>
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: '12px', color: '#e65100' }}>Normal Mode — No vector DB fetching</div>
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>AI uses only user-selected style, goal, and tone. No profile embeddings fetched.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={saveAiSettings} disabled={aiSettingsSaving}
+                style={{ width: '100%', padding: '14px', background: aiSettingsSaving ? '#ccc' : '#693fe9', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: aiSettingsSaving ? 'wait' : 'pointer' }}>
+                {aiSettingsSaving ? 'Saving...' : '💾 Save Embeddings Settings'}
+              </button>
             </div>
           )}
         </div>

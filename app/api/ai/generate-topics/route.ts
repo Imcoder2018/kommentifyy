@@ -32,14 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    const { topic, count = 8 } = await request.json();
-
-    if (!topic) {
-      return NextResponse.json(
-        { success: false, error: 'Topic is required' },
-        { status: 400 }
-      );
-    }
+    const { topic, count = 8, profileData } = await request.json();
 
     // Get user and check limits
     const user = await prisma.user.findUnique({
@@ -69,6 +62,69 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Daily AI topic generation limit reached', remaining: 0 },
         { status: 429 }
+      );
+    }
+
+    // Handle profile-based topic generation
+    if (profileData) {
+      console.log('Generating topics from LinkedIn profile data...');
+      
+      const keywords: string[] = [];
+      
+      // Extract keywords from profile data
+      if (profileData.headline) {
+        keywords.push(...profileData.headline.split(/[,;]/).map((w: string) => w.trim()).filter(Boolean));
+      }
+      if (profileData.skills && Array.isArray(profileData.skills)) {
+        keywords.push(...profileData.skills.slice(0, 5));
+      }
+      if (profileData.experience && Array.isArray(profileData.experience)) {
+        profileData.experience.slice(0, 3).forEach((exp: string) => {
+          const words = exp.split(/[,;]/).map((w: string) => w.trim()).filter(Boolean);
+          keywords.push(...words);
+        });
+      }
+
+      const topicTemplates = [
+        `How ${keywords[0] || 'professionals'} are changing the industry`,
+        `The future of ${keywords[0] || 'technology'} in 2025`,
+        `Lessons learned from ${keywords[0] || 'years'} of experience`,
+        `Why ${keywords[0] || 'this skill'} matters more than ever`,
+        `Common mistakes in ${keywords[0] || 'this field'} and how to avoid them`,
+        `The secret to success in ${keywords[0] || 'my industry'}`,
+        `What I wish I knew when starting in ${keywords[0] || 'this field'}`,
+        `5 insights about ${keywords[0] || 'modern business'}`,
+        `Why ${keywords[0] || 'this approach'} is underrated`,
+        `The truth about ${keywords[0] || 'success'} nobody tells you`,
+      ];
+
+      const genericTopics = [
+        "Building a personal brand on LinkedIn",
+        "How to stand out in your industry",
+        "Lessons from my career journey",
+        "The power of continuous learning",
+        "Networking tips that actually work",
+      ];
+
+      const allTopics = [...topicTemplates, ...genericTopics];
+      const shuffled = allTopics.sort(() => Math.random() - 0.5);
+      const uniqueTopics = [...new Set(shuffled)];
+      const suggestions = uniqueTopics.slice(0, count);
+
+      await limitService.incrementUsage(user.id, 'aiTopicLines');
+      
+      return NextResponse.json({
+        success: true,
+        topics: suggestions,
+        fromProfile: true
+      });
+    }
+
+    // Original topic-based generation
+    if (!topic) {
+      return NextResponse.json(
+        { success: false, error: 'Topic is required' },
+        { status: 400 }
       );
     }
 

@@ -117,7 +117,7 @@ export async function PUT(request: NextRequest) {
     }
     const payload = verifyToken(token);
 
-    const { commandId, status } = await request.json();
+    const { commandId, status, data } = await request.json();
 
     if (!commandId) {
       return NextResponse.json({ success: false, error: 'Command ID required' }, { status: 400 });
@@ -133,7 +133,8 @@ export async function PUT(request: NextRequest) {
 
     const meta = typeof activity.metadata === 'string' ? JSON.parse(activity.metadata as string) : activity.metadata;
     meta.status = status || 'completed';
-    meta.completedAt = new Date().toISOString();
+    if (data) meta.data = data;
+    if (status === 'completed' || status === 'failed' || status === 'cancelled') meta.completedAt = new Date().toISOString();
 
     await prisma.activity.update({
       where: { id: commandId },

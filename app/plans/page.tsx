@@ -597,7 +597,7 @@ export default function PlansPage() {
                   </div>
 
                   {/* LinkedIn Premium Bonus */}
-                  {(plan.name.toLowerCase().includes('pro') || plan.name.toLowerCase().includes('growth') || plan.name.toLowerCase().includes('grow')) && (
+                  {(plan.name.toLowerCase().includes('pro') || plan.name.toLowerCase().includes('growth') || plan.name.toLowerCase().includes('grow') || plan.name.toLowerCase().includes('agency')) && (
                     <div style={{ 
                       marginBottom: '16px',
                       padding: '12px 14px', 

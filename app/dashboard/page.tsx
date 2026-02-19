@@ -60,7 +60,14 @@ function DashboardContent() {
     const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'overview');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const { signOut } = useClerk();
+
+    // Check if user is on a free plan (no AI access)
+    const isFreePlan = user?.plan && (
+        user.plan.isDefaultFreePlan ||
+        (user.plan.price === 0 && !user.plan.isLifetime && !user.plan.isTrialPlan)
+    );
 
     // Writer tab state
     const [writerTopic, setWriterTopic] = useState('');
@@ -126,6 +133,11 @@ function DashboardContent() {
     const [trendingStatus, setTrendingStatus] = useState('');
     const [trendingModel, setTrendingModel] = useState<string>('gpt-4o');
     const [trendingTokenUsage, setTrendingTokenUsage] = useState<any>(null);
+    // Feed scrape live status
+    const [feedScrapeCommandId, setFeedScrapeCommandId] = useState<string | null>(null);
+    const [feedScrapeStatus, setFeedScrapeStatus] = useState<any>(null);
+    const [feedScrapePolling, setFeedScrapePolling] = useState(false);
+    const feedScrapeIntervalRef = useRef<any>(null);
     
     // Developer emails for showing token costs
     const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
@@ -272,17 +284,21 @@ function DashboardContent() {
             .then(data => {
                 if (data.success) {
                     setUser(data.user);
-                    // Check if user has paid plan, if not redirect to plans
+                    // Check if user has paid plan
                     const userPlan = data.user?.plan;
-                    // User has access if: has a plan with price > 0, OR has a lifetime plan, OR has a trial plan that hasn't expired
                     const hasPaidPlan = userPlan && (
                         (userPlan.price > 0 && !userPlan.isDefaultFreePlan) ||
                         userPlan.isLifetime ||
                         (userPlan.isTrialPlan && data.user?.trialEndsAt && new Date(data.user.trialEndsAt) > new Date())
                     );
+                    // For free users: redirect to plans ONCE after login, then let them use dashboard
                     if (!hasPaidPlan) {
-                        router.push('/plans');
-                        return;
+                        const redirectKey = 'kommentify_plans_redirect_done';
+                        if (!sessionStorage.getItem(redirectKey)) {
+                            sessionStorage.setItem(redirectKey, 'true');
+                            router.push('/plans');
+                            return;
+                        }
                     }
                     // Fetch usage data
                     return fetch('/api/usage/daily', {
@@ -329,6 +345,7 @@ function DashboardContent() {
 
     // Writer functions
     const generatePost = async () => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
         const token = localStorage.getItem('authToken');
         if (!token || !writerTopic.trim()) { setWriterStatus('Please enter a topic'); return; }
         setWriterGenerating(true);
@@ -855,6 +872,7 @@ function DashboardContent() {
     };
 
     const generateTopicSuggestions = async () => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
         if (!linkedInProfile) return;
         setLinkedInGeneratingTopics(true);
         const token = localStorage.getItem('authToken');
@@ -1095,6 +1113,55 @@ function DashboardContent() {
         if (tab === 'account') loadAccountSettings();
     }, [loading, user, activeTab]);
 
+    // Feed scrape polling - poll command status every 3 seconds while scraping
+    const startFeedScrapePolling = (commandId: string) => {
+        setFeedScrapeCommandId(commandId);
+        setFeedScrapePolling(true);
+        setFeedScrapeStatus({ status: 'pending', data: { message: 'Waiting for extension to pick up task...' } });
+        if (feedScrapeIntervalRef.current) clearInterval(feedScrapeIntervalRef.current);
+        feedScrapeIntervalRef.current = setInterval(async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/extension/command/all', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (data.success && data.commands) {
+                    const cmd = data.commands.find((c: any) => c.id === commandId);
+                    if (cmd) {
+                        setFeedScrapeStatus(cmd);
+                        if (cmd.status === 'completed' || cmd.status === 'failed' || cmd.status === 'cancelled') {
+                            clearInterval(feedScrapeIntervalRef.current);
+                            feedScrapeIntervalRef.current = null;
+                            setFeedScrapePolling(false);
+                            if (cmd.status === 'completed') {
+                                showToast(`Feed scrape complete! ${cmd.data?.postsFound || 0} posts saved.`, 'success');
+                                loadSavedPosts();
+                            } else if (cmd.status === 'failed') {
+                                showToast(cmd.data?.message || 'Feed scrape failed', 'error');
+                            }
+                        }
+                    }
+                }
+            } catch {}
+        }, 3000);
+    };
+    const stopFeedScrape = async () => {
+        if (!feedScrapeCommandId) return;
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/extension/command', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: feedScrapeCommandId, status: 'cancelled' }) });
+            if (feedScrapeIntervalRef.current) { clearInterval(feedScrapeIntervalRef.current); feedScrapeIntervalRef.current = null; }
+            setFeedScrapePolling(false);
+            setFeedScrapeStatus(null);
+            setFeedScrapeCommandId(null);
+            showToast('Feed scrape stopped', 'info');
+        } catch {}
+    };
+    useEffect(() => {
+        return () => { if (feedScrapeIntervalRef.current) clearInterval(feedScrapeIntervalRef.current); };
+    }, []);
+
     const stopAllTasks = async () => {
         const token = localStorage.getItem('authToken');
 // ... (rest of the code remains the same)
@@ -1114,6 +1181,7 @@ function DashboardContent() {
 
     // Trending AI generation
     const generateTrendingPosts = async () => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
         const token = localStorage.getItem('authToken');
         if (!token) return;
         const selected = savedPosts.filter(p => trendingSelectedPosts.includes(p.id));
@@ -1154,6 +1222,7 @@ function DashboardContent() {
 
     // Analysis function
     const analyzePosts = async () => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
         const token = localStorage.getItem('authToken');
         if (!token) return;
         if (trendingGeneratedPosts.length === 0) { setTrendingStatus('Generate posts first before analyzing'); return; }
@@ -1400,6 +1469,52 @@ function DashboardContent() {
             color: theme === 'light' ? '#1a1a2e' : 'white',
             display: 'flex'
         }}>
+            {/* Upgrade Plan Modal for Free Users */}
+            {showUpgradeModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10001,
+                    background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }} onClick={() => setShowUpgradeModal(false)}>
+                    <div onClick={(e) => e.stopPropagation()} style={{
+                        background: 'linear-gradient(135deg, #1a1a3e 0%, #0f0f23 100%)',
+                        borderRadius: '24px', padding: '40px', maxWidth: '480px', width: '90%',
+                        border: '2px solid rgba(105,63,233,0.4)', boxShadow: '0 25px 80px rgba(105,63,233,0.3)',
+                        textAlign: 'center', position: 'relative'
+                    }}>
+                        <button onClick={() => setShowUpgradeModal(false)} style={{
+                            position: 'absolute', top: '16px', right: '16px', background: 'none',
+                            border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '20px', cursor: 'pointer'
+                        }}>✕</button>
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚀</div>
+                        <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', marginBottom: '12px' }}>
+                            Upgrade Your Plan
+                        </h2>
+                        <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6', marginBottom: '24px' }}>
+                            AI features like post generation, topic suggestions, and content analysis require a paid plan. Upgrade now to unlock the full power of Kommentify!
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                            <button onClick={() => { setShowUpgradeModal(false); router.push('/plans'); }}
+                                style={{
+                                    padding: '14px 32px', background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)',
+                                    color: 'white', border: 'none', borderRadius: '14px', fontSize: '16px',
+                                    fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.4)',
+                                    transition: 'transform 0.2s'
+                                }}>
+                                View Plans
+                            </button>
+                            <button onClick={() => setShowUpgradeModal(false)}
+                                style={{
+                                    padding: '14px 24px', background: 'rgba(255,255,255,0.1)',
+                                    color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.2)',
+                                    borderRadius: '14px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
+                                }}>
+                                Maybe Later
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Toast Notification */}
             {toast && (
                 <div style={{
@@ -2945,22 +3060,36 @@ function DashboardContent() {
                         <div style={{ background: 'rgba(16,185,129,0.08)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '14px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                                 <h3 style={{ color: '#34d399', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', '#34d399', 14)} Scrape Feed Now</h3>
-                                <button onClick={async () => {
-                                    try {
-                                        const token = localStorage.getItem('authToken');
-                                        if (!token) { setTrendingStatus('Not authenticated'); return; }
-                                        setTrendingStatus('Sending scrape task to extension...');
-                                        await saveFeedSchedule();
-                                        const res = await fetch('/api/extension/command', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                            body: JSON.stringify({ command: 'scrape_feed_now', data: { durationMinutes: scheduleDuration, minLikes: scheduleMinLikes, minComments: scheduleMinComments, keywords: scheduleKeywords } }),
-                                        });
-                                        const data = await res.json();
-                                        if (data.success) setTrendingStatus('Scrape task sent! Extension will open LinkedIn and start scraping.');
-                                        else setTrendingStatus(data.error || 'Failed to send task');
-                                    } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
-                                }} style={{ padding: '7px 16px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', 'white', 12)} Start Now</button>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {feedScrapePolling && (
+                                        <button onClick={stopFeedScrape}
+                                            style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            {miniIcon('M6 4h4v16H6z M14 4h4v16h-4z', '#f87171', 12)} Stop
+                                        </button>
+                                    )}
+                                    <button disabled={feedScrapePolling} onClick={async () => {
+                                        try {
+                                            const token = localStorage.getItem('authToken');
+                                            if (!token) { setTrendingStatus('Not authenticated'); return; }
+                                            setTrendingStatus('Sending scrape task to extension...');
+                                            await saveFeedSchedule();
+                                            const res = await fetch('/api/extension/command', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                body: JSON.stringify({ command: 'scrape_feed_now', data: { durationMinutes: scheduleDuration, minLikes: scheduleMinLikes, minComments: scheduleMinComments, keywords: scheduleKeywords } }),
+                                            });
+                                            const data = await res.json();
+                                            if (data.success && data.commandId) {
+                                                setTrendingStatus('');
+                                                startFeedScrapePolling(data.commandId);
+                                            } else if (data.success) {
+                                                setTrendingStatus('Scrape task sent! Extension will open a new window and start scraping.');
+                                            } else {
+                                                setTrendingStatus(data.error || 'Failed to send task');
+                                            }
+                                        } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
+                                    }} style={{ padding: '7px 16px', background: feedScrapePolling ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: feedScrapePolling ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', boxShadow: feedScrapePolling ? 'none' : '0 2px 8px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: '4px', opacity: feedScrapePolling ? 0.5 : 1 }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', 'white', 12)} {feedScrapePolling ? 'Scraping...' : 'Start Now'}</button>
+                                </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'auto auto auto 1fr', gap: '8px', alignItems: 'end', marginBottom: '10px' }}>
                                 <div>
@@ -3007,6 +3136,70 @@ function DashboardContent() {
                                 </div>
                             </div>
                         </div>
+                        {/* Live Feed Scrape Status */}
+                        {feedScrapeStatus && (
+                            <div style={{
+                                background: feedScrapeStatus.status === 'completed' ? 'rgba(16,185,129,0.1)' : feedScrapeStatus.status === 'failed' ? 'rgba(239,68,68,0.1)' : 'rgba(105,63,233,0.08)',
+                                padding: '16px 18px', borderRadius: '14px', marginBottom: '14px',
+                                border: `1px solid ${feedScrapeStatus.status === 'completed' ? 'rgba(16,185,129,0.3)' : feedScrapeStatus.status === 'failed' ? 'rgba(239,68,68,0.3)' : 'rgba(105,63,233,0.25)'}`,
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        {feedScrapeStatus.status === 'in_progress' && (
+                                            <div style={{ width: '10px', height: '10px', background: '#4ade80', borderRadius: '50%', animation: 'pulse 1.5s infinite' }} />
+                                        )}
+                                        {feedScrapeStatus.status === 'completed' && miniIcon('M9 11l3 3L22 4', '#10b981', 16)}
+                                        {feedScrapeStatus.status === 'failed' && miniIcon('M18 6L6 18 M6 6l12 12', '#ef4444', 16)}
+                                        {feedScrapeStatus.status === 'pending' && miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', '#fbbf24', 16)}
+                                        <span style={{ color: 'white', fontSize: '14px', fontWeight: '700' }}>
+                                            {feedScrapeStatus.status === 'in_progress' ? 'Scraping LinkedIn Feed...' : feedScrapeStatus.status === 'completed' ? 'Scrape Complete' : feedScrapeStatus.status === 'failed' ? 'Scrape Failed' : 'Waiting for Extension...'}
+                                        </span>
+                                    </div>
+                                    {(feedScrapeStatus.status === 'completed' || feedScrapeStatus.status === 'failed' || feedScrapeStatus.status === 'cancelled') && (
+                                        <button onClick={() => { setFeedScrapeStatus(null); setFeedScrapeCommandId(null); }}
+                                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '16px', cursor: 'pointer', padding: '0 4px' }}>✕</button>
+                                    )}
+                                </div>
+                                {/* Progress details */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#4ade80' }}>{feedScrapeStatus.data?.postsFound ?? 0}</div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Posts Found</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#fbbf24' }}>{feedScrapeStatus.data?.qualifiedPosts ?? 0}</div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Qualified</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#a78bfa' }}>{feedScrapeStatus.data?.scrollCount ?? 0}</div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Scrolls</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'rgba(255,255,255,0.8)' }}>
+                                            {feedScrapeStatus.data?.remainingSeconds != null
+                                                ? `${Math.floor(feedScrapeStatus.data.remainingSeconds / 60)}:${String(feedScrapeStatus.data.remainingSeconds % 60).padStart(2, '0')}`
+                                                : '--:--'}
+                                        </div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Time Left</div>
+                                    </div>
+                                </div>
+                                {/* Progress bar */}
+                                {feedScrapeStatus.status === 'in_progress' && feedScrapeStatus.data?.elapsedSeconds != null && feedScrapeStatus.data?.remainingSeconds != null && (
+                                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '8px' }}>
+                                        <div style={{
+                                            height: '100%', borderRadius: '2px', transition: 'width 0.5s ease',
+                                            background: 'linear-gradient(90deg, #693fe9, #a78bfa)',
+                                            width: `${Math.min(100, (feedScrapeStatus.data.elapsedSeconds / (feedScrapeStatus.data.elapsedSeconds + feedScrapeStatus.data.remainingSeconds)) * 100)}%`
+                                        }} />
+                                    </div>
+                                )}
+                                {/* Status message */}
+                                {feedScrapeStatus.data?.message && (
+                                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontStyle: 'italic' }}>{feedScrapeStatus.data.message}</div>
+                                )}
+                                <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+                            </div>
+                        )}
                         {/* Kommentify Shared Posts — compact */}
                         {sharedPosts.length > 0 && (
                             <div style={{ background: 'rgba(105,63,233,0.06)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '14px' }}>

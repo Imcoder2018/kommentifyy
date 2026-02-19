@@ -486,6 +486,7 @@ function LandingPage() {
     const [totalLifetimeSpots, setTotalLifetimeSpots] = useState(200);
     const [soldLifetimeSpots, setSoldLifetimeSpots] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
     const [aiCommentsPerDollar, setAiCommentsPerDollar] = useState(100);
     
@@ -496,18 +497,17 @@ function LandingPage() {
         return 0.3364; // 33.64% off for Pro and beyond
     };
 
-    // Auto-redirect logged-in users to dashboard
+    // No auto-redirect - logged-in users can browse the landing page freely
+    // Just check if they're logged in to show Dashboard button in nav
     useEffect(() => {
         const token = localStorage.getItem('authToken');
         if (token) {
             fetch('/api/auth/validate', { headers: { 'Authorization': `Bearer ${token}` } })
                 .then(res => res.json())
-                .then(data => {
-                    if (data.success) router.push('/dashboard');
-                })
+                .then(data => { if (data.success) setIsLoggedIn(true); })
                 .catch(() => {});
         }
-    }, [router]);
+    }, []);
 
     useEffect(() => {
         fetch('/api/plans')
@@ -721,7 +721,11 @@ function LandingPage() {
                         <Link href="/lifetime-deal" onClick={() => setMobileMenuOpen(false)} style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '18px', fontWeight: '600', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}><IconFire size={18} /> Lifetime Deal</Link>
                         <Link href="#comparison" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Compare</Link>
                         <Link href="#faq" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>FAQ</Link>
-                        <Link href="/login" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Login</Link>
+                        {isLoggedIn ? (
+                            <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} style={{ color: '#a78bfa', textDecoration: 'none', fontSize: '18px', fontWeight: '600', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>🚀 Dashboard</Link>
+                        ) : (
+                            <Link href="/login" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Login</Link>
+                        )}
                         <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} style={{
                             marginTop: '20px',
                             padding: '16px 24px',
@@ -775,21 +779,41 @@ function LandingPage() {
                     <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><IconFire size={14} /> Lifetime Deal</Link>
                     <Link href="#comparison" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Compare</Link>
                     <Link href="#faq" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>FAQ</Link>
-                    <Link href="/login" style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Login</Link>
-                    <Link href="/signup" style={{
-                        padding: '10px 20px',
-                        background: 'white',
-                        color: '#0a0a0a',
-                        textDecoration: 'none',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                    }}>
-                        Get Started <span>→</span>
-                    </Link>
+                    {isLoggedIn ? (
+                        <Link href="/dashboard" style={{
+                            padding: '10px 20px',
+                            background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)',
+                            color: 'white',
+                            textDecoration: 'none',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 4px 15px rgba(105,63,233,0.4)'
+                        }}>
+                            Dashboard <span>→</span>
+                        </Link>
+                    ) : (
+                        <>
+                            <Link href="/login" style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Login</Link>
+                            <Link href="/signup" style={{
+                                padding: '10px 20px',
+                                background: 'white',
+                                color: '#0a0a0a',
+                                textDecoration: 'none',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}>
+                                Get Started <span>→</span>
+                            </Link>
+                        </>
+                    )}
                 </div>
             </nav>
 

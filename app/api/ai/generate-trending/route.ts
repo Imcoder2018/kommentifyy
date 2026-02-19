@@ -225,7 +225,9 @@ Return ONLY this JSON (no markdown, no explanation):
       }));
     }
 
-    await limitService.incrementUsage(user.id, 'aiPosts');
+    // Increment usage by number of posts actually generated (typically 3)
+    const postsGenerated = Array.isArray(generatedPosts) ? generatedPosts.length : 1;
+    await limitService.incrementUsage(user.id, 'aiPosts', postsGenerated);
 
     // Build response - include token info only for developers
     const response: any = {

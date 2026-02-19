@@ -250,14 +250,27 @@ async function pollCommandsDirectly() {
                 else if (cmd.command === 'scrape_feed_now') {
                     console.log('🔍 POLL-ALARM: Executing scrape_feed_now (time-based)...');
                     let scrapeTab = null;
+                    let scrapeWindowId = null;
                     try {
                         // Mark as in_progress
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
-                        const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
-                        scrapeTab = tab;
-                        globalThis._commandLinkedInTabs.add(tab.id);
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { postsFound: 0, scrollCount: 0, message: 'Opening LinkedIn feed...' } }) });
+                        // Open in a new focused window (half screen width)
+                        const currentWindow = await chrome.windows.getCurrent();
+                        const halfWidth = Math.floor((currentWindow.width || 1920) / 2);
+                        const newWindow = await chrome.windows.create({
+                            url: 'https://www.linkedin.com/feed/',
+                            type: 'normal',
+                            focused: true,
+                            left: 0,
+                            top: 0,
+                            width: halfWidth,
+                            height: currentWindow.height || 1080
+                        });
+                        scrapeTab = newWindow.tabs[0];
+                        scrapeWindowId = newWindow.id;
+                        globalThis._commandLinkedInTabs.add(scrapeTab.id);
                         await new Promise((resolve) => {
-                            const check = (tabId, info) => { if (tabId === tab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
+                            const check = (tabId, info) => { if (tabId === scrapeTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
                             chrome.tabs.onUpdated.addListener(check);
                             setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
                         });
@@ -267,6 +280,7 @@ async function pollCommandsDirectly() {
                         const minComments = cmd.data?.minComments || 0;
                         const keywords = cmd.data?.keywords ? cmd.data.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean) : [];
                         const startTime = Date.now();
+                        let scrollCount = 0;
                         console.log(`POLL-ALARM: Scrolling for ${cmd.data?.durationMinutes || 3} minutes...`);
                         // Scroll continuously for the duration
                         while (Date.now() - startTime < durationMs) {
@@ -280,19 +294,78 @@ async function pollCommandsDirectly() {
                                     break;
                                 }
                             } catch (e) {}
-                            await scrollAndLoadContent(tab.id, 1);
+                            await scrollAndLoadContent(scrapeTab.id, 1);
+                            scrollCount++;
+                            // Inject/update on-page status overlay
+                            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                            const remaining = Math.max(0, Math.floor((durationMs - (Date.now() - startTime)) / 1000));
+                            try {
+                                const countResult = await chrome.scripting.executeScript({
+                                    target: { tabId: scrapeTab.id },
+                                    func: (minL, minC, kws, elapsedSec, remainingSec, scrollNum) => {
+                                        // Count posts on page
+                                        let totalPosts = 0, qualifiedPosts = 0;
+                                        const els = document.querySelectorAll('[data-id^="urn:li:activity:"]');
+                                        for (const el of els) {
+                                            const textEl = el.querySelector('.update-components-text, .feed-shared-text, .feed-shared-inline-show-more-text');
+                                            const content = textEl ? (textEl.innerText || '').trim() : '';
+                                            if (content.length < 50) continue;
+                                            totalPosts++;
+                                            let likes = 0, comments = 0;
+                                            const likesEl = el.querySelector('.social-details-social-counts__reactions-count');
+                                            if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
+                                            const commentsEl = el.querySelector('button[aria-label*="comment"]');
+                                            if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
+                                            if (likes < minL || comments < minC) continue;
+                                            if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
+                                            qualifiedPosts++;
+                                        }
+                                        // Update/create overlay
+                                        let overlay = document.getElementById('kommentify-scrape-status');
+                                        if (!overlay) {
+                                            overlay = document.createElement('div');
+                                            overlay.id = 'kommentify-scrape-status';
+                                            overlay.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:16px 20px;border-radius:14px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;line-height:1.6;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid rgba(105,63,233,0.3);min-width:240px;';
+                                            document.body.appendChild(overlay);
+                                        }
+                                        const mins = Math.floor(remainingSec / 60);
+                                        const secs = remainingSec % 60;
+                                        overlay.innerHTML = `
+                                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                                                <div style="width:10px;height:10px;background:#4ade80;border-radius:50%;animation:kPulse 1.5s infinite;"></div>
+                                                <strong style="font-size:14px;color:#a78bfa;">Kommentify Feed Scraper</strong>
+                                            </div>
+                                            <div style="margin-bottom:6px;">Posts found: <strong style="color:#4ade80;">${totalPosts}</strong></div>
+                                            <div style="margin-bottom:6px;">Qualified: <strong style="color:#fbbf24;">${qualifiedPosts}</strong></div>
+                                            <div style="margin-bottom:6px;font-size:12px;opacity:0.7;">Filter: ${minL}+ likes, ${minC}+ comments</div>
+                                            <div style="margin-bottom:6px;font-size:12px;opacity:0.7;">Scrolls: ${scrollNum}</div>
+                                            <div style="font-size:12px;color:#a78bfa;">Time left: <strong>${mins}m ${secs}s</strong></div>
+                                            <div style="margin-top:8px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
+                                                <div style="height:100%;background:linear-gradient(90deg,#693fe9,#a78bfa);border-radius:2px;width:${Math.min(100, (elapsedSec / (elapsedSec + remainingSec)) * 100)}%;transition:width 0.5s;"></div>
+                                            </div>
+                                            <style>@keyframes kPulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+                                        `;
+                                        return { totalPosts, qualifiedPosts };
+                                    },
+                                    args: [minLikes, minComments, keywords, elapsed, remaining, scrollCount]
+                                });
+                                // Update command status with progress
+                                const counts = countResult?.[0]?.result || { totalPosts: 0, qualifiedPosts: 0 };
+                                if (scrollCount % 3 === 0) {
+                                    await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { ...cmd.data, postsFound: counts.totalPosts, qualifiedPosts: counts.qualifiedPosts, scrollCount, elapsedSeconds: elapsed, remainingSeconds: remaining, message: `Scrolling feed... ${counts.totalPosts} posts found, ${counts.qualifiedPosts} qualified` } }) });
+                                }
+                            } catch (overlayErr) { /* tab may have issues */ }
                             await new Promise(r => setTimeout(r, 3000));
                         }
                         await new Promise(r => setTimeout(r, 2000));
                         const scrapeResult = await chrome.scripting.executeScript({
-                            target: { tabId: tab.id },
+                            target: { tabId: scrapeTab.id },
                             func: (minL, minC, kws) => {
                                 const posts = [];
                                 const els = document.querySelectorAll('[data-id^="urn:li:activity:"]');
                                 for (const el of els) {
                                     const textEl = el.querySelector('.update-components-text, .feed-shared-text, .feed-shared-inline-show-more-text');
                                     let content = textEl ? (textEl.innerText || '').trim() : '';
-                                    // Remove LinkedIn's "...more" / "…more" button text from end
                                     content = content.replace(/[\s\n]*\.{2,3}more\s*$/i, '').replace(/[\s\n]*\u2026more\s*$/i, '').trim();
                                     if (content.length < 50) continue;
                                     let likes = 0, comments = 0;
@@ -322,13 +395,14 @@ async function pollCommandsDirectly() {
                         if (scrapedPosts.length > 0) {
                             await fetch(`${apiUrl}/api/scraped-posts`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: scrapedPosts }) });
                         }
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { ...cmd.data, postsFound: scrapedPosts.length, scrollCount, message: `Completed! Saved ${scrapedPosts.length} posts from feed.` } }) });
                         console.log(`✅ POLL-ALARM: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_feed_now failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (e.message || 'unknown error') } }) }); } catch (x) {}
                     } finally {
-                        if (scrapeTab) { try { await chrome.tabs.remove(scrapeTab.id); } catch (e) {} globalThis._commandLinkedInTabs.delete(scrapeTab.id); }
+                        if (scrapeWindowId) { try { await chrome.windows.remove(scrapeWindowId); } catch (e) {} }
+                        if (scrapeTab) { globalThis._commandLinkedInTabs.delete(scrapeTab.id); }
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
@@ -2447,15 +2521,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         if (cmd.command === 'scrape_feed_now') {
                             console.log('🔍 BACKGROUND: Executing scrape_feed_now (time-based)...');
                             let scrapeTab = null;
+                            let scrapeWindowId = null;
                             try {
                                 // Mark as in_progress
-                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
-                                const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
-                                scrapeTab = tab;
-                                globalThis._commandLinkedInTabs.add(tab.id);
+                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { postsFound: 0, scrollCount: 0, message: 'Opening LinkedIn feed...' } }) });
+                                // Open in a new focused window (half screen width)
+                                const currentWindow = await chrome.windows.getCurrent();
+                                const halfWidth = Math.floor((currentWindow.width || 1920) / 2);
+                                const newWindow = await chrome.windows.create({
+                                    url: 'https://www.linkedin.com/feed/',
+                                    type: 'normal',
+                                    focused: true,
+                                    left: 0,
+                                    top: 0,
+                                    width: halfWidth,
+                                    height: currentWindow.height || 1080
+                                });
+                                scrapeTab = newWindow.tabs[0];
+                                scrapeWindowId = newWindow.id;
+                                globalThis._commandLinkedInTabs.add(scrapeTab.id);
                                 await new Promise((resolve) => {
                                     const checkComplete = (tabId, changeInfo) => {
-                                        if (tabId === tab.id && changeInfo.status === 'complete') {
+                                        if (tabId === scrapeTab.id && changeInfo.status === 'complete') {
                                             chrome.tabs.onUpdated.removeListener(checkComplete);
                                             resolve();
                                         }
@@ -2470,6 +2557,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 const minComments = cmd.data?.minComments || 0;
                                 const keywords = cmd.data?.keywords ? cmd.data.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean) : [];
                                 const startTime = Date.now();
+                                let scrollCount = 0;
                                 console.log(`BACKGROUND: Scrolling for ${cmd.data?.durationMinutes || 3} minutes...`);
 
                                 // Scroll continuously for the duration
@@ -2484,20 +2572,78 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                             break;
                                         }
                                     } catch (e) {}
-                                    await scrollAndLoadContent(tab.id, 1);
+                                    await scrollAndLoadContent(scrapeTab.id, 1);
+                                    scrollCount++;
+                                    // Inject/update on-page status overlay
+                                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                                    const remaining = Math.max(0, Math.floor((durationMs - (Date.now() - startTime)) / 1000));
+                                    try {
+                                        const countResult = await chrome.scripting.executeScript({
+                                            target: { tabId: scrapeTab.id },
+                                            func: (minL, minC, kws, elapsedSec, remainingSec, scrollNum) => {
+                                                let totalPosts = 0, qualifiedPosts = 0;
+                                                const els = document.querySelectorAll('[data-id^="urn:li:activity:"]');
+                                                for (const el of els) {
+                                                    const textEl = el.querySelector('.update-components-text, .feed-shared-text, .feed-shared-inline-show-more-text');
+                                                    const content = textEl ? (textEl.innerText || '').trim() : '';
+                                                    if (content.length < 50) continue;
+                                                    totalPosts++;
+                                                    let likes = 0, comments = 0;
+                                                    const likesEl = el.querySelector('.social-details-social-counts__reactions-count');
+                                                    if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
+                                                    const commentsEl = el.querySelector('button[aria-label*="comment"]');
+                                                    if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
+                                                    if (likes < minL || comments < minC) continue;
+                                                    if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
+                                                    qualifiedPosts++;
+                                                }
+                                                let overlay = document.getElementById('kommentify-scrape-status');
+                                                if (!overlay) {
+                                                    overlay = document.createElement('div');
+                                                    overlay.id = 'kommentify-scrape-status';
+                                                    overlay.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:16px 20px;border-radius:14px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;line-height:1.6;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid rgba(105,63,233,0.3);min-width:240px;';
+                                                    document.body.appendChild(overlay);
+                                                }
+                                                const mins = Math.floor(remainingSec / 60);
+                                                const secs = remainingSec % 60;
+                                                overlay.innerHTML = `
+                                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                                                        <div style="width:10px;height:10px;background:#4ade80;border-radius:50%;animation:kPulse 1.5s infinite;"></div>
+                                                        <strong style="font-size:14px;color:#a78bfa;">Kommentify Feed Scraper</strong>
+                                                    </div>
+                                                    <div style="margin-bottom:6px;">Posts found: <strong style="color:#4ade80;">${totalPosts}</strong></div>
+                                                    <div style="margin-bottom:6px;">Qualified: <strong style="color:#fbbf24;">${qualifiedPosts}</strong></div>
+                                                    <div style="margin-bottom:6px;font-size:12px;opacity:0.7;">Filter: ${minL}+ likes, ${minC}+ comments</div>
+                                                    <div style="margin-bottom:6px;font-size:12px;opacity:0.7;">Scrolls: ${scrollNum}</div>
+                                                    <div style="font-size:12px;color:#a78bfa;">Time left: <strong>${mins}m ${secs}s</strong></div>
+                                                    <div style="margin-top:8px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
+                                                        <div style="height:100%;background:linear-gradient(90deg,#693fe9,#a78bfa);border-radius:2px;width:${Math.min(100, (elapsedSec / (elapsedSec + remainingSec)) * 100)}%;transition:width 0.5s;"></div>
+                                                    </div>
+                                                    <style>@keyframes kPulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+                                                `;
+                                                return { totalPosts, qualifiedPosts };
+                                            },
+                                            args: [minLikes, minComments, keywords, elapsed, remaining, scrollCount]
+                                        });
+                                        const counts = countResult?.[0]?.result || { totalPosts: 0, qualifiedPosts: 0 };
+                                        if (scrollCount % 3 === 0) {
+                                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { ...cmd.data, postsFound: counts.totalPosts, qualifiedPosts: counts.qualifiedPosts, scrollCount, elapsedSeconds: elapsed, remainingSeconds: remaining, message: `Scrolling feed... ${counts.totalPosts} posts found, ${counts.qualifiedPosts} qualified` } }) });
+                                        }
+                                    } catch (overlayErr) { /* tab may have issues */ }
                                     await new Promise(resolve => setTimeout(resolve, 3000));
                                 }
                                 await new Promise(resolve => setTimeout(resolve, 2000));
 
                                 // Scrape visible posts
                                 const scrapeResult = await chrome.scripting.executeScript({
-                                    target: { tabId: tab.id },
+                                    target: { tabId: scrapeTab.id },
                                     func: (minL, minC, kws) => {
                                         const posts = [];
                                         const postElements = document.querySelectorAll('[data-id^="urn:li:activity:"]');
                                         for (const el of postElements) {
                                             const textEl = el.querySelector('.update-components-text, .feed-shared-text, .feed-shared-inline-show-more-text');
-                                            const content = textEl ? (textEl.innerText || '').trim() : '';
+                                            let content = textEl ? (textEl.innerText || '').trim() : '';
+                                            content = content.replace(/[\s\n]*\.{2,3}more\s*$/i, '').replace(/[\s\n]*\u2026more\s*$/i, '').trim();
                                             if (content.length < 50) continue;
 
                                             let likes = 0, comments = 0, shares = 0;
@@ -2544,7 +2690,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',
                                     headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { ...cmd.data, postsFound: scrapedPosts.length, scrollCount, message: `Completed! Saved ${scrapedPosts.length} posts from feed.` } })
                                 });
                                 console.log(`✅ BACKGROUND: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
                             } catch (feedError) {
@@ -2553,15 +2699,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
                                         headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
+                                        body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (feedError.message || 'unknown error') } })
                                     });
                                 } catch (e) {}
                             } finally {
-                                // Always close tab and clean up
-                                if (scrapeTab) {
-                                    await safeTabClose(scrapeTab.id, 'scrape feed tab');
-                                    globalThis._commandLinkedInTabs.delete(scrapeTab.id);
-                                }
+                                // Always close window and clean up
+                                if (scrapeWindowId) { try { await chrome.windows.remove(scrapeWindowId); } catch (e) {} }
+                                if (scrapeTab) { globalThis._commandLinkedInTabs.delete(scrapeTab.id); }
                                 globalThis._processingCommandIds.delete(cmd.id);
                             }
                         }

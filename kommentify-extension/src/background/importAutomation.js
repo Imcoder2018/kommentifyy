@@ -13,6 +13,126 @@ class ImportAutomation {
         this.stopFlag = false;
         this.activeTabId = null;
     }
+
+    // Fallback: open individual post URL and engage
+    async engageSinglePostUrl(postUrl, actions, randomMode, commentSettings) {
+        const normalizedActions = {
+            likes: !!(actions?.likes ?? actions?.like),
+            comments: !!(actions?.comments ?? actions?.comment),
+            shares: !!(actions?.shares ?? actions?.share),
+            follows: !!(actions?.follows ?? actions?.follow)
+        };
+        const tabId = await browser.openTab(postUrl, true);
+        if (!tabId) return { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] };
+        try {
+            await this.waitForLinkedInReady(tabId, 20000);
+            const res = await chrome.scripting.executeScript({
+                target: { tabId },
+                func: async (normalizedActions, commentSettings) => {
+                    let likes = 0, comments = 0, shares = 0, follows = 0;
+                    const postDetails = [];
+                    const likeBtn = document.querySelector('button[aria-label*="React Like"], button[aria-label*="Like"], button[data-control-name="like_toggle"]');
+                    if (normalizedActions.likes && likeBtn && likeBtn.getAttribute('aria-pressed') !== 'true') {
+                        likeBtn.click();
+                        likes++;
+                    }
+                    if (normalizedActions.comments) {
+                        const commentBtn = document.querySelector('button[aria-label*="Comment"], button.comment-button, button[data-control-name="comment_toggle"]');
+                        if (commentBtn) {
+                            commentBtn.click();
+                            await new Promise(r => setTimeout(r, 1500));
+                            let commentBox = document.querySelector('div[data-placeholder]') || document.querySelector('div.ql-editor, div[contenteditable="true"]');
+                            if (commentBox) {
+                                const postText = (document.querySelector('.update-components-text')?.innerText || '').trim().substring(0,500) || 'Interesting professional content shared on LinkedIn';
+                                const authorName = 'there';
+                                let commentText = `Great insights, ${authorName}! Thanks for sharing.`;
+                                commentBox.focus();
+                                commentBox.innerHTML = `<p>${commentText}</p>`;
+                                commentBox.dispatchEvent(new Event('input', { bubbles: true }));
+                                commentBox.dispatchEvent(new Event('change', { bubbles: true }));
+                                await new Promise(r => setTimeout(r, 1200));
+                                const submitBtn = document.querySelector('button.comments-comment-box__submit-button:not(:disabled), button[data-control-name="add_comment"]:not(:disabled), button.comments-comment-texteditor__submit-button:not(:disabled)');
+                                if (submitBtn) {
+                                    submitBtn.click();
+                                    comments++;
+                                    postDetails.push({ postLink: location.href, generatedComment: commentText, timestamp: Date.now() });
+                                }
+                            }
+                        }
+                    }
+                    if (normalizedActions.shares) {
+                        const shareBtn = document.querySelector('button[aria-label*="Repost"], button.social-reshare-button, button[data-control-name="share_toggle"]');
+                        if (shareBtn) { shareBtn.click(); shares++; }
+                    }
+                    if (normalizedActions.follows) {
+                        const followBtn = document.querySelector('button.follow');
+                        if (followBtn && !followBtn.getAttribute('data-followed')) { followBtn.click(); follows++; }
+                    }
+                    return { likes, comments, shares, follows, postDetails };
+                },
+                args: [normalizedActions, commentSettings]
+            });
+            return res?.[0]?.result || { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] };
+        } finally {
+            try { await chrome.tabs.remove(tabId); } catch {}
+        }
+    }
+
+    async waitForLinkedInReady(tabId, timeoutMs = 25000) {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            try {
+                const [res] = await chrome.scripting.executeScript({
+                    target: { tabId },
+                    func: () => {
+                        const ready = document.readyState;
+                        const hasMain = !!document.querySelector('main');
+                        const hasArticle = document.querySelectorAll('article').length > 0;
+                        const hasFeed = hasMain || hasArticle || !!document.querySelector('[data-urn]');
+                        return { ready, hasFeed, articles: document.querySelectorAll('article').length };
+                    }
+                });
+                const info = res?.result;
+                if (info && info.ready === 'complete' && info.hasFeed) return true;
+            } catch (e) {
+                console.warn('IMPORT: waitForLinkedInReady error', e?.message || e);
+            }
+            await new Promise(r => setTimeout(r, 800));
+        }
+        console.warn('IMPORT: LinkedIn page not fully ready after timeout, proceeding');
+        return false;
+    }
+
+    async ensureLinkedInPosts(tabId, maxAttempts = 12) {
+        for (let i = 0; i < maxAttempts; i++) {
+            try {
+                const [res] = await chrome.scripting.executeScript({
+                    target: { tabId },
+                    func: () => {
+                        // Scroll aggressively to force feed rendering
+                        window.scrollBy(0, 1600);
+                        window.scrollTo(0, document.body.scrollHeight * 0.9);
+                        const urnNodes = Array.from(document.querySelectorAll('[data-urn]')).filter((el) => {
+                            const urn = el.getAttribute('data-urn') || '';
+                            return urn.includes('urn:li:activity:') || urn.includes('urn:li:ugcPost:') || urn.includes('urn:li:share:');
+                        });
+                        const hasFeed = urnNodes.length > 0;
+                        return { count: urnNodes.length, hasFeed };
+                    }
+                });
+                const info = res?.result;
+                if (info?.hasFeed && info.count > 0) {
+                    console.log(`IMPORT: Found ${info.count} URN posts after scroll attempt ${i + 1}`);
+                    return true;
+                }
+            } catch (e) {
+                console.warn('IMPORT: ensureLinkedInPosts error', e?.message || e);
+            }
+            await new Promise(r => setTimeout(r, 2000));
+        }
+        console.warn('IMPORT: No URN posts detected after retries; continuing anyway');
+        return false;
+    }
     
     /**
      * Track import profile usage (send to backend API)
@@ -814,14 +934,15 @@ class ImportAutomation {
             const inviteUrl = `https://www.linkedin.com/preload/custom-invite/?vanityName=${vanityName}`;
             console.log(`🔗 IMPORT: Opening direct invite URL: ${inviteUrl}`);
             
-            const tabId = await browser.openTab(inviteUrl, false);
+            // Open invite URL in active tab so LinkedIn content fully loads in foreground
+            const tabId = await browser.openTab(inviteUrl, true);
             if (!tabId) {
                 throw new Error('Failed to open invite tab');
             }
 
             // Wait for page load - invitation modal loads faster
             console.log('⏳ IMPORT: Waiting for invitation modal to load...');
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this.waitForLinkedInReady(tabId, 20000);
 
             const result = await chrome.scripting.executeScript({
                 target: { tabId },
@@ -897,14 +1018,18 @@ class ImportAutomation {
         try {
             console.log(`📱 IMPORT: Opening activity page: ${activityUrl}`);
             
-            const tabId = await browser.openTab(activityUrl, false);
+            // Open activity page in active tab to ensure feed loads properly
+            const tabId = await browser.openTab(activityUrl, true);
             if (!tabId) {
                 throw new Error('Failed to open activity tab');
             }
 
             // Wait for page load - longer wait for proper rendering
             console.log('📱 IMPORT: Waiting for page to fully load...');
-            await new Promise(resolve => setTimeout(resolve, 6000));
+            await this.waitForLinkedInReady(tabId, 25000);
+
+            // Extra safeguard: scroll to ensure posts render before executing actions
+            await this.ensureLinkedInPosts(tabId, 5);
 
             // Get auth token and comment settings for AI generation
             const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
@@ -933,12 +1058,22 @@ class ImportAutomation {
                     return new Promise(async (resolve) => {
                         try {
                             console.log('📱 SCRIPT: Import automation script started');
+
+                            // Normalize action keys because different callers use both singular and plural
+                            const normalizedActions = {
+                                likes: !!(actions?.likes ?? actions?.like),
+                                comments: !!(actions?.comments ?? actions?.comment),
+                                shares: !!(actions?.shares ?? actions?.share),
+                                follows: !!(actions?.follows ?? actions?.follow)
+                            };
+                            console.log('📱 SCRIPT: Normalized actions:', normalizedActions);
                             
                             let likes = 0;
                             let comments = 0;
                             let shares = 0;
                             let follows = 0;
                             let postDetails = []; // Collect details for each post processed
+                            let totalLinksFound = 0;
 
                             // Helper function to get author name (same logic as feedScraper.js)
                             const getAuthorName = (container) => {
@@ -1048,31 +1183,105 @@ class ImportAutomation {
                             // Wait a bit more for dynamic content
                             await new Promise(r => setTimeout(r, 2000));
                             
-                            // Scroll to load posts
-                            window.scrollBy(0, 500);
-                            await new Promise(r => setTimeout(r, 1500));
+                            // Brute-force URN scan (exact provided logic)
+                            const extractLinkedInPosts = () => {
+                                const allElements = document.getElementsByTagName('*');
+                                const postLinks = new Set();
+                                for (let i = 0; i < allElements.length; i++) {
+                                    const element = allElements[i];
+                                    if (element.hasAttribute('data-urn')) {
+                                        const urn = element.getAttribute('data-urn') || '';
+                                        if (urn.includes('urn:li:activity:') || urn.includes('urn:li:ugcPost:') || urn.includes('urn:li:share:')) {
+                                            postLinks.add(`https://www.linkedin.com/feed/update/${urn}`);
+                                        }
+                                    }
+                                }
+                                return Array.from(postLinks);
+                            };
 
-                            // Find posts - use data-urn which is most reliable
-                            let posts = document.querySelectorAll('[data-urn*="urn:li:activity"]');
-                            if (posts.length === 0) {
-                                posts = document.querySelectorAll('.feed-shared-update-v2');
-                            }
-                            if (posts.length === 0) {
-                                posts = document.querySelectorAll('.occludable-update');
-                            }
-                            
-                            const postsToProcess = Array.from(posts).slice(0, postsCount);
+                            const collectUrnNodes = () => {
+                                const urnNodes = Array.from(document.querySelectorAll('[data-urn]'));
+                                const seen = new Set();
+                                const items = [];
+                                for (const node of urnNodes) {
+                                    const urn = (node.getAttribute('data-urn') || '').match(/urn:li:(activity|ugcPost|share):\d+/)?.[0];
+                                    if (!urn || seen.has(urn)) continue;
+                                    seen.add(urn);
+                                    items.push({ urn, element: node.closest('article') || node.closest('.feed-shared-update-v2') || node.closest('.occludable-update') || node });
+                                }
+                                return items;
+                            };
 
-                            console.log(`📱 SCRIPT: Found ${posts.length} posts, processing ${postsToProcess.length}`);
+                            // Retry with scroll and brute-force scan
+                            let posts = [];
+                            let urnNodesCache = [];
+                            for (let attempt = 0; attempt < 8; attempt++) {
+                                window.scrollBy(0, 1500);
+                                window.scrollTo(0, document.body.scrollHeight * 0.9);
+                                await new Promise(r => setTimeout(r, 1500));
+                                const links = extractLinkedInPosts();
+                                totalLinksFound = Math.max(totalLinksFound, links.length);
+                                urnNodesCache = collectUrnNodes();
+                                console.log(`📱 SCRIPT: Brute URN scan attempt ${attempt + 1}, found ${links.length} links, urn nodes ${urnNodesCache.length}`);
+                                if (links.length > 0 || urnNodesCache.length > 0) {
+                                    if (links.length > 0) {
+                                        posts = links.map(url => {
+                                            const urnMatch = url.match(/urn:li:(activity|ugcPost|share):\d+/);
+                                            const urn = urnMatch ? urnMatch[0] : '';
+                                            const fromUrnNodes = urn ? urnNodesCache.find(n => n.urn === urn) : null;
+                                            const element = fromUrnNodes?.element || null;
+                                            return { url, urn, element };
+                                        });
+                                    }
+                                    if (posts.length === 0 && urnNodesCache.length > 0) {
+                                        posts = urnNodesCache.map(n => ({ url: `https://www.linkedin.com/feed/update/${n.urn}`, urn: n.urn, element: n.element }));
+                                    }
+                                    console.log(`📱 SCRIPT: Mapped ${posts.filter(p => !!p.element).length}/${posts.length} items to post containers`);
+                                    break;
+                                }
+                            }
+
+                            // Second pass: wait longer and scan again (LinkedIn lazy-renders posts)
+                            if (posts.length === 0) {
+                                console.log('📱 SCRIPT: First pass found no mapped posts, running second pass...');
+                                await new Promise(r => setTimeout(r, 3000));
+                                for (let attempt = 0; attempt < 6; attempt++) {
+                                    window.scrollBy(0, 1800);
+                                    await new Promise(r => setTimeout(r, 1800));
+                                    const links = extractLinkedInPosts();
+                                    totalLinksFound = Math.max(totalLinksFound, links.length);
+                                    urnNodesCache = collectUrnNodes();
+                                    console.log(`📱 SCRIPT: Second-pass URN scan ${attempt + 1}, found ${links.length} links, urn nodes ${urnNodesCache.length}`);
+                                    if (links.length > 0 || urnNodesCache.length > 0) {
+                                        if (links.length > 0) {
+                                            posts = links.map(url => {
+                                                const urnMatch = url.match(/urn:li:(activity|ugcPost|share):\d+/);
+                                                const urn = urnMatch ? urnMatch[0] : '';
+                                                const fromUrnNodes = urn ? urnNodesCache.find(n => n.urn === urn) : null;
+                                                const element = fromUrnNodes?.element || null;
+                                                return { url, urn, element };
+                                            });
+                                        }
+                                        if (posts.length === 0 && urnNodesCache.length > 0) {
+                                            posts = urnNodesCache.map(n => ({ url: `https://www.linkedin.com/feed/update/${n.urn}`, urn: n.urn, element: n.element }));
+                                        }
+                                        console.log(`📱 SCRIPT: Second-pass mapped ${posts.filter(p => !!p.element).length}/${posts.length} items to post containers`);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            const postsToProcess = posts.slice(0, postsCount);
+                            console.log(`📱 SCRIPT: Found ${posts.length} posts (brute URN), processing ${postsToProcess.length}`);
                             console.log(`🎲 SCRIPT: Random mode: ${randomMode ? 'ENABLED' : 'DISABLED'}`);
 
                             if (postsToProcess.length === 0) {
-                                resolve({ likes: 0, comments: 0, shares: 0, follows: 0, error: 'No posts found' });
+                                resolve({ likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [], error: 'No posts found', debug: { totalLinksFound, mappedPosts: posts.length, links: posts.map(p => p.url) } });
                                 return;
                             }
 
                             // Follow user first (if enabled)
-                            if (actions.follows) {
+                            if (normalizedActions.follows) {
                                 setTimeout(() => {
                                     const followBtn = document.querySelector('button.follow');
                                     if (followBtn && !followBtn.getAttribute('data-followed')) {
@@ -1086,16 +1295,27 @@ class ImportAutomation {
                             // Process each post sequentially
                             async function processPostsSequentially() {
                                 for (let index = 0; index < postsToProcess.length; index++) {
-                                    const post = postsToProcess[index];
+                                    const postItem = postsToProcess[index];
+                                    let post = postItem.element;
                                     console.log(`📱 SCRIPT: Processing post ${index + 1} of ${postsToProcess.length}`);
+                                    if (!post) {
+                                        const fallbackSource = postItem.urn
+                                            ? Array.from(document.querySelectorAll('[data-urn]')).find(el => (el.getAttribute('data-urn') || '').includes(postItem.urn))
+                                            : null;
+                                        post = fallbackSource ? (fallbackSource.closest('article') || fallbackSource.closest('.feed-shared-update-v2') || fallbackSource.closest('.occludable-update') || fallbackSource) : null;
+                                    }
+                                    if (!post) {
+                                        console.warn(`📱 SCRIPT: Missing post element for index ${index + 1}, urn=${postItem.urn}`);
+                                        continue;
+                                    }
                                     
                                     // If random mode is enabled, pick ONE random action
-                                    let postActions = actions;
+                                    let postActions = normalizedActions;
                                     if (randomMode) {
                                         const availableActions = [];
-                                        if (actions.likes) availableActions.push('likes');
-                                        if (actions.comments) availableActions.push('comments');
-                                        if (actions.shares) availableActions.push('shares');
+                                        if (normalizedActions.likes) availableActions.push('likes');
+                                        if (normalizedActions.comments) availableActions.push('comments');
+                                        if (normalizedActions.shares) availableActions.push('shares');
                                         
                                         if (availableActions.length > 0) {
                                             const randomAction = availableActions[Math.floor(Math.random() * availableActions.length)];
@@ -1103,7 +1323,7 @@ class ImportAutomation {
                                                 likes: randomAction === 'likes',
                                                 comments: randomAction === 'comments',
                                                 shares: randomAction === 'shares',
-                                                follows: actions.follows // Keep follow as-is
+                                                follows: normalizedActions.follows // Keep follow as-is
                                             };
                                             console.log(`🎲 SCRIPT: Random mode selected action: ${randomAction}`);
                                         }
@@ -1200,12 +1420,12 @@ class ImportAutomation {
                                                     }
                                                     
                                                     // Capture post details for history
-                                                    const postUrn = post.getAttribute('data-urn') || '';
+                                                    const postUrn = post.getAttribute('data-urn') || postItem.urn || '';
                                                     postDetails.push({
                                                         authorName: authorName,
                                                         postContent: postText,
                                                         generatedComment: commentText,
-                                                        postLink: postUrn ? `https://www.linkedin.com/feed/update/${postUrn}` : '',
+                                                        postLink: postItem.url || (postUrn ? `https://www.linkedin.com/feed/update/${postUrn}` : ''),
                                                         timestamp: Date.now()
                                                     });
                                                     
@@ -1308,7 +1528,7 @@ class ImportAutomation {
                             await processPostsSequentially();
 
                             // Resolve immediately after processing is complete
-                            resolve({ likes, comments, shares, follows, postDetails });
+                            resolve({ likes, comments, shares, follows, postDetails, debug: { totalLinksFound, mappedPosts: postsToProcess.length, links: postsToProcess.map(p => p.url) } });
 
                         } catch (error) {
                             resolve({ likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [], error: error.message });
@@ -1336,7 +1556,29 @@ class ImportAutomation {
                 console.log('📱 IMPORT: Tab already closed');
             }
 
-            return result?.[0]?.result || { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] };
+            let engagement = result?.[0]?.result || { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [], debug: null };
+
+            // Fallback: if we found links but didn’t act (0 actions), open each post URL directly and engage
+            if ((engagement.likes + engagement.comments + engagement.shares + engagement.follows) === 0 && engagement.debug?.links?.length) {
+                console.log('📱 IMPORT: Fallback engaging directly on feed/update pages');
+                const links = engagement.debug.links.slice(0, postsCount);
+                const fallbackDetails = [];
+                for (const link of links) {
+                    try {
+                        const res = await this.engageSinglePostUrl(link, actions, randomMode, commentSettings);
+                        engagement.likes += res.likes || 0;
+                        engagement.comments += res.comments || 0;
+                        engagement.shares += res.shares || 0;
+                        engagement.follows += res.follows || 0;
+                        if (res.postDetails?.length) fallbackDetails.push(...res.postDetails);
+                    } catch (e) {
+                        console.warn('📱 IMPORT: Fallback post engage failed for', link, e?.message || e);
+                    }
+                }
+                engagement.postDetails = (engagement.postDetails || []).concat(fallbackDetails);
+            }
+
+            return engagement;
 
         } catch (error) {
             console.error('📱 IMPORT: Error in engageWithProfilePosts:', error);
@@ -1351,7 +1593,8 @@ class ImportAutomation {
         try {
             console.log('📧 IMPORT: Opening contact info page:', contactUrl);
             
-            const tabId = await browser.openTab(contactUrl, false);
+            // Open contact info page in active tab for reliable rendering
+            const tabId = await browser.openTab(contactUrl, true);
             if (!tabId) return { email: null, phone: null };
 
             await new Promise(resolve => setTimeout(resolve, 3000));

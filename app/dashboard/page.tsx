@@ -1054,6 +1054,7 @@ function DashboardContent() {
         const tab = activeTab;
         if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); }
         if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
+        if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
         if (tab === 'referrals') loadReferralData();
@@ -1263,6 +1264,7 @@ function DashboardContent() {
         window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
         if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); }
         if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
+        if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tabId === 'tasks') loadTasks();
         if (tabId === 'history') loadHistory();
@@ -1395,8 +1397,20 @@ function DashboardContent() {
                 </div>
             ))}
 
-            {/* Persistent Task Status Boxes (top-right) */}
-            <div style={{ position: 'fixed', top: '24px', right: '440px', zIndex: 9998, display: 'flex', gap: '6px' }}>
+            {/* Persistent Task Status Boxes (top-center) */}
+            <div style={{ 
+                position: 'fixed', 
+                top: '18px', 
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 9998, 
+                display: 'flex', 
+                gap: '6px',
+                padding: '6px 10px',
+                background: 'rgba(0,0,0,0.25)',
+                borderRadius: '12px',
+                backdropFilter: 'blur(6px)'
+            }}>
                 {[
                     { key: 'pending', label: 'Pending', count: tasks.filter(t => t.status === 'pending').length, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
                     { key: 'in_progress', label: 'In Progress', count: tasks.filter(t => t.status === 'in_progress').length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)' },

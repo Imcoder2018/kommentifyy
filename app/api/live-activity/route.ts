@@ -78,3 +78,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+// DELETE — clear all activity logs for the authenticated user
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = extractToken(request.headers.get('authorization'));
+    if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const payload = verifyToken(token);
+
+    const result = await (prisma as any).liveActivityLog.deleteMany({
+      where: { userId: payload.userId },
+    });
+
+    return NextResponse.json({ success: true, deleted: result.count });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

@@ -195,6 +195,7 @@ function DashboardContent() {
     // Live activity log state
     const [liveActivityLogs, setLiveActivityLogs] = useState<any[]>([]);
     const [liveActivityLoading, setLiveActivityLoading] = useState(false);
+    const [showLogsPopup, setShowLogsPopup] = useState(false);
 
     // Commenter config state
     const [commenterCfg, setCommenterCfg] = useState<any>(null);
@@ -1077,8 +1078,11 @@ function DashboardContent() {
         if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
+        if (tab === 'history') loadHistory();
         if (tab === 'analytics') loadAnalytics();
         if (tab === 'limits') { loadAutoSettings(); loadLiveActivity(); }
+        if (tab === 'activity') loadLiveActivity();
+        if (tab === 'import') loadImportCfg();
         if (tab === 'referrals') loadReferralData();
         if (tab === 'account') loadAccountSettings();
     }, [loading, user, activeTab]);
@@ -1285,16 +1289,18 @@ function DashboardContent() {
         setActiveTab(tabId);
         // Update URL without full navigation so reload preserves tab
         window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
-        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); }
+        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); }
         if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
         if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tabId === 'tasks') loadTasks();
         if (tabId === 'history') loadHistory();
-        if (tabId === 'limits') loadAutoSettings();
-        if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
+        if (tabId === 'limits') { loadAutoSettings(); loadLiveActivity(); }
+        if (tabId === 'activity') loadLiveActivity();
         if (tabId === 'import') loadImportCfg();
         if (tabId === 'analytics') loadAnalytics();
+        if (tabId === 'referrals') loadReferralData();
+        if (tabId === 'account') loadAccountSettings();
     };
 
     if (loggingOut) {
@@ -1362,6 +1368,7 @@ function DashboardContent() {
         // Other
         { id: 'limits', label: 'Limits & Delays', icon: svgIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), section: 'management' },
         { id: 'tasks', label: 'Tasks', icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'), section: 'management' },
+        { id: 'activity', label: 'Activity Logs', icon: svgIcon('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8'), section: 'management' },
         { id: 'history', label: 'History', icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'), section: 'management' },
     ];
 
@@ -1446,7 +1453,60 @@ function DashboardContent() {
                         <div style={{ fontSize: '9px', color: s.color, fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>{s.label}</div>
                     </div>
                 ))}
+                {/* Logs box */}
+                <div onClick={() => { if (liveActivityLogs.length === 0) loadLiveActivity(); setShowLogsPopup(true); }}
+                    style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: showLogsPopup ? 'scale(1.05)' : 'scale(1)' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '800', color: '#a78bfa', lineHeight: 1 }}>{liveActivityLogs.length > 0 ? liveActivityLogs.length : '📡'}</div>
+                    <div style={{ fontSize: '9px', color: '#a78bfa', fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>Logs</div>
+                </div>
             </div>
+
+            {/* Live Activity Logs Popup */}
+            {showLogsPopup && (
+                <>
+                    <div onClick={() => setShowLogsPopup(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9997 }} />
+                    <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', zIndex: 9998, background: theme === 'light' ? '#fff' : '#1a1a3e', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '520px', maxHeight: '480px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <span style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '700', fontSize: '14px' }}>📡 Live Activity Logs</span>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <button onClick={() => loadLiveActivity()} disabled={liveActivityLoading}
+                                    style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer' }}>
+                                    {liveActivityLoading ? '...' : '🔄 Refresh'}
+                                </button>
+                                <button onClick={() => { handleTabChange('activity'); setShowLogsPopup(false); }}
+                                    style={{ padding: '4px 10px', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '6px', color: '#a78bfa', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
+                                    Open Full View
+                                </button>
+                                <button onClick={() => setShowLogsPopup(false)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#666' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>✕</button>
+                            </div>
+                        </div>
+                        <div style={{ fontFamily: 'monospace', fontSize: '11px', lineHeight: '1.6' }}>
+                            {liveActivityLogs.length === 0 ? (
+                                <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '30px', fontSize: '12px' }}>
+                                    No activity logs yet. Extension will log actions here in real-time.
+                                </div>
+                            ) : (
+                                liveActivityLogs.slice(0, 50).map((log: any) => {
+                                    const icons: any = { like: '👍', comment: '💬', share: '🔄', follow: '➕', connect: '🤝', post: '✍️', delay: '⏳', start: '🚀', stop: '🛑', error: '❌', info: 'ℹ️' };
+                                    const colors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
+                                    const icon = icons[log.action] || 'ℹ️';
+                                    const color = colors[log.level] || colors.info;
+                                    const time = new Date(log.createdAt).toLocaleTimeString();
+                                    const date = new Date(log.createdAt).toLocaleDateString();
+                                    return (
+                                        <div key={log.id} style={{ display: 'flex', gap: '8px', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.25)', minWidth: '55px', fontSize: '9px' }}>{time}</span>
+                                            <span>{icon}</span>
+                                            <span style={{ color: '#a78bfa', fontSize: '9px', minWidth: '55px' }}>{log.taskType}</span>
+                                            <span style={{ color, flex: 1 }}>{log.message}</span>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* Expanded Task List Popup */}
             {taskStatusExpanded && (
@@ -2755,90 +2815,84 @@ function DashboardContent() {
                             </div>
                         </div>
 
-                        {/* Comment Style Sources Section */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                <h3 style={{ color: 'white', fontSize: '15px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* Comment Style Sources Section — compact */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span>🎨</span> Comment Style Sources
                                 </h3>
                                 <button onClick={loadCommentStyleProfiles}
-                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', padding: '4px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
                                     🔄 Refresh
                                 </button>
                             </div>
-                            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '10px' }}>
-                                Add LinkedIn profiles to learn from their commenting style. AI will mimic their tone.
-                            </p>
-                            {/* Add Profile Input */}
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'flex-end' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '4px' }}>🔗 LinkedIn Profile URL</label>
-                                    <input value={commentStyleUrl} onChange={e => setCommentStyleUrl(e.target.value)}
-                                        placeholder="https://linkedin.com/in/username"
-                                        style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                </div>
+                            {/* Add Profile Input — inline */}
+                            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
+                                <input value={commentStyleUrl} onChange={e => setCommentStyleUrl(e.target.value)}
+                                    placeholder="https://linkedin.com/in/username"
+                                    style={{ flex: 1, padding: '7px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
                                 <button onClick={scrapeCommentStyle} disabled={commentStyleScraping}
-                                    style={{ padding: '8px 16px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: commentStyleScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                    style={{ padding: '7px 14px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: commentStyleScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
                                     {commentStyleScraping ? '⏳...' : '💬 Scrape'}
                                 </button>
                             </div>
                             {commentStyleStatus && (
-                                <div style={{ marginBottom: '16px', padding: '10px 16px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)', border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`, borderRadius: '10px', color: commentStyleStatus.includes('Error') ? '#f87171' : '#60a5fa', fontSize: '13px' }}>
+                                <div style={{ marginBottom: '10px', padding: '8px 14px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)', border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`, borderRadius: '8px', color: commentStyleStatus.includes('Error') ? '#f87171' : '#60a5fa', fontSize: '12px' }}>
                                     {commentStyleStatus}
                                 </div>
                             )}
-                            {/* Kommentify Shared Comment Profiles */}
+                            {/* Kommentify Shared Comment Profiles — compact inline */}
                             {sharedCommentProfiles.length > 0 && (
-                                <div style={{ marginBottom: '20px', padding: '16px', background: 'rgba(245,158,11,0.08)', borderRadius: '14px', border: '1px solid rgba(245,158,11,0.2)' }}>
-                                    <h4 style={{ color: '#fbbf24', fontSize: '14px', fontWeight: '700', marginBottom: '10px' }}>⭐ Kommentify Shared Profiles</h4>
-                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '10px' }}>Pre-scraped comment profiles shared by Kommentify. Select to use for AI comment style.</p>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ marginBottom: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.06)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.15)' }}>
+                                    <div style={{ color: '#fbbf24', fontSize: '11px', fontWeight: '700', marginBottom: '6px' }}>⭐ Kommentify Shared ({sharedCommentProfiles.length})</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                         {sharedCommentProfiles.map((p: any, i: number) => {
                                             const profileMatch = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
                                             const isSelected = profileMatch?.isSelected || false;
                                             return (
                                             <div key={i} onClick={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: isSelected ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: isSelected ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                                <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: '#f59e0b', width: '15px', height: '15px', cursor: 'pointer' }} />
-                                                <span style={{ fontSize: '12px' }}>💬</span>
-                                                <span style={{ color: isSelected ? '#fbbf24' : 'white', fontSize: '13px', fontWeight: '600' }}>{p.profileName || p.profileId}</span>
-                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{p.commentCount} comments</span>
+                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isSelected ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)', padding: '5px 10px', borderRadius: '8px', border: isSelected ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
+                                                <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: '#f59e0b', width: '13px', height: '13px', cursor: 'pointer' }} />
+                                                <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600' }}>{p.profileName || p.profileId}</span>
+                                                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>{p.commentCount}</span>
                                             </div>
                                             );
                                         })}
                                     </div>
                                 </div>
                             )}
-                            {/* Saved Profiles */}
-                            <h4 style={{ color: 'white', fontSize: '15px', fontWeight: '700', marginBottom: '14px' }}>👤 Saved Comment Style Profiles</h4>
+                            {/* Saved Profiles — compact */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>👤 Saved Profiles ({commentStyleProfiles.length})</h4>
+                            </div>
                             {commentStyleLoading ? (
-                                <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading profiles...</div>
+                                <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Loading profiles...</div>
                             ) : commentStyleProfiles.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '30px 0' }}>
-                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>No comment style profiles yet. Add a LinkedIn profile above to get started.</p>
+                                <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>No comment style profiles yet. Add a LinkedIn profile above.</p>
                                 </div>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     {commentStyleProfiles.map((profile: any) => (
                                         <div key={profile.id}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: profile.isSelected ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.05)', padding: '14px 18px', borderRadius: '12px', border: `1px solid ${profile.isSelected ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
-                                                <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>💬</div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{profile.profileName || profile.profileId}</div>
-                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{profile._count?.comments || profile.commentCount} comments scraped{profile.lastScrapedAt ? ` · Last: ${new Date(profile.lastScrapedAt).toLocaleDateString()}` : ''}</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: profile.isSelected ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${profile.isSelected ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.06)'}` }}>
+                                                <span style={{ fontSize: '16px', flexShrink: 0 }}>💬</span>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ color: 'white', fontWeight: '600', fontSize: '13px' }}>{profile.profileName || profile.profileId}</div>
+                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{profile._count?.comments || profile.commentCount} comments{profile.lastScrapedAt ? ` · ${new Date(profile.lastScrapedAt).toLocaleDateString()}` : ''}</div>
                                                 </div>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '10px', color: profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
                                                     <input type="checkbox" checked={profile.isSelected} onChange={() => toggleProfileSelect(profile.id)}
-                                                        style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
-                                                    AI Train
+                                                        style={{ accentColor: '#3b82f6', width: '14px', height: '14px' }} />
+                                                    Train
                                                 </label>
                                                 <button onClick={() => { if (commentStyleExpanded === profile.id) { setCommentStyleExpanded(null); setCommentStyleComments([]); } else { setCommentStyleExpanded(profile.id); loadProfileComments(profile.id); } }}
-                                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>
-                                                    {commentStyleExpanded === profile.id ? '▲ Hide' : '▼ View'}
+                                                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', padding: '4px 10px', fontSize: '10px', cursor: 'pointer' }}>
+                                                    {commentStyleExpanded === profile.id ? '▲' : '▼'}
                                                 </button>
                                                 <button onClick={() => deleteCommentStyleProfile(profile.id)}
-                                                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}>
-                                                    🗑️
+                                                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#f87171', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
+                                                    ×
                                                 </button>
                                             </div>
                                             {/* Expanded comments list */}
@@ -2883,12 +2937,12 @@ function DashboardContent() {
                                     ))}
                                 </div>
                             )}
-                            {/* AI Training Info */}
+                            {/* AI Training Info — compact */}
                             {commentStyleProfiles.some((p: any) => p.isSelected) && (
-                                <div style={{ background: 'rgba(59,130,246,0.1)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(59,130,246,0.3)', marginTop: '16px' }}>
-                                    <h4 style={{ color: '#60a5fa', fontSize: '14px', fontWeight: '700', marginBottom: '8px' }}>🎯 AI Comment Style Training Active</h4>
-                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: 0 }}>
-                                        AI will use {commentStyleProfiles.filter((p: any) => p.isSelected).length} selected profile(s) with their top-starred comments to match their commenting style when generating comments (both manual and auto-commenting).
+                                <div style={{ background: 'rgba(59,130,246,0.08)', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(59,130,246,0.2)', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🎯</span>
+                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: 0 }}>
+                                        <strong style={{ color: '#60a5fa' }}>Training Active:</strong> AI uses {commentStyleProfiles.filter((p: any) => p.isSelected).length} profile(s) with starred comments to match commenting style.
                                     </p>
                                 </div>
                             )}
@@ -2899,30 +2953,10 @@ function DashboardContent() {
                 {/* Trending Posts Tab */}
                 {activeTab === 'trending-posts' && (
                     <div>
-                        {/* Instant Feed Scrape Task */}
-                        <div style={{ background: 'rgba(16,185,129,0.08)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                                <h3 style={{ color: '#34d399', fontSize: '15px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', '#34d399', 16)} Scrape Feed Now</h3>
-                            </div>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                                <div style={{ flex: '0 0 auto' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z', 'rgba(255,255,255,0.6)', 12)} Duration</label>
-                                    <select value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                                        <option value="1">1 min</option><option value="2">2 min</option><option value="3">3 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
-                                    </select>
-                                </div>
-                                <div style={{ flex: '0 0 auto' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', 'rgba(255,255,255,0.6)', 12)} Min Likes</label>
-                                    <input type="number" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value) || 0)} min={0} style={{ width: '70px', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                </div>
-                                <div style={{ flex: '0 0 auto' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'rgba(255,255,255,0.6)', 12)} Min Comments</label>
-                                    <input type="number" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value) || 0)} min={0} style={{ width: '70px', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                </div>
-                                <div style={{ flex: 1, minWidth: '150px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4', 'rgba(255,255,255,0.6)', 12)} Keywords</label>
-                                    <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="AI, startup, SaaS..." style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                </div>
+                        {/* Scrape Feed Now — compact */}
+                        <div style={{ background: 'rgba(16,185,129,0.08)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                <h3 style={{ color: '#34d399', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', '#34d399', 14)} Scrape Feed Now</h3>
                                 <button onClick={async () => {
                                     try {
                                         const token = localStorage.getItem('authToken');
@@ -2938,210 +2972,160 @@ function DashboardContent() {
                                         if (data.success) setTrendingStatus('✅ Scrape task sent! Extension will open LinkedIn and start scraping.');
                                         else setTrendingStatus(data.error || 'Failed to send task');
                                     } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
-                                }} style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' , display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', 'white', 13)} Start Now</button>
+                                }} style={{ padding: '7px 16px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', 'white', 12)} Start Now</button>
                             </div>
-                            {/* Schedule Times (moved from Feed Schedule tab) */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '14px', flexWrap: 'wrap' }}>
-                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z', 'rgba(255,255,255,0.6)', 12)} Daily Schedule:</span>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'auto auto auto 1fr', gap: '8px', alignItems: 'end', marginBottom: '10px' }}>
+                                <div>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>⏱ Duration</label>
+                                    <select value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }}>
+                                        <option value="1">1 min</option><option value="2">2 min</option><option value="3">3 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>❤️ Min Likes</label>
+                                    <input type="number" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>💬 Min Comments</label>
+                                    <input type="number" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🔑 Keywords</label>
+                                    <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="AI, startup, SaaS..." style={{ width: '100%', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                </div>
+                            </div>
+                            {/* Daily Schedule — compact inline */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', paddingTop: '8px', borderTop: '1px solid rgba(16,185,129,0.15)' }}>
+                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>⏰ Daily:</span>
                                 {scheduleTimesInput.map((time, i) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '8px', padding: '4px 8px' }}>
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.35)', borderRadius: '6px', padding: '2px 6px' }}>
                                         <input type="time" value={time} onChange={e => { const arr = [...scheduleTimesInput]; arr[i] = e.target.value; setScheduleTimesInput(arr); }}
-                                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '12px', outline: 'none', width: '70px' }} />
+                                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '11px', outline: 'none', width: '62px' }} />
                                         <button onClick={() => setScheduleTimesInput(scheduleTimesInput.filter((_, idx) => idx !== i))}
-                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
+                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '12px', padding: '0 1px', lineHeight: 1 }}>×</button>
                                     </div>
                                 ))}
                                 <button onClick={() => {
                                     const now = new Date(); now.setMinutes(now.getMinutes() + 2);
                                     setScheduleTimesInput([...scheduleTimesInput, `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`]);
                                 }}
-                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: '8px', padding: '4px 10px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '12px' }}>
-                                    + Add Time
-                                </button>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', cursor: 'pointer' }}>
-                                    <span style={{ color: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600' }}>
-                                        {scheduleActive ? 'Active' : 'Off'}
-                                    </span>
-                                    <div onClick={() => setScheduleActive(!scheduleActive)} style={{ width: '36px', height: '20px', background: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.2)', borderRadius: '10px', padding: '2px', cursor: 'pointer', transition: 'background 0.2s' }}>
-                                        <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '8px', transition: 'transform 0.2s', transform: scheduleActive ? 'translateX(16px)' : 'translateX(0)' }} />
+                                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.25)', borderRadius: '6px', padding: '3px 8px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '10px' }}>+ Add</button>
+                                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <div onClick={() => setScheduleActive(!scheduleActive)} style={{ width: '32px', height: '18px', background: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.2)', borderRadius: '9px', padding: '2px', cursor: 'pointer', transition: 'background 0.2s' }}>
+                                        <div style={{ width: '14px', height: '14px', background: 'white', borderRadius: '7px', transition: 'transform 0.2s', transform: scheduleActive ? 'translateX(14px)' : 'translateX(0)' }} />
                                     </div>
-                                </label>
-                                <button onClick={saveFeedSchedule} style={{ padding: '4px 12px', background: 'rgba(105,63,233,0.3)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '8px', color: '#a78bfa', cursor: 'pointer', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', '#a78bfa', 10)} Save</button>
+                                    <span style={{ color: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '600' }}>{scheduleActive ? 'ON' : 'OFF'}</span>
+                                    <button onClick={saveFeedSchedule} style={{ padding: '3px 10px', background: 'rgba(105,63,233,0.25)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', cursor: 'pointer', fontSize: '10px', fontWeight: '600' }}>💾 Save</button>
+                                </div>
                             </div>
                         </div>
-                        {/* Kommentify Trending Posts (Admin-shared) */}
+                        {/* Kommentify Shared Posts — compact */}
                         {sharedPosts.length > 0 && (
-                            <div style={{ background: 'rgba(105,63,233,0.08)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '20px' }}>
-                                <h3 style={{ color: '#a78bfa', fontSize: '15px', fontWeight: '700', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 14)} Kommentify Trending Posts</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 12px 0' }}>Curated posts shared by Kommentify for inspiration</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
-                                    {sharedPosts.slice(0, 10).map((p: any, i: number) => (
-                                        <div key={p.id || i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                            <input type="checkbox" checked={trendingSelectedPosts.includes(p.id)} onChange={() => { setTrendingSelectedPosts(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]); }}
-                                                style={{ accentColor: '#693fe9', width: '16px', height: '16px', marginTop: '2px', flexShrink: 0 }} />
+                            <div style={{ background: 'rgba(105,63,233,0.06)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <h3 style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 13)} Kommentify Curated ({sharedPosts.length})</h3>
+                                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>Select posts for AI generation</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '220px', overflowY: 'auto' }}>
+                                    {sharedPosts.slice(0, 10).map((p: any, i: number) => {
+                                        const sel = trendingSelectedPosts.includes(p.id);
+                                        return (
+                                        <div key={p.id || i} onClick={() => { setTrendingSelectedPosts(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]); }}
+                                            style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: sel ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: '8px', border: sel ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={sel} readOnly style={{ accentColor: '#693fe9', width: '14px', height: '14px', marginTop: '1px', flexShrink: 0, cursor: 'pointer' }} />
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>{p.authorName || 'Unknown'} · {p.likes} likes · {p.comments} comments</div>
-                                                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>{p.postContent?.substring(0, 200)}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', marginBottom: '2px' }}>{p.authorName || 'Unknown'} · ❤️ {p.likes} · 💬 {p.comments}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>{p.postContent?.substring(0, 180)}</div>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
-                        {sharedPostsLoading && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px' }}>Loading Kommentify posts...</div>}
+                        {sharedPostsLoading && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '12px' }}>Loading Kommentify posts...</div>}
 
-                        {/* Period Filters */}
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                            {[{ id: 'today', label: 'Today' }, { id: 'week', label: 'This Week' }, { id: 'month', label: 'This Month' }, { id: 'all', label: 'All Time' }].map(p => (
+                        {/* Period Filters + Search — combined compact row */}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            {[{ id: 'today', label: 'Today' }, { id: 'week', label: 'Week' }, { id: 'month', label: 'Month' }, { id: 'all', label: 'All' }].map(p => (
                                 <button key={p.id} onClick={() => { setTrendingPeriod(p.id); loadSavedPosts(1, p.id); }}
-                                    style={{ padding: '10px 20px', background: trendingPeriod === p.id ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.08)', border: trendingPeriod === p.id ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontWeight: trendingPeriod === p.id ? '700' : '500', cursor: 'pointer', fontSize: '14px' }}>
+                                    style={{ padding: '6px 14px', background: trendingPeriod === p.id ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.06)', border: trendingPeriod === p.id ? 'none' : '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontWeight: trendingPeriod === p.id ? '700' : '500', cursor: 'pointer', fontSize: '12px' }}>
                                     {p.label}
                                 </button>
                             ))}
+                            <div style={{ flex: 1 }} />
+                            <input type="text" value={savedPostsSearch} onChange={e => setSavedPostsSearch(e.target.value)} placeholder="Search posts..."
+                                onKeyDown={e => e.key === 'Enter' && loadSavedPosts(1)}
+                                style={{ minWidth: '160px', maxWidth: '280px', padding: '7px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(105,63,233,0.25)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                            <select value={savedPostsSortBy} onChange={e => { setSavedPostsSortBy(e.target.value); }}
+                                style={{ padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontSize: '11px' }}>
+                                <option value="comments">💬 Comments</option>
+                                <option value="likes">❤️ Likes</option>
+                                <option value="shares">🔄 Shares</option>
+                                <option value="scrapedAt">📅 Date</option>
+                            </select>
+                            <button onClick={() => loadSavedPosts(1)}
+                                style={{ padding: '7px 14px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '12px' }}>
+                                🔍
+                            </button>
                         </div>
-                        {/* Controls Row */}
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '20px' }}>
-                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 10px 0' }}>Search and filter your scraped trending posts by keyword, then sort by engagement metrics.</p>
-                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                <input type="text" value={savedPostsSearch} onChange={e => setSavedPostsSearch(e.target.value)} placeholder="Search by keyword in post content..."
-                                    onKeyDown={e => e.key === 'Enter' && loadSavedPosts(1)}
-                                    style={{ flex: 1, minWidth: '200px', padding: '12px 16px', background: 'rgba(255,255,255,0.08)', border: '2px solid rgba(105,63,233,0.3)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                                <select value={savedPostsSortBy} onChange={e => { setSavedPostsSortBy(e.target.value); }}
-                                    style={{ padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontSize: '13px' }}>
-                                    <option value="comments">Sort: Comments</option>
-                                    <option value="likes">Sort: Likes</option>
-                                    <option value="shares">Sort: Shares</option>
-                                    <option value="scrapedAt">Sort: Date Saved</option>
-                                </select>
-                                <button onClick={() => loadSavedPosts(1)}
-                                    style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>
-                                    {miniIcon('M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35', 'white', 13)} Search
-                                </button>
-                            </div>
-                        </div>
-                        {/* AI Actions Panel */}
-                        <div style={{ background: 'rgba(105,63,233,0.06)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
-                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
-                                    Total: <strong style={{ color: 'white' }}>{savedPostsTotal}</strong> trending posts
-                                    {trendingSelectedPosts.length > 0 && (
-                                        <span style={{ marginLeft: '16px', color: '#a78bfa' }}>
-                                            {trendingSelectedPosts.length} selected <span style={{ color: 'rgba(255,255,255,0.3)' }}>(max 10)</span>
-                                        </span>
-                                    )}
+                        {/* AI Actions Panel — compact */}
+                        <div style={{ background: 'rgba(105,63,233,0.06)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)', marginBottom: '14px' }}>
+                            {/* Header row: stats + action buttons */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                                    <strong style={{ color: 'white' }}>{savedPostsTotal}</strong> posts
+                                    {trendingSelectedPosts.length > 0 && <span style={{ marginLeft: '10px', color: '#a78bfa', fontWeight: '600' }}>{trendingSelectedPosts.length} selected <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>(max 10)</span></span>}
                                 </div>
-                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                    <button onClick={() => {
-                                        if (trendingSelectedPosts.length === savedPosts.length) setTrendingSelectedPosts([]);
-                                        else setTrendingSelectedPosts(savedPosts.slice(0, 3).map(p => p.id));
-                                    }}
-                                        style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '13px' }}>
-                                        {trendingSelectedPosts.length > 0 ? 'Clear Selection' : 'Auto-Select Top 3'}
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    <button onClick={() => { if (trendingSelectedPosts.length > 0) setTrendingSelectedPosts([]); else setTrendingSelectedPosts(savedPosts.slice(0, 3).map(p => p.id)); }}
+                                        style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '11px' }}>
+                                        {trendingSelectedPosts.length > 0 ? 'Clear' : 'Auto-Select 3'}
                                     </button>
                                     <button onClick={generateTrendingPosts} disabled={trendingGenerating || trendingSelectedPosts.length === 0}
-                                        style={{ padding: '8px 18px', background: trendingGenerating ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: trendingGenerating ? 'wait' : 'pointer', fontSize: '13px', boxShadow: '0 4px 15px rgba(105,63,233,0.3)' }}>
-                                        {trendingGenerating ? 'Generating...' : 'AI Generate Posts'}
+                                        style={{ padding: '6px 14px', background: trendingGenerating ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: trendingGenerating ? 'wait' : 'pointer', fontSize: '11px', boxShadow: '0 2px 8px rgba(105,63,233,0.3)' }}>
+                                        {trendingGenerating ? '⏳ Generating...' : '✨ AI Generate'}
                                     </button>
                                     <button onClick={analyzePosts} disabled={analysisLoading || trendingGeneratedPosts.length === 0}
-                                        style={{ padding: '8px 18px', background: analysisLoading ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: analysisLoading ? 'wait' : 'pointer', fontSize: '13px' }}>
-                                        {analysisLoading ? 'Analyzing...' : 'Analyze Posts'}
+                                        style={{ padding: '6px 14px', background: analysisLoading ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: analysisLoading ? 'wait' : 'pointer', fontSize: '11px' }}>
+                                        {analysisLoading ? '⏳...' : '📊 Analyze'}
                                     </button>
                                 </div>
                             </div>
-                            {/* Custom AI Instruction - Redesigned as textarea */}
-                            <div style={{ marginTop: '16px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a78bfa', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
-                                    {miniIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z', '#a78bfa', 14)} 
-                                    Custom AI Instructions
-                                </label>
-                                <textarea 
-                                    value={trendingCustomPrompt} 
-                                    onChange={e => setTrendingCustomPrompt(e.target.value)}
-                                    placeholder="Write specific instructions for the AI here...&#10;&#10;Examples:&#10;• Focus on SaaS and B2B topics&#10;• Write for tech founders and startup CEOs&#10;• Keep posts under 200 words&#10;• Use more storytelling and personal anecdotes&#10;• Include specific numbers and data points"
-                                    rows={4}
-                                    style={{ 
-                                        width: '100%', 
-                                        padding: '14px 16px', 
-                                        background: 'rgba(105,63,233,0.08)', 
-                                        border: '2px solid rgba(105,63,233,0.25)', 
-                                        borderRadius: '12px', 
-                                        color: 'white', 
-                                        fontSize: '14px', 
-                                        outline: 'none',
-                                        resize: 'vertical',
-                                        minHeight: '100px',
-                                        lineHeight: '1.5',
-                                        fontFamily: 'inherit'
-                                    }} 
-                                />
-                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '8px 0 0 0', lineHeight: '1.4' }}>
-                                    💡 Tip: Be specific about tone, topics, audience, and style preferences. The AI will analyze the voice patterns from selected posts and apply your instructions.
-                                </p>
+                            {/* Custom AI Instructions — compact textarea */}
+                            <div style={{ marginBottom: '10px' }}>
+                                <label style={{ display: 'block', color: '#a78bfa', fontSize: '11px', fontWeight: '700', marginBottom: '4px' }}>✏️ Custom AI Instructions</label>
+                                <textarea value={trendingCustomPrompt} onChange={e => setTrendingCustomPrompt(e.target.value)}
+                                    placeholder="e.g., Focus on SaaS topics, write for startup founders, keep under 200 words, use storytelling..."
+                                    rows={2}
+                                    style={{ width: '100%', padding: '8px 12px', background: 'rgba(105,63,233,0.08)', border: '1px solid rgba(105,63,233,0.2)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none', resize: 'vertical', lineHeight: '1.5', fontFamily: 'inherit' }} />
                             </div>
-                            
-                            {/* Model Selection & Options Row */}
-                            <div style={{ display: 'flex', gap: '16px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                                {/* AI Model Selection */}
-                                <div style={{ flex: '1', minWidth: '200px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '6px' }}>
-                                        {miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'rgba(255,255,255,0.6)', 12)}
-                                        AI Model
-                                    </label>
-                                    <select 
-                                        value={trendingModel} 
-                                        onChange={e => setTrendingModel(e.target.value)}
-                                        style={{ 
-                                            width: '100%',
-                                            padding: '10px 14px', 
-                                            background: 'rgba(255,255,255,0.08)', 
-                                            border: '1px solid rgba(255,255,255,0.15)', 
-                                            borderRadius: '10px', 
-                                            color: 'white', 
-                                            fontSize: '13px' 
-                                        }}
-                                    >
-                                        {MODEL_OPTIONS.map(m => (
-                                            <option key={m.id} value={m.id}>{m.name}</option>
-                                        ))}
+                            {/* Model + Language + Hashtags — single compact row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'end' }}>
+                                <div>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🤖 AI Model</label>
+                                    <select value={trendingModel} onChange={e => setTrendingModel(e.target.value)}
+                                        style={{ width: '100%', padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
+                                        {MODEL_OPTIONS.map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}
                                     </select>
                                 </div>
-                                
-                                {/* Language Selection */}
-                                <div style={{ minWidth: '150px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '6px' }}>
-                                        {miniIcon('M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129', 'rgba(255,255,255,0.6)', 12)}
-                                        Language
-                                    </label>
+                                <div>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🌐 Language</label>
                                     <select value={trendingLanguage} onChange={e => setTrendingLanguage(e.target.value)}
-                                        style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                        style={{ width: '100%', padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
                                         <option value="">Auto-detect</option>
-                                        <option value="English">English</option>
-                                        <option value="Spanish">Spanish</option>
-                                        <option value="French">French</option>
-                                        <option value="German">German</option>
-                                        <option value="Portuguese">Portuguese</option>
-                                        <option value="Italian">Italian</option>
-                                        <option value="Dutch">Dutch</option>
-                                        <option value="Russian">Russian</option>
-                                        <option value="Chinese">Chinese</option>
-                                        <option value="Japanese">Japanese</option>
-                                        <option value="Korean">Korean</option>
-                                        <option value="Arabic">Arabic</option>
-                                        <option value="Hindi">Hindi</option>
-                                        <option value="Urdu">Urdu</option>
-                                        <option value="Turkish">Turkish</option>
-                                        <option value="Polish">Polish</option>
-                                        <option value="Swedish">Swedish</option>
-                                        <option value="Indonesian">Indonesian</option>
-                                        <option value="Thai">Thai</option>
-                                        <option value="Vietnamese">Vietnamese</option>
+                                        <option value="English">English</option><option value="Spanish">Spanish</option><option value="French">French</option>
+                                        <option value="German">German</option><option value="Portuguese">Portuguese</option><option value="Italian">Italian</option>
+                                        <option value="Dutch">Dutch</option><option value="Russian">Russian</option><option value="Chinese">Chinese</option>
+                                        <option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Arabic">Arabic</option>
+                                        <option value="Hindi">Hindi</option><option value="Urdu">Urdu</option><option value="Turkish">Turkish</option>
+                                        <option value="Polish">Polish</option><option value="Swedish">Swedish</option><option value="Indonesian">Indonesian</option>
+                                        <option value="Thai">Thai</option><option value="Vietnamese">Vietnamese</option>
                                     </select>
                                 </div>
-                                
-                                {/* Hashtags Toggle */}
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer', padding: '10px 0' }}>
-                                    <input type="checkbox" checked={trendingIncludeHashtags} onChange={e => setTrendingIncludeHashtags(e.target.checked)} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                    #️⃣ Hashtags
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer', padding: '7px 0' }}>
+                                    <input type="checkbox" checked={trendingIncludeHashtags} onChange={e => setTrendingIncludeHashtags(e.target.checked)} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
+                                    #️⃣ Tags
                                 </label>
                             </div>
                         </div>
@@ -3186,10 +3170,10 @@ function DashboardContent() {
                                 </div>
                             </div>
                         )}
-                        {/* Analysis Results Table - shown on TOP */}
+                        {/* Analysis Results — compact */}
                         {showAnalysis && analysisResults.length > 0 && (
-                            <div style={{ marginBottom: '24px', background: 'rgba(245,158,11,0.1)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(245,158,11,0.3)' }}>
-                                <h4 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#fbbf24', 16)} Viral Potential Analysis</h4>
+                            <div style={{ marginBottom: '14px', background: 'rgba(245,158,11,0.08)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                <h4 style={{ color: '#fbbf24', fontSize: '14px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#fbbf24', 14)} Viral Potential Analysis</h4>
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                         <thead>
@@ -3234,57 +3218,56 @@ function DashboardContent() {
                                 </div>
                             </div>
                         )}
-                        {/* Generated Posts Preview */}
+                        {/* Generated Posts Preview — compact */}
                         {trendingShowGenPreview && trendingGeneratedPosts.length > 0 && (
-                            <div style={{ marginBottom: '24px', background: 'rgba(105,63,233,0.1)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                                <h4 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M12 8V4l8 8-8 8v-4H4V8h8z', '#a78bfa', 16)} AI Generated Posts ({trendingGeneratedPosts.length})</h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ marginBottom: '14px', background: 'rgba(105,63,233,0.08)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.25)' }}>
+                                <h4 style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M12 8V4l8 8-8 8v-4H4V8h8z', '#a78bfa', 14)} AI Generated ({trendingGeneratedPosts.length})</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {trendingGeneratedPosts.map((gp: any, i: number) => (
-                                        <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.2)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 13)} {gp.title || `Post ${i + 1}`}</span>
-                                                <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i], i)}
-                                                    disabled={postingToLinkedIn[i]}
-                                                    style={{ padding: '6px 16px', background: postingToLinkedIn[i] ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: postingToLinkedIn[i] ? 'wait' : 'pointer', fontSize: '12px', opacity: postingToLinkedIn[i] ? 0.7 : 1, transition: 'all 0.2s', transform: postingToLinkedIn[i] ? 'scale(0.95)' : 'scale(1)' }}>
-                                                    {postingToLinkedIn[i] ? 'Sending...' : 'Post to LinkedIn'}
-                                                </button>
+                                        <div key={i} style={{ background: 'rgba(255,255,255,0.04)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(105,63,233,0.15)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '12px' }}>⭐ {gp.title || `Post ${i + 1}`}</span>
+                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '10px' }}>
+                                                        📷 {generatedPostImages[i] ? 'Change' : 'Image'}
+                                                        <input type="file" accept="image/*" style={{ display: 'none' }}
+                                                            onChange={(e) => { if (e.target.files?.[0]) handleImageAttach(i, e.target.files[0]); }} />
+                                                    </label>
+                                                    {generatedPostImages[i] && (
+                                                        <button onClick={() => setGeneratedPostImages(prev => { const n = { ...prev }; delete n[i]; return n; })}
+                                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '12px', padding: '0 2px' }}>✕</button>
+                                                    )}
+                                                    <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i], i)}
+                                                        disabled={postingToLinkedIn[i]}
+                                                        style={{ padding: '5px 12px', background: postingToLinkedIn[i] ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '700', cursor: postingToLinkedIn[i] ? 'wait' : 'pointer', fontSize: '11px' }}>
+                                                        {postingToLinkedIn[i] ? '⏳...' : '📤 Post'}
+                                                    </button>
+                                                </div>
                                             </div>
                                             <textarea value={gp.content} onChange={(e) => {
                                                 const updated = [...trendingGeneratedPosts];
                                                 updated[i] = { ...updated[i], content: e.target.value };
                                                 setTrendingGeneratedPosts(updated);
                                             }}
-                                                style={{ width: '100%', minHeight: '260px', color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.7', margin: '0 0 12px 0', whiteSpace: 'pre-wrap', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(105,63,233,0.2)', borderRadius: '10px', padding: '14px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
-                                            {/* Image attachment */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '12px' }}>
-                                                    {miniIcon('M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z', 'rgba(255,255,255,0.7)', 13)} {generatedPostImages[i] ? 'Change Image' : 'Attach Image'}
-                                                    <input type="file" accept="image/*" style={{ display: 'none' }}
-                                                        onChange={(e) => { if (e.target.files?.[0]) handleImageAttach(i, e.target.files[0]); }} />
-                                                </label>
-                                                {generatedPostImages[i] && (
-                                                    <>
-                                                        <img src={generatedPostImages[i]} alt="Attached" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(105,63,233,0.4)' }} />
-                                                        <button onClick={() => setGeneratedPostImages(prev => { const n = { ...prev }; delete n[i]; return n; })}
-                                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px' }}>✕</button>
-                                                    </>
-                                                )}
-                                            </div>
+                                                style={{ width: '100%', minHeight: '180px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(105,63,233,0.15)', borderRadius: '8px', padding: '10px 12px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
+                                            {generatedPostImages[i] && (
+                                                <img src={generatedPostImages[i]} alt="Attached" style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(105,63,233,0.3)', marginTop: '6px' }} />
+                                            )}
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
-                        {/* Posts List */}
+                        {/* Posts List — compact cards */}
                         {savedPostsLoading ? (
-                            <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.5)' }}>Loading trending posts...</div>
+                            <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>Loading trending posts...</div>
                         ) : savedPosts.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 'rgba(255,255,255,0.3)', 48)}</div>
-                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>No trending posts yet. Enable post saving in the extension commenter tab.</p>
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <div style={{ fontSize: '36px', marginBottom: '10px' }}>⚡</div>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>No trending posts yet. Enable post saving in the extension commenter tab.</p>
                             </div>
                         ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {savedPosts.map((post: any) => {
                                     const isSelected = trendingSelectedPosts.includes(post.id);
                                     return (
@@ -3292,54 +3275,50 @@ function DashboardContent() {
                                         if (isSelected) setTrendingSelectedPosts(trendingSelectedPosts.filter(id => id !== post.id));
                                         else if (trendingSelectedPosts.length < 10) setTrendingSelectedPosts([...trendingSelectedPosts, post.id]);
                                     }}
-                                        style={{ background: isSelected ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', border: isSelected ? '2px solid rgba(105,63,233,0.5)' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <input type="checkbox" checked={isSelected} readOnly
-                                                    style={{ width: '18px', height: '18px', accentColor: '#693fe9', cursor: 'pointer' }} />
-                                                <div>
-                                                    {post.authorName && <div style={{ fontWeight: '600', color: 'white', fontSize: '14px' }}>{post.authorName}</div>}
-                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{new Date(post.scrapedAt).toLocaleString()}</div>
+                                        style={{ background: isSelected ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '14px 16px', borderRadius: '12px', border: isSelected ? '2px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                            <input type="checkbox" checked={isSelected} readOnly
+                                                style={{ width: '15px', height: '15px', accentColor: '#693fe9', cursor: 'pointer', marginTop: '2px', flexShrink: 0 }} />
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        {post.authorName && <span style={{ fontWeight: '600', color: 'white', fontSize: '13px' }}>{post.authorName}</span>}
+                                                        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>{new Date(post.scrapedAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                        <span style={{ color: '#ec4899', fontSize: '11px', fontWeight: '600' }}>❤️ {post.likes}</span>
+                                                        <span style={{ color: '#8b5cf6', fontSize: '11px', fontWeight: '600' }}>💬 {post.comments}</span>
+                                                        <span style={{ color: '#06b6d4', fontSize: '11px', fontWeight: '600' }}>🔄 {post.shares}</span>
+                                                        {post.postUrl && (
+                                                            <a href={post.postUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                                                                style={{ color: '#693fe9', fontSize: '10px', fontWeight: '600', textDecoration: 'none' }}>🔗</a>
+                                                        )}
+                                                        <button onClick={(e) => { e.stopPropagation(); deleteSavedPost(post.id); }}
+                                                            style={{ background: 'none', border: 'none', color: '#f87171', padding: '0 2px', fontSize: '14px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+                                                    </div>
                                                 </div>
+                                                <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
+                                                    <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '12px', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
+                                                        {post.postContent}
+                                                    </p>
+                                                </div>
+                                                {post.imageUrl && (
+                                                    <img src={post.imageUrl} alt="Post" style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', marginTop: '8px' }} />
+                                                )}
                                             </div>
-                                            <button onClick={(e) => { e.stopPropagation(); deleteSavedPost(post.id); }}
-                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                                                {miniIcon('M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2', '#f87171', 12)}
-                                            </button>
-                                        </div>
-                                        <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px', paddingRight: '4px' }}>
-                                            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-                                                {post.postContent}
-                                            </p>
-                                        </div>
-                                        {post.imageUrl && (
-                                            <div style={{ marginBottom: '12px' }}>
-                                                <img src={post.imageUrl} alt="Post image" style={{ maxWidth: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                                            </div>
-                                        )}
-                                        <div style={{ display: 'flex', gap: '20px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                                            <span style={{ color: '#ec4899', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 13)} {post.likes}</span>
-                                            <span style={{ color: '#8b5cf6', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', '#8b5cf6', 13)} {post.comments}</span>
-                                            <span style={{ color: '#06b6d4', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15', '#06b6d4', 13)} {post.shares}</span>
-                                            {post.postUrl && (
-                                                <a href={post.postUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                                                    style={{ color: '#693fe9', fontSize: '13px', fontWeight: '600', textDecoration: 'none', marginLeft: 'auto' }}>
-                                                    {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71', '#693fe9', 13)} View
-                                                </a>
-                                            )}
                                         </div>
                                     </div>
                                     );
                                 })}
                                 {savedPostsTotal > 20 && (
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', paddingTop: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', paddingTop: '12px' }}>
                                         <button onClick={() => loadSavedPosts(savedPostsPage - 1)} disabled={savedPostsPage <= 1}
-                                            style={{ padding: '10px 20px', background: savedPostsPage <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: savedPostsPage <= 1 ? 'rgba(255,255,255,0.3)' : 'white', cursor: savedPostsPage <= 1 ? 'not-allowed' : 'pointer', fontSize: '14px' }}>
-                                            ← Previous
+                                            style={{ padding: '7px 16px', background: savedPostsPage <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: savedPostsPage <= 1 ? 'rgba(255,255,255,0.3)' : 'white', cursor: savedPostsPage <= 1 ? 'not-allowed' : 'pointer', fontSize: '12px' }}>
+                                            ← Prev
                                         </button>
-                                        <span style={{ color: 'rgba(255,255,255,0.6)', alignSelf: 'center', fontSize: '14px' }}>Page {savedPostsPage} of {Math.ceil(savedPostsTotal / 20)}</span>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', alignSelf: 'center', fontSize: '12px' }}>{savedPostsPage}/{Math.ceil(savedPostsTotal / 20)}</span>
                                         <button onClick={() => loadSavedPosts(savedPostsPage + 1)} disabled={savedPostsPage >= Math.ceil(savedPostsTotal / 20)}
-                                            style={{ padding: '10px 20px', background: savedPostsPage >= Math.ceil(savedPostsTotal / 20) ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: savedPostsPage >= Math.ceil(savedPostsTotal / 20) ? 'rgba(255,255,255,0.3)' : 'white', cursor: savedPostsPage >= Math.ceil(savedPostsTotal / 20) ? 'not-allowed' : 'pointer', fontSize: '14px' }}>
+                                            style={{ padding: '7px 16px', background: savedPostsPage >= Math.ceil(savedPostsTotal / 20) ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: savedPostsPage >= Math.ceil(savedPostsTotal / 20) ? 'rgba(255,255,255,0.3)' : 'white', cursor: savedPostsPage >= Math.ceil(savedPostsTotal / 20) ? 'not-allowed' : 'pointer', fontSize: '12px' }}>
                                             Next →
                                         </button>
                                     </div>
@@ -3850,6 +3829,123 @@ function DashboardContent() {
                         </div>
 
                         </>)}
+                    </div>
+                )}
+
+                {/* Activity Logs Tab */}
+                {activeTab === 'activity' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h2 style={{ color: 'white', fontSize: '20px', fontWeight: '800', margin: 0 }}>📡 Activity Logs</h2>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '4px 0 0' }}>Real-time activity from your extension — newest logs appear on top</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <select onChange={e => {
+                                    const token = localStorage.getItem('authToken');
+                                    if (!token) return;
+                                    const taskType = e.target.value;
+                                    setLiveActivityLoading(true);
+                                    fetch(`/api/live-activity?limit=200${taskType ? `&taskType=${taskType}` : ''}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                                        .then(r => r.json()).then(d => { if (d.success) setLiveActivityLogs(d.logs || []); })
+                                        .finally(() => setLiveActivityLoading(false));
+                                }}
+                                    style={{ padding: '7px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '11px' }}>
+                                    <option value="">All Tasks</option>
+                                    <option value="automation">Automation</option>
+                                    <option value="import">Import</option>
+                                    <option value="networking">Networking</option>
+                                    <option value="post_writer">Post Writer</option>
+                                    <option value="trending">Trending</option>
+                                </select>
+                                <button onClick={() => loadLiveActivity()} disabled={liveActivityLoading}
+                                    style={{ padding: '7px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                    {liveActivityLoading ? '⏳ Loading...' : '🔄 Refresh'}
+                                </button>
+                                <button onClick={async () => {
+                                    const token = localStorage.getItem('authToken');
+                                    if (!token) return;
+                                    if (!confirm('Clear all activity logs?')) return;
+                                    try {
+                                        await fetch('/api/live-activity', { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                                        setLiveActivityLogs([]);
+                                    } catch {}
+                                }}
+                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                    🗑️ Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Stats summary */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+                            {(() => {
+                                const counts: Record<string, number> = {};
+                                liveActivityLogs.forEach((l: any) => { counts[l.action] = (counts[l.action] || 0) + 1; });
+                                return [
+                                    { action: 'start', label: 'Started', icon: '🚀', color: '#3b82f6' },
+                                    { action: 'like', label: 'Likes', icon: '👍', color: '#f59e0b' },
+                                    { action: 'comment', label: 'Comments', icon: '💬', color: '#10b981' },
+                                    { action: 'connect', label: 'Connects', icon: '🤝', color: '#8b5cf6' },
+                                    { action: 'delay', label: 'Delays', icon: '⏳', color: '#6b7280' },
+                                    { action: 'error', label: 'Errors', icon: '❌', color: '#ef4444' },
+                                ].map(s => (
+                                    <div key={s.action} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '14px', marginBottom: '2px' }}>{s.icon}</div>
+                                        <div style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{counts[s.action] || 0}</div>
+                                        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>{s.label}</div>
+                                    </div>
+                                ));
+                            })()}
+                        </div>
+
+                        {/* Log entries — newest first */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                            <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: '600' }}>
+                                    {liveActivityLogs.length} log entries — newest first
+                                </span>
+                                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>
+                                    {liveActivityLogs.length > 0 ? `Latest: ${new Date(liveActivityLogs[0]?.createdAt).toLocaleString()}` : ''}
+                                </span>
+                            </div>
+                            <div style={{ maxHeight: '600px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '11px', lineHeight: '1.7' }}>
+                                {liveActivityLoading ? (
+                                    <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px', fontSize: '13px' }}>Loading logs...</div>
+                                ) : liveActivityLogs.length === 0 ? (
+                                    <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '60px 20px' }}>
+                                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>📡</div>
+                                        <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px' }}>No activity logs yet</div>
+                                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>When the extension performs actions (commenting, liking, connecting, etc.), logs will appear here in real-time.</div>
+                                    </div>
+                                ) : (
+                                    liveActivityLogs.map((log: any, idx: number) => {
+                                        const icons: any = { like: '👍', comment: '💬', share: '🔄', follow: '➕', connect: '🤝', post: '✍️', delay: '⏳', start: '🚀', stop: '🛑', error: '❌', info: 'ℹ️' };
+                                        const levelColors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
+                                        const taskColors: any = { automation: '#3b82f6', import: '#8b5cf6', networking: '#f59e0b', post_writer: '#10b981', trending: '#ec4899' };
+                                        const icon = icons[log.action] || 'ℹ️';
+                                        const color = levelColors[log.level] || levelColors.info;
+                                        const taskColor = taskColors[log.taskType] || 'rgba(255,255,255,0.4)';
+                                        const dt = new Date(log.createdAt);
+                                        const time = dt.toLocaleTimeString();
+                                        const isToday = new Date().toDateString() === dt.toDateString();
+                                        const dateStr = isToday ? 'Today' : dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                        const isNew = idx === 0;
+                                        return (
+                                            <div key={log.id} style={{ display: 'flex', gap: '8px', padding: '6px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: isNew ? 'rgba(139,92,246,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', alignItems: 'flex-start' }}>
+                                                <span style={{ color: 'rgba(255,255,255,0.2)', minWidth: '38px', fontSize: '9px', paddingTop: '2px' }}>{dateStr}</span>
+                                                <span style={{ color: 'rgba(255,255,255,0.3)', minWidth: '55px', fontSize: '10px' }}>{time}</span>
+                                                <span style={{ fontSize: '12px', minWidth: '18px' }}>{icon}</span>
+                                                <span style={{ color: taskColor, fontSize: '9px', minWidth: '65px', fontWeight: '600', textTransform: 'uppercase', paddingTop: '2px' }}>{log.taskType}</span>
+                                                <span style={{ color, flex: 1, wordBreak: 'break-word' }}>{log.message}</span>
+                                                {isNew && <span style={{ background: 'rgba(139,92,246,0.3)', color: '#a78bfa', fontSize: '8px', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0 }}>NEW</span>}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 

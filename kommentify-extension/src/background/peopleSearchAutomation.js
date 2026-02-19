@@ -1005,11 +1005,13 @@ class PeopleSearchAutomation {
         // Apply networking delays from limits settings
         const { delaySettings } = await chrome.storage.local.get('delaySettings');
         console.log('⚙️ NETWORKING DELAYS LOADED:', JSON.stringify(delaySettings || {}));
+        liveLog.start('networking', `🔍 Networking started — "${keyword}", target: ${targetConnections} connections`);
         
         // Apply task init delay first
         const taskInitDelay = (delaySettings && delaySettings.taskInitDelay) || 0;
         if (taskInitDelay > 0) {
             console.log(`⏱️ NETWORKING: Task init delay: ${taskInitDelay}s...`);
+            liveLog.delay('networking', taskInitDelay, 'task init delay');
             for (let i = 0; i < taskInitDelay; i++) {
                 if (this.stopFlag) {
                     console.log('⏹️ NETWORKING: Stop requested during task init delay');

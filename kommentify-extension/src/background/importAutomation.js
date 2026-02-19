@@ -18,6 +18,7 @@ class ImportAutomation {
     // Engage with a single post URL (used by individual method and fallback)
     async engageSinglePostUrl(postUrl, actions, randomMode, commentSettings, delays = {}) {
         console.log(`📱 INDIVIDUAL: Opening post: ${postUrl}`);
+        liveLog.info('import', `📄 Opening post: ${postUrl.split('/').pop()}`, { postUrl });
         const normalizedActions = {
             likes: !!(actions?.likes ?? actions?.like),
             comments: !!(actions?.comments ?? actions?.comment),
@@ -264,6 +265,14 @@ class ImportAutomation {
 
             const engagement = res?.[0]?.result || { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] };
             console.log('📱 INDIVIDUAL: Engagement result:', JSON.stringify({ likes: engagement.likes, comments: engagement.comments, shares: engagement.shares, follows: engagement.follows }));
+            // Log each action result to live activity
+            if (engagement.likes > 0) liveLog.like('import', `👍 Liked post: ${postUrl.split('/').pop()}`, { postUrl });
+            if (engagement.comments > 0) {
+                const commentText = engagement.postDetails?.[0]?.generatedComment || '';
+                liveLog.comment('import', `💬 Commented on post: "${commentText.substring(0, 60)}..."`, { postUrl });
+            }
+            if (engagement.shares > 0) liveLog.share('import', `🔄 Shared post: ${postUrl.split('/').pop()}`, { postUrl });
+            if (engagement.follows > 0) liveLog.follow('import', `➕ Followed author`, { postUrl });
             return engagement;
         } finally {
             try { await chrome.tabs.remove(tabId); } catch {}
@@ -273,6 +282,7 @@ class ImportAutomation {
     // Individual method: collect URLs from activity page, then engage each post in its own tab
     async engagePostsIndividualMethod(activityUrl, postsCount, actions, randomMode, commentSettings, delays) {
         console.log('📱 IMPORT [INDIVIDUAL METHOD]: Collecting post URLs from activity page...');
+        liveLog.info('import', `🔍 Collecting post URLs from activity page...`, { activityUrl });
 
         // Step 1: Open activity page and collect post URLs
         const tabId = await browser.openTab(activityUrl, true);
@@ -310,6 +320,7 @@ class ImportAutomation {
 
         const postUrls = urlResult?.[0]?.result || [];
         console.log(`📱 IMPORT [INDIVIDUAL METHOD]: Collected ${postUrls.length} post URLs:`, postUrls);
+        liveLog.info('import', `📄 Found ${postUrls.length} posts to engage with`, { count: postUrls.length });
 
         // Close activity page tab
         try { await chrome.tabs.remove(tabId); } catch {}
@@ -330,12 +341,21 @@ class ImportAutomation {
         const allPostDetails = [];
 
         for (let i = 0; i < postUrls.length; i++) {
+            // Check stop flag before each post
+            if (this.stopFlag) {
+                console.log('🛑 IMPORT [INDIVIDUAL METHOD]: Stopped by user');
+                liveLog.stop('import', `🛑 Stopped during post engagement (${i}/${postUrls.length} done)`);
+                break;
+            }
             const url = postUrls[i];
             console.log(`📱 IMPORT [INDIVIDUAL METHOD]: === Post ${i + 1}/${postUrls.length} === ${url}`);
+            liveLog.info('import', `📄 Processing post ${i + 1}/${postUrls.length}`, { postUrl: url });
 
             // Delay between posts (not before first)
             if (i > 0 && delays.beforeOpeningPostsDelay > 0) {
+                const delaySec = Math.round(delays.beforeOpeningPostsDelay / 1000);
                 console.log(`⏱️ IMPORT [INDIVIDUAL METHOD]: Before-opening delay: ${delays.beforeOpeningPostsDelay}ms`);
+                liveLog.delay('import', delaySec, 'before opening next post');
                 await new Promise(r => setTimeout(r, delays.beforeOpeningPostsDelay));
             }
 
@@ -353,6 +373,7 @@ class ImportAutomation {
         }
 
         console.log(`📱 IMPORT [INDIVIDUAL METHOD]: All posts done. Total: L=${totalLikes} C=${totalComments} S=${totalShares} F=${totalFollows}`);
+        liveLog.info('import', `✅ All ${postUrls.length} posts processed — L:${totalLikes} C:${totalComments} S:${totalShares} F:${totalFollows}`);
         return { likes: totalLikes, comments: totalComments, shares: totalShares, follows: totalFollows, postDetails: allPostDetails };
     }
 
@@ -852,6 +873,7 @@ class ImportAutomation {
         console.log('🎲 IMPORT: Random mode:', randomMode ? 'ENABLED (pick one action per post)' : 'DISABLED (all selected actions)');
         console.log('📱 IMPORT: Engagement method:', engagementMethod);
         await this.broadcastStatus(`🚀 Starting: ${profiles.length} profiles (combined)`, 'info');
+        liveLog.start('import', `🚀 Import started — ${profiles.length} profiles, actions: ${Object.entries(actions).filter(([,v])=>v).map(([k])=>k).join(', ')}`);
         
         // Send start progress to popup
         await this.sendProgressToPopup({ type: 'start', total: profiles.length, current: 0 });
@@ -882,6 +904,7 @@ class ImportAutomation {
                 const profileName = this.extractNameFromUrl(profile);
                 console.log(`🔄 IMPORT: Processing profile ${i + 1}/${profiles.length}: ${profile}`);
                 await this.broadcastStatus(`🔄 Processing: ${profileName} (${i + 1}/${profiles.length})`, 'info');
+                liveLog.info('import', `👤 Processing profile ${i + 1}/${profiles.length}: ${profileName}`, { profileUrl: profile });
                 
                 // Send profile start to popup
                 await this.sendProgressToPopup({
@@ -909,11 +932,13 @@ class ImportAutomation {
                     let connectionResult = { success: false, skipped: true };
                     if (sendConnections) {
                         console.log('🤝 IMPORT: Sending connection request...');
+                        liveLog.info('import', `🤝 Sending connection request to ${profileName}...`);
                         connectionResult = await this.sendConnectionRequest(profile);
                         this.activeTabId = connectionResult.tabId;
                         
                         if (connectionResult.success) {
                             results.connectionsSuccessful++;
+                            liveLog.connect('import', `✅ Connection sent to ${profileName}`, { profileUrl: profile });
                             
                             // Create lead record
                             const lead = {
@@ -934,6 +959,7 @@ class ImportAutomation {
                         } else {
                             results.connectionsFailed++;
                             console.log(`❌ IMPORT: Failed to send connection to: ${profile} - ${connectionResult.error}`);
+                            liveLog.error('import', `❌ Connection failed: ${profileName} — ${connectionResult.error}`);
                         }
                     } else {
                         console.log('⏭️ IMPORT: Skipping connection request (disabled by user)');
@@ -941,6 +967,7 @@ class ImportAutomation {
 
                     // Step 3: Engage with posts
                     console.log('❤️ IMPORT: Starting post engagement...');
+                    liveLog.info('import', `❤️ Starting post engagement for ${profileName} (${postsPerProfile} posts)`);
                     const activityUrl = profile.replace(/\/$/, '') + '/recent-activity/all/';
                     
                     const engagementResult = await this.engageWithProfilePosts(activityUrl, postsPerProfile, actions, randomMode, engagementMethod);
@@ -962,6 +989,7 @@ class ImportAutomation {
                         engagement: engagementResult
                     });
                     await this.broadcastStatus(`✅ Completed: ${profileName} (${results.profilesProcessed}/${profiles.length})`, 'success');
+                    liveLog.info('import', `✅ Profile done: ${profileName} (${results.profilesProcessed}/${profiles.length}) — L:${engagementResult.likes||0} C:${engagementResult.comments||0} S:${engagementResult.shares||0}`);
                     
                     // Send profile complete to popup (success)
                     await this.sendProgressToPopup({
@@ -1020,6 +1048,7 @@ class ImportAutomation {
                     if (i < profiles.length - 1 && !this.stopFlag) {
                         const delaySeconds = Math.round(commentMinDelay + Math.random() * (commentMaxDelay - commentMinDelay));
                         console.log(`⏳ IMPORT: Waiting ${delaySeconds}s (${commentMinDelay}-${commentMaxDelay}s range) before next profile...`);
+                        liveLog.delay('import', delaySeconds, 'between profiles');
                         
                         for (let remaining = delaySeconds; remaining > 0; remaining -= 5) {
                             if (this.stopFlag) break;
@@ -1031,6 +1060,7 @@ class ImportAutomation {
                 } catch (error) {
                     results.errors.push(`${profile}: ${error.message}`);
                     console.error(`❌ IMPORT: Error processing profile ${profile}:`, error);
+                    liveLog.error('import', `❌ Error on ${this.extractNameFromUrl(profile)}: ${error.message}`);
                 }
             }
 
@@ -1044,6 +1074,7 @@ class ImportAutomation {
             
             console.log(`🎉 IMPORT: Combined automation completed:`, results);
             await this.broadcastStatus(`🎉 Complete! ${results.profilesProcessed} processed`, 'success', false);
+            liveLog.info('import', `🎉 Import complete — ${results.profilesProcessed} profiles, L:${results.totalLikes} C:${results.totalComments} S:${results.totalShares}`, 'success');
             
             // Send complete message to popup
             await this.sendProgressToPopup({

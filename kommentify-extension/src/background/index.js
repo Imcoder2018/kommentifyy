@@ -1831,6 +1831,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log('🛑 BACKGROUND: Stopping all tasks...');
                 globalThis._stopAllTasks = true;
                 
+                // Stop all running automation modules immediately
+                try { importAutomation.stop(); } catch (e) {}
+                try { stopBulkProcessing(); } catch (e) {}
+                try { peopleSearchAutomation.stopProcessing(); } catch (e) {}
+                
+                // Log the stop event
+                try {
+                    const { liveLog } = await import('../shared/services/liveActivityLogger.js');
+                    liveLog.stop('automation', '🛑 All tasks stopped by user');
+                } catch (e) {}
+                
                 // Close all LinkedIn tabs opened by commands
                 const tabIds = [...globalThis._commandLinkedInTabs];
                 for (const tabId of tabIds) {
@@ -1849,8 +1860,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     });
                 }
                 
-                // Reset flag after a short delay so future commands can work
-                setTimeout(() => { globalThis._stopAllTasks = false; }, 2000);
+                // Reset flag after longer delay so all running tasks have time to see the flag
+                setTimeout(() => { globalThis._stopAllTasks = false; }, 30000);
                 
                 console.log('🛑 BACKGROUND: All tasks stopped, closed', tabIds.length, 'tabs');
                 sendResponse({ success: true, closedTabs: tabIds.length });
@@ -1937,6 +1948,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                         if (cmd.command === 'post_to_linkedin' && cmd.data?.content) {
                             console.log('📝 BACKGROUND: Executing post_to_linkedin command...');
+                            try {
+                                const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                                ll.start('post_writer', `✍️ Posting to LinkedIn...`);
+                            } catch (e) {}
                             let postTab = null;
                             
                             try {
@@ -2124,11 +2139,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                         body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.posted ? 'completed' : 'completed_manual' })
                                     });
                                     console.log('✅ BACKGROUND: Post to LinkedIn command completed');
+                                    try {
+                                        const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                                        ll.post('post_writer', `✅ Post published to LinkedIn${scriptResult?.imageAttached ? ' (with image)' : ''}`);
+                                    } catch (e) {}
                                 } catch (fetchErr) {
                                     console.error('BACKGROUND: Failed to update command status:', fetchErr.message);
                                 }
                             } catch (postError) {
                                 console.error('❌ BACKGROUND: Failed to post to LinkedIn:', postError);
+                                try {
+                                    const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                                    ll.error('post_writer', `❌ Post failed: ${postError.message}`);
+                                } catch (e) {}
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',

@@ -367,6 +367,7 @@ export async function executeBulkProcessing(settings) {
         const taskInitDelay = delaySettings.taskInitDelay || 0;
         if (taskInitDelay > 0) {
             console.log(`⏱️ BULK PROCESSING: Task init delay: ${taskInitDelay}s...`);
+            liveLog.delay('automation', taskInitDelay, 'task init delay');
             await new Promise(resolve => setTimeout(resolve, taskInitDelay * 1000));
             console.log('✅ BULK PROCESSING: Task init delay complete');
         }
@@ -375,6 +376,7 @@ export async function executeBulkProcessing(settings) {
         const startDelay = delaySettings.automationStartDelay || 0;
         if (startDelay > 0) {
             console.log(`⏰ BULK PROCESSING: Applying start delay of ${startDelay} seconds...`);
+            liveLog.delay('automation', startDelay, 'automation start delay');
             await new Promise(resolve => setTimeout(resolve, startDelay * 1000));
             console.log('✅ BULK PROCESSING: Start delay complete, beginning automation');
         } else {
@@ -434,6 +436,7 @@ export async function executeBulkProcessing(settings) {
                 
                 console.log(`BULK PROCESSING: Processing keyword: "${keyword}"`);
                 await broadcastStatus(`🔍 Searching: "${keyword}"`, 'info');
+                liveLog.info('automation', `🔍 Searching for posts: "${keyword}"`);
                 
                 try {
                     console.log(`🔍 BULK PROCESSING: Scraping with qualification - minLikes: ${qualification.minLikes}, minComments: ${qualification.minComments}, ignoreKeywords: ${ignoreKeywords.length} keywords`);
@@ -454,6 +457,7 @@ export async function executeBulkProcessing(settings) {
                     
                     console.log(`✅ BULK PROCESSING: Found ${qualifiedPosts.length} qualified posts for "${keyword}"`);
                     await broadcastStatus(`📄 Found ${qualifiedPosts.length} posts for "${keyword}"`, 'info');
+                    liveLog.info('automation', `📄 Found ${qualifiedPosts.length} qualified posts for "${keyword}"`);
                     allPostUrns.push(...qualifiedPosts);
                     
                     // Check stop flag before delay
@@ -501,6 +505,7 @@ export async function executeBulkProcessing(settings) {
         // Apply delay before opening posts
         const beforeOpeningPostsDelay = (delaySettings.beforeOpeningPostsDelay || 5) * 1000;
         console.log(`⏰ BULK PROCESSING: Waiting ${beforeOpeningPostsDelay/1000}s before opening posts...`);
+        liveLog.delay('automation', Math.round(beforeOpeningPostsDelay/1000), 'before opening posts');
         await new Promise(resolve => setTimeout(resolve, beforeOpeningPostsDelay));
         console.log(`✅ BULK PROCESSING: Delay complete, starting to open posts`);
         
@@ -703,6 +708,7 @@ export async function executeBulkProcessing(settings) {
                 if (actions.like) {
                     const beforeLikeDelay = (delaySettings.beforeLikeDelay || 2) * 1000;
                     console.log(`⏱️ BULK PROCESSING: Waiting ${beforeLikeDelay/1000}s before liking...`);
+                    liveLog.delay('automation', Math.round(beforeLikeDelay/1000), 'before like action');
                     await new Promise(resolve => setTimeout(resolve, beforeLikeDelay));
                     
                     let likeAttempts = 0;
@@ -774,6 +780,7 @@ export async function executeBulkProcessing(settings) {
                 if (actions.comment) {
                     const beforeCommentDelay = (delaySettings.beforeCommentDelay || 3) * 1000;
                     console.log(`⏱️ BULK PROCESSING: Waiting ${beforeCommentDelay/1000}s before commenting...`);
+                    liveLog.delay('automation', Math.round(beforeCommentDelay/1000), 'before comment action');
                     await new Promise(resolve => setTimeout(resolve, beforeCommentDelay));
                     
                     console.log(`💬 BULK PROCESSING: Generating AI comment for post ${postData.urn}`);
@@ -1006,6 +1013,7 @@ export async function executeBulkProcessing(settings) {
                 if (actions.share) {
                     const beforeShareDelay = (delaySettings.beforeShareDelay || 2) * 1000;
                     console.log(`⏱️ BULK PROCESSING: Waiting ${beforeShareDelay/1000}s before resharing...`);
+                    liveLog.delay('automation', Math.round(beforeShareDelay/1000), 'before share action');
                     await new Promise(resolve => setTimeout(resolve, beforeShareDelay));
                     
                     console.log(`🔄 BULK PROCESSING: Resharing post ${postData.urn}`);
@@ -1107,6 +1115,7 @@ export async function executeBulkProcessing(settings) {
                 if (actions.follow) {
                     const beforeFollowDelay = (delaySettings.beforeFollowDelay || 2) * 1000;
                     console.log(`⏱️ BULK PROCESSING: Waiting ${beforeFollowDelay/1000}s before following...`);
+                    liveLog.delay('automation', Math.round(beforeFollowDelay/1000), 'before follow action');
                     await new Promise(resolve => setTimeout(resolve, beforeFollowDelay));
                     
                     console.log(`➕ BULK PROCESSING: Following author of post ${postData.urn}`);
@@ -1234,6 +1243,7 @@ export async function executeBulkProcessing(settings) {
                 
                 processedCount++;
                 console.log(`BULK PROCESSING: Completed post ${i + 1}/${allPostUrns.length} - Actions: ${JSON.stringify(actionResults)}`);
+                liveLog.info('automation', `✅ Post ${i + 1}/${allPostUrns.length} done — ${[actionResults.liked&&'👍',actionResults.commented&&'💬',actionResults.shared&&'🔄',actionResults.followed&&'➕'].filter(Boolean).join(' ') || 'no actions'}`);
                 
                 // Wait between posts — apply random jitter from Limits tab
                 if (i < allPostUrns.length - 1) {
@@ -1285,6 +1295,7 @@ export async function executeBulkProcessing(settings) {
         
     } catch (error) {
         console.error('🚨 BULK PROCESSING: Fatal error:', error);
+        liveLog.error('automation', `🚨 Fatal error: ${error.message}`);
         // Clear processing state
         await chrome.storage.local.set({ bulkProcessingActive: false });
         

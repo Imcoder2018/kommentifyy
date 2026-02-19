@@ -28,7 +28,7 @@ interface ReferralData {
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)' }}><div style={{ textAlign: 'center', color: 'white' }}><div style={{ fontSize: '48px', marginBottom: '20px' }}>⚡</div><div style={{ fontSize: '18px', opacity: 0.8 }}>Loading your dashboard...</div></div></div>}>
+        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)' }}><div style={{ textAlign: 'center', color: 'white' }}><div style={{ marginBottom: '20px' }}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div style={{ fontSize: '18px', opacity: 0.8 }}>Loading your dashboard...</div></div></div>}>
             <DashboardContent />
         </Suspense>
     );
@@ -337,7 +337,7 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success && data.content) {
                 setWriterContent(data.content);
-                setWriterStatus(`✅ Post generated using ${data.model || writerModel}! Review and edit as needed.`);
+                setWriterStatus(`Post generated using ${data.model || writerModel}! Review and edit as needed.`);
                 // Capture token usage for developers
                 if (data.tokenUsage) {
                     setWriterTokenUsage(data.tokenUsage);
@@ -398,7 +398,7 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token || !writerContent.trim()) { setWriterStatus('No content to post'); return; }
         setWriterPosting(true);
-        showToast('📤 Sending post to extension...', 'info');
+        showToast('Sending post to extension...', 'info');
         setWriterStatus('Sending to extension...');
         try {
             window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', {
@@ -411,8 +411,8 @@ function DashboardContent() {
             });
             const data = await res.json();
             if (data.success) {
-                setWriterStatus('✅ Command sent! Extension will auto-open LinkedIn and post your content.');
-                showToast('✅ Post sent to extension! It will auto-open LinkedIn.', 'success');
+                setWriterStatus('Command sent! Extension will auto-open LinkedIn and post your content.');
+                showToast('Post sent to extension! It will auto-open LinkedIn.', 'success');
                 await saveToHistory('published_post', 'LinkedIn Post (Writer)', { content: writerContent, source: 'writer' });
             } else {
                 setWriterStatus(data.error || 'Failed to send');
@@ -437,7 +437,7 @@ function DashboardContent() {
             });
             const data = await res.json();
             if (data.success) { 
-                setWriterStatus('✅ Post scheduled! Task created for extension.'); 
+                setWriterStatus('Post scheduled! Task created for extension.'); 
                 loadScheduledPosts(); // Refresh scheduled posts
                 // Clear schedule inputs
                 setWriterScheduleDate('');
@@ -591,7 +591,7 @@ function DashboardContent() {
             }
             // Trigger extension to pick up commands immediately
             window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { detail: { command: 'scrape_profile' } }));
-            setInspirationStatus(`✅ ${urls.length} profile(s) queued for scraping! Extension will process them.`);
+            setInspirationStatus(`${urls.length} profile(s) queued for scraping! Extension will process them.`);
             setInspirationProfiles('');
             // Reload sources after a delay
             setTimeout(() => loadInspirationSources(), 15000);
@@ -669,8 +669,8 @@ function DashboardContent() {
             });
             const data = await res.json();
             if (data.success) {
-                setCommentStyleStatus('✅ Command sent! Extension will scrape comments from this profile.');
-                showToast('📤 Comment scraping command sent to extension!', 'info');
+                setCommentStyleStatus('Command sent! Extension will scrape comments from this profile.');
+                showToast('Comment scraping command sent to extension!', 'info');
                 setCommentStyleUrl('');
                 setTimeout(() => loadCommentStyleProfiles(), 30000);
             } else {
@@ -831,7 +831,7 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success) {
                 setLinkedInProfileStatus('Profile scan started! Check extension popup for progress. Data will appear here when complete.');
-                showToast('📡 Profile scan started! Check extension popup.', 'info');
+                showToast('Profile scan started! Check extension popup.', 'info');
             } else {
                 setLinkedInProfileStatus(data.error || 'Failed to start scan');
             }
@@ -1125,7 +1125,7 @@ function DashboardContent() {
             if (data.success && data.posts) {
                 setTrendingGeneratedPosts(data.posts);
                 setTrendingShowGenPreview(true);
-                setTrendingStatus(`✅ Generated ${data.posts.length} viral posts using ${data.model || trendingModel}!`);
+                setTrendingStatus(`Generated ${data.posts.length} viral posts using ${data.model || trendingModel}!`);
                 setGeneratedPostImages({});
                 // Capture token usage for developers
                 if (data.tokenUsage) {
@@ -1165,7 +1165,7 @@ function DashboardContent() {
             if (data.success && data.analysis) {
                 setAnalysisResults(data.analysis);
                 setShowAnalysis(true);
-                setTrendingStatus('✅ Analysis complete!');
+                setTrendingStatus('Analysis complete!');
                 // Save to history
                 await saveToHistory('viral_analysis', 'Viral Potential Analysis', data.analysis, { postCount: allPosts.length, aiPostCount: aiPostIndices.length });
             } else setTrendingStatus(data.error || 'Analysis failed');
@@ -1242,7 +1242,7 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token || !content.trim()) return;
         if (postIndex !== undefined) setPostingToLinkedIn(prev => ({ ...prev, [postIndex]: true }));
-        showToast('📤 Sending post to extension...', 'info');
+        showToast('Sending post to extension...', 'info');
         try {
             const cmdData: any = { content };
             if (imageDataUrl) cmdData.imageDataUrl = imageDataUrl;
@@ -1254,8 +1254,8 @@ function DashboardContent() {
             });
             const data = await res.json();
             if (data.success) {
-                showToast('✅ Post sent to extension! It will auto-open LinkedIn.', 'success');
-                setTrendingStatus('✅ Post sent to extension! It will auto-open LinkedIn.');
+                showToast('Post sent to extension! It will auto-open LinkedIn.', 'success');
+                setTrendingStatus('Post sent to extension! It will auto-open LinkedIn.');
                 // Save to history as published post
                 await saveToHistory('published_post', 'LinkedIn Post', { content, hasImage: !!imageDataUrl });
             } else {
@@ -1297,6 +1297,18 @@ function DashboardContent() {
         if (tabId === 'account') loadAccountSettings();
     };
 
+    const svgIcon = (path: string, color = 'currentColor') => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d={path} />
+        </svg>
+    );
+
+    const miniIcon = (path: string, color = 'currentColor', size = 14) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
+            <path d={path} />
+        </svg>
+    );
+
     if (loggingOut) {
         return (
             <div style={{ 
@@ -1307,7 +1319,7 @@ function DashboardContent() {
                 background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)'
             }}>
                 <div style={{ textAlign: 'center', color: 'white' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚪</div>
+                    <div style={{ marginBottom: '20px' }}>{miniIcon('M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9', '#a78bfa', 48)}</div>
                     <div style={{ fontSize: '18px', opacity: 0.8 }}>Logging out...</div>
                 </div>
             </div>
@@ -1324,7 +1336,7 @@ function DashboardContent() {
                 background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)'
             }}>
                 <div style={{ textAlign: 'center', color: 'white' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '20px', animation: 'spin 1s linear infinite' }}>⚡</div>
+                    <div style={{ marginBottom: '20px', animation: 'spin 1s linear infinite' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', '#a78bfa', 48)}</div>
                     <div style={{ fontSize: '18px', opacity: 0.8 }}>Loading your dashboard...</div>
                 </div>
                 <style>{`
@@ -1336,18 +1348,6 @@ function DashboardContent() {
             </div>
         );
     }
-
-    const svgIcon = (path: string, color = 'currentColor') => (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d={path} />
-        </svg>
-    );
-
-    const miniIcon = (path: string, color = 'currentColor', size = 14) => (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
-            <path d={path} />
-        </svg>
-    );
 
     // Navigation items with grouped sections
     const navItems = [
@@ -1415,7 +1415,7 @@ function DashboardContent() {
                                'linear-gradient(135deg, #3b82f6, #2563eb)',
                     display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '340px',
                 }}>
-                    <span>{tn.type === 'success' ? '✅' : tn.type === 'error' ? '❌' : '🔄'}</span>
+                    <span>{tn.type === 'success' ? miniIcon('M9 11l3 3L22 4', 'white', 13) : tn.type === 'error' ? miniIcon('M18 6L6 18 M6 6l12 12', 'white', 13) : miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'white', 13)}</span>
                     {tn.message}
                     <button onClick={() => setTaskNotifications(prev => prev.filter(n => n.id !== tn.id))} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '14px', opacity: 0.7, marginLeft: '4px' }}>✕</button>
                 </div>
@@ -1450,7 +1450,7 @@ function DashboardContent() {
                 {/* Logs box */}
                 <div onClick={() => { if (liveActivityLogs.length === 0) loadLiveActivity(); setShowLogsPopup(true); }}
                     style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: showLogsPopup ? 'scale(1.05)' : 'scale(1)' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '800', color: '#a78bfa', lineHeight: 1 }}>{liveActivityLogs.length > 0 ? liveActivityLogs.length : '📡'}</div>
+                    <div style={{ fontSize: '16px', fontWeight: '800', color: '#a78bfa', lineHeight: 1 }}>{liveActivityLogs.length > 0 ? liveActivityLogs.length : miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', '#a78bfa', 16)}</div>
                     <div style={{ fontSize: '9px', color: '#a78bfa', fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>Logs</div>
                 </div>
             </div>
@@ -1461,11 +1461,11 @@ function DashboardContent() {
                     <div onClick={() => setShowLogsPopup(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9997 }} />
                     <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', zIndex: 9998, background: theme === 'light' ? '#fff' : '#1a1a3e', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '520px', maxHeight: '480px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                            <span style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '700', fontSize: '14px' }}>📡 Live Activity Logs</span>
+                            <span style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', theme === 'light' ? '#1a1a2e' : 'white', 14)} Live Activity Logs</span>
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                 <button onClick={() => loadLiveActivity()} disabled={liveActivityLoading}
                                     style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer' }}>
-                                    {liveActivityLoading ? '...' : '🔄 Refresh'}
+                                    {liveActivityLoading ? '...' : 'Refresh'}
                                 </button>
                                 <button onClick={() => { handleTabChange('activity'); setShowLogsPopup(false); }}
                                     style={{ padding: '4px 10px', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '6px', color: '#a78bfa', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
@@ -1481,9 +1481,9 @@ function DashboardContent() {
                                 </div>
                             ) : (
                                 liveActivityLogs.slice(0, 50).map((log: any) => {
-                                    const icons: any = { like: '👍', comment: '💬', share: '🔄', follow: '➕', connect: '🤝', post: '✍️', delay: '⏳', start: '🚀', stop: '🛑', error: '❌', info: 'ℹ️' };
+                                    const icons: any = { like: 'L', comment: 'C', share: 'S', follow: 'F', connect: 'K', post: 'P', delay: 'D', start: '>', stop: 'X', error: '!', info: 'i' };
                                     const colors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
-                                    const icon = icons[log.action] || 'ℹ️';
+                                    const icon = icons[log.action] || 'i';
                                     const color = colors[log.level] || colors.info;
                                     const time = new Date(log.createdAt).toLocaleTimeString();
                                     const date = new Date(log.createdAt).toLocaleDateString();
@@ -1871,7 +1871,7 @@ function DashboardContent() {
                             transition: 'all 0.2s ease'
                         }}
                     >
-                        <span style={{ fontSize: '18px' }}>🚪</span>
+                        <span>{miniIcon('M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9', sidebarCollapsed ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.7)', 18)}</span>
                         {!sidebarCollapsed && 'Logout'}
                     </button>
 
@@ -1987,7 +1987,7 @@ function DashboardContent() {
                                     onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
                                     title="Auto-checks every 15s. Click to check now."
                                 >
-                                    🔄 Retry
+                                    {miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'white', 11)} Retry
                                 </button>
                             </div>
                         )}
@@ -2007,7 +2007,7 @@ function DashboardContent() {
                             onMouseOver={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
                             onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)'; }}
                         >
-                            🧩 Get Extension
+                            {miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', 'white', 12)} Get Extension
                         </button>
                     </div>
                     {/* Theme Toggle */}
@@ -2015,7 +2015,7 @@ function DashboardContent() {
                         {(['current', 'light', 'dark'] as const).map(t => (
                             <button key={t} onClick={() => { setTheme(t); localStorage.setItem('dashboard-theme', t); }}
                                 style={{ padding: '8px 14px', background: theme === t ? 'rgba(105,63,233,0.6)' : 'transparent', color: theme === t ? 'white' : 'rgba(255,255,255,0.6)', border: 'none', fontSize: '12px', fontWeight: theme === t ? '700' : '500', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                {t === 'current' ? '🎨 Current' : t === 'light' ? '☀️ Light' : '🌙 Dark'}
+                                {t === 'current' ? 'Current' : t === 'light' ? 'Light' : 'Dark'}
                             </button>
                         ))}
                     </div>
@@ -2084,25 +2084,25 @@ function DashboardContent() {
                             border: '1px solid rgba(255,255,255,0.1)',
                             marginBottom: '30px'
                         }}>
-                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '20px' }}>📊 Today's Usage</h3>
+                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', 'white', 16)} Today&apos;s Usage</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                                 {[
-                                    { icon: '❤️', label: 'Likes', used: usage?.usage?.likes || 0, limit: usage?.limits?.likes || 0 },
-                                    { icon: '🤖', label: 'AI Posts', used: usage?.usage?.aiPosts || 0, limit: usage?.limits?.aiPosts || 0 },
+                                    { icon: 'likes', label: 'Likes', used: usage?.usage?.likes || 0, limit: usage?.limits?.likes || 0 },
+                                    { icon: 'ai', label: 'AI Posts', used: usage?.usage?.aiPosts || 0, limit: usage?.limits?.aiPosts || 0 },
                                     {
-                                        icon: '💭',
+                                        icon: 'comments',
                                         label: 'AI Comments',
                                         used: usage?.usage?.aiComments || 0,
                                         limit: (usage?.limits?.aiComments || 0) + (usage?.usage?.bonusAiComments || 0),
                                         isTotalAvailable: true
                                     },
-                                    { icon: '👥', label: 'Follows', used: usage?.usage?.follows || 0, limit: usage?.limits?.follows || 0 },
+                                    { icon: 'follows', label: 'Follows', used: usage?.usage?.follows || 0, limit: usage?.limits?.follows || 0 },
                                 ].map((item, i) => {
                                     const pct = item.limit > 0 ? (item.used / item.limit) * 100 : 0;
                                     return (
                                         <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{item.icon} {item.label}</span>
+                                                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '5px' }}>{item.icon === 'likes' ? miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', 'rgba(255,255,255,0.7)', 13) : item.icon === 'ai' ? miniIcon('M4 4h16v16H4z M9 9h6v6H9z M9 2v2 M15 2v2 M9 20v2 M15 20v2 M2 9h2 M2 15h2 M20 9h2 M20 15h2', 'rgba(255,255,255,0.7)', 13) : item.icon === 'comments' ? miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'rgba(255,255,255,0.7)', 13) : miniIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6', 'rgba(255,255,255,0.7)', 13)} {item.label}</span>
                                                 <span style={{ fontSize: '14px', fontWeight: '600', color: pct >= 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#10b981' }}>{item.used}/{item.limit}</span>
                                             </div>
                                             <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -2124,7 +2124,7 @@ function DashboardContent() {
                                 textDecoration: 'none',
                                 display: 'block'
                             }}>
-                                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🧩</div>
+                                <div style={{ marginBottom: '12px' }}>{miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', '#10b981', 32)}</div>
                                 <h4 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Get Chrome Extension</h4>
                                 <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Install our extension to start automating</p>
                             </a>
@@ -2135,7 +2135,7 @@ function DashboardContent() {
                                 border: '1px solid rgba(245,158,11,0.3)',
                                 cursor: 'pointer'
                             }}>
-                                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎁</div>
+                                <div style={{ marginBottom: '12px' }}>{miniIcon('M20 12v10H4V12 M2 7h20v5H2z M12 22V7 M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z', '#f59e0b', 32)}</div>
                                 <h4 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Invite Friends</h4>
                                 <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Earn 30% commission on every paid referral</p>
                             </div>
@@ -2150,7 +2150,7 @@ function DashboardContent() {
                     <div style={{ background: 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.15)', marginBottom: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                                <span style={{ fontSize: '20px', flexShrink: 0 }}>🔗</span>
+                                <span style={{ flexShrink: 0 }}>{miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', 'white', 18)}</span>
                                 {linkedInProfile ? (
                                     <div style={{ minWidth: 0 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2171,58 +2171,37 @@ function DashboardContent() {
                                 </label>
                                 {linkedInProfile && <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
                                     style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                    {linkedInGeneratingTopics ? '⏳' : '💡 Topics'}
+                                    {linkedInGeneratingTopics ? '...' : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'white', 11)} Topics</span>}
                                 </button>}
                                 {linkedInProfile && <button onClick={() => setShowLinkedInDataModal(true)}
-                                    style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>📊 Data</button>}
+                                    style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', 'white', 10)} Data</button>}
                                 {linkedInProfile && <button onClick={deleteLinkedInProfile}
                                     style={{ background: 'rgba(239,68,68,0.3)', border: 'none', borderRadius: '4px', padding: '4px 8px', color: '#fca5a5', fontSize: '13px', cursor: 'pointer', lineHeight: '1' }}>×</button>}
                                 <button onClick={linkedInProfile ? () => { loadLinkedInProfile(); } : scanLinkedInProfile} disabled={linkedInProfileScanning || linkedInProfileLoading}
                                     style={{ background: 'white', color: '#0077b5', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: (linkedInProfileScanning || linkedInProfileLoading) ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
-                                    {linkedInProfileScanning ? '⏳...' : linkedInProfile ? '🔄' : '📡 Scan Profile'}
+                                    {linkedInProfileScanning ? '...' : linkedInProfile ? <span style={{ display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#0077b5', 12)}</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', '#0077b5', 11)} Scan Profile</span>}
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Inspiration Sources — compact banner */}
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                                <span style={{ fontSize: '16px', flexShrink: 0 }}>✨</span>
-                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '700', flexShrink: 0 }}>Sources</span>
-                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                                    {inspirationSources.length > 0 ? (
-                                        <>
-                                            {inspirationSources.slice(0, 3).map((src: any, i: number) => (
-                                                <span key={i} style={{ background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#a78bfa', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{src.name}</span>
-                                            ))}
-                                            {inspirationSources.length > 3 && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>+{inspirationSources.length - 3} more</span>}
-                                        </>
-                                    ) : (
-                                        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>No sources — add profiles to mimic writing style</span>
-                                    )}
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                                {inspirationSources.length > 0 && (
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
-                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Use All</span>
-                                    </label>
+                    {/* Added Sources — compact banner showing all names */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            {miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', '#a78bfa', 14)}
+                            <span style={{ color: 'white', fontSize: '13px', fontWeight: '700', flexShrink: 0 }}>Added Sources</span>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1, minWidth: 0, alignItems: 'center' }}>
+                                {inspirationSources.length > 0 ? (
+                                    <>
+                                        {inspirationSources.map((src: any, i: number) => (
+                                            <span key={i} style={{ background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#a78bfa', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>{src.name}</span>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>No sources — add profiles below to mimic writing style</span>
                                 )}
-                                <button onClick={() => setShowInspirationPopup(true)}
-                                    style={{ padding: '5px 10px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', fontSize: '10px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                    👤 My Sources ({inspirationSources.length})
-                                </button>
-                                {sharedInspProfiles.length > 0 && (
-                                    <button onClick={() => setShowSharedProfilesPopup(true)}
-                                        style={{ padding: '5px 10px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', color: '#fbbf24', fontSize: '10px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                        ⭐ Shared ({sharedInspProfiles.length})
-                                    </button>
-                                )}
-                                <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'rgba(255,255,255,0.6)', padding: '5px 8px', fontSize: '10px', cursor: 'pointer' }}>🔄</button>
                             </div>
+                            <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '5px', color: 'rgba(255,255,255,0.5)', padding: '4px 7px', fontSize: '10px', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'rgba(255,255,255,0.5)', 10)}</button>
                         </div>
                     </div>
 
@@ -2231,7 +2210,7 @@ function DashboardContent() {
                         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowInspirationPopup(false)}>
                             <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '600px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>✨ Inspiration Sources</h3>
+                                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 16)} Inspiration Sources</h3>
                                     <button onClick={() => setShowInspirationPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
                                 </div>
                                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '12px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic them when generating posts.</p>
@@ -2244,7 +2223,7 @@ function DashboardContent() {
                                             <option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="30">30</option>
                                         </select>
                                         <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '7px 14px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
-                                            {inspirationScraping ? '⏳...' : '🔍 Scrape'}
+                                            {inspirationScraping ? '...' : 'Scrape'}
                                         </button>
                                     </div>
                                 </div>
@@ -2262,7 +2241,7 @@ function DashboardContent() {
                                                 }}
                                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isChecked ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
                                                     <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '15px', height: '15px', cursor: 'pointer' }} />
-                                                    <span style={{ fontSize: '14px' }}>👤</span>
+                                                    {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', isChecked ? '#a78bfa' : 'rgba(255,255,255,0.5)', 14)}
                                                     <span style={{ color: isChecked ? '#a78bfa' : 'white', fontSize: '13px', fontWeight: '600', flex: 1 }}>{src.name}</span>
                                                     <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
                                                     <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px', padding: '0 4px', lineHeight: 1 }}>×</button>
@@ -2291,7 +2270,7 @@ function DashboardContent() {
                         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowSharedProfilesPopup(false)}>
                             <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '550px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <h3 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', margin: 0 }}>⭐ Kommentify Shared Profiles</h3>
+                                    <h3 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 16)} Kommentify Shared Profiles</h3>
                                     <button onClick={() => setShowSharedProfilesPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
                                 </div>
                                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '12px' }}>Pre-scraped profiles from top LinkedIn creators. Select to use their style.</p>
@@ -2305,7 +2284,7 @@ function DashboardContent() {
                                             }}
                                                 style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isChecked ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
                                                 <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '15px', height: '15px', cursor: 'pointer' }} />
-                                                <span style={{ fontSize: '14px' }}>👤</span>
+                                                {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', isChecked ? '#a78bfa' : 'rgba(255,255,255,0.5)', 14)}
                                                 <span style={{ color: isChecked ? '#fbbf24' : 'white', fontSize: '13px', fontWeight: '600', flex: 1 }}>{p.profileName}</span>
                                                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{p.postCount} posts</span>
                                             </div>
@@ -2321,17 +2300,39 @@ function DashboardContent() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                             {/* Post Settings */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span>⚙️</span> Post Settings
+                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 14)} Post Settings
                                 </h3>
+                                {/* Source Selection Buttons — prominent */}
+                                <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                                    {inspirationSources.length > 0 && (
+                                        <button onClick={() => { setInspirationUseAll(!inspirationUseAll); if (!inspirationUseAll) setInspirationSelected(inspirationSources.map(s => s.name)); }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: inspirationUseAll ? 'linear-gradient(135deg, rgba(105,63,233,0.3), rgba(139,92,246,0.2))' : 'rgba(255,255,255,0.06)', border: inspirationUseAll ? '1px solid rgba(105,63,233,0.5)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: inspirationUseAll ? '#a78bfa' : 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                                            {miniIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11', inspirationUseAll ? '#a78bfa' : 'rgba(255,255,255,0.6)', 13)}
+                                            {inspirationUseAll ? 'All Sources Active' : 'Use All Sources'}
+                                        </button>
+                                    )}
+                                    <button onClick={() => setShowInspirationPopup(true)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.35)', borderRadius: '8px', color: '#a78bfa', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                                        {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#a78bfa', 13)}
+                                        My Sources ({inspirationSources.length})
+                                    </button>
+                                    {sharedInspProfiles.length > 0 && (
+                                        <button onClick={() => setShowSharedProfilesPopup(true)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '8px', color: '#fbbf24', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 13)}
+                                            Shared ({sharedInspProfiles.length})
+                                        </button>
+                                    )}
+                                </div>
                                 <div style={{ marginBottom: '10px' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>💡 Topic/Idea</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'rgba(255,255,255,0.7)', 12)} Topic/Idea</label>
                                     <div style={{ display: 'flex', gap: '6px' }}>
                                         <input type="text" value={writerTopic} onChange={e => setWriterTopic(e.target.value)} placeholder="What do you want to write about?"
                                             style={{ flex: 1, padding: '9px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
                                         {linkedInProfile && <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
                                             style={{ padding: '9px 14px', background: linkedInGeneratingTopics ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: linkedInGeneratingTopics ? 'wait' : 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(245,158,11,0.3)' }}>
-                                            {linkedInGeneratingTopics ? '⏳...' : '💡 Topics'}
+                                            {linkedInGeneratingTopics ? '...' : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'white', 11)} Topics</span>}
                                         </button>}
                                     </div>
                                     {linkedInTopicSuggestions.length > 0 && (
@@ -2347,7 +2348,7 @@ function DashboardContent() {
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>📝 Template</label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', 'rgba(255,255,255,0.6)', 11)} Template</label>
                                         <select value={writerTemplate} onChange={e => setWriterTemplate(e.target.value)}
                                             style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             <option value="lead_magnet">Lead Magnet</option>
@@ -2367,7 +2368,7 @@ function DashboardContent() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🎭 Tone</label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z M20 12h2 M2 12h2 M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M4.93 19.07l1.41-1.41 M17.66 6.34l1.41-1.41', 'rgba(255,255,255,0.6)', 11)} Tone</label>
                                         <select value={writerTone} onChange={e => setWriterTone(e.target.value)}
                                             style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             <option value="professional">Professional</option>
@@ -2383,7 +2384,7 @@ function DashboardContent() {
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>📏 Length</label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M21 10H3 M21 6H3 M21 14H3 M21 18H3', 'rgba(255,255,255,0.6)', 11)} Length</label>
                                         <select value={writerLength} onChange={e => setWriterLength(e.target.value)}
                                             style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             <option value="500">Short (500)</option>
@@ -2393,7 +2394,7 @@ function DashboardContent() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🤖 AI Model</label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M4 4h16v16H4z M9 9h6v6H9z M9 2v2 M15 2v2 M9 20v2 M15 20v2 M2 9h2 M2 15h2 M20 9h2 M20 15h2', 'rgba(255,255,255,0.6)', 11)} AI Model</label>
                                         <select value={writerModel} onChange={e => setWriterModel(e.target.value)}
                                             style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             {MODEL_OPTIONS.map(m => (
@@ -2406,15 +2407,15 @@ function DashboardContent() {
                                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer' }}>
                                         <input type="checkbox" checked={writerHashtags} onChange={e => setWriterHashtags(e.target.checked)} style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
-                                        #️⃣ Hashtags
+                                        {miniIcon('M4 9h16 M4 15h16 M10 3l-2 18 M16 3l-2 18', 'rgba(255,255,255,0.7)', 11)} Hashtags
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer' }}>
                                         <input type="checkbox" checked={writerEmojis} onChange={e => setWriterEmojis(e.target.checked)} style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
-                                        😊 Emojis
+                                        {miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M8 14s1.5 2 4 2 4-2 4-2 M9 9h.01 M15 9h.01', 'rgba(255,255,255,0.7)', 11)} Emojis
                                     </label>
                                     <select value={writerLanguage} onChange={e => setWriterLanguage(e.target.value)}
                                         style={{ padding: '5px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px', marginLeft: 'auto' }}>
-                                        <option value="">🌐 Auto</option>
+                                        <option value="">Auto</option>
                                         <option value="English">English</option>
                                         <option value="Spanish">Spanish</option>
                                         <option value="French">French</option>
@@ -2441,7 +2442,7 @@ function DashboardContent() {
                                 <div style={{ marginBottom: '10px' }}>
                                     <button onClick={() => setWriterShowAdvanced(!writerShowAdvanced)}
                                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '7px 12px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '11px', fontWeight: '600', width: '100%', textAlign: 'left' }}>
-                                        ⚙️ Advanced Settings {writerShowAdvanced ? '▲' : '▼'}
+                                        {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'rgba(255,255,255,0.6)', 11)} Advanced Settings {writerShowAdvanced ? '▲' : '▼'}
                                     </button>
                                     {writerShowAdvanced && (
                                         <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -2456,7 +2457,7 @@ function DashboardContent() {
                                 </div>
                                 <button onClick={generatePost} disabled={writerGenerating}
                                     style={{ width: '100%', padding: '12px', background: writerGenerating ? 'rgba(105,63,233,0.5)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: writerGenerating ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)' }}>
-                                    {writerGenerating ? '⏳ Generating...' : '✨ Generate AI Post'}
+                                    {writerGenerating ? 'Generating...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 14)} Generate AI Post</span>}
                                 </button>
                             </div>
                         </div>
@@ -2465,7 +2466,7 @@ function DashboardContent() {
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                     <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                                        <span>📝</span> Post Content
+                                        {miniIcon('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', 'white', 14)} Post Content
                                     </h3>
                                     <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{writerContent.length} / 3,000</span>
                                 </div>
@@ -2483,7 +2484,7 @@ function DashboardContent() {
                                     <div style={{ marginTop: '12px', padding: '14px 18px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                             {miniIcon('M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z', '#60a5fa', 16)}
-                                            <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '700' }}>🔧 Developer Token Usage</span>
+                                            <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', '#60a5fa', 13)} Developer Token Usage</span>
                                         </div>
                                         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                                             <div>
@@ -2517,15 +2518,15 @@ function DashboardContent() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 0.8fr', gap: '8px', marginTop: '12px' }}>
                                     <button onClick={sendToExtension} disabled={writerPosting}
                                         style={{ padding: '11px 6px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 12px rgba(105,63,233,0.3)', opacity: writerPosting ? 0.7 : 1 }}>
-                                        {writerPosting ? '⏳...' : '🚀 Post to LinkedIn'}
+                                        {writerPosting ? '...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Post to LinkedIn</span>}
                                     </button>
                                     <button onClick={saveDraft}
                                         style={{ padding: '11px 6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
-                                        💾 Draft
+                                        {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', 'white', 12)} Draft
                                     </button>
                                     <button onClick={schedulePost}
-                                        style={{ padding: '11px 6px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '10px', color: '#c4b5fd', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
-                                        📅 Schedule
+                                        style={{ padding: '11px 6px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '10px', color: '#c4b5fd', fontWeight: '600', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                        {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 12)} Schedule
                                     </button>
                                 </div>
                                 {/* Schedule date/time */}
@@ -2546,7 +2547,7 @@ function DashboardContent() {
                                 <button onClick={() => { if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(calendarYear - 1); } else setCalendarMonth(calendarMonth - 1); }}
                                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>‹</button>
                                 <h3 style={{ color: 'white', fontSize: '15px', fontWeight: '700', margin: 0, minWidth: '160px', textAlign: 'center' }}>
-                                    📅 {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                    {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', 'white', 14)} {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
                                 </h3>
                                 <button onClick={() => { if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(calendarYear + 1); } else setCalendarMonth(calendarMonth + 1); }}
                                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>›</button>
@@ -2560,7 +2561,7 @@ function DashboardContent() {
                                 ].filter(s => s.count > 0).map(s => (
                                     <span key={s.label} style={{ background: `${s.color}22`, border: `1px solid ${s.color}44`, borderRadius: '4px', padding: '2px 8px', color: s.color, fontSize: '10px', fontWeight: '700' }}>{s.count} {s.label}</span>
                                 ))}
-                                <button onClick={loadScheduledPosts} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'rgba(255,255,255,0.6)', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>🔄</button>
+                                <button onClick={loadScheduledPosts} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'rgba(255,255,255,0.6)', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'rgba(255,255,255,0.6)', 10)}</button>
                             </div>
                         </div>
                         {/* Day headers */}
@@ -2630,7 +2631,7 @@ function DashboardContent() {
                                                     <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                                                         {post.taskStatus === 'failed' && (
                                                             <button onClick={() => { const nd = new Date(); nd.setDate(nd.getDate()+1); setWriterScheduleDate(nd.toISOString().split('T')[0]); setWriterScheduleTime('12:00'); setWriterContent(post.content); setWriterTopic(post.topic||''); }}
-                                                                style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#ef4444', fontSize: '9px', cursor: 'pointer' }}>🔄</button>
+                                                                style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#ef4444', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#ef4444', 9)}</button>
                                                         )}
                                                         <button onClick={() => { if (confirm('Delete this scheduled post?')) { fetch('/api/post-drafts', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }, body: JSON.stringify({ id: post.id }) }).then(() => loadScheduledPosts()); } }}
                                                             style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '4px', padding: '2px 6px', color: '#ef4444', fontSize: '9px', cursor: 'pointer' }}>×</button>
@@ -2646,7 +2647,7 @@ function DashboardContent() {
                     {/* Saved Drafts — below calendar */}
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '14px' }}>
                         <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
-                            💾 Saved Drafts ({writerDrafts.length})
+                            {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', 'white', 13)} Saved Drafts ({writerDrafts.length})
                         </h4>
                         {writerDrafts.length === 0 ? (
                             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', textAlign: 'center', padding: '10px 0' }}>No saved drafts yet</p>
@@ -2656,7 +2657,7 @@ function DashboardContent() {
                                     <div key={draft.id} style={{ background: 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                             <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px' }}>
-                                                {draft.status === 'scheduled' ? '📅' : '📝'} {new Date(draft.createdAt).toLocaleDateString()}
+                                                {draft.status === 'scheduled' ? miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', 'rgba(255,255,255,0.45)', 10) : miniIcon('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', 'rgba(255,255,255,0.45)', 10)} {new Date(draft.createdAt).toLocaleDateString()}
                                             </span>
                                             <div style={{ display: 'flex', gap: '6px' }}>
                                                 <button onClick={() => { setWriterContent(draft.content); setWriterTopic(draft.topic || ''); }}
@@ -2687,7 +2688,7 @@ function DashboardContent() {
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                 <h3 style={{ color: 'white', fontSize: '15px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span>⚙️</span> Comment Settings
+                                    {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 15)} Comment Settings
                                 </h3>
                                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Controls AI comments — manual button & auto-commenting</span>
                             </div>
@@ -2703,7 +2704,7 @@ function DashboardContent() {
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>
-                                            🎨 Use Selected Profiles&apos; Comment Style
+                                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', 'white', 13)} Use Selected Profiles&apos; Comment Style
                                         </div>
                                         <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px' }}>
                                             {csUseProfileStyle 
@@ -2726,7 +2727,7 @@ function DashboardContent() {
                                         <div>
                                             <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Goal</label>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                                {[{v:'AddValue',l:'Add Value',e:'💡'},{v:'ShareExperience',l:'Experience',e:'💭'},{v:'AskQuestion',l:'Question',e:'❓'},{v:'DifferentPerspective',l:'Perspective',e:'🔄'},{v:'BuildRelationship',l:'Relationship',e:'🤝'},{v:'SubtlePitch',l:'Subtle Pitch',e:'🎯'}].map(o => (
+                                                {[{v:'AddValue',l:'Add Value',e:'+'},{v:'ShareExperience',l:'Experience',e:'~'},{v:'AskQuestion',l:'Question',e:'?'},{v:'DifferentPerspective',l:'Perspective',e:'*'},{v:'BuildRelationship',l:'Relationship',e:'&'},{v:'SubtlePitch',l:'Subtle Pitch',e:'!'}].map(o => (
                                                     <button key={o.v} onClick={() => setCsGoal(o.v)} style={{ padding:'6px 10px', background: csGoal===o.v ? 'linear-gradient(135deg,rgba(105,63,233,0.4),rgba(139,92,246,0.3))' : 'rgba(255,255,255,0.05)', border: csGoal===o.v ? '1px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color: csGoal===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight: csGoal===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px' }}>
                                                         <span>{o.e}</span><span>{o.l}</span>
                                                     </button>
@@ -2736,7 +2737,7 @@ function DashboardContent() {
                                         <div>
                                             <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tone of Voice</label>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                                {[{v:'Professional',l:'Professional',e:'💼'},{v:'Friendly',l:'Friendly',e:'😊'},{v:'ThoughtProvoking',l:'Thought Provoking',e:'🤔'},{v:'Supportive',l:'Supportive',e:'🌟'},{v:'Contrarian',l:'Contrarian',e:'⚡'},{v:'Humorous',l:'Humorous',e:'😄'}].map(o => (
+                                                {[{v:'Professional',l:'Professional',e:'P'},{v:'Friendly',l:'Friendly',e:'F'},{v:'ThoughtProvoking',l:'Thought Provoking',e:'T'},{v:'Supportive',l:'Supportive',e:'S'},{v:'Contrarian',l:'Contrarian',e:'C'},{v:'Humorous',l:'Humorous',e:'H'}].map(o => (
                                                     <button key={o.v} onClick={() => setCsTone(o.v)} style={{ padding:'6px 10px', background: csTone===o.v ? 'linear-gradient(135deg,rgba(59,130,246,0.4),rgba(37,99,235,0.3))' : 'rgba(255,255,255,0.05)', border: csTone===o.v ? '1px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color: csTone===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight: csTone===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px' }}>
                                                         <span>{o.e}</span><span>{o.l}</span>
                                                     </button>
@@ -2760,7 +2761,7 @@ function DashboardContent() {
                                         <div>
                                             <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Style</label>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '5px' }}>
-                                                {[{v:'direct',l:'Direct',d:'Single paragraph',e:'📝'},{v:'structured',l:'Structured',d:'2-3 paragraphs',e:'📑'},{v:'storyteller',l:'Storyteller',d:'Personal anecdote',e:'📖'},{v:'challenger',l:'Challenger',d:'Different view',e:'⚡'},{v:'supporter',l:'Supporter',d:'Validate',e:'🤜'},{v:'expert',l:'Expert',d:'Data refs',e:'🎓'},{v:'conversational',l:'Casual',d:'Colleague-like',e:'💬'}].map(o => (
+                                                {[{v:'direct',l:'Direct',d:'Single paragraph',e:'D'},{v:'structured',l:'Structured',d:'2-3 paragraphs',e:'S'},{v:'storyteller',l:'Storyteller',d:'Personal anecdote',e:'N'},{v:'challenger',l:'Challenger',d:'Different view',e:'C'},{v:'supporter',l:'Supporter',d:'Validate',e:'V'},{v:'expert',l:'Expert',d:'Data refs',e:'E'},{v:'conversational',l:'Casual',d:'Colleague-like',e:'L'}].map(o => (
                                                     <button key={o.v} onClick={() => setCsStyle(o.v)} style={{ padding:'7px 8px', background: csStyle===o.v ? 'linear-gradient(135deg,rgba(245,158,11,0.3),rgba(217,119,6,0.2))' : 'rgba(255,255,255,0.05)', border: csStyle===o.v ? '1px solid rgba(245,158,11,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color: csStyle===o.v ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight: csStyle===o.v ? '700' : '500', cursor:'pointer', textAlign:'left' }}>
                                                         <div style={{ display:'flex', alignItems:'center', gap:'4px' }}><span style={{fontSize:'12px'}}>{o.e}</span><span>{o.l}</span></div>
                                                         <div style={{ fontSize:'9px', opacity:0.55 }}>{o.d}</div>
@@ -2809,7 +2810,7 @@ function DashboardContent() {
                             <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
                                 <button onClick={saveCommentSettings} disabled={csSettingsSaving}
                                     style={{ padding: '10px 24px', background: csSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: csSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)', opacity: csSettingsSaving ? 0.7 : 1 }}>
-                                    {csSettingsSaving ? '⏳ Saving...' : '💾 Save Settings'}
+                                    {csSettingsSaving ? 'Saving...' : <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', 'white', 13)} Save Settings</span>}
                                 </button>
                             </div>
                         </div>
@@ -2818,11 +2819,11 @@ function DashboardContent() {
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                 <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span>🎨</span> Comment Style Sources
+                                    {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', 'white', 14)} Comment Style Sources
                                 </h3>
                                 <button onClick={loadCommentStyleProfiles}
                                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', padding: '4px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
-                                    🔄 Refresh
+                                    Refresh
                                 </button>
                             </div>
                             {/* Add Profile Input — inline */}
@@ -2832,7 +2833,7 @@ function DashboardContent() {
                                     style={{ flex: 1, padding: '7px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
                                 <button onClick={scrapeCommentStyle} disabled={commentStyleScraping}
                                     style={{ padding: '7px 14px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: commentStyleScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
-                                    {commentStyleScraping ? '⏳...' : '💬 Scrape'}
+                                    {commentStyleScraping ? '...' : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'white', 11)} Scrape</span>}
                                 </button>
                             </div>
                             {commentStyleStatus && (
@@ -2843,7 +2844,7 @@ function DashboardContent() {
                             {/* Kommentify Shared Comment Profiles — compact inline */}
                             {sharedCommentProfiles.length > 0 && (
                                 <div style={{ marginBottom: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.06)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.15)' }}>
-                                    <div style={{ color: '#fbbf24', fontSize: '11px', fontWeight: '700', marginBottom: '6px' }}>⭐ Kommentify Shared ({sharedCommentProfiles.length})</div>
+                                    <div style={{ color: '#fbbf24', fontSize: '11px', fontWeight: '700', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 11)} Kommentify Shared ({sharedCommentProfiles.length})</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                         {sharedCommentProfiles.map((p: any, i: number) => {
                                             const profileMatch = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
@@ -2862,7 +2863,7 @@ function DashboardContent() {
                             )}
                             {/* Saved Profiles — compact */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>👤 Saved Profiles ({commentStyleProfiles.length})</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 13)} Saved Profiles ({commentStyleProfiles.length})</h4>
                             </div>
                             {commentStyleLoading ? (
                                 <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Loading profiles...</div>
@@ -2875,7 +2876,7 @@ function DashboardContent() {
                                     {commentStyleProfiles.map((profile: any) => (
                                         <div key={profile.id}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: profile.isSelected ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: `1px solid ${profile.isSelected ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.06)'}` }}>
-                                                <span style={{ fontSize: '16px', flexShrink: 0 }}>💬</span>
+                                                <span style={{ flexShrink: 0 }}>{miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', 16)}</span>
                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                     <div style={{ color: 'white', fontWeight: '600', fontSize: '13px' }}>{profile.profileName || profile.profileId}</div>
                                                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{profile._count?.comments || profile.commentCount} comments{profile.lastScrapedAt ? ` · ${new Date(profile.lastScrapedAt).toLocaleDateString()}` : ''}</div>
@@ -2911,7 +2912,7 @@ function DashboardContent() {
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                                                                         <div style={{ flex: 1 }}>
                                                                             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '4px' }}>
-                                                                                {comment.context === 'DIRECT COMMENT ON POST' ? '💬 Direct comment' : `↩️ ${comment.context.substring(0, 80)}...`}
+                                                                                {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct comment' : `Reply: ${comment.context.substring(0, 80)}...`}
                                                                             </div>
                                                                             <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginBottom: '6px', fontStyle: 'italic' }}>
                                                                                 On: {(comment.postText || '').substring(0, 100)}...
@@ -2923,7 +2924,7 @@ function DashboardContent() {
                                                                         <button onClick={() => toggleCommentTop(comment.id)}
                                                                             title={comment.isTopComment ? 'Remove from top comments' : 'Mark as top comment for AI training'}
                                                                             style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '8px', padding: '4px 10px', fontSize: '14px', cursor: 'pointer', flexShrink: 0, color: comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.5)' }}>
-                                                                            {comment.isTopComment ? '⭐' : '☆'}
+                                                                            {comment.isTopComment ? miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14) : miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', 'rgba(255,255,255,0.3)', 14)}
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -2939,7 +2940,7 @@ function DashboardContent() {
                             {/* AI Training Info — compact */}
                             {commentStyleProfiles.some((p: any) => p.isSelected) && (
                                 <div style={{ background: 'rgba(59,130,246,0.08)', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(59,130,246,0.2)', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '14px', flexShrink: 0 }}>🎯</span>
+                                    <span style={{ flexShrink: 0 }}>{miniIcon('M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 18a6 6 0 100-12 6 6 0 000 12z M12 14a2 2 0 100-4 2 2 0 000 4z', '#60a5fa', 14)}</span>
                                     <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: 0 }}>
                                         <strong style={{ color: '#60a5fa' }}>Training Active:</strong> AI uses {commentStyleProfiles.filter((p: any) => p.isSelected).length} profile(s) with starred comments to match commenting style.
                                     </p>
@@ -2968,34 +2969,34 @@ function DashboardContent() {
                                             body: JSON.stringify({ command: 'scrape_feed_now', data: { durationMinutes: scheduleDuration, minLikes: scheduleMinLikes, minComments: scheduleMinComments, keywords: scheduleKeywords } }),
                                         });
                                         const data = await res.json();
-                                        if (data.success) setTrendingStatus('✅ Scrape task sent! Extension will open LinkedIn and start scraping.');
+                                        if (data.success) setTrendingStatus('Scrape task sent! Extension will open LinkedIn and start scraping.');
                                         else setTrendingStatus(data.error || 'Failed to send task');
                                     } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
                                 }} style={{ padding: '7px 16px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', 'white', 12)} Start Now</button>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'auto auto auto 1fr', gap: '8px', alignItems: 'end', marginBottom: '10px' }}>
                                 <div>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>⏱ Duration</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', 'rgba(255,255,255,0.5)', 11)} Duration</label>
                                     <select value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }}>
                                         <option value="1">1 min</option><option value="2">2 min</option><option value="3">3 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>❤️ Min Likes</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 11)} Min Likes</label>
                                     <input type="number" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>💬 Min Comments</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', '#8b5cf6', 11)} Min Comments</label>
                                     <input type="number" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🔑 Keywords</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4', 'rgba(255,255,255,0.5)', 11)} Keywords</label>
                                     <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="AI, startup, SaaS..." style={{ width: '100%', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
                                 </div>
                             </div>
                             {/* Daily Schedule — compact inline */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', paddingTop: '8px', borderTop: '1px solid rgba(16,185,129,0.15)' }}>
-                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>⏰ Daily:</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', textTransform: 'uppercase' as any }}>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', 'rgba(255,255,255,0.5)', 10)} Daily:</span>
                                 {scheduleTimesInput.map((time, i) => (
                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.35)', borderRadius: '6px', padding: '2px 6px' }}>
                                         <input type="time" value={time} onChange={e => { const arr = [...scheduleTimesInput]; arr[i] = e.target.value; setScheduleTimesInput(arr); }}
@@ -3014,7 +3015,7 @@ function DashboardContent() {
                                         <div style={{ width: '14px', height: '14px', background: 'white', borderRadius: '7px', transition: 'transform 0.2s', transform: scheduleActive ? 'translateX(14px)' : 'translateX(0)' }} />
                                     </div>
                                     <span style={{ color: scheduleActive ? '#10b981' : 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '600' }}>{scheduleActive ? 'ON' : 'OFF'}</span>
-                                    <button onClick={saveFeedSchedule} style={{ padding: '3px 10px', background: 'rgba(105,63,233,0.25)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', cursor: 'pointer', fontSize: '10px', fontWeight: '600' }}>💾 Save</button>
+                                    <button onClick={saveFeedSchedule} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 10px', background: 'rgba(105,63,233,0.25)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', cursor: 'pointer', fontSize: '10px', fontWeight: '600' }}>{miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', '#a78bfa', 11)} Save</button>
                                 </div>
                             </div>
                         </div>
@@ -3033,7 +3034,7 @@ function DashboardContent() {
                                             style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: sel ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: '8px', border: sel ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
                                             <input type="checkbox" checked={sel} readOnly style={{ accentColor: '#693fe9', width: '14px', height: '14px', marginTop: '1px', flexShrink: 0, cursor: 'pointer' }} />
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', marginBottom: '2px' }}>{p.authorName || 'Unknown'} · ❤️ {p.likes} · 💬 {p.comments}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', marginBottom: '2px' }}>{p.authorName || 'Unknown'} · {miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 10)} {p.likes} · {miniIcon('M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', '#8b5cf6', 10)} {p.comments}</div>
                                                 <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>{p.postContent?.substring(0, 180)}</div>
                                             </div>
                                         </div>
@@ -3058,14 +3059,14 @@ function DashboardContent() {
                                 style={{ minWidth: '160px', maxWidth: '280px', padding: '7px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(105,63,233,0.25)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
                             <select value={savedPostsSortBy} onChange={e => { setSavedPostsSortBy(e.target.value); }}
                                 style={{ padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontSize: '11px' }}>
-                                <option value="comments">💬 Comments</option>
-                                <option value="likes">❤️ Likes</option>
-                                <option value="shares">🔄 Shares</option>
-                                <option value="scrapedAt">📅 Date</option>
+                                <option value="comments">Comments</option>
+                                <option value="likes">Likes</option>
+                                <option value="shares">Shares</option>
+                                <option value="scrapedAt">Date</option>
                             </select>
                             <button onClick={() => loadSavedPosts(1)}
-                                style={{ padding: '7px 14px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '12px' }}>
-                                🔍
+                                style={{ padding: '7px 14px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {miniIcon('M11 17.25a6.25 6.25 0 1 1 0-12.5 6.25 6.25 0 0 1 0 12.5z M16 16l4.5 4.5', 'white', 12)} Search
                             </button>
                         </div>
                         {/* AI Actions Panel — compact */}
@@ -3083,17 +3084,17 @@ function DashboardContent() {
                                     </button>
                                     <button onClick={generateTrendingPosts} disabled={trendingGenerating || trendingSelectedPosts.length === 0}
                                         style={{ padding: '6px 14px', background: trendingGenerating ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: trendingGenerating ? 'wait' : 'pointer', fontSize: '11px', boxShadow: '0 2px 8px rgba(105,63,233,0.3)' }}>
-                                        {trendingGenerating ? '⏳ Generating...' : '✨ AI Generate'}
+                                        {trendingGenerating ? 'Generating...' : <><span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 11)} AI Generate</span></>}
                                     </button>
                                     <button onClick={analyzePosts} disabled={analysisLoading || trendingGeneratedPosts.length === 0}
                                         style={{ padding: '6px 14px', background: analysisLoading ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: analysisLoading ? 'wait' : 'pointer', fontSize: '11px' }}>
-                                        {analysisLoading ? '⏳...' : '📊 Analyze'}
+                                        {analysisLoading ? 'Analyzing...' : <><span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', 'white', 11)} Analyze</span></>}
                                     </button>
                                 </div>
                             </div>
                             {/* Custom AI Instructions — compact textarea */}
                             <div style={{ marginBottom: '10px' }}>
-                                <label style={{ display: 'block', color: '#a78bfa', fontSize: '11px', fontWeight: '700', marginBottom: '4px' }}>✏️ Custom AI Instructions</label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a78bfa', fontSize: '11px', fontWeight: '700', marginBottom: '4px' }}>{miniIcon('M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z', '#a78bfa', 12)} Custom AI Instructions</label>
                                 <textarea value={trendingCustomPrompt} onChange={e => setTrendingCustomPrompt(e.target.value)}
                                     placeholder="e.g., Focus on SaaS topics, write for startup founders, keep under 200 words, use storytelling..."
                                     rows={2}
@@ -3102,14 +3103,14 @@ function DashboardContent() {
                             {/* Model + Language + Hashtags — single compact row */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'end' }}>
                                 <div>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🤖 AI Model</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M4 4h16v16H4z M9 9h6v6H9z M9 2v2 M15 2v2 M9 20v2 M15 20v2 M2 9h2 M2 15h2 M20 9h2 M20 15h2', 'rgba(255,255,255,0.5)', 11)} AI Model</label>
                                     <select value={trendingModel} onChange={e => setTrendingModel(e.target.value)}
                                         style={{ width: '100%', padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
                                         {MODEL_OPTIONS.map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🌐 Language</label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z', 'rgba(255,255,255,0.5)', 11)} Language</label>
                                     <select value={trendingLanguage} onChange={e => setTrendingLanguage(e.target.value)}
                                         style={{ width: '100%', padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
                                         <option value="">Auto-detect</option>
@@ -3124,7 +3125,7 @@ function DashboardContent() {
                                 </div>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer', padding: '7px 0' }}>
                                     <input type="checkbox" checked={trendingIncludeHashtags} onChange={e => setTrendingIncludeHashtags(e.target.checked)} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
-                                    #️⃣ Tags
+                                    {miniIcon('M4 9h16 M4 15h16 M10 3l-2 18 M16 3l-2 18', 'rgba(255,255,255,0.6)', 12)} Tags
                                 </label>
                             </div>
                         </div>
@@ -3139,7 +3140,7 @@ function DashboardContent() {
                             <div style={{ marginBottom: '16px', padding: '14px 18px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '12px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                     {miniIcon('M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z', '#60a5fa', 16)}
-                                    <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '700' }}>🔧 Developer Token Usage</span>
+                                    <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', '#60a5fa', 13)} Developer Token Usage</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                                     <div>
@@ -3225,10 +3226,10 @@ function DashboardContent() {
                                     {trendingGeneratedPosts.map((gp: any, i: number) => (
                                         <div key={i} style={{ background: 'rgba(255,255,255,0.04)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(105,63,233,0.15)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '12px' }}>⭐ {gp.title || `Post ${i + 1}`}</span>
+                                                <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 12)} {gp.title || `Post ${i + 1}`}</span>
                                                 <div style={{ display: 'flex', gap: '6px' }}>
                                                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '10px' }}>
-                                                        📷 {generatedPostImages[i] ? 'Change' : 'Image'}
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'rgba(255,255,255,0.6)', 11)} {generatedPostImages[i] ? 'Change' : 'Image'}</span>
                                                         <input type="file" accept="image/*" style={{ display: 'none' }}
                                                             onChange={(e) => { if (e.target.files?.[0]) handleImageAttach(i, e.target.files[0]); }} />
                                                     </label>
@@ -3239,7 +3240,7 @@ function DashboardContent() {
                                                     <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i], i)}
                                                         disabled={postingToLinkedIn[i]}
                                                         style={{ padding: '5px 12px', background: postingToLinkedIn[i] ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '700', cursor: postingToLinkedIn[i] ? 'wait' : 'pointer', fontSize: '11px' }}>
-                                                        {postingToLinkedIn[i] ? '⏳...' : '📤 Post'}
+                                                        {postingToLinkedIn[i] ? '...' : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12', 'white', 11)} Post</span>}
                                                     </button>
                                                 </div>
                                             </div>
@@ -3262,7 +3263,7 @@ function DashboardContent() {
                             <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>Loading trending posts...</div>
                         ) : savedPosts.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                <div style={{ fontSize: '36px', marginBottom: '10px' }}>⚡</div>
+                                <div style={{ marginBottom: '10px' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', '#a78bfa', 36)}</div>
                                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>No trending posts yet. Enable post saving in the extension commenter tab.</p>
                             </div>
                         ) : (
@@ -3285,12 +3286,12 @@ function DashboardContent() {
                                                         <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px' }}>{new Date(post.scrapedAt).toLocaleDateString()}</span>
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                                        <span style={{ color: '#ec4899', fontSize: '11px', fontWeight: '600' }}>❤️ {post.likes}</span>
-                                                        <span style={{ color: '#8b5cf6', fontSize: '11px', fontWeight: '600' }}>💬 {post.comments}</span>
-                                                        <span style={{ color: '#06b6d4', fontSize: '11px', fontWeight: '600' }}>🔄 {post.shares}</span>
+                                                        <span style={{ color: '#ec4899', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 11)} {post.likes}</span>
+                                                        <span style={{ color: '#8b5cf6', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', '#8b5cf6', 11)} {post.comments}</span>
+                                                        <span style={{ color: '#06b6d4', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#06b6d4', 11)} {post.shares}</span>
                                                         {post.postUrl && (
                                                             <a href={post.postUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                                                                style={{ color: '#693fe9', fontSize: '10px', fontWeight: '600', textDecoration: 'none' }}>🔗</a>
+                                                                style={{ color: '#693fe9', fontSize: '10px', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>{miniIcon('M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3', '#693fe9', 11)}</a>
                                                         )}
                                                         <button onClick={(e) => { e.stopPropagation(); deleteSavedPost(post.id); }}
                                                             style={{ background: 'none', border: 'none', color: '#f87171', padding: '0 2px', fontSize: '14px', cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -3331,21 +3332,21 @@ function DashboardContent() {
                 {activeTab === 'tasks' && (
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0 }}>📋 Extension Tasks</h3>
+                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2 M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z', 'white', 18)} Extension Tasks</h3>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <button onClick={() => loadTasks()}
                                     style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.15s ease', transform: 'scale(1)' }}
                                     onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
                                     onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
                                     onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
-                                    🔄 Refresh
+                                    Refresh
                                 </button>
                                 <button onClick={stopAllTasks}
                                     style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 15px rgba(239,68,68,0.4)', transition: 'all 0.15s ease', transform: 'scale(1)' }}
                                     onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
                                     onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
                                     onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
-                                    🛑 Stop All Tasks
+                                    Stop All Tasks
                                 </button>
                             </div>
                         </div>
@@ -3366,7 +3367,7 @@ function DashboardContent() {
                         {/* Queue Info Banner */}
                         {tasks.filter(t => t.status === 'pending').length > 0 && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'rgba(245,158,11,0.1)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.25)', marginBottom: '16px' }}>
-                                <span>⏱️</span>
+                                <span>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', '#f59e0b', 14)}</span>
                                 <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
                                     <strong style={{ color: '#fbbf24' }}>{tasks.filter(t => t.status === 'pending').length} task(s) queued</strong> — only one task runs at a time. Each pending task waits for the current one to finish before starting.
                                 </span>
@@ -3377,27 +3378,27 @@ function DashboardContent() {
                             <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.5)' }}>Loading tasks...</div>
                         ) : tasks.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                                <div style={{ marginBottom: '16px' }}>{miniIcon('M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2 M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z', 'rgba(255,255,255,0.5)', 48)}</div>
                                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>No tasks in the last 24 hours.</p>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 {tasks.map((task: any, taskIdx: number) => {
                                     const statusConfig: Record<string, { icon: string; color: string; bg: string }> = {
-                                        pending: { icon: '⏳', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
-                                        in_progress: { icon: '🔄', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-                                        completed: { icon: '✅', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-                                        completed_manual: { icon: '✅', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-                                        failed: { icon: '❌', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-                                        cancelled: { icon: '🛑', color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
+                                        pending: { icon: 'P', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+                                        in_progress: { icon: '>', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+                                        completed: { icon: 'OK', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+                                        completed_manual: { icon: 'OK', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+                                        failed: { icon: 'X', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+                                        cancelled: { icon: '--', color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
                                     };
                                     const sc = statusConfig[task.status] || statusConfig.pending;
-                                    const cmdLabel = task.command === 'post_to_linkedin' ? '🚀 Post to LinkedIn' :
-                                        task.command === 'scrape_feed_now' ? '🔍 Scrape Feed' :
-                                        task.command === 'scrape_profile' ? '👤 Scrape Profile' :
-                                        task.command === 'bulk_comment' ? '💬 Bulk Comment' :
-                                        task.command === 'networking' ? '🤝 Networking' :
-                                        task.command === 'import_profiles' ? '📥 Import Profiles' : task.command;
+                                    const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
+                                        task.command === 'scrape_feed_now' ? 'Scrape Feed' :
+                                        task.command === 'scrape_profile' ? 'Scrape Profile' :
+                                        task.command === 'bulk_comment' ? 'Bulk Comment' :
+                                        task.command === 'networking' ? 'Networking' :
+                                        task.command === 'import_profiles' ? 'Import Profiles' : task.command;
                                     // Calculate pending countdown
                                     let pendingCountdown = '';
                                     if (task.status === 'pending' && task.createdAt) {
@@ -3425,7 +3426,7 @@ function DashboardContent() {
                                                     {task.data?.profileUrl && <span> · {task.data.profileUrl}</span>}
                                                 </div>
                                                 {task.status === 'pending' && pendingCountdown && (
-                                                    <div style={{ color: '#fbbf24', fontSize: '11px', marginTop: '3px', fontWeight: '600' }}>⏱ {pendingCountdown}</div>
+                                                    <div style={{ color: '#fbbf24', fontSize: '11px', marginTop: '3px', fontWeight: '600' }}>{pendingCountdown}</div>
                                                 )}
                                             </div>
                                             <span style={{ padding: '4px 12px', background: sc.bg, color: sc.color, borderRadius: '20px', fontSize: '12px', fontWeight: '600', border: `1px solid ${sc.color}33`, whiteSpace: 'nowrap' }}>
@@ -3443,15 +3444,15 @@ function DashboardContent() {
                 {activeTab === 'history' && (
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0 }}>📜 History</h3>
+                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 18)} History</h3>
                             <button onClick={() => loadHistory(1)}
                                 style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
-                                🔄 Refresh
+                                Refresh
                             </button>
                         </div>
                         {/* Filter Buttons */}
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                            {[{ id: 'all', label: '📋 All', color: '#8b5cf6' }, { id: 'ai_generated', label: '🤖 AI Generated', color: '#a78bfa' }, { id: 'viral_analysis', label: '📊 Analysis', color: '#fbbf24' }, { id: 'published_post', label: '🚀 Published', color: '#10b981' }].map(f => (
+                            {[{ id: 'all', label: 'All', color: '#8b5cf6' }, { id: 'ai_generated', label: 'AI Generated', color: '#a78bfa' }, { id: 'viral_analysis', label: 'Analysis', color: '#fbbf24' }, { id: 'published_post', label: 'Published', color: '#10b981' }].map(f => (
                                 <button key={f.id} onClick={() => { setHistoryFilter(f.id); loadHistory(1, f.id); }}
                                     style={{ padding: '10px 20px', background: historyFilter === f.id ? `${f.color}33` : 'rgba(255,255,255,0.08)', border: `1px solid ${historyFilter === f.id ? f.color + '66' : 'rgba(255,255,255,0.15)'}`, borderRadius: '12px', color: historyFilter === f.id ? f.color : 'rgba(255,255,255,0.7)', fontWeight: historyFilter === f.id ? '700' : '500', cursor: 'pointer', fontSize: '14px' }}>
                                     {f.label}
@@ -3466,18 +3467,18 @@ function DashboardContent() {
                             <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.5)' }}>Loading history...</div>
                         ) : historyItems.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📜</div>
+                                <div style={{ marginBottom: '16px' }}>{miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'rgba(255,255,255,0.5)', 48)}</div>
                                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>No history yet. Generate posts, run analysis, or publish to LinkedIn to build your history.</p>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {historyItems.map((item: any) => {
                                     const typeConfig: Record<string, { icon: string; color: string; bg: string; label: string }> = {
-                                        ai_generated: { icon: '🤖', color: '#a78bfa', bg: 'rgba(105,63,233,0.15)', label: 'AI Generated Posts' },
-                                        viral_analysis: { icon: '📊', color: '#fbbf24', bg: 'rgba(245,158,11,0.15)', label: 'Viral Analysis' },
-                                        published_post: { icon: '🚀', color: '#10b981', bg: 'rgba(16,185,129,0.15)', label: 'Published Post' },
+                                        ai_generated: { icon: 'AI', color: '#a78bfa', bg: 'rgba(105,63,233,0.15)', label: 'AI Generated Posts' },
+                                        viral_analysis: { icon: 'AN', color: '#fbbf24', bg: 'rgba(245,158,11,0.15)', label: 'Viral Analysis' },
+                                        published_post: { icon: 'PB', color: '#10b981', bg: 'rgba(16,185,129,0.15)', label: 'Published Post' },
                                     };
-                                    const tc = typeConfig[item.type] || { icon: '📄', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', label: item.type };
+                                    const tc = typeConfig[item.type] || { icon: '--', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', label: item.type };
                                     let parsedContent: any = null;
                                     try { parsedContent = JSON.parse(item.content); } catch { parsedContent = item.content; }
                                     let parsedMeta: any = null;
@@ -3500,7 +3501,7 @@ function DashboardContent() {
                                                 </div>
                                                 <button onClick={() => deleteHistoryItem(item.id)}
                                                     style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}>
-                                                    🗑️
+                                                    ×
                                                 </button>
                                             </div>
                                             {/* Content display based on type */}
@@ -3508,7 +3509,7 @@ function DashboardContent() {
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                     {parsedContent.map((post: any, pi: number) => (
                                                         <div key={pi} style={{ background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '10px' }}>
-                                                            <div style={{ color: '#a78bfa', fontWeight: '600', fontSize: '13px', marginBottom: '6px' }}>✨ {post.title || `Post ${pi + 1}`}</div>
+                                                            <div style={{ color: '#a78bfa', fontWeight: '600', fontSize: '13px', marginBottom: '6px' }}>{post.title || `Post ${pi + 1}`}</div>
                                                             <div style={{ maxHeight: '100px', overflowY: 'auto', paddingRight: '4px' }}>
                                                                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{post.content}</p>
                                                             </div>
@@ -3545,7 +3546,7 @@ function DashboardContent() {
                                                     <div style={{ maxHeight: '100px', overflowY: 'auto', paddingRight: '4px' }}>
                                                         <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>{parsedContent.content || (typeof parsedContent === 'string' ? parsedContent : '')}</p>
                                                     </div>
-                                                    {parsedContent.hasImage && <span style={{ color: '#a78bfa', fontSize: '11px', marginTop: '6px', display: 'inline-block' }}>📷 Image attached</span>}
+                                                    {parsedContent.hasImage && <span style={{ color: '#a78bfa', fontSize: '11px', marginTop: '6px', display: 'inline-block' }}>Image attached</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -3638,13 +3639,13 @@ function DashboardContent() {
 
                         {/* Daily Limits */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>📊 Daily Limits — stops when reached</h4>
+                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', 'white', 12)} Daily Limits — stops when reached</h4>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                                 {[
-                                    { key: 'dailyCommentLimit', label: 'Comments', icon: '💬' },
-                                    { key: 'dailyLikeLimit', label: 'Likes', icon: '👍' },
-                                    { key: 'dailyShareLimit', label: 'Shares', icon: '🔄' },
-                                    { key: 'dailyFollowLimit', label: 'Follows', icon: '➕' },
+                                    { key: 'dailyCommentLimit', label: 'Comments', icon: 'C' },
+                                    { key: 'dailyLikeLimit', label: 'Likes', icon: 'L' },
+                                    { key: 'dailyShareLimit', label: 'Shares', icon: 'S' },
+                                    { key: 'dailyFollowLimit', label: 'Follows', icon: 'F' },
                                 ].map(f => (
                                     <div key={f.key} style={{ textAlign: 'center' }}>
                                         <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', display: 'block', marginBottom: '3px' }}>{f.icon} {f.label}</label>
@@ -3657,7 +3658,7 @@ function DashboardContent() {
 
                         {/* Start Delays — before each task type begins */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>🚀 Start Delays — wait before task begins (sec)</h4>
+                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Start Delays — wait before task begins (sec)</h4>
                             <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '8px' }}>How long to wait before each task type starts running. Set 0 to start immediately.</div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                                 {[
@@ -3678,7 +3679,7 @@ function DashboardContent() {
                         {/* Between-Actions Delays — MOST IMPORTANT for safety */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(139,92,246,0.2)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>🛡️ Between-Actions Delays — keeps account safe</h4>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'white', 12)} Between-Actions Delays — keeps account safe</h4>
                                 <span style={{ color: '#a78bfa', fontSize: '10px', fontWeight: '600', background: 'rgba(139,92,246,0.15)', padding: '2px 8px', borderRadius: '4px' }}>SAFETY CRITICAL</span>
                             </div>
                             {(autoSettings.delayMode??'random')==='fixed' ? (
@@ -3727,7 +3728,7 @@ function DashboardContent() {
                         {/* Per-Action Delays + Post Writer Delays — two columns */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>⚡ Per-Action Delays (sec)</h4>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 'white', 12)} Per-Action Delays (sec)</h4>
                                 <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '8px' }}>{(autoSettings.delayMode??'random')==='fixed' ? 'Auto-set from fixed delay value above' : 'Small pauses before each click — keep low (1-5s)'}</div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
                                     {[
@@ -3749,7 +3750,7 @@ function DashboardContent() {
                                 </div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>✍️ Post Writer Delays (sec)</h4>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>Post Writer Delays (sec)</h4>
                                 <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '8px' }}>{(autoSettings.delayMode??'random')==='fixed' ? 'Auto-set from fixed delay value above' : 'For AI post writing — minimal DOM waits'}</div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                                     {[
@@ -3772,7 +3773,7 @@ function DashboardContent() {
 
                         {/* Human Simulation */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                            <span style={{ color: 'white', fontSize: '12px', fontWeight: '700' }}>🧑 Human Simulation</span>
+                            <span style={{ color: 'white', fontSize: '12px', fontWeight: '700' }}>Human Simulation</span>
                             <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                                 {[
                                     { key: 'mouseMovement', label: 'Mouse Curves' },
@@ -3791,13 +3792,13 @@ function DashboardContent() {
                         {/* Save Button */}
                         <button onClick={() => saveAutoSettings(autoSettings)} disabled={autoSettingsSaving}
                             style={{ width: '100%', padding: '13px', background: autoSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: autoSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
-                            {autoSettingsSaving ? 'Saving...' : '💾 Save All Settings'}
+                            {autoSettingsSaving ? 'Saving...' : 'Save All Settings'}
                         </button>
 
                         {/* Live Activity Timeline */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>📡 Live Activity Log</h4>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', 'white', 12)} Live Activity Log</h4>
                                 <button onClick={() => loadLiveActivity()} disabled={liveActivityLoading}
                                     style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer' }}>
                                     {liveActivityLoading ? '...' : 'Refresh'}
@@ -3810,9 +3811,9 @@ function DashboardContent() {
                                     </div>
                                 ) : (
                                     liveActivityLogs.map((log: any) => {
-                                        const icons: any = { like: '👍', comment: '💬', share: '🔄', follow: '➕', connect: '🤝', post: '✍️', delay: '⏳', start: '🚀', stop: '🛑', error: '❌', info: 'ℹ️' };
+                                        const icons: any = { like: 'L', comment: 'C', share: 'S', follow: 'F', connect: 'K', post: 'P', delay: 'D', start: '>', stop: 'X', error: '!', info: 'i' };
                                         const colors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
-                                        const icon = icons[log.action] || 'ℹ️';
+                                        const icon = icons[log.action] || 'i';
                                         const color = colors[log.level] || colors.info;
                                         const time = new Date(log.createdAt).toLocaleTimeString();
                                         return (
@@ -3837,7 +3838,7 @@ function DashboardContent() {
                         {/* Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <h2 style={{ color: 'white', fontSize: '20px', fontWeight: '800', margin: 0 }}>📡 Activity Logs</h2>
+                                <h2 style={{ color: 'white', fontSize: '20px', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', 'white', 20)} Activity Logs</h2>
                                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '4px 0 0' }}>Real-time activity from your extension — newest logs appear on top</p>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -3860,7 +3861,7 @@ function DashboardContent() {
                                 </select>
                                 <button onClick={() => loadLiveActivity()} disabled={liveActivityLoading}
                                     style={{ padding: '7px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
-                                    {liveActivityLoading ? '⏳ Loading...' : '🔄 Refresh'}
+                                    {liveActivityLoading ? 'Loading...' : 'Refresh'}
                                 </button>
                                 <button onClick={async () => {
                                     const token = localStorage.getItem('authToken');
@@ -3872,7 +3873,7 @@ function DashboardContent() {
                                     } catch {}
                                 }}
                                     style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
-                                    🗑️ Clear
+                                    Clear
                                 </button>
                             </div>
                         </div>
@@ -3883,12 +3884,12 @@ function DashboardContent() {
                                 const counts: Record<string, number> = {};
                                 liveActivityLogs.forEach((l: any) => { counts[l.action] = (counts[l.action] || 0) + 1; });
                                 return [
-                                    { action: 'start', label: 'Started', icon: '🚀', color: '#3b82f6' },
-                                    { action: 'like', label: 'Likes', icon: '👍', color: '#f59e0b' },
-                                    { action: 'comment', label: 'Comments', icon: '💬', color: '#10b981' },
-                                    { action: 'connect', label: 'Connects', icon: '🤝', color: '#8b5cf6' },
-                                    { action: 'delay', label: 'Delays', icon: '⏳', color: '#6b7280' },
-                                    { action: 'error', label: 'Errors', icon: '❌', color: '#ef4444' },
+                                    { action: 'start', label: 'Started', icon: '>', color: '#3b82f6' },
+                                    { action: 'like', label: 'Likes', icon: 'L', color: '#f59e0b' },
+                                    { action: 'comment', label: 'Comments', icon: 'C', color: '#10b981' },
+                                    { action: 'connect', label: 'Connects', icon: 'K', color: '#8b5cf6' },
+                                    { action: 'delay', label: 'Delays', icon: 'D', color: '#6b7280' },
+                                    { action: 'error', label: 'Errors', icon: '!', color: '#ef4444' },
                                 ].map(s => (
                                     <div key={s.action} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
                                         <div style={{ fontSize: '14px', marginBottom: '2px' }}>{s.icon}</div>
@@ -3914,16 +3915,16 @@ function DashboardContent() {
                                     <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px', fontSize: '13px' }}>Loading logs...</div>
                                 ) : liveActivityLogs.length === 0 ? (
                                     <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '60px 20px' }}>
-                                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>📡</div>
+                                        <div style={{ marginBottom: '12px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', 'rgba(255,255,255,0.3)', 40)}</div>
                                         <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px' }}>No activity logs yet</div>
                                         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>When the extension performs actions (commenting, liking, connecting, etc.), logs will appear here in real-time.</div>
                                     </div>
                                 ) : (
                                     liveActivityLogs.map((log: any, idx: number) => {
-                                        const icons: any = { like: '👍', comment: '💬', share: '🔄', follow: '➕', connect: '🤝', post: '✍️', delay: '⏳', start: '🚀', stop: '🛑', error: '❌', info: 'ℹ️' };
+                                        const icons: any = { like: 'L', comment: 'C', share: 'S', follow: 'F', connect: 'K', post: 'P', delay: 'D', start: '>', stop: 'X', error: '!', info: 'i' };
                                         const levelColors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
                                         const taskColors: any = { automation: '#3b82f6', import: '#8b5cf6', networking: '#f59e0b', post_writer: '#10b981', trending: '#ec4899' };
-                                        const icon = icons[log.action] || 'ℹ️';
+                                        const icon = icons[log.action] || 'i';
                                         const color = levelColors[log.level] || levelColors.info;
                                         const taskColor = taskColors[log.taskType] || 'rgba(255,255,255,0.4)';
                                         const dt = new Date(log.createdAt);
@@ -3956,9 +3957,9 @@ function DashboardContent() {
                         {/* Row 1: Post Source + Processing side-by-side */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>📌 Post Source</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z M12 7a3 3 0 100 6 3 3 0 000-6z', 'white', 13)} Post Source</h4>
                                 <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                                    {[{ val: 'search', label: '🔍 Search' }, { val: 'feed', label: '📰 Feed' }].map(s => (
+                                    {[{ val: 'search', label: 'Search' }, { val: 'feed', label: 'Feed' }].map(s => (
                                         <button key={s.val} onClick={() => setCommenterCfg((p: any) => ({ ...p, postSource: s.val }))}
                                             style={{ flex: 1, padding: '7px', background: commenterCfg.postSource === s.val ? 'linear-gradient(135deg,#693fe9,#8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.postSource === s.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontWeight: commenterCfg.postSource === s.val ? '700' : '500', cursor: 'pointer', fontSize: '12px' }}>
                                             {s.label}
@@ -3975,7 +3976,7 @@ function DashboardContent() {
                                 )}
                             </div>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>⚙️ Processing</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 13)} Processing</h4>
                                 {[
                                     { key: 'totalPosts', label: 'Total Posts', min: 1, max: 50 },
                                     { key: 'minLikes', label: 'Min Likes', min: 0, max: 9999 },
@@ -3995,9 +3996,9 @@ function DashboardContent() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>⚡ Actions</h4>
+                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 'white', 13)} Actions</h4>
                                     <div style={{ display: 'flex', gap: '4px' }}>
-                                        {[{ val: true, label: '🪟 Window' }, { val: false, label: '📑 Tabs' }].map(o => (
+                                        {[{ val: true, label: 'Window' }, { val: false, label: 'Tabs' }].map(o => (
                                             <button key={String(o.val)} onClick={() => setCommenterCfg((p: any) => ({ ...p, openInNewWindow: o.val }))}
                                                 style={{ padding: '3px 8px', background: commenterCfg.openInNewWindow === o.val ? '#693fe9' : 'rgba(255,255,255,0.08)', border: commenterCfg.openInNewWindow === o.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '10px', fontWeight: commenterCfg.openInNewWindow === o.val ? '700' : '500', cursor: 'pointer' }}>
                                                 {o.label}
@@ -4007,12 +4008,12 @@ function DashboardContent() {
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                                     {[
-                                        { key: 'savePosts', label: '💾 Save' },
-                                        { key: 'likePosts', label: '👍 Like' },
-                                        { key: 'commentOnPosts', label: '💬 Comment' },
-                                        { key: 'likeOrComment', label: '🎲 Like/Comment' },
-                                        { key: 'sharePosts', label: '🔄 Share' },
-                                        { key: 'followAuthors', label: '➕ Follow' },
+                                        { key: 'savePosts', label: 'Save' },
+                                        { key: 'likePosts', label: 'Like' },
+                                        { key: 'commentOnPosts', label: 'Comment' },
+                                        { key: 'likeOrComment', label: 'Like/Comment' },
+                                        { key: 'sharePosts', label: 'Share' },
+                                        { key: 'followAuthors', label: 'Follow' },
                                     ].map(f => (
                                         <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer', padding: '6px 7px', background: commenterCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '6px', border: commenterCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
                                             <input type="checkbox" checked={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
@@ -4023,7 +4024,7 @@ function DashboardContent() {
                                 </div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0' }}>🚫 Ignore Keywords</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0' }}>Ignore Keywords</h4>
                                 <textarea value={commenterCfg.ignoreKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, ignoreKeywords: e.target.value }))}
                                     placeholder="hiring&#10;we're hiring&#10;job opening&#10;apply now" rows={4}
                                     style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '11px', resize: 'vertical', fontFamily: 'monospace' }} />
@@ -4035,7 +4036,7 @@ function DashboardContent() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
+                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>Auto-Schedule</h4>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                                         <input type="checkbox" checked={commenterCfg.autoScheduleEnabled} onChange={e => setCommenterCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
                                         <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Enabled</span>
@@ -4063,11 +4064,11 @@ function DashboardContent() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
                                     style={{ flex: 1, padding: '14px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer' }}>
-                                    {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : '💾 Save Settings'}
+                                    {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : 'Save Settings'}
                                 </button>
-                                <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                                <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
                                     style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                                    🚀 Start Commenting
+                                    Start Commenting
                                 </button>
                             </div>
                         </div>
@@ -4083,13 +4084,13 @@ function DashboardContent() {
                         {/* Profile URLs + CSV upload merged */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>✏️ Profile URLs</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>Profile URLs</h4>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <input type="file" accept=".csv" id="import-csv-upload" style={{ display: 'none' }}
                                         onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { const text = ev.target?.result as string; if (!text) return; const lines = text.split('\n').map(l => l.split(',')[0]?.trim()).filter(l => l.includes('linkedin.com/in/')); if (lines.length > 0) { const existing = importCfg.profileUrls ? importCfg.profileUrls.trim() : ''; const combined = existing ? existing + '\n' + lines.join('\n') : lines.join('\n'); setImportCfg((p: any) => ({ ...p, profileUrls: combined })); showToast(`Imported ${lines.length} profiles from CSV`, 'success'); } else { showToast('No LinkedIn URLs found in CSV', 'error'); } }; reader.readAsText(file); e.target.value = ''; }} />
                                     <button onClick={() => document.getElementById('import-csv-upload')?.click()}
                                         style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>
-                                        📂 CSV
+                                        CSV
                                     </button>
                                     <span style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '700' }}>{importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0} detected</span>
                                 </div>
@@ -4103,7 +4104,7 @@ function DashboardContent() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             {/* Import Credits */}
                             <div style={{ background: 'rgba(105,63,233,0.1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(105,63,233,0.3)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>🎫 Credits {user?.plan ? `(${user.plan.name})` : ''}</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>Credits {user?.plan ? `(${user.plan.name})` : ''}</h4>
                                 <div style={{ display: 'flex', gap: '16px' }}>
                                     <div style={{ textAlign: 'center' }}>
                                         <div style={{ fontSize: '20px', fontWeight: '800', color: '#34d399' }}>{Math.max(0, (user?.plan?.monthlyImportCredits || 50) - (usage?.usage?.importProfiles || 0))}</div>
@@ -4123,7 +4124,7 @@ function DashboardContent() {
 
                             {/* Automation Config */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>🤖 Config</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>Config</h4>
                                 {[
                                     { key: 'profilesPerDay', label: 'Profiles/Day', min: 1, max: 100 },
                                     { key: 'postsPerProfile', label: 'Posts/Profile', min: 1, max: 10 },
@@ -4140,11 +4141,11 @@ function DashboardContent() {
                         {/* Engagement Method + Actions side-by-side */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>🔄 Engagement Method</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Engagement Method</h4>
                                 <div style={{ display: 'flex', gap: '6px' }}>
                                     {[
-                                        { value: 'individual', label: '📄 Individual Posts', desc: 'More reliable, AI comments' },
-                                        { value: 'activity', label: '📋 Activity Page', desc: 'Faster, less reliable' },
+                                        { value: 'individual', label: 'Individual Posts', desc: 'More reliable, AI comments' },
+                                        { value: 'activity', label: 'Activity Page', desc: 'Faster, less reliable' },
                                     ].map(m => {
                                         const isActive = (importCfg.engagementMethod || 'individual') === m.value;
                                         return (
@@ -4158,15 +4159,15 @@ function DashboardContent() {
                                 </div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>⚡ Actions</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 'white', 13)} Actions</h4>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                                     {[
-                                        { key: 'sendConnections', label: '🤝 Connect' },
-                                        { key: 'engageLikes', label: '👍 Like' },
-                                        { key: 'engageComments', label: '💬 Comment' },
-                                        { key: 'engageShares', label: '🔄 Share' },
-                                        { key: 'engageFollows', label: '➕ Follow' },
-                                        { key: 'smartRandom', label: '🎲 Random' },
+                                        { key: 'sendConnections', label: 'Connect' },
+                                        { key: 'engageLikes', label: 'Like' },
+                                        { key: 'engageComments', label: 'Comment' },
+                                        { key: 'engageShares', label: 'Share' },
+                                        { key: 'engageFollows', label: 'Follow' },
+                                        { key: 'smartRandom', label: 'Random' },
                                     ].map(f => (
                                         <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer', padding: '6px 7px', background: importCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '6px', border: importCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
                                             <input type="checkbox" checked={importCfg[f.key]} onChange={e => setImportCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
@@ -4182,7 +4183,7 @@ function DashboardContent() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
+                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>Auto-Schedule</h4>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                                         <input type="checkbox" checked={importCfg.autoScheduleEnabled} onChange={e => setImportCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
                                         <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Enabled</span>
@@ -4210,11 +4211,11 @@ function DashboardContent() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <button onClick={() => saveImportCfg(importCfg)} disabled={importCfgSaving}
                                     style={{ flex: 1, padding: '14px', background: importCfgSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: importCfgSaving ? 'wait' : 'pointer' }}>
-                                    {importCfgSaving ? 'Saving...' : '💾 Save Settings'}
+                                    {importCfgSaving ? 'Saving...' : 'Save Settings'}
                                 </button>
-                                <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveImportCfg(importCfg); showToast('🚀 Launching import...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_import_automation', data: importCfg }) }); const data = await res.json(); if (data.success) showToast('Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                                <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveImportCfg(importCfg); showToast('Launching import...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_import_automation', data: importCfg }) }); const data = await res.json(); if (data.success) showToast('Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
                                     style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                                    🚀 Launch Import
+                                    Launch Import
                                 </button>
                             </div>
                         </div>
@@ -4222,7 +4223,7 @@ function DashboardContent() {
                         {/* Import History — compact inline stats + table */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📊 History</h4>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>History</h4>
                                 <div style={{ display: 'flex', gap: '12px' }}>
                                     {[
                                         { label: 'Profiles', val: importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0, color: '#a78bfa' },
@@ -4263,7 +4264,7 @@ function DashboardContent() {
                         {/* Engagement Analytics Card */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                                <h3 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>📊 Engagement Analytics</h3>
+                                <h3 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#a78bfa', 16)} Engagement Analytics</h3>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <select value={analyticsPeriod} onChange={e => { const newPeriod = e.target.value; setAnalyticsPeriod(newPeriod); loadAnalytics(newPeriod); }}
                                         style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
@@ -4274,7 +4275,7 @@ function DashboardContent() {
                                         <option value="30days">Last 30 Days</option>
                                         <option value="90days">Last 90 Days</option>
                                     </select>
-                                    <button onClick={() => loadAnalytics()} style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', cursor: 'pointer', fontSize: '13px' }}>🔄</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'white', 13)}</button>
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
@@ -4296,13 +4297,13 @@ function DashboardContent() {
                         {/* Leads Database */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>👥 Leads Database</h3>
+                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6', 'white', 14)} Leads Database</h3>
                                 <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button onClick={() => loadAnalytics()} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
-                                    <button style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Refresh</button>
+                                    <button style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Export</button>
                                 </div>
                             </div>
-                            <input type="text" value={analyticsLeadsSearch} onChange={e => setAnalyticsLeadsSearch(e.target.value)} placeholder="🔍 Search leads..."
+                            <input type="text" value={analyticsLeadsSearch} onChange={e => setAnalyticsLeadsSearch(e.target.value)} placeholder="Search leads..."
                                 style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', marginBottom: '12px' }} />
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
                                 <span>Total: <strong style={{ color: 'white' }}>{analyticsData.leads?.length || 0}</strong></span>
@@ -4340,18 +4341,18 @@ function DashboardContent() {
                         {/* Automation History */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>🤖 Automation History</h3>
+                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>Automation History</h3>
                                 <div style={{ display: 'flex', gap: '6px' }}>
                                     <select value={analyticsAutoFilter} onChange={e => setAnalyticsAutoFilter(e.target.value)} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
                                         <option value="all">All</option>
                                         <option value="success">Success</option>
                                         <option value="failed">Failed</option>
                                     </select>
-                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
-                                    <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Refresh</button>
+                                    <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Export</button>
                                 </div>
                             </div>
-                            <input type="text" value={analyticsAutoSearch} onChange={e => setAnalyticsAutoSearch(e.target.value)} placeholder="🔍 Search by keyword, author..."
+                            <input type="text" value={analyticsAutoSearch} onChange={e => setAnalyticsAutoSearch(e.target.value)} placeholder="Search by keyword, author..."
                                 style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', marginBottom: '12px' }} />
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
                                 <span>Sessions: <strong style={{ color: 'white' }}>{analyticsData.automationHistory?.length || 0}</strong></span>
@@ -4377,8 +4378,8 @@ function DashboardContent() {
                                                 <td style={{ padding: '8px', color: 'white', fontWeight: '600' }}>{(record.authorName || '-').substring(0, 20)}</td>
                                                 <td style={{ padding: '8px', color: 'rgba(255,255,255,0.6)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={record.postContent}>{(record.postContent || '-').substring(0, 50)}</td>
                                                 <td style={{ padding: '8px', color: '#a78bfa', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={record.generatedComment}>{(record.generatedComment || '-').substring(0, 50)}</td>
-                                                <td style={{ padding: '8px', textAlign: 'center' }}>{record.actions?.liked && '👍'}{record.actions?.commented && '💬'}{record.postUrl && <a href={record.postUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '4px', background: '#693fe9', color: 'white', padding: '2px 6px', borderRadius: '3px', fontSize: '10px', textDecoration: 'none' }}>👁️</a>}</td>
-                                                <td style={{ padding: '8px', textAlign: 'center' }}>{record.status === 'success' ? '✅' : record.status === 'failed' ? '❌' : '⏳'}</td>
+                                                <td style={{ padding: '8px', textAlign: 'center' }}>{record.actions?.liked && 'L'}{record.actions?.commented && 'C'}{record.postUrl && <a href={record.postUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '4px', background: '#693fe9', color: 'white', padding: '2px 6px', borderRadius: '3px', fontSize: '10px', textDecoration: 'none' }}>View</a>}</td>
+                                                <td style={{ padding: '8px', textAlign: 'center' }}>{record.status === 'success' ? 'OK' : record.status === 'failed' ? 'X' : '...'}</td>
                                                 <td style={{ padding: '8px', color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>{record.timestamp ? new Date(record.timestamp).toLocaleString() : '-'}</td>
                                             </tr>
                                         ))}
@@ -4390,7 +4391,7 @@ function DashboardContent() {
                         {/* Networking History */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>🔗 Networking History</h3>
+                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>Networking History</h3>
                                 <div style={{ display: 'flex', gap: '6px' }}>
                                     <select value={analyticsNetworkFilter} onChange={e => setAnalyticsNetworkFilter(e.target.value)} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
                                         <option value="all">All</option>
@@ -4398,11 +4399,11 @@ function DashboardContent() {
                                         <option value="stopped">Stopped</option>
                                         <option value="failed">Failed</option>
                                     </select>
-                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
-                                    <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Refresh</button>
+                                    <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Export</button>
                                 </div>
                             </div>
-                            <input type="text" value={analyticsNetworkSearch} onChange={e => setAnalyticsNetworkSearch(e.target.value)} placeholder="🔍 Search by query..."
+                            <input type="text" value={analyticsNetworkSearch} onChange={e => setAnalyticsNetworkSearch(e.target.value)} placeholder="Search by query..."
                                 style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', marginBottom: '12px' }} />
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
                                 <span>Sessions: <strong style={{ color: 'white' }}>{analyticsData.networkingHistory?.length || 0}</strong></span>
@@ -4430,7 +4431,7 @@ function DashboardContent() {
                                                 <td style={{ padding: '8px', textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>{session.successful || 0}</td>
                                                 <td style={{ padding: '8px', textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>{session.processed > 0 ? Math.round((session.successful / session.processed) * 100) : 0}%</td>
                                                 <td style={{ padding: '8px', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>{session.duration ? (session.duration > 60000 ? `${Math.floor(session.duration / 60000)}m ${Math.floor((session.duration % 60000) / 1000)}s` : `${Math.floor(session.duration / 1000)}s`) : '< 1s'}</td>
-                                                <td style={{ padding: '8px', textAlign: 'center' }}>{session.status === 'completed' ? '✅' : session.status === 'stopped' ? '⏹️' : session.status === 'failed' ? '❌' : '⏳'} <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>{session.status}</span></td>
+                                                <td style={{ padding: '8px', textAlign: 'center' }}>{session.status === 'completed' ? 'OK' : session.status === 'stopped' ? '--' : session.status === 'failed' ? 'X' : '...'} <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>{session.status}</span></td>
                                                 <td style={{ padding: '8px', color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>{session.startTime ? new Date(session.startTime).toLocaleString() : '-'}</td>
                                             </tr>
                                         ))}
@@ -4442,13 +4443,13 @@ function DashboardContent() {
                         {/* Import History */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>📥 Import Profile History</h3>
+                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>Import Profile History</h3>
                                 <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
-                                    <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Refresh</button>
+                                    <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>Export</button>
                                 </div>
                             </div>
-                            <input type="text" value={analyticsImportSearch} onChange={e => setAnalyticsImportSearch(e.target.value)} placeholder="🔍 Search profiles..."
+                            <input type="text" value={analyticsImportSearch} onChange={e => setAnalyticsImportSearch(e.target.value)} placeholder="Search profiles..."
                                 style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', marginBottom: '12px' }} />
                             <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
                                 <span>Profiles: <strong style={{ color: 'white' }}>{analyticsData.importHistory?.length || 0}</strong></span>
@@ -4473,7 +4474,7 @@ function DashboardContent() {
                                             <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                                                 <td style={{ padding: '8px', color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>{record.date || (record.timestamp ? new Date(record.timestamp).toLocaleDateString() : '-')}</td>
                                                 <td style={{ padding: '8px', color: 'white', fontWeight: '600' }}>{record.profileName || 'Unknown'}</td>
-                                                <td style={{ padding: '8px', textAlign: 'center' }}>{record.profileUrl ? <a href={record.profileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#0a66c2' }}>🔗</a> : '-'}</td>
+                                                <td style={{ padding: '8px', textAlign: 'center' }}>{record.profileUrl ? <a href={record.profileUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#0a66c2', textDecoration: 'none' }}>Link</a> : '-'}</td>
                                                 <td style={{ padding: '8px', textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>{record.connectionsSent || 0}</td>
                                                 <td style={{ padding: '8px', textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>{record.likes || 0}</td>
                                                 <td style={{ padding: '8px', textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>{record.comments || 0}</td>
@@ -4501,19 +4502,19 @@ function DashboardContent() {
                     }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                             {[
-                                { icon: '❤️', label: 'Likes', used: usage?.usage?.likes || 0, limit: usage?.limits?.likes || 0 },
-                                { icon: '📤', label: 'Shares', used: usage?.usage?.shares || 0, limit: usage?.limits?.shares || 0 },
-                                { icon: '👥', label: 'Follows', used: usage?.usage?.follows || 0, limit: usage?.limits?.follows || 0 },
-                                { icon: '🔗', label: 'Connections', used: usage?.usage?.connections || 0, limit: usage?.limits?.connections || 0 },
-                                { icon: '🤖', label: 'AI Posts', used: usage?.usage?.aiPosts || 0, limit: usage?.limits?.aiPosts || 0 },
+                                { icon: 'L', label: 'Likes', used: usage?.usage?.likes || 0, limit: usage?.limits?.likes || 0 },
+                                { icon: 'S', label: 'Shares', used: usage?.usage?.shares || 0, limit: usage?.limits?.shares || 0 },
+                                { icon: 'F', label: 'Follows', used: usage?.usage?.follows || 0, limit: usage?.limits?.follows || 0 },
+                                { icon: 'K', label: 'Connections', used: usage?.usage?.connections || 0, limit: usage?.limits?.connections || 0 },
+                                { icon: 'AI', label: 'AI Posts', used: usage?.usage?.aiPosts || 0, limit: usage?.limits?.aiPosts || 0 },
                                 {
-                                    icon: '💭',
+                                    icon: 'AC',
                                     label: 'AI Comments',
                                     used: usage?.usage?.aiComments || 0,
                                     limit: (usage?.limits?.aiComments || 0) + (usage?.usage?.bonusAiComments || 0),
                                     isTotalAvailable: true
                                 },
-                                { icon: '💡', label: 'AI Topics', used: usage?.usage?.aiTopicLines || 0, limit: usage?.limits?.aiTopicLines || 0 },
+                                { icon: 'T', label: 'AI Topics', used: usage?.usage?.aiTopicLines || 0, limit: usage?.limits?.aiTopicLines || 0 },
                             ].map((item, i) => {
                                 const pct = item.limit > 0 ? (item.used / item.limit) * 100 : 0;
                                 return (
@@ -4540,15 +4541,15 @@ function DashboardContent() {
                         border: '1px solid rgba(105,63,233,0.2)'
                     }}>
                         <div style={{ marginBottom: '30px' }}>
-                            <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'white', marginBottom: '12px' }}>🔗 Your Referral Link</h3>
+                            <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'white', marginBottom: '12px' }}>Your Referral Link</h3>
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <input type="text" readOnly value={referralData?.referralLink || ''} style={{ flex: 1, minWidth: '250px', padding: '14px 18px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '14px' }} />
-                                <button onClick={() => copyToClipboard(referralData?.referralLink || '')} style={{ padding: '14px 28px', background: copied ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>{copied ? '✓ Copied!' : '📋 Copy'}</button>
+                                <button onClick={() => copyToClipboard(referralData?.referralLink || '')} style={{ padding: '14px 28px', background: copied ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>{copied ? 'Copied!' : 'Copy'}</button>
                             </div>
                             <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                                 <button onClick={() => window.open(`https://twitter.com/intent/tweet?text=Check out Kommentify!&url=${encodeURIComponent(referralData?.referralLink || '')}`, '_blank')} style={{ padding: '10px 20px', background: 'rgba(29,161,242,0.2)', color: '#1DA1F2', border: '1px solid rgba(29,161,242,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>𝕏 Twitter</button>
-                                <button onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralData?.referralLink || '')}`, '_blank')} style={{ padding: '10px 20px', background: 'rgba(10,102,194,0.2)', color: '#0A66C2', border: '1px solid rgba(10,102,194,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>💼 LinkedIn</button>
-                                <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('Check out Kommentify! ' + (referralData?.referralLink || ''))}`, '_blank')} style={{ padding: '10px 20px', background: 'rgba(37,211,102,0.2)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>📱 WhatsApp</button>
+                                <button onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralData?.referralLink || '')}`, '_blank')} style={{ padding: '10px 20px', background: 'rgba(10,102,194,0.2)', color: '#0A66C2', border: '1px solid rgba(10,102,194,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>LinkedIn</button>
+                                <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('Check out Kommentify! ' + (referralData?.referralLink || ''))}`, '_blank')} style={{ padding: '10px 20px', background: 'rgba(37,211,102,0.2)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>WhatsApp</button>
                             </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '30px' }}>
@@ -4588,7 +4589,7 @@ function DashboardContent() {
                                                 <td style={{ padding: '16px', color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>{ref.planName}</td>
                                                 <td style={{ padding: '16px', textAlign: 'right' }}>
                                                     {ref.hasPaid ? (
-                                                        <span style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>💰 Paid</span>
+                                                        <span style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>Paid</span>
                                                     ) : (
                                                         <span style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px' }}>Free</span>
                                                     )}
@@ -4611,10 +4612,10 @@ function DashboardContent() {
                         border: '1px solid rgba(16,185,129,0.3)',
                         textAlign: 'center'
                     }}>
-                        <div style={{ fontSize: '64px', marginBottom: '24px' }}>🧩</div>
+                        <div style={{ marginBottom: '24px' }}>{miniIcon('M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.38 0 2.5 1.12 2.5 2.5S4.88 15.8 3.5 15.8H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z', '#10b981', 64)}</div>
                         <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '12px' }}>Kommentify Chrome Extension</h2>
                         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.7)', marginBottom: '32px', maxWidth: '500px', margin: '0 auto 32px' }}>Install our Chrome extension to automate your LinkedIn engagement and grow your network faster.</p>
-                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '16px 40px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', borderRadius: '14px', textDecoration: 'none', fontWeight: '700', fontSize: '16px', boxShadow: '0 4px 20px rgba(16,185,129,0.4)' }}>🌐 Add to Chrome - Free</a>
+                        <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '16px 40px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', borderRadius: '14px', textDecoration: 'none', fontWeight: '700', fontSize: '16px', boxShadow: '0 4px 20px rgba(16,185,129,0.4)' }}>Add to Chrome - Free</a>
                         <div style={{ marginTop: '40px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', textAlign: 'left' }}>
                             {['Click "Add to Chrome"', 'Confirm installation', 'Pin to toolbar', 'Start automating!'].map((step, i) => (
                                 <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>

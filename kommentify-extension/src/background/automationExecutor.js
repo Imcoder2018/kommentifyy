@@ -129,17 +129,58 @@ export const likePost = async () => {
 
 // Task 4: Post to LinkedIn (with configurable delays)
 export const postToLinkedIn = async (content, delaySettings = null) => {
-    const _waitForElement = (selector, timeout = 10000) => {
+    const _pollForElement = (finderFn, timeout = 10000) => {
         return new Promise(resolve => {
-            const intervalId = setInterval(() => {
-                const element = document.querySelector(selector);
-                if (element) { clearInterval(intervalId); clearTimeout(timeoutId); resolve(element); }
-            }, 100);
-            const timeoutId = setTimeout(() => { clearInterval(intervalId); resolve(null); }, timeout);
+            const start = Date.now();
+            const check = () => {
+                const el = finderFn();
+                if (el) return resolve(el);
+                if (Date.now() - start > timeout) return resolve(null);
+                setTimeout(check, 500);
+            };
+            check();
         });
     };
     
     const _delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    const _findStartBtn = () => {
+        const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
+        if (s1) return s1;
+        for (const btn of document.querySelectorAll('button')) {
+            if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
+        }
+        return document.querySelector('.share-box-feed-entry__trigger');
+    };
+
+    const _findEditor = () => {
+        const dialog = document.querySelector('[role="dialog"]');
+        if (dialog) {
+            const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
+            if (e1) return e1;
+            const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+            if (e2) return e2;
+            const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
+            if (e3) return e3;
+        }
+        const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
+        if (e4) return e4;
+        for (const el of document.querySelectorAll('[contenteditable="true"]')) {
+            const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+            if (ph.includes('want to talk about')) return el;
+        }
+        return null;
+    };
+
+    const _findPostBtn = () => {
+        const dialog = document.querySelector('[role="dialog"]');
+        const scope = dialog || document;
+        for (const btn of scope.querySelectorAll('button')) {
+            const txt = (btn.textContent || '').trim().toLowerCase();
+            if (txt === 'post') return btn;
+        }
+        return null;
+    };
 
     // Default delays if not provided
     const delays = delaySettings || {
@@ -157,7 +198,7 @@ export const postToLinkedIn = async (content, delaySettings = null) => {
         console.log(`EXECUTOR: Waited ${delays.postWriterPageLoadDelay}s for page load.`);
 
         // Step 1: Click start post button
-        const startPostButton = await _waitForElement('div.share-box-feed-entry__top-bar button');
+        const startPostButton = await _pollForElement(_findStartBtn, 10000);
         if (!startPostButton) {
             console.error("EXECUTOR: FAILED - Could not find start post button.");
             return false;
@@ -165,24 +206,33 @@ export const postToLinkedIn = async (content, delaySettings = null) => {
         startPostButton.click();
         console.log("EXECUTOR: Step 1 - Clicked start post button.");
         
-        // Wait after clicking post button
-        await _delay(delays.postWriterClickDelay * 1000);
-        console.log(`EXECUTOR: Waited ${delays.postWriterClickDelay}s after clicking post button.`);
-
-        // Step 2: Find editor and write content
-        const editor = await _waitForElement('div.editor-container > div > div > div.ql-editor');
+        // Step 2: Poll for editor (with click delay as extra timeout)
+        const editorTimeout = (delays.postWriterClickDelay * 1000) + 8000;
+        console.log(`EXECUTOR: Polling for editor (timeout ${editorTimeout}ms)...`);
+        const editor = await _pollForElement(_findEditor, editorTimeout);
         if (!editor) {
-            console.error("EXECUTOR: FAILED - Could not find post editor.");
+            console.error("EXECUTOR: FAILED - Could not find post editor after polling.");
             return false;
         }
+        console.log("EXECUTOR: Editor found via logic-based detection.");
         
         // Wait before typing content
         await _delay(delays.postWriterTypingDelay * 1000);
         console.log(`EXECUTOR: Waited ${delays.postWriterTypingDelay}s before typing.`);
         
-        // Set content with line breaks
-        const formattedContent = content.replace(/\n/g, '<br>');
-        editor.innerHTML = `<p>${formattedContent}</p>`;
+        // Insert content line by line
+        editor.innerHTML = '';
+        editor.focus();
+        const lines = content.split('\n');
+        lines.forEach((line) => {
+            if (line.trim() === '') {
+                editor.appendChild(document.createElement('br'));
+            } else {
+                const p = document.createElement('p');
+                p.textContent = line;
+                editor.appendChild(p);
+            }
+        });
         
         // Dispatch events
         editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
@@ -195,8 +245,8 @@ export const postToLinkedIn = async (content, delaySettings = null) => {
         await _delay(delays.postWriterSubmitDelay * 1000);
         console.log(`EXECUTOR: Waited ${delays.postWriterSubmitDelay}s before submitting.`);
 
-        // Step 3: Click post button
-        const postButton = await _waitForElement('div.share-box_actions button');
+        // Step 3: Find post button by text content
+        const postButton = _findPostBtn();
         if (!postButton) {
             console.error("EXECUTOR: FAILED - Could not find post button.");
             return false;

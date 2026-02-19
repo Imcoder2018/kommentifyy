@@ -396,6 +396,9 @@ export async function executeBulkProcessing(settings) {
             ignoreKeywords: ignoreKeywords
         };
         
+        // Log qualification criteria to live activity
+        liveLog.info('automation', `\uD83D\uDCCB Post qualification: min ${qualification.minLikes} likes, min ${qualification.minComments} comments, ${ignoreKeywords.length} ignore keywords`);
+        
         // Check if using Feed mode
         if (settings.source === 'feed') {
             console.log("📰 BULK PROCESSING: Using FEED mode - scraping from LinkedIn home feed");
@@ -417,6 +420,7 @@ export async function executeBulkProcessing(settings) {
                 
                 console.log(`✅ BULK PROCESSING: Found ${qualifiedPosts.length} qualified posts from Feed`);
                 await broadcastStatus(`📄 Found ${qualifiedPosts.length} posts from Feed`, 'info');
+                liveLog.info('automation', `📄 Found ${qualifiedPosts.length} qualified posts from Feed`);
                 allPostUrns.push(...qualifiedPosts);
                 
             } catch (error) {
@@ -488,11 +492,14 @@ export async function executeBulkProcessing(settings) {
         if (allPostUrns.length === 0) {
             // Clear processing state
             await chrome.storage.local.set({ bulkProcessingActive: false });
+            liveLog.info('automation', `\u274C No qualified posts found matching criteria (min ${qualification.minLikes} likes, min ${qualification.minComments} comments). Try lowering your qualification thresholds.`);
             return {
                 success: false,
                 error: "No posts found matching the criteria"
             };
         }
+        
+        liveLog.info('automation', `\uD83D\uDCE6 Total ${allPostUrns.length} qualified posts ready for engagement`);
         
         // Check stop flag before opening posts
         if (stopProcessingFlag) {

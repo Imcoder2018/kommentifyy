@@ -1,12 +1,29 @@
 'use client';
 
 import { SignUp, useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
 export default function SignupPage() {
+    return (
+        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #693fe9 0%, #5835c7 50%, #4a2db3 100%)' }}><div style={{ color: 'white', fontSize: '18px' }}>Loading...</div></div>}>
+            <SignupContent />
+        </Suspense>
+    );
+}
+
+function SignupContent() {
     const { isSignedIn, isLoaded } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Capture referral code from URL and persist in localStorage
+    useEffect(() => {
+        const ref = searchParams.get('ref');
+        if (ref) {
+            localStorage.setItem('referralCode', ref);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (isLoaded && isSignedIn) {

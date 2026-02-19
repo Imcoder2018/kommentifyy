@@ -1,8 +1,28 @@
 'use client';
 
 import { SignUp } from '@clerk/nextjs';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
 export default function SignUpPage() {
+    return (
+        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #693fe9 0%, #5835c7 50%, #4a2db3 100%)' }}><div style={{ color: 'white', fontSize: '18px' }}>Loading...</div></div>}>
+            <SignUpContent />
+        </Suspense>
+    );
+}
+
+function SignUpContent() {
+    const searchParams = useSearchParams();
+
+    // Capture referral code from URL and persist in localStorage
+    useEffect(() => {
+        const ref = searchParams.get('ref');
+        if (ref) {
+            localStorage.setItem('referralCode', ref);
+        }
+    }, [searchParams]);
+
     return (
         <div style={{
             minHeight: '100vh',

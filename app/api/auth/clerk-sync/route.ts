@@ -38,6 +38,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Could not fetch Clerk user' }, { status: 400 });
     }
 
+    // Read optional referralCode from request body
+    let referralCode: string | undefined;
+    try {
+      const body = await request.json();
+      referralCode = body.referralCode;
+    } catch {
+      // Body may be empty for some callers, that's fine
+    }
+
     const email = clerkUser.emailAddresses[0]?.emailAddress;
     if (!email) {
       return NextResponse.json({ success: false, error: 'No email found' }, { status: 400 });
@@ -58,10 +67,26 @@ export async function POST(request: NextRequest) {
 
     if (user) {
       // Update existing user with Clerk ID if not already set
+      const updateData: any = {};
       if (!user.clerkUserId) {
+        updateData.clerkUserId = clerkUserId;
+      }
+
+      // If user doesn't have a referrer yet and a referral code was provided, link them now
+      if (!user.referredById && referralCode) {
+        const referrer = await prisma.user.findUnique({
+          where: { referralCode: referralCode.toUpperCase() }
+        });
+        if (referrer && referrer.id !== user.id) {
+          updateData.referredById = referrer.id;
+          console.log(`Linked existing user ${email} to referrer: ${referrer.email}`);
+        }
+      }
+
+      if (Object.keys(updateData).length > 0) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { clerkUserId },
+          data: updateData,
           include: { plan: true },
         });
       }
@@ -69,7 +94,21 @@ export async function POST(request: NextRequest) {
       // Create new user
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const hashedPassword = await hashPassword(generateRandomPassword());
-      const referralCode = generateReferralCode(userId);
+      const newReferralCode = generateReferralCode(userId);
+
+      // Handle referral - link to referrer if valid code provided
+      let referrerId: string | null = null;
+      if (referralCode) {
+        const referrer = await prisma.user.findUnique({
+          where: { referralCode: referralCode.toUpperCase() }
+        });
+        if (referrer) {
+          referrerId = referrer.id;
+          console.log(`New Clerk user referred by: ${referrer.email}`);
+        } else {
+          console.log('Invalid referral code provided:', referralCode);
+        }
+      }
 
       // Get trial plan
       const trialPlan = await prisma.plan.findFirst({ where: { isTrialPlan: true } });
@@ -88,12 +127,15 @@ export async function POST(request: NextRequest) {
           password: hashedPassword,
           clerkUserId,
           authProvider: 'clerk',
-          referralCode,
+          referralCode: newReferralCode,
+          referredById: referrerId,
           trialEndsAt,
           planId: trialPlan?.id,
         },
         include: { plan: true },
       });
+
+      console.log(`Created new Clerk user: ${email}${referrerId ? ` (referred by ${referrerId})` : ''}`);
 
       // Schedule onboarding email sequence for new users
       scheduleOnboardingSequence(user.id, email, name).catch(err => {

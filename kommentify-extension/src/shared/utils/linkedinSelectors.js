@@ -11,9 +11,17 @@ export const LinkedInSelectors = {
     shareDropdownItems: 'li:nth-child(2) div.artdeco-dropdown__item',
     followButton: 'button.follow',
     
-    // Post creation
+    // Post creation (logic-based detection is preferred — see findStartPostButton/findPostEditor/findPostSubmitButton helpers)
     startPostButton: 'div.share-box-feed-entry__top-bar button',
-    postEditor: 'div.editor-container > div > div > div.ql-editor',
+    postEditor: '[role="dialog"] [role="textbox"][contenteditable="true"]',
+    postEditorFallbacks: [
+        '[role="dialog"] [role="textbox"][contenteditable="true"]',
+        '.ql-editor[contenteditable="true"]',
+        '[role="dialog"] [contenteditable="true"][aria-multiline="true"]',
+        '[role="dialog"] .ql-editor',
+        'div.editor-content .ql-editor',
+        'div.editor-container .ql-editor',
+    ],
     postSubmitButton: 'div.share-box_actions button',
     
     // Post elements

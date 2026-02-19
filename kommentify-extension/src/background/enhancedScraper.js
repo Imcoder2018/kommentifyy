@@ -1,10 +1,18 @@
 // Enhanced scraper with unlimited scrolling and human simulation
+import { liveLog } from '../shared/services/liveActivityLogger.js';
 console.log("ENHANCED SCRAPER: Module loaded");
 
 // Enhanced scraping function with unlimited scrolling until qualified posts found
 async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification = {}, humanSimulation = {}) {
     console.log(`ENHANCED SCRAPER: Starting enhanced scraping for ${targetCount} QUALIFIED posts with keyword: "${keyword}"`);
     console.log(`ENHANCED SCRAPER: Qualification criteria - minLikes: ${qualification.minLikes || 0}, minComments: ${qualification.minComments || 0}`);
+    
+    // Log scraping start with qualification criteria to live activity
+    const minL = qualification.minLikes || 0;
+    const minC = qualification.minComments || 0;
+    const ignoreKw = qualification.ignoreKeywords || [];
+    liveLog.info('automation', `🔎 Scraping started for "${keyword}" — target: ${targetCount} qualified posts`);
+    liveLog.info('automation', `📋 Qualification criteria: min ${minL} likes, min ${minC} comments${ignoreKw.length > 0 ? `, ${ignoreKw.length} ignore keywords` : ''}`);
     
     const startTime = Date.now();
     const maxScrollTime = 10 * 60 * 1000; // 10 minutes max
@@ -49,6 +57,11 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
             
             tabId = window.tabs[0].id;
             console.log(`ENHANCED SCRAPER: Created window with tab ${tabId}`);
+            // Register globally so stopAllTasks can close this window/tab
+            globalThis._scrapingWindowId = window.id;
+            globalThis._scrapingTabId = tabId;
+            if (!globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs = new Set();
+            globalThis._commandLinkedInTabs.add(tabId);
         } else {
             // Create background tab
             const tab = await chrome.tabs.create({
@@ -58,6 +71,11 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
             
             tabId = tab.id;
             console.log(`ENHANCED SCRAPER: Created background tab ${tabId}`);
+            // Register globally so stopAllTasks can close this tab
+            globalThis._scrapingTabId = tabId;
+            globalThis._scrapingWindowId = null;
+            if (!globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs = new Set();
+            globalThis._commandLinkedInTabs.add(tabId);
         }
         
         // Wait for page to load
@@ -89,12 +107,19 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
                         const tab = await chrome.tabs.get(tabId);
                         if (tab && tab.windowId) {
                             await chrome.windows.remove(tab.windowId);
+                            console.log(`ENHANCED SCRAPER: Closed window ${tab.windowId} on stop`);
                         }
                     } else if (tabId) {
                         await chrome.tabs.remove(tabId);
+                        console.log(`ENHANCED SCRAPER: Closed tab ${tabId} on stop`);
                     }
                 } catch (e) {
-                    console.log('ENHANCED SCRAPER: Tab/window already closed');
+                    console.log('ENHANCED SCRAPER: Tab/window already closed on stop:', e.message);
+                } finally {
+                    // Unregister globals
+                    globalThis._scrapingWindowId = null;
+                    globalThis._scrapingTabId = null;
+                    if (globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs.delete(tabId);
                 }
                 return { posts: qualifiedPosts, stopped: true, message: 'Scraping stopped by user' };
             }
@@ -196,6 +221,7 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
                         if (post.qualified || (post.likes >= minLikes && post.comments >= minComments)) {
                             qualifiedPosts.push(post);
                             console.log(`✅ ENHANCED SCRAPER: QUALIFIED post ${post.urn} (${post.likes} likes, ${post.comments} comments)`);
+                            liveLog.info('automation', `✅ Qualified post found: ${post.likes} likes, ${post.comments} comments`);
                         } else {
                             console.log(`❌ ENHANCED SCRAPER: Rejected post ${post.urn} (${post.likes} likes, ${post.comments} comments) - needs ${minLikes}+ likes AND ${minComments}+ comments`);
                         }
@@ -232,6 +258,7 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
                     if (isQualified) {
                         qualifiedPosts.push(post);
                         console.log(`✅ ENHANCED SCRAPER: QUALIFIED post ${post.urn} (${post.likes} likes, ${post.comments} comments)`);
+                        liveLog.info('automation', `✅ Qualified post found: ${post.likes} likes, ${post.comments} comments`);
                     } else {
                         console.log(`❌ ENHANCED SCRAPER: Rejected post ${post.urn} (${post.likes} likes, ${post.comments} comments) - needs ${minLikes}+ likes AND ${minComments}+ comments`);
                     }
@@ -239,6 +266,7 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
                     // Stop if we have enough qualified posts
                     if (qualifiedPosts.length >= targetCount) {
                         console.log(`ENHANCED SCRAPER: Found ${targetCount} qualified posts!`);
+                        liveLog.info('automation', `🎯 Found ${targetCount} qualified posts! Proceeding to engagement.`);
                         break;
                     }
                 }
@@ -253,6 +281,42 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
             }
             
             console.log(`ENHANCED SCRAPER: Progress - ${qualifiedPosts.length}/${targetCount} qualified posts (${allPosts.length} total scraped, ${scrollAttempts} scrolls)`);
+            
+            // Send periodic liveLog updates (every 5 scrolls to avoid spam)
+            if (scrollAttempts % 5 === 0 || qualifiedPosts.length > 0) {
+                liveLog.info('automation', `📊 Scanning: ${allPosts.length} posts found, ${qualifiedPosts.length}/${targetCount} qualified (scroll ${scrollAttempts})`);
+            }
+            
+            // Inject/update on-page status overlay
+            try {
+                await chrome.scripting.executeScript({
+                    target: { tabId },
+                    func: (total, qualified, target, minLikes, minComments, scrollNum) => {
+                        let overlay = document.getElementById('kommentify-scrape-status');
+                        if (!overlay) {
+                            overlay = document.createElement('div');
+                            overlay.id = 'kommentify-scrape-status';
+                            overlay.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:14px 18px;border-radius:12px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);min-width:220px;transition:opacity 0.3s;';
+                            document.body.appendChild(overlay);
+                        }
+                        const qualColor = qualified > 0 ? '#4ade80' : '#fbbf24';
+                        overlay.innerHTML = `
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                <div style="width:8px;height:8px;background:#4ade80;border-radius:50%;animation:pulse 1.5s infinite;"></div>
+                                <strong style="font-size:14px;">Kommentify Scanning</strong>
+                            </div>
+                            <div style="margin-bottom:4px;">📄 Posts found: <strong>${total}</strong></div>
+                            <div style="margin-bottom:4px;">✅ Qualified: <strong style="color:${qualColor};">${qualified}/${target}</strong></div>
+                            <div style="margin-bottom:4px;font-size:11px;opacity:0.7;">📋 Need: ${minLikes}+ likes, ${minComments}+ comments</div>
+                            <div style="font-size:11px;opacity:0.5;">Scroll #${scrollNum}</div>
+                            <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+                        `;
+                    },
+                    args: [allPosts.length, qualifiedPosts.length, targetCount, qualification.minLikes || 0, qualification.minComments || 0, scrollAttempts]
+                });
+            } catch (e) {
+                // Tab may be closed or not accessible
+            }
             
             // Update progress data in storage (since we're in background context)
             try {
@@ -283,6 +347,7 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
             if (noNewPostsTimer >= noNewPostsTimeout) {
                 console.log(`ENHANCED SCRAPER: No new posts found for ${noNewPostsTimeout/1000} seconds, stopping`);
                 console.log(`ENHANCED SCRAPER: Found ${qualifiedPosts.length}/${targetCount} qualified posts from ${allPosts.length} total posts`);
+                liveLog.info('automation', `⏹️ No new posts found for ${noNewPostsTimeout/1000}s — stopping scan. Found ${qualifiedPosts.length}/${targetCount} qualified from ${allPosts.length} total posts`);
                 break;
             }
             
@@ -302,14 +367,41 @@ async function scrapePostsFromSearchEnhanced(keyword, targetCount, qualification
         console.log(`ENHANCED SCRAPER: - Scroll attempts: ${scrollAttempts}`);
         console.log(`ENHANCED SCRAPER: - Time elapsed: ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
         
+        // Final summary to live activity
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+        liveLog.info('automation', `📊 Scan complete for "${keyword}": ${qualifiedPosts.length}/${targetCount} qualified from ${allPosts.length} total posts (${elapsed}s, ${scrollAttempts} scrolls)`);
+        
+        // Remove on-page overlay
+        try {
+            await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                    const overlay = document.getElementById('kommentify-scrape-status');
+                    if (overlay) {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.remove(), 300);
+                    }
+                }
+            });
+        } catch (e) { /* tab may be closed */ }
+        
         // Close the window
         if (tabId) {
             try {
-                const tab = await chrome.tabs.get(tabId);
-                await chrome.windows.remove(tab.windowId);
-                console.log(`ENHANCED SCRAPER: Closed window for tab ${tabId}`);
+                if (useWindow) {
+                    const tab = await chrome.tabs.get(tabId);
+                    await chrome.windows.remove(tab.windowId);
+                    console.log(`ENHANCED SCRAPER: Closed window for tab ${tabId}`);
+                } else {
+                    await chrome.tabs.remove(tabId);
+                    console.log(`ENHANCED SCRAPER: Closed tab ${tabId}`);
+                }
             } catch (e) {
-                console.error(`ENHANCED SCRAPER: Error closing window for tab ${tabId}:`, e);
+                console.error(`ENHANCED SCRAPER: Error closing window/tab for ${tabId}:`, e);
+            } finally {
+                globalThis._scrapingWindowId = null;
+                globalThis._scrapingTabId = null;
+                if (globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs.delete(tabId);
             }
         }
         
@@ -773,7 +865,9 @@ function performEnhancedScroll(scrollAttempt, humanSimulation) {
                     if (likes >= minLikes && comments >= minComments) {
                         // Extract post content
                         const contentElement = element.querySelector('.feed-shared-text, .feed-shared-update-v2__description, .update-components-text');
-                        const postText = contentElement ? contentElement.textContent.trim() : '';
+                        let postText = contentElement ? contentElement.textContent.trim() : '';
+                        // Remove LinkedIn's "...more" / "…more" button text from end
+                        postText = postText.replace(/[\s\n]*\.{2,3}more\s*$/i, '').replace(/[\s\n]*\u2026more\s*$/i, '').trim();
                         
                         // Extract author info using multiple strategies
                         let authorName = '';
@@ -1120,7 +1214,9 @@ function scrapeVisiblePosts(qualification, processedUrns) {
             if (likes >= qualification.minLikes && comments >= qualification.minComments) {
                 // Extract post content
                 const contentElement = element.querySelector('.feed-shared-text, .feed-shared-update-v2__description, .update-components-text');
-                const postText = contentElement ? contentElement.textContent.trim() : '';
+                let postText = contentElement ? contentElement.textContent.trim() : '';
+                // Remove LinkedIn's "...more" / "…more" button text from end
+                postText = postText.replace(/[\s\n]*\.{2,3}more\s*$/i, '').replace(/[\s\n]*\u2026more\s*$/i, '').trim();
                 
                 // Extract author info
                 const authorElement = element.querySelector('.feed-shared-actor__name, .update-components-actor__name');
@@ -1323,6 +1419,12 @@ async function scrapePostsFromFeed(targetCount, qualification = {}, humanSimulat
     console.log(`FEED SCRAPER: Starting feed scraping for ${targetCount} QUALIFIED posts`);
     console.log(`FEED SCRAPER: Qualification criteria - minLikes: ${qualification.minLikes || 0}, minComments: ${qualification.minComments || 0}`);
     
+    const feedMinL = qualification.minLikes || 0;
+    const feedMinC = qualification.minComments || 0;
+    const feedIgnoreKw = qualification.ignoreKeywords || [];
+    liveLog.info('automation', `\uD83D\uDCF0 Feed scraping started \u2014 target: ${targetCount} qualified posts`);
+    liveLog.info('automation', `\uD83D\uDCCB Qualification criteria: min ${feedMinL} likes, min ${feedMinC} comments${feedIgnoreKw.length > 0 ? `, ${feedIgnoreKw.length} ignore keywords` : ''}`);
+    
     const startTime = Date.now();
     const maxScrollTime = 10 * 60 * 1000; // 10 minutes max
     const scrollInterval = 2000; // 2 seconds between scrolls
@@ -1364,6 +1466,10 @@ async function scrapePostsFromFeed(targetCount, qualification = {}, humanSimulat
             
             tabId = window.tabs[0].id;
             console.log(`FEED SCRAPER: Created window with tab ${tabId}`);
+            globalThis._scrapingWindowId = window.id;
+            globalThis._scrapingTabId = tabId;
+            if (!globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs = new Set();
+            globalThis._commandLinkedInTabs.add(tabId);
         } else {
             const tab = await chrome.tabs.create({
                 url: feedUrl,
@@ -1372,6 +1478,10 @@ async function scrapePostsFromFeed(targetCount, qualification = {}, humanSimulat
             
             tabId = tab.id;
             console.log(`FEED SCRAPER: Created background tab ${tabId}`);
+            globalThis._scrapingTabId = tabId;
+            globalThis._scrapingWindowId = null;
+            if (!globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs = new Set();
+            globalThis._commandLinkedInTabs.add(tabId);
         }
         
         // Wait for page to fully load - feed pages may take longer
@@ -1471,6 +1581,40 @@ async function scrapePostsFromFeed(targetCount, qualification = {}, humanSimulat
                     
                     console.log(`FEED SCRAPER: Progress - Total posts: ${allPosts.length}, Qualified: ${qualifiedPosts.length}/${targetCount}`);
                     
+                    // Send periodic liveLog updates (every 5 scrolls)
+                    if (scrollAttempts % 5 === 0) {
+                        liveLog.info('automation', `\uD83D\uDCCA Feed scan: ${allPosts.length} posts found, ${qualifiedPosts.length}/${targetCount} qualified (scroll ${scrollAttempts})`);
+                    }
+                    
+                    // Inject/update on-page status overlay on feed
+                    try {
+                        await chrome.scripting.executeScript({
+                            target: { tabId },
+                            func: (total, qualified, target, minLikes, minComments, scrollNum) => {
+                                let overlay = document.getElementById('kommentify-scrape-status');
+                                if (!overlay) {
+                                    overlay = document.createElement('div');
+                                    overlay.id = 'kommentify-scrape-status';
+                                    overlay.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:14px 18px;border-radius:12px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);min-width:220px;transition:opacity 0.3s;';
+                                    document.body.appendChild(overlay);
+                                }
+                                const qualColor = qualified > 0 ? '#4ade80' : '#fbbf24';
+                                overlay.innerHTML = `
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                        <div style="width:8px;height:8px;background:#4ade80;border-radius:50%;animation:pulse 1.5s infinite;"></div>
+                                        <strong style="font-size:14px;">Kommentify Scanning Feed</strong>
+                                    </div>
+                                    <div style="margin-bottom:4px;">\uD83D\uDCC4 Posts found: <strong>${total}</strong></div>
+                                    <div style="margin-bottom:4px;">\u2705 Qualified: <strong style="color:${qualColor};">${qualified}/${target}</strong></div>
+                                    <div style="margin-bottom:4px;font-size:11px;opacity:0.7;">\uD83D\uDCCB Need: ${minLikes}+ likes, ${minComments}+ comments</div>
+                                    <div style="font-size:11px;opacity:0.5;">Scroll #${scrollNum}</div>
+                                    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+                                `;
+                            },
+                            args: [allPosts.length, qualifiedPosts.length, targetCount, qualification.minLikes || 0, qualification.minComments || 0, scrollAttempts]
+                        });
+                    } catch (e) { /* tab may be closed */ }
+                    
                     // Update progress in storage
                     await chrome.storage.local.set({
                         scrapingProgress: {
@@ -1518,6 +1662,24 @@ async function scrapePostsFromFeed(targetCount, qualification = {}, humanSimulat
         }
         
         console.log(`FEED SCRAPER: Completed - Found ${qualifiedPosts.length} qualified posts from feed`);
+        
+        // Final summary to live activity
+        const feedElapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+        liveLog.info('automation', `\uD83D\uDCCA Feed scan complete: ${qualifiedPosts.length}/${targetCount} qualified from ${allPosts.length} total posts (${feedElapsed}s, ${scrollAttempts} scrolls)`);
+        
+        // Remove on-page overlay
+        try {
+            await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                    const overlay = document.getElementById('kommentify-scrape-status');
+                    if (overlay) {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.remove(), 300);
+                    }
+                }
+            });
+        } catch (e) { /* tab may be closed */ }
         
         return qualifiedPosts;
         

@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DashboardTab, WriterTab, AutomationTab, NetworkTab, ImportTab, AnalyticsTab, LimitsTab, SettingsTab } from './components/tabs';
 import WhatsAppButton from './components/WhatsAppButton';
 import Footer from './components/Footer';
@@ -460,8 +460,25 @@ function ExtensionPreview() {
     );
 }
 
-export default function LandingPage() {
+export default function LandingPageWrapper() {
+    return (
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a0a0a' }} />}>
+            <LandingPage />
+        </Suspense>
+    );
+}
+
+function LandingPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Capture referral code from URL (e.g. /?ref=CODE) and persist in localStorage
+    useEffect(() => {
+        const ref = searchParams.get('ref');
+        if (ref) {
+            localStorage.setItem('referralCode', ref);
+        }
+    }, [searchParams]);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [lifetimeDeals, setLifetimeDeals] = useState<Plan[]>([]);

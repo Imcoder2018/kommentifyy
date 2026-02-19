@@ -449,90 +449,89 @@ class PostScheduler {
                 target: { tabId: linkedinTab.id },
                 func: (content) => {
                     return new Promise((resolve) => {
+                        const _poll = (fn, interval, timeout) => new Promise(r => {
+                            const start = Date.now();
+                            const check = () => { const el = fn(); if (el) return r(el); if (Date.now() - start > timeout) return r(null); setTimeout(check, interval); };
+                            check();
+                        });
+                        const _findStartBtn = () => {
+                            const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
+                            if (s1) return s1;
+                            for (const btn of document.querySelectorAll('button')) {
+                                if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
+                            }
+                            return document.querySelector('.share-box-feed-entry__trigger');
+                        };
+                        const _findEditor = () => {
+                            const dialog = document.querySelector('[role="dialog"]');
+                            if (dialog) {
+                                const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
+                                if (e1) return e1;
+                                const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+                                if (e2) return e2;
+                                const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
+                                if (e3) return e3;
+                            }
+                            const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
+                            if (e4) return e4;
+                            for (const el of document.querySelectorAll('[contenteditable="true"]')) {
+                                const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                if (ph.includes('want to talk about')) return el;
+                            }
+                            return null;
+                        };
+                        const _findPostBtn = () => {
+                            const dialog = document.querySelector('[role="dialog"]');
+                            const scope = dialog || document;
+                            for (const btn of scope.querySelectorAll('button')) {
+                                const txt = (btn.textContent || '').trim().toLowerCase();
+                                if (txt === 'post') return btn;
+                            }
+                            return null;
+                        };
                         try {
                             console.log('Post Scheduler Script: Starting...');
-                            
-                            // EXACT SELECTORS from old working extension
-                            const SELECTORS = {
-                                startPostButton: 'div.share-box-feed-entry__top-bar button',
-                                postEditor: 'div.editor-container > div > div > div.ql-editor',
-                                postSubmitButton: 'div.share-box_actions button'
-                            };
-                            
-                            // Step 1: Find "Start a post" button
-                            const startPostBtn = document.querySelector(SELECTORS.startPostButton);
-
+                            const startPostBtn = _findStartBtn();
                             if (!startPostBtn) {
-                                console.error('Post Scheduler Script: Start post button not found');
                                 resolve({ success: false, error: 'Start post button not found' });
                                 return;
                             }
-
-                            // Click to open post modal
                             console.log('Post Scheduler Script: Clicking start post button...');
                             startPostBtn.click();
-
-                            // Step 2: Wait 3s for modal, then find editor
-                            setTimeout(() => {
-                                console.log('Post Scheduler Script: Looking for editor...');
-                                
-                                const editor = document.querySelector(SELECTORS.postEditor);
-
-                                if (!editor) {
-                                    console.error('Post Scheduler Script: Editor not found');
-                                    resolve({ success: false, error: 'Editor not found - modal may not have opened' });
-                                    return;
-                                }
-
-                                // Clear editor
-                                editor.innerHTML = '';
-                                editor.focus();
-
-                                // Insert content with formatting preserved
-                                const lines = content.split('\n');
-                                lines.forEach((line) => {
-                                    if (line.trim() === '') {
-                                        const br = document.createElement('br');
-                                        editor.appendChild(br);
-                                    } else {
-                                        const p = document.createElement('p');
-                                        p.textContent = line;
-                                        editor.appendChild(p);
+                            _poll(_findEditor, 500, 11000).then(async (editor) => {
+                                try {
+                                    if (!editor) {
+                                        resolve({ success: false, error: 'Editor not found after polling' });
+                                        return;
                                     }
-                                });
-
-                                // Trigger input event
-                                editor.dispatchEvent(new Event('input', { bubbles: true }));
-                                console.log('Post Scheduler Script: Content inserted successfully');
-
-                                // Step 3: Wait 3s then click Post button
-                                setTimeout(() => {
-                                    console.log('Post Scheduler Script: Looking for Post button...');
-                                    
-                                    // Find all buttons in share-box_actions and get the one with "Post" text
-                                    const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
-                                    let postButton = null;
-                                    
-                                    for (const btn of actionButtons) {
-                                        const text = btn.textContent?.trim().toLowerCase() || '';
-                                        if (text === 'post') {
-                                            postButton = btn;
-                                            break;
+                                    console.log('Post Scheduler Script: Editor found via logic-based detection');
+                                    editor.innerHTML = '';
+                                    editor.focus();
+                                    const lines = content.split('\n');
+                                    lines.forEach((line) => {
+                                        if (line.trim() === '') {
+                                            editor.appendChild(document.createElement('br'));
+                                        } else {
+                                            const p = document.createElement('p');
+                                            p.textContent = line;
+                                            editor.appendChild(p);
                                         }
-                                    }
-                                    
+                                    });
+                                    editor.dispatchEvent(new Event('input', { bubbles: true }));
+                                    console.log('Post Scheduler Script: Content inserted successfully');
+                                    await new Promise(r => setTimeout(r, 3000));
+                                    const postButton = _findPostBtn();
                                     if (postButton && !postButton.disabled) {
                                         console.log('Post Scheduler Script: Clicking Post button...');
                                         postButton.click();
                                         resolve({ success: true, posted: true });
                                     } else {
-                                        console.log('Post Scheduler Script: Post button not ready or not found');
                                         resolve({ success: true, posted: false, message: 'Content inserted, please click Post manually' });
                                     }
-                                }, 3000);
-
-                            }, 3000);
-
+                                } catch (err) {
+                                    resolve({ success: false, error: err.message });
+                                }
+                            });
                         } catch (error) {
                             console.error('Post Scheduler Script: Error:', error);
                             resolve({ success: false, error: error.message });
@@ -699,21 +698,14 @@ class PostScheduler {
                 const results = await chrome.scripting.executeScript({
                     target: { tabId },
                     func: () => {
-                        // Use working selectors from old extension
-                        const selectors = [
-                            'div.share-box-feed-entry__top-bar button',  // Working selector
-                            '.share-box-feed-entry__trigger',
-                            'button[aria-label*="Start a post"]',
-                            'button.artdeco-button[aria-label*="Start a post"]'
-                        ];
-                        
-                        for (const sel of selectors) {
-                            const el = document.querySelector(sel);
-                            if (el) {
-                                return { found: true, selector: sel };
-                            }
+                        // Logic-based detection: try multiple strategies
+                        const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
+                        if (s1) return { found: true, method: 'share-box-top-bar' };
+                        for (const btn of document.querySelectorAll('button')) {
+                            if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return { found: true, method: 'aria-label' };
                         }
-                        
+                        const s2 = document.querySelector('.share-box-feed-entry__trigger');
+                        if (s2) return { found: true, method: 'trigger' };
                         return { found: false };
                     }
                 });

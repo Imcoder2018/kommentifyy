@@ -70,10 +70,13 @@ export async function POST(request: NextRequest) {
 
     const created = [];
     for (const post of posts) {
+      let postContent = (post.postContent || post.content || '');
+      // Strip LinkedIn's "...more" / "…more" button text from end
+      postContent = postContent.replace(/[\s\n]*\.{2,3}more\s*$/i, '').replace(/[\s\n]*\u2026more\s*$/i, '').trim();
       const record = await (prisma as any).scrapedPost.create({
         data: {
           userId: payload.userId,
-          postContent: post.postContent || post.content || '',
+          postContent,
           authorName: post.authorName || null,
           authorProfileUrl: post.authorProfileUrl || null,
           likes: parseInt(post.likes) || 0,

@@ -291,7 +291,9 @@ async function pollCommandsDirectly() {
                                 const els = document.querySelectorAll('[data-id^="urn:li:activity:"]');
                                 for (const el of els) {
                                     const textEl = el.querySelector('.update-components-text, .feed-shared-text, .feed-shared-inline-show-more-text');
-                                    const content = textEl ? (textEl.innerText || '').trim() : '';
+                                    let content = textEl ? (textEl.innerText || '').trim() : '';
+                                    // Remove LinkedIn's "...more" / "…more" button text from end
+                                    content = content.replace(/[\s\n]*\.{2,3}more\s*$/i, '').replace(/[\s\n]*\u2026more\s*$/i, '').trim();
                                     if (content.length < 50) continue;
                                     let likes = 0, comments = 0;
                                     const likesEl = el.querySelector('.social-details-social-counts__reactions-count');
@@ -461,27 +463,62 @@ async function pollCommandsDirectly() {
                             target: { tabId: postTab.id },
                             func: (postContent, imgDataUrl, clickDelayMs, typingDelayMs, submitDelayMs) => {
                                 return new Promise((resolve) => {
+                                    const _poll = (fn, interval, timeout) => new Promise(r => {
+                                        const start = Date.now();
+                                        const check = () => { const el = fn(); if (el) return r(el); if (Date.now() - start > timeout) return r(null); setTimeout(check, interval); };
+                                        check();
+                                    });
+                                    const _findStartBtn = () => {
+                                        const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
+                                        if (s1) return s1;
+                                        for (const btn of document.querySelectorAll('button')) {
+                                            if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
+                                        }
+                                        return document.querySelector('.share-box-feed-entry__trigger');
+                                    };
+                                    const _findEditor = () => {
+                                        const dialog = document.querySelector('[role="dialog"]');
+                                        if (dialog) {
+                                            const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
+                                            if (e1) return e1;
+                                            const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+                                            if (e2) return e2;
+                                            const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
+                                            if (e3) return e3;
+                                        }
+                                        const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
+                                        if (e4) return e4;
+                                        for (const el of document.querySelectorAll('[contenteditable="true"]')) {
+                                            const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                            if (ph.includes('want to talk about')) return el;
+                                        }
+                                        return null;
+                                    };
+                                    const _findPostBtn = () => {
+                                        const dialog = document.querySelector('[role="dialog"]');
+                                        const scope = dialog || document;
+                                        for (const btn of scope.querySelectorAll('button')) {
+                                            const txt = (btn.textContent || '').trim().toLowerCase();
+                                            if (txt === 'post') return btn;
+                                        }
+                                        return null;
+                                    };
                                     try {
                                         console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
-                                        const SELECTORS = {
-                                            startPostButton: 'div.share-box-feed-entry__top-bar button',
-                                            postEditor: 'div.editor-container > div > div > div.ql-editor',
-                                            postSubmitButton: 'div.share-box_actions button'
-                                        };
-                                        const startPostBtn = document.querySelector(SELECTORS.startPostButton);
+                                        const startPostBtn = _findStartBtn();
                                         if (!startPostBtn) {
                                             resolve({ success: false, error: 'Start post button not found' });
                                             return;
                                         }
                                         startPostBtn.click();
-                                        console.log(`LinkedIn Post Script: Clicked start post, waiting ${clickDelayMs}ms...`);
-                                        setTimeout(() => {
+                                        console.log(`LinkedIn Post Script: Clicked start post, polling for editor (timeout ${clickDelayMs + 8000}ms)...`);
+                                        _poll(_findEditor, 500, clickDelayMs + 8000).then(async (editor) => {
                                             try {
-                                                const editor = document.querySelector(SELECTORS.postEditor);
                                                 if (!editor) {
-                                                    resolve({ success: false, error: 'Editor not found' });
+                                                    resolve({ success: false, error: 'Editor not found after polling' });
                                                     return;
                                                 }
+                                                console.log('LinkedIn Post Script: Editor found via logic-based detection');
                                                 editor.innerHTML = '';
                                                 editor.focus();
                                                 const lines = postContent.split('\n');
@@ -531,36 +568,25 @@ async function pollCommandsDirectly() {
                                                     }
                                                 };
 
-                                                const finishPost = async () => {
-                                                    try {
-                                                        const imageAttached = await pasteImage();
-                                                        console.log('LinkedIn Post Script: Image attached:', imageAttached);
-                                                        const extraWait = imgDataUrl ? 4000 : 0;
-                                                        console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
-                                                        await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
+                                                const imageAttached = await pasteImage();
+                                                console.log('LinkedIn Post Script: Image attached:', imageAttached);
+                                                const extraWait = imgDataUrl ? 4000 : 0;
+                                                console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
+                                                await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
 
-                                                        const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
-                                                        let postButton = null;
-                                                        for (const btn of actionButtons) {
-                                                            if ((btn.textContent?.trim().toLowerCase() || '') === 'post') { postButton = btn; break; }
-                                                        }
-                                                        if (postButton && !postButton.disabled) {
-                                                            postButton.click();
-                                                            console.log('LinkedIn Post Script: Post button clicked');
-                                                            resolve({ success: true, posted: true, imageAttached });
-                                                        } else {
-                                                            console.log('LinkedIn Post Script: Post button not found or disabled');
-                                                            resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
-                                                        }
-                                                    } catch (finishErr) {
-                                                        resolve({ success: false, error: finishErr.message });
-                                                    }
-                                                };
-                                                finishPost();
+                                                const postButton = _findPostBtn();
+                                                if (postButton && !postButton.disabled) {
+                                                    postButton.click();
+                                                    console.log('LinkedIn Post Script: Post button clicked');
+                                                    resolve({ success: true, posted: true, imageAttached });
+                                                } else {
+                                                    console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                    resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
+                                                }
                                             } catch (innerErr) {
                                                 resolve({ success: false, error: 'Inner error: ' + innerErr.message });
                                             }
-                                        }, clickDelayMs);
+                                        });
                                     } catch (outerErr) {
                                         resolve({ success: false, error: 'Outer error: ' + outerErr.message });
                                     }
@@ -2041,14 +2067,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 // Stop all running automation modules immediately
                 try { importAutomation.stop(); } catch (e) {}
-                try { stopBulkProcessing(); } catch (e) {}
-                try { peopleSearchAutomation.stopProcessing(); } catch (e) {}
+                try { await stopBulkProcessing(); } catch (e) {}
+                try { await peopleSearchAutomation.stopProcessing(); } catch (e) {}
                 
                 // Log the stop event
                 try {
                     const { liveLog } = await import('../shared/services/liveActivityLogger.js');
                     liveLog.stop('automation', '🛑 All tasks stopped by user');
                 } catch (e) {}
+                
+                // Close scraper window/tab if it exists (registered by enhancedScraper)
+                if (globalThis._scrapingWindowId) {
+                    try {
+                        await chrome.windows.remove(globalThis._scrapingWindowId);
+                        console.log(`🛑 BACKGROUND: Closed scraper window ${globalThis._scrapingWindowId}`);
+                    } catch (e) { /* window may already be closed */ }
+                    globalThis._scrapingWindowId = null;
+                }
+                if (globalThis._scrapingTabId) {
+                    try {
+                        await chrome.tabs.remove(globalThis._scrapingTabId);
+                        console.log(`🛑 BACKGROUND: Closed scraper tab ${globalThis._scrapingTabId}`);
+                    } catch (e) { /* tab may already be closed */ }
+                    globalThis._scrapingTabId = null;
+                }
                 
                 // Close all LinkedIn tabs opened by commands
                 const tabIds = [...globalThis._commandLinkedInTabs];
@@ -2200,26 +2242,62 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     target: { tabId: postTab.id },
                                     func: (postContent, imgDataUrl) => {
                                         return new Promise((resolve) => {
+                                            const _poll = (fn, interval, timeout) => new Promise(r => {
+                                                const start = Date.now();
+                                                const check = () => { const el = fn(); if (el) return r(el); if (Date.now() - start > timeout) return r(null); setTimeout(check, interval); };
+                                                check();
+                                            });
+                                            const _findStartBtn = () => {
+                                                const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
+                                                if (s1) return s1;
+                                                for (const btn of document.querySelectorAll('button')) {
+                                                    if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
+                                                }
+                                                return document.querySelector('.share-box-feed-entry__trigger');
+                                            };
+                                            const _findEditor = () => {
+                                                const dialog = document.querySelector('[role="dialog"]');
+                                                if (dialog) {
+                                                    const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
+                                                    if (e1) return e1;
+                                                    const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+                                                    if (e2) return e2;
+                                                    const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
+                                                    if (e3) return e3;
+                                                }
+                                                const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
+                                                if (e4) return e4;
+                                                for (const el of document.querySelectorAll('[contenteditable="true"]')) {
+                                                    const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                                    if (ph.includes('want to talk about')) return el;
+                                                }
+                                                return null;
+                                            };
+                                            const _findPostBtn = () => {
+                                                const dialog = document.querySelector('[role="dialog"]');
+                                                const scope = dialog || document;
+                                                for (const btn of scope.querySelectorAll('button')) {
+                                                    const txt = (btn.textContent || '').trim().toLowerCase();
+                                                    if (txt === 'post') return btn;
+                                                }
+                                                return null;
+                                            };
                                             try {
                                             console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
-                                            const SELECTORS = {
-                                                startPostButton: 'div.share-box-feed-entry__top-bar button',
-                                                postEditor: 'div.editor-container > div > div > div.ql-editor',
-                                                postSubmitButton: 'div.share-box_actions button'
-                                            };
-                                            const startPostBtn = document.querySelector(SELECTORS.startPostButton);
+                                            const startPostBtn = _findStartBtn();
                                             if (!startPostBtn) {
                                                 resolve({ success: false, error: 'Start post button not found' });
                                                 return;
                                             }
                                             startPostBtn.click();
-                                            setTimeout(() => {
+                                            console.log('LinkedIn Post Script: Clicked start post, polling for editor (timeout 11s)...');
+                                            _poll(_findEditor, 500, 11000).then(async (editor) => {
                                                 try {
-                                                const editor = document.querySelector(SELECTORS.postEditor);
                                                 if (!editor) {
-                                                    resolve({ success: false, error: 'Editor not found' });
+                                                    resolve({ success: false, error: 'Editor not found after polling' });
                                                     return;
                                                 }
+                                                console.log('LinkedIn Post Script: Editor found via logic-based detection');
                                                 editor.innerHTML = '';
                                                 editor.focus();
                                                 const lines = postContent.split('\n');
@@ -2240,7 +2318,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                     if (!imgDataUrl) return false;
                                                     try {
                                                         console.log('LinkedIn Post Script: Pasting image via clipboard...');
-                                                        // Convert base64 data URL to Blob
                                                         const byteString = atob(imgDataUrl.split(',')[1]);
                                                         const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
                                                         const ab = new ArrayBuffer(byteString.length);
@@ -2248,42 +2325,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                         for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
                                                         const blob = new Blob([ab], { type: mimeString });
                                                         const file = new File([blob], 'image.png', { type: mimeString });
-
-                                                        // Write to clipboard first
                                                         try {
-                                                            await navigator.clipboard.write([
-                                                                new ClipboardItem({ [mimeString]: blob })
-                                                            ]);
-                                                            console.log('LinkedIn Post Script: Image written to clipboard');
+                                                            await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
                                                         } catch (clipErr) {
-                                                            console.log('LinkedIn Post Script: Clipboard write failed, trying paste event directly:', clipErr.message);
+                                                            console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
                                                         }
-
-                                                        // Dispatch synthetic paste event with image data
                                                         editor.focus();
                                                         const dt = new DataTransfer();
                                                         dt.items.add(file);
-                                                        
-                                                        // Create paste event with clipboardData
-                                                        const pasteEvt = new ClipboardEvent('paste', {
-                                                            bubbles: true,
-                                                            cancelable: true,
-                                                            clipboardData: dt
-                                                        });
+                                                        const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
                                                         editor.dispatchEvent(pasteEvt);
-                                                        console.log('LinkedIn Post Script: Paste event dispatched on editor');
-
-                                                        // Also try on the share box modal container
-                                                        const shareBox = document.querySelector('.share-box--is-open') || 
-                                                                        document.querySelector('.share-creation-state') ||
-                                                                        document.querySelector('[role="dialog"]');
+                                                        const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
                                                         if (shareBox) {
-                                                            shareBox.dispatchEvent(new ClipboardEvent('paste', {
-                                                                bubbles: true, cancelable: true, clipboardData: dt
-                                                            }));
-                                                            console.log('LinkedIn Post Script: Paste event also dispatched on share box');
+                                                            shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
                                                         }
-
                                                         await new Promise(r => setTimeout(r, 3000));
                                                         return true;
                                                     } catch (imgErr) {
@@ -2292,38 +2347,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                     }
                                                 };
 
-                                                // Wait for text input, paste image if any, then click post
-                                                const finishPost = async () => {
-                                                    try {
-                                                        const imageAttached = await pasteImage();
-                                                        console.log('LinkedIn Post Script: Image attached:', imageAttached);
-                                                        // Extra wait for image processing
-                                                        const extraWait = imgDataUrl ? 4000 : 0;
-                                                        await new Promise(r => setTimeout(r, 3000 + extraWait));
-                                                        
-                                                        const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
-                                                        let postButton = null;
-                                                        for (const btn of actionButtons) {
-                                                            if ((btn.textContent?.trim().toLowerCase() || '') === 'post') { postButton = btn; break; }
-                                                        }
-                                                        if (postButton && !postButton.disabled) {
-                                                            postButton.click();
-                                                            console.log('LinkedIn Post Script: Post button clicked');
-                                                            resolve({ success: true, posted: true, imageAttached });
-                                                        } else {
-                                                            console.log('LinkedIn Post Script: Post button not found or disabled');
-                                                            resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
-                                                        }
-                                                    } catch (finishErr) {
-                                                        console.error('LinkedIn Post Script: finishPost error:', finishErr);
-                                                        resolve({ success: false, error: finishErr.message });
-                                                    }
-                                                };
-                                                finishPost();
+                                                const imageAttached = await pasteImage();
+                                                console.log('LinkedIn Post Script: Image attached:', imageAttached);
+                                                const extraWait = imgDataUrl ? 4000 : 0;
+                                                await new Promise(r => setTimeout(r, 3000 + extraWait));
+                                                
+                                                const postButton = _findPostBtn();
+                                                if (postButton && !postButton.disabled) {
+                                                    postButton.click();
+                                                    console.log('LinkedIn Post Script: Post button clicked');
+                                                    resolve({ success: true, posted: true, imageAttached });
+                                                } else {
+                                                    console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                    resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
+                                                }
                                                 } catch (innerErr) {
                                                     resolve({ success: false, error: 'Inner error: ' + innerErr.message });
                                                 }
-                                            }, 3000);
+                                            });
                                             } catch (outerErr) {
                                                 resolve({ success: false, error: 'Outer error: ' + outerErr.message });
                                             }
@@ -3497,92 +3538,90 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     target: { tabId: tab.id },
                     func: (postContent) => {
                         return new Promise((resolve) => {
-                            console.log('LinkedIn Post Script: Starting...');
-                            
-                            // EXACT SELECTORS from old working extension
-                            const SELECTORS = {
-                                startPostButton: 'div.share-box-feed-entry__top-bar button',
-                                postEditor: 'div.editor-container > div > div > div.ql-editor',
-                                postSubmitButton: 'div.share-box_actions button'
+                            const _poll = (fn, interval, timeout) => new Promise(r => {
+                                const start = Date.now();
+                                const check = () => { const el = fn(); if (el) return r(el); if (Date.now() - start > timeout) return r(null); setTimeout(check, interval); };
+                                check();
+                            });
+                            const _findStartBtn = () => {
+                                const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
+                                if (s1) return s1;
+                                for (const btn of document.querySelectorAll('button')) {
+                                    if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
+                                }
+                                return document.querySelector('.share-box-feed-entry__trigger');
                             };
-                            
-                            // Step 1: Find and click "Start a post" button
-                            const startPostBtn = document.querySelector(SELECTORS.startPostButton);
-                            
+                            const _findEditor = () => {
+                                const dialog = document.querySelector('[role="dialog"]');
+                                if (dialog) {
+                                    const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
+                                    if (e1) return e1;
+                                    const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+                                    if (e2) return e2;
+                                    const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
+                                    if (e3) return e3;
+                                }
+                                const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
+                                if (e4) return e4;
+                                for (const el of document.querySelectorAll('[contenteditable="true"]')) {
+                                    const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                    if (ph.includes('want to talk about')) return el;
+                                }
+                                return null;
+                            };
+                            const _findPostBtn = () => {
+                                const dialog = document.querySelector('[role="dialog"]');
+                                const scope = dialog || document;
+                                for (const btn of scope.querySelectorAll('button')) {
+                                    const txt = (btn.textContent || '').trim().toLowerCase();
+                                    if (txt === 'post') return btn;
+                                }
+                                return null;
+                            };
+                            console.log('LinkedIn Post Script: Starting...');
+                            const startPostBtn = _findStartBtn();
                             if (!startPostBtn) {
-                                console.error('LinkedIn Post Script: Start post button not found with selector:', SELECTORS.startPostButton);
                                 resolve({ success: false, error: 'Start post button not found' });
                                 return;
                             }
-                            
                             console.log('LinkedIn Post Script: Found start button, clicking...');
                             startPostBtn.click();
-                            
-                            // Step 2: Wait 3s for modal to open, then find editor
-                            setTimeout(() => {
-                                console.log('LinkedIn Post Script: Looking for editor...');
-                                
-                                const editor = document.querySelector(SELECTORS.postEditor);
-                                
-                                if (!editor) {
-                                    console.error('LinkedIn Post Script: Editor not found with selector:', SELECTORS.postEditor);
-                                    resolve({ success: false, error: 'Editor not found - modal may not have opened' });
-                                    return;
-                                }
-                                
-                                console.log('LinkedIn Post Script: Found editor, inserting content...');
-                                
-                                // Clear and focus editor
-                                editor.innerHTML = '';
-                                editor.focus();
-                                
-                                // Insert content with formatting
-                                const lines = postContent.split('\n');
-                                lines.forEach((line) => {
-                                    if (line.trim() === '') {
-                                        const br = document.createElement('br');
-                                        editor.appendChild(br);
-                                    } else {
-                                        const p = document.createElement('p');
-                                        p.textContent = line;
-                                        editor.appendChild(p);
+                            _poll(_findEditor, 500, 11000).then(async (editor) => {
+                                try {
+                                    if (!editor) {
+                                        resolve({ success: false, error: 'Editor not found after polling' });
+                                        return;
                                     }
-                                });
-                                
-                                // Trigger input event to let LinkedIn know content changed
-                                editor.dispatchEvent(new Event('input', { bubbles: true }));
-                                console.log('LinkedIn Post Script: Content inserted successfully');
-                                
-                                // Step 3: Wait 3s then click Post button
-                                setTimeout(() => {
-                                    console.log('LinkedIn Post Script: Looking for Post button...');
-                                    
-                                    // Find all buttons in share-box_actions and get the one with "Post" text
-                                    const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
-                                    let postButton = null;
-                                    
-                                    for (const btn of actionButtons) {
-                                        const text = btn.textContent?.trim().toLowerCase() || '';
-                                        if (text === 'post') {
-                                            postButton = btn;
-                                            break;
+                                    console.log('LinkedIn Post Script: Editor found via logic-based detection');
+                                    editor.innerHTML = '';
+                                    editor.focus();
+                                    const lines = postContent.split('\n');
+                                    lines.forEach((line) => {
+                                        if (line.trim() === '') {
+                                            editor.appendChild(document.createElement('br'));
+                                        } else {
+                                            const p = document.createElement('p');
+                                            p.textContent = line;
+                                            editor.appendChild(p);
                                         }
-                                    }
-                                    
+                                    });
+                                    editor.dispatchEvent(new Event('input', { bubbles: true }));
+                                    console.log('LinkedIn Post Script: Content inserted successfully');
+                                    await new Promise(r => setTimeout(r, 3000));
+                                    const postButton = _findPostBtn();
                                     if (postButton && !postButton.disabled) {
                                         console.log('LinkedIn Post Script: Clicking Post button...');
                                         postButton.click();
                                         resolve({ success: true, posted: true });
                                     } else if (postButton && postButton.disabled) {
-                                        console.log('LinkedIn Post Script: Post button is disabled');
                                         resolve({ success: true, posted: false, message: 'Content inserted but Post button disabled - click manually' });
                                     } else {
-                                        console.log('LinkedIn Post Script: Post button not found');
                                         resolve({ success: true, posted: false, message: 'Content inserted, please click Post manually' });
                                     }
-                                }, 3000);
-                                
-                            }, 3000); // Wait 3s for modal to open
+                                } catch (err) {
+                                    resolve({ success: false, error: err.message });
+                                }
+                            });
                         });
                     },
                     args: [content]

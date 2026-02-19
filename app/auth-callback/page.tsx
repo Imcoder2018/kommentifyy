@@ -32,6 +32,9 @@ export default function AuthCallbackPage() {
                     return;
                 }
 
+                // Read referral code stored during signup
+                const referralCode = localStorage.getItem('referralCode') || undefined;
+
                 // Call our sync API to create/update user and get token
                 const response = await fetch('/api/auth/clerk-sync', {
                     method: 'POST',
@@ -39,7 +42,8 @@ export default function AuthCallbackPage() {
                     body: JSON.stringify({
                         clerkUserId: clerkUser?.id,
                         email,
-                        name
+                        name,
+                        referralCode
                     })
                 });
 
@@ -48,6 +52,8 @@ export default function AuthCallbackPage() {
                 if (data.success && data.token) {
                     // Store token in localStorage
                     localStorage.setItem('authToken', data.token);
+                    // Clean up referral code after successful sync
+                    localStorage.removeItem('referralCode');
                     
                     setStatus('Success! Redirecting...');
                     

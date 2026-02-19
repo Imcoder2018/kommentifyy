@@ -12,14 +12,41 @@ export async function POST(request: NextRequest) {
 
     const payload = verifyToken(token);
 
-    await prisma.activity.create({
-      data: {
-        userId: payload.userId,
-        type: 'extension_heartbeat',
-        timestamp: new Date(),
-        metadata: { version: 'active' },
-      },
+    // Find existing heartbeat record for this user
+    const existing = await prisma.activity.findFirst({
+      where: { userId: payload.userId, type: 'extension_heartbeat' },
+      orderBy: { timestamp: 'desc' },
     });
+
+    if (existing) {
+      // Update the existing heartbeat timestamp (avoid creating thousands of records)
+      await prisma.activity.update({
+        where: { id: existing.id },
+        data: { timestamp: new Date(), metadata: { version: 'active', updatedAt: new Date().toISOString() } },
+      });
+    } else {
+      // Create first heartbeat record
+      await prisma.activity.create({
+        data: {
+          userId: payload.userId,
+          type: 'extension_heartbeat',
+          timestamp: new Date(),
+          metadata: { version: 'active' },
+        },
+      });
+    }
+
+    // Cleanup: delete any extra old heartbeat records (keep only the latest)
+    const allHeartbeats = await prisma.activity.findMany({
+      where: { userId: payload.userId, type: 'extension_heartbeat' },
+      orderBy: { timestamp: 'desc' },
+      skip: 1,
+    });
+    if (allHeartbeats.length > 0) {
+      await prisma.activity.deleteMany({
+        where: { id: { in: allHeartbeats.map(h => h.id) } },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch {

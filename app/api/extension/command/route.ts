@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // No task in progress — send only the NEXT pending command (FIFO)
-    const pendingCommands = parsed.filter((c: any) => c.status === 'pending');
+    // No task in progress — send only the NEXT pending/queued command (FIFO)
+    const pendingCommands = parsed.filter((c: any) => c.status === 'pending' || c.status === 'queued');
     const nextCommand = pendingCommands.length > 0 ? [pendingCommands[0]] : [];
 
     return NextResponse.json({

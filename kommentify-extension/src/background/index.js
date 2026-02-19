@@ -195,6 +195,15 @@ async function pollCommandsDirectly() {
         const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
         if (!authToken) { globalThis._pollCommandsRunning = false; return; }
 
+        // Send heartbeat to let dashboard know extension is alive
+        try {
+            await fetch(`${apiUrl}/api/extension/heartbeat`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ timestamp: new Date().toISOString() })
+            });
+        } catch (hbErr) { /* heartbeat failure is non-critical */ }
+
         const response = await fetch(`${apiUrl}/api/extension/command`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
@@ -392,10 +401,209 @@ async function pollCommandsDirectly() {
                 // --- post_to_linkedin ---
                 else if (cmd.command === 'post_to_linkedin' && cmd.data?.content) {
                     console.log('📝 POLL-ALARM: Executing post_to_linkedin...');
-                    // Delegate to the message handler version (already implemented there)
-                    // For now mark as pending so next poll via message handler picks it up
-                    globalThis._processingCommandIds.delete(cmd.id);
-                    try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'queued' }) }); } catch (x) {}
+                    let postTab = null;
+                    try {
+                        // Log start
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.start('post_writer', `✍️ Posting to LinkedIn...`);
+                        } catch (e) {}
+
+                        // Step 1: Open LinkedIn feed tab
+                        console.log('📝 POLL-ALARM: Opening LinkedIn tab...');
+                        postTab = await chrome.tabs.create({
+                            url: 'https://www.linkedin.com/feed/',
+                            active: true
+                        });
+                        globalThis._commandLinkedInTabs.add(postTab.id);
+
+                        // Step 2: Wait for tab to fully load
+                        await new Promise((resolve) => {
+                            const checkComplete = (tabId, changeInfo) => {
+                                if (tabId === postTab.id && changeInfo.status === 'complete') {
+                                    chrome.tabs.onUpdated.removeListener(checkComplete);
+                                    resolve();
+                                }
+                            };
+                            chrome.tabs.onUpdated.addListener(checkComplete);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
+                        });
+
+                        if (globalThis._stopAllTasks) {
+                            console.log('🛑 POLL-ALARM: Stop flag set, aborting post_to_linkedin');
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            globalThis._commandLinkedInTabs.delete(postTab.id);
+                            globalThis._processingCommandIds.delete(cmd.id);
+                            continue;
+                        }
+
+                        // Step 3: Apply page load delay from Limits tab
+                        const { delaySettings: pwDelays } = await chrome.storage.local.get('delaySettings');
+                        const pageLoadWait = ((pwDelays && pwDelays.postWriterPageLoadDelay) || 5) * 1000;
+                        console.log(`📝 POLL-ALARM: Page loaded, waiting ${pageLoadWait/1000}s for render...`);
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.delay('post_writer', Math.round(pageLoadWait/1000), 'page load delay');
+                        } catch (e) {}
+                        await new Promise(resolve => setTimeout(resolve, pageLoadWait));
+
+                        // Step 4: Inject posting script
+                        const content = cmd.data.content;
+                        const imageDataUrl = cmd.data.imageDataUrl || null;
+                        console.log('📝 POLL-ALARM: Injecting post script, hasImage:', !!imageDataUrl);
+                        
+                        // Load click delay from limits
+                        const clickDelay = ((pwDelays && pwDelays.postWriterClickDelay) || 3) * 1000;
+                        const typingDelay = ((pwDelays && pwDelays.postWriterTypingDelay) || 3) * 1000;
+                        const submitDelay = ((pwDelays && pwDelays.postWriterSubmitDelay) || 2) * 1000;
+                        
+                        const result = await chrome.scripting.executeScript({
+                            target: { tabId: postTab.id },
+                            func: (postContent, imgDataUrl, clickDelayMs, typingDelayMs, submitDelayMs) => {
+                                return new Promise((resolve) => {
+                                    try {
+                                        console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
+                                        const SELECTORS = {
+                                            startPostButton: 'div.share-box-feed-entry__top-bar button',
+                                            postEditor: 'div.editor-container > div > div > div.ql-editor',
+                                            postSubmitButton: 'div.share-box_actions button'
+                                        };
+                                        const startPostBtn = document.querySelector(SELECTORS.startPostButton);
+                                        if (!startPostBtn) {
+                                            resolve({ success: false, error: 'Start post button not found' });
+                                            return;
+                                        }
+                                        startPostBtn.click();
+                                        console.log(`LinkedIn Post Script: Clicked start post, waiting ${clickDelayMs}ms...`);
+                                        setTimeout(() => {
+                                            try {
+                                                const editor = document.querySelector(SELECTORS.postEditor);
+                                                if (!editor) {
+                                                    resolve({ success: false, error: 'Editor not found' });
+                                                    return;
+                                                }
+                                                editor.innerHTML = '';
+                                                editor.focus();
+                                                const lines = postContent.split('\n');
+                                                lines.forEach((line) => {
+                                                    if (line.trim() === '') {
+                                                        editor.appendChild(document.createElement('br'));
+                                                    } else {
+                                                        const p = document.createElement('p');
+                                                        p.textContent = line;
+                                                        editor.appendChild(p);
+                                                    }
+                                                });
+                                                editor.dispatchEvent(new Event('input', { bubbles: true }));
+                                                console.log('LinkedIn Post Script: Text inserted');
+
+                                                // Handle image attachment via clipboard paste
+                                                const pasteImage = async () => {
+                                                    if (!imgDataUrl) return false;
+                                                    try {
+                                                        console.log('LinkedIn Post Script: Pasting image via clipboard...');
+                                                        const byteString = atob(imgDataUrl.split(',')[1]);
+                                                        const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                                        const ab = new ArrayBuffer(byteString.length);
+                                                        const ia = new Uint8Array(ab);
+                                                        for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
+                                                        const blob = new Blob([ab], { type: mimeString });
+                                                        const file = new File([blob], 'image.png', { type: mimeString });
+                                                        try {
+                                                            await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
+                                                        } catch (clipErr) {
+                                                            console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
+                                                        }
+                                                        editor.focus();
+                                                        const dt = new DataTransfer();
+                                                        dt.items.add(file);
+                                                        const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
+                                                        editor.dispatchEvent(pasteEvt);
+                                                        const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
+                                                        if (shareBox) {
+                                                            shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
+                                                        }
+                                                        await new Promise(r => setTimeout(r, 3000));
+                                                        return true;
+                                                    } catch (imgErr) {
+                                                        console.error('LinkedIn Post Script: Image paste error:', imgErr);
+                                                        return false;
+                                                    }
+                                                };
+
+                                                const finishPost = async () => {
+                                                    try {
+                                                        const imageAttached = await pasteImage();
+                                                        console.log('LinkedIn Post Script: Image attached:', imageAttached);
+                                                        const extraWait = imgDataUrl ? 4000 : 0;
+                                                        console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
+                                                        await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
+
+                                                        const actionButtons = document.querySelectorAll(SELECTORS.postSubmitButton);
+                                                        let postButton = null;
+                                                        for (const btn of actionButtons) {
+                                                            if ((btn.textContent?.trim().toLowerCase() || '') === 'post') { postButton = btn; break; }
+                                                        }
+                                                        if (postButton && !postButton.disabled) {
+                                                            postButton.click();
+                                                            console.log('LinkedIn Post Script: Post button clicked');
+                                                            resolve({ success: true, posted: true, imageAttached });
+                                                        } else {
+                                                            console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                            resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
+                                                        }
+                                                    } catch (finishErr) {
+                                                        resolve({ success: false, error: finishErr.message });
+                                                    }
+                                                };
+                                                finishPost();
+                                            } catch (innerErr) {
+                                                resolve({ success: false, error: 'Inner error: ' + innerErr.message });
+                                            }
+                                        }, clickDelayMs);
+                                    } catch (outerErr) {
+                                        resolve({ success: false, error: 'Outer error: ' + outerErr.message });
+                                    }
+                                });
+                            },
+                            args: [content, imageDataUrl, clickDelay, typingDelay, submitDelay]
+                        });
+
+                        const scriptResult = result?.[0]?.result;
+                        console.log('📝 POLL-ALARM: Post script result:', scriptResult);
+
+                        // Wait for LinkedIn to process the post
+                        console.log('📝 POLL-ALARM: Waiting 5s before closing tab...');
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+
+                        // Mark as completed
+                        const finalStatus = scriptResult?.posted ? 'completed' : (scriptResult?.success ? 'completed_manual' : 'failed');
+                        await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
+                        });
+                        console.log(`✅ POLL-ALARM: post_to_linkedin ${finalStatus}`);
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            if (scriptResult?.posted) ll.post('post_writer', `✅ Post published to LinkedIn${scriptResult?.imageAttached ? ' (with image)' : ''}`);
+                            else if (scriptResult?.success) ll.info('post_writer', `⚠️ Content inserted but needs manual post click`);
+                            else ll.error('post_writer', `❌ Post failed: ${scriptResult?.error || 'Unknown error'}`);
+                        } catch (e) {}
+                    } catch (postError) {
+                        console.error('❌ POLL-ALARM: post_to_linkedin failed:', postError);
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.error('post_writer', `❌ Post failed: ${postError.message}`);
+                        } catch (e) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally {
+                        if (postTab) {
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            globalThis._commandLinkedInTabs.delete(postTab.id);
+                        }
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
                 }
 
                 // --- start_bulk_commenting ---

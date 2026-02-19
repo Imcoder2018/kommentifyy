@@ -1041,21 +1041,15 @@ function DashboardContent() {
             const res = await fetch('/api/extension/heartbeat', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             
-            // Consider extension connected if:
-            // 1. Recent heartbeat (within 5 minutes)
-            // 2. Recent successful task completion (within 10 minutes)
-            const heartbeatConnected = !!data.connected;
-            const now = new Date();
-            const recentTasks = tasks.filter(task => 
-                task.status === 'completed' && 
-                new Date(task.updatedAt) > new Date(now.getTime() - 10 * 60 * 1000)
-            );
-            
-            const taskActivityConnected = recentTasks.length > 0;
-            const isConnected = heartbeatConnected || taskActivityConnected;
-            
+            const isConnected = !!data.connected;
             setExtensionConnected(isConnected);
-            if (isConnected) setExtensionLastSeen(new Date());
+            
+            // Always update last seen from server data if available
+            if (data.lastSeen) {
+                setExtensionLastSeen(new Date(data.lastSeen));
+            } else if (isConnected) {
+                setExtensionLastSeen(new Date());
+            }
         } catch {}
     };
 
@@ -1962,15 +1956,20 @@ function DashboardContent() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {extensionConnected ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(16,185,129,0.1)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.6)' }} />
-                                <span style={{ fontSize: '11px', fontWeight: '600', color: '#34d399' }}>Extension Active</span>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.6)', animation: 'pulse 2s infinite' }} />
+                                <span style={{ fontSize: '11px', fontWeight: '600', color: '#34d399' }}>Extension Connected</span>
                                 {extensionLastSeen && <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>· {extensionLastSeen.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
                             </div>
                         ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(251,191,36,0.1)', borderRadius: '8px', border: '1px solid rgba(251,191,36,0.3)' }}>
-                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }} />
-                                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#fbbf24' }}>Extension Idle</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#f87171' }}>Extension Offline</span>
+                                    {extensionLastSeen && (() => {
+                                        const ago = Math.floor((Date.now() - extensionLastSeen.getTime()) / 1000);
+                                        const label = ago < 60 ? `${ago}s ago` : ago < 3600 ? `${Math.floor(ago/60)}m ago` : ago < 86400 ? `${Math.floor(ago/3600)}h ago` : `${Math.floor(ago/86400)}d ago`;
+                                        return <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>· last seen {label}</span>;
+                                    })()}
                                 </div>
                                 <button
                                     onClick={checkExtensionConnectivity}
@@ -1986,9 +1985,9 @@ function DashboardContent() {
                                     }}
                                     onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
                                     onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                                    title="Check extension connection"
+                                    title="Auto-checks every 15s. Click to check now."
                                 >
-                                    🔄 Check
+                                    🔄 Retry
                                 </button>
                             </div>
                         )}

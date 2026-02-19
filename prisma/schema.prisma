@@ -414,42 +414,46 @@ model AutomationSettings {
   userId                String   @unique
   // Preset
   accountPreset         String   @default("matured-safe")
+  // Delay mode: 'fixed' uses exact values, 'random' uses min-max range with jitter
+  delayMode             String   @default("random")
   // Global delay controls
-  baseDelay             Int      @default(5)      // single base delay (seconds) applied across actions
+  baseDelay             Int      @default(0)      // extra seconds added to every action (0 = disabled)
   randomDelayEnabled    Boolean  @default(true)   // toggle random jitter on/off
-  // Random interval
-  randomIntervalMin     Int      @default(15)
-  randomIntervalMax     Int      @default(35)
+  // Random interval — jitter range added on top when randomDelayEnabled
+  randomIntervalMin     Int      @default(3)
+  randomIntervalMax     Int      @default(10)
   // Daily limits
   dailyCommentLimit     Int      @default(30)
   dailyLikeLimit        Int      @default(60)
   dailyShareLimit       Int      @default(15)
   dailyFollowLimit      Int      @default(30)
-  // Starting delays (seconds)
-  automationStartDelay  Int      @default(10)
-  networkingStartDelay  Int      @default(10)
-  importStartDelay      Int      @default(10)
-  taskInitDelay         Int      @default(0)       // delay before each task starts processing
-  // Post writer delays (seconds)
-  postWriterPageLoad    Int      @default(5)
-  postWriterClick       Int      @default(3)
-  postWriterTyping      Int      @default(4)
-  postWriterSubmit      Int      @default(3)
-  // Automation delay intervals (seconds)
-  searchDelayMin        Int      @default(30)
-  searchDelayMax        Int      @default(60)
-  commentDelayMin       Int      @default(40)
-  commentDelayMax       Int      @default(90)
-  // Networking delay intervals (seconds)
+  // Warmup delay (seconds) — single delay before any task starts
+  warmupDelay           Int      @default(5)
+  // Legacy starting delays (kept for backward compat, default 0 = use warmupDelay)
+  automationStartDelay  Int      @default(0)
+  networkingStartDelay  Int      @default(0)
+  importStartDelay      Int      @default(0)
+  taskInitDelay         Int      @default(0)
+  // Post writer delays (seconds) — minimal, just enough for DOM
+  postWriterPageLoad    Int      @default(3)
+  postWriterClick       Int      @default(1)
+  postWriterTyping      Int      @default(1)
+  postWriterSubmit      Int      @default(2)
+  // Between-posts delay intervals (seconds) — MOST IMPORTANT for safety
+  searchDelayMin        Int      @default(15)
+  searchDelayMax        Int      @default(30)
+  commentDelayMin       Int      @default(25)
+  commentDelayMax       Int      @default(60)
+  // Between-connections delay intervals (seconds) — IMPORTANT for safety
   networkingDelayMin    Int      @default(20)
   networkingDelayMax    Int      @default(45)
-  // Post action delays (seconds)
-  beforeOpeningDelay    Int      @default(5)
-  postPageLoadDelay     Int      @default(4)
-  beforeLikeDelay       Int      @default(3)
-  beforeCommentDelay    Int      @default(4)
-  beforeShareDelay      Int      @default(3)
-  beforeFollowDelay     Int      @default(3)
+  // Per-action delays (seconds) — small pauses before each click
+  beforeOpeningDelay    Int      @default(2)
+  postPageLoadDelay     Int      @default(3)
+  beforeLikeDelay       Int      @default(1)
+  beforeCommentDelay    Int      @default(2)
+  beforeShareDelay      Int      @default(1)
+  beforeFollowDelay     Int      @default(1)
   // Human simulation
   mouseMovement         Boolean  @default(true)
   scrollSimulation      Boolean  @default(true)
@@ -458,6 +462,21 @@ model AutomationSettings {
   updatedAt             DateTime @updatedAt
 
   @@index([userId])
+}
+
+// Live activity log — extension pushes task actions here for website dashboard display
+model LiveActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  taskType    String               // 'automation', 'networking', 'import', 'post_writer'
+  action      String               // 'like', 'comment', 'share', 'follow', 'connect', 'post', 'delay', 'start', 'stop', 'error'
+  message     String   @db.Text    // human-readable description
+  details     String   @default("{}") @db.Text  // JSON — extra data (post URL, delay duration, etc.)
+  level       String   @default("info")  // 'info', 'success', 'warning', 'error'
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, taskType])
 }
 
 // Commenter config - bulk commenting settings (synced between website and extension)

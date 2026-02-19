@@ -5,6 +5,7 @@
 
 import { browser } from '../shared/utils/browser.js';
 import { backgroundStatistics } from './statisticsManager.js';
+import { liveLog } from '../shared/services/liveActivityLogger.js';
 
 class ImportAutomation {
     constructor() {
@@ -661,6 +662,7 @@ class ImportAutomation {
 
         console.log(`🤝 IMPORT: Starting connection requests for ${profiles.length} profiles`);
         await this.broadcastStatus(`🤝 Starting: ${profiles.length} profiles`, 'info');
+        liveLog.start('import', `🤝 Import started — ${profiles.length} profiles`);
         
         // Send start progress to popup
         await this.sendProgressToPopup({ type: 'start', total: profiles.length, current: 0 });
@@ -674,8 +676,8 @@ class ImportAutomation {
         }
 
         // Get connection request delay settings from limits
-        const networkingMinDelay = (delaySettings && delaySettings.networkingMinDelay) || 45;
-        const networkingMaxDelay = (delaySettings && delaySettings.networkingMaxDelay) || 90;
+        const networkingMinDelay = (delaySettings && delaySettings.networkingMinDelay) || 20;
+        const networkingMaxDelay = (delaySettings && delaySettings.networkingMaxDelay) || 45;
 
         try {
             for (let i = 0; i < profiles.length; i++) {
@@ -737,6 +739,7 @@ class ImportAutomation {
                         
                         console.log(`✅ IMPORT: Connection request sent to: ${profile}`);
                         await this.broadcastStatus(`✅ Connected: ${profileName} (${results.successful}/${profiles.length})`, 'success');
+                        liveLog.connect('import', `Connected: ${profileName} (${results.successful}/${profiles.length})`, { profileUrl: profile });
                         
                         // Track import credit usage
                         await this.trackImportCredit();
@@ -771,6 +774,7 @@ class ImportAutomation {
                     if (i < profiles.length - 1 && !this.stopFlag) {
                         const delaySeconds = Math.round(networkingMinDelay + Math.random() * (networkingMaxDelay - networkingMinDelay));
                         console.log(`⏳ IMPORT: Waiting ${delaySeconds}s (${networkingMinDelay}-${networkingMaxDelay}s range) before next profile...`);
+                        liveLog.delay('import', delaySeconds, 'between connections');
                         
                         // Show countdown
                         for (let remaining = delaySeconds; remaining > 0; remaining -= 5) {
@@ -794,6 +798,7 @@ class ImportAutomation {
             if (!this.stopFlag) {
                 await this.broadcastStatus(`🎉 Complete! ${results.successful} connected`, 'success', false);
             }
+            liveLog.stop('import', `✅ Import complete — ${results.successful} connected, ${results.failed} failed`);
             this.stopFlag = false;
             
             // Send complete message to popup
@@ -856,12 +861,13 @@ class ImportAutomation {
         const importStartDelay = (delaySettings && delaySettings.importStartDelay) || 0;
         if (importStartDelay > 0) {
             console.log(`⏰ IMPORT DELAY: Waiting ${importStartDelay}s before starting import...`);
+            liveLog.delay('import', importStartDelay, 'import start delay');
             await new Promise(resolve => setTimeout(resolve, importStartDelay * 1000));
         }
 
         // Get comment delay settings from limits (used for combined automation between profiles)
-        const commentMinDelay = (delaySettings && delaySettings.commentMinDelay) || 60;
-        const commentMaxDelay = (delaySettings && delaySettings.commentMaxDelay) || 180;
+        const commentMinDelay = (delaySettings && delaySettings.commentMinDelay) || 25;
+        const commentMaxDelay = (delaySettings && delaySettings.commentMaxDelay) || 60;
 
         try {
             for (let i = 0; i < profiles.length; i++) {

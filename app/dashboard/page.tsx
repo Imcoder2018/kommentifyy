@@ -153,6 +153,10 @@ function DashboardContent() {
     const [inspirationLoading, setInspirationLoading] = useState(false);
     const [inspirationUseAll, setInspirationUseAll] = useState(true);
     const [inspirationSelected, setInspirationSelected] = useState<string[]>([]);
+    const [showInspirationPopup, setShowInspirationPopup] = useState(false);
+    const [showSharedProfilesPopup, setShowSharedProfilesPopup] = useState(false);
+    const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+    const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
 
     // Comment Style Sources state
     const [commentStyleProfiles, setCommentStyleProfiles] = useState<any[]>([]);
@@ -187,6 +191,10 @@ function DashboardContent() {
     const [autoSettings, setAutoSettings] = useState<any>(null);
     const [autoSettingsLoading, setAutoSettingsLoading] = useState(false);
     const [autoSettingsSaving, setAutoSettingsSaving] = useState(false);
+
+    // Live activity log state
+    const [liveActivityLogs, setLiveActivityLogs] = useState<any[]>([]);
+    const [liveActivityLoading, setLiveActivityLoading] = useState(false);
 
     // Commenter config state
     const [commenterCfg, setCommenterCfg] = useState<any>(null);
@@ -906,6 +914,18 @@ function DashboardContent() {
         finally { setAutoSettingsSaving(false); }
     };
 
+    // Live activity log functions
+    const loadLiveActivity = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setLiveActivityLoading(true);
+        try {
+            const res = await fetch('/api/live-activity?limit=100', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setLiveActivityLogs(data.logs || []);
+        } catch {} finally { setLiveActivityLoading(false); }
+    };
+
     // Commenter config functions
     const loadCommenterCfg = async () => {
         const token = localStorage.getItem('authToken');
@@ -1058,6 +1078,7 @@ function DashboardContent() {
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
         if (tab === 'analytics') loadAnalytics();
+        if (tab === 'limits') { loadAutoSettings(); loadLiveActivity(); }
         if (tab === 'referrals') loadReferralData();
         if (tab === 'account') loadAccountSettings();
     }, [loading, user, activeTab]);
@@ -2103,17 +2124,138 @@ function DashboardContent() {
                                 </button>
                             </div>
                         </div>
-                        {linkedInTopicSuggestions.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-                                {linkedInTopicSuggestions.map((topic, idx) => (
-                                    <button key={idx} onClick={() => selectTopicSuggestion(topic)}
-                                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', padding: '4px 8px', color: 'white', fontSize: '10px', cursor: 'pointer', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {topic}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
                     </div>
+
+                    {/* Inspiration Sources — compact banner */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                <span style={{ fontSize: '16px', flexShrink: 0 }}>✨</span>
+                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '700', flexShrink: 0 }}>Sources</span>
+                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                                    {inspirationSources.length > 0 ? (
+                                        <>
+                                            {inspirationSources.slice(0, 3).map((src: any, i: number) => (
+                                                <span key={i} style={{ background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#a78bfa', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{src.name}</span>
+                                            ))}
+                                            {inspirationSources.length > 3 && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>+{inspirationSources.length - 3} more</span>}
+                                        </>
+                                    ) : (
+                                        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>No sources — add profiles to mimic writing style</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                {inspirationSources.length > 0 && (
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                        <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Use All</span>
+                                    </label>
+                                )}
+                                <button onClick={() => setShowInspirationPopup(true)}
+                                    style={{ padding: '5px 10px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', fontSize: '10px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    👤 My Sources ({inspirationSources.length})
+                                </button>
+                                {sharedInspProfiles.length > 0 && (
+                                    <button onClick={() => setShowSharedProfilesPopup(true)}
+                                        style={{ padding: '5px 10px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', color: '#fbbf24', fontSize: '10px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                        ⭐ Shared ({sharedInspProfiles.length})
+                                    </button>
+                                )}
+                                <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'rgba(255,255,255,0.6)', padding: '5px 8px', fontSize: '10px', cursor: 'pointer' }}>🔄</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Inspiration Sources Popup Modal */}
+                    {showInspirationPopup && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowInspirationPopup(false)}>
+                            <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '600px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>✨ Inspiration Sources</h3>
+                                    <button onClick={() => setShowInspirationPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+                                </div>
+                                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '12px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic them when generating posts.</p>
+                                {/* Scrape input */}
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', marginBottom: '12px' }}>
+                                    <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={2}
+                                        style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none', resize: 'vertical', fontFamily: 'monospace', lineHeight: '1.5' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <select value={inspirationPostCount} onChange={e => setInspirationPostCount(parseInt(e.target.value))} style={{ padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
+                                            <option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="30">30</option>
+                                        </select>
+                                        <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '7px 14px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                            {inspirationScraping ? '⏳...' : '🔍 Scrape'}
+                                        </button>
+                                    </div>
+                                </div>
+                                {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 12px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '8px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
+                                {/* Source list */}
+                                {inspirationSources.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                                        {inspirationSources.map((src: any, i: number) => {
+                                            const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
+                                            return (
+                                                <div key={i} onClick={() => {
+                                                    if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
+                                                    else if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== src.name));
+                                                    else setInspirationSelected([...inspirationSelected, src.name]);
+                                                }}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isChecked ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                                                    <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '15px', height: '15px', cursor: 'pointer' }} />
+                                                    <span style={{ fontSize: '14px' }}>👤</span>
+                                                    <span style={{ color: isChecked ? '#a78bfa' : 'white', fontSize: '13px', fontWeight: '600', flex: 1 }}>{src.name}</span>
+                                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
+                                                    <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px', padding: '0 4px', lineHeight: 1 }}>×</button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', textAlign: 'center', padding: '16px 0' }}>No sources yet. Add LinkedIn profiles above.</p>
+                                )}
+                                {inspirationSources.length > 0 && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(105,63,233,0.1)', borderRadius: '10px', border: '1px solid rgba(105,63,233,0.25)' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
+                                            <strong>Use All Sources</strong>
+                                        </label>
+                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>AI mimics their writing style</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Shared Profiles Popup Modal */}
+                    {showSharedProfilesPopup && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowSharedProfilesPopup(false)}>
+                            <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '550px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h3 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', margin: 0 }}>⭐ Kommentify Shared Profiles</h3>
+                                    <button onClick={() => setShowSharedProfilesPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+                                </div>
+                                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '12px' }}>Pre-scraped profiles from top LinkedIn creators. Select to use their style.</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {sharedInspProfiles.map((p: any, i: number) => {
+                                        const isChecked = inspirationSelected.includes(p.profileName);
+                                        return (
+                                            <div key={i} onClick={() => {
+                                                if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== p.profileName));
+                                                else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
+                                            }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isChecked ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                                                <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '15px', height: '15px', cursor: 'pointer' }} />
+                                                <span style={{ fontSize: '14px' }}>👤</span>
+                                                <span style={{ color: isChecked ? '#fbbf24' : 'white', fontSize: '13px', fontWeight: '600', flex: 1 }}>{p.profileName}</span>
+                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{p.postCount} posts</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '16px' }}>
                         {/* Left Column: Settings */}
@@ -2125,8 +2267,24 @@ function DashboardContent() {
                                 </h3>
                                 <div style={{ marginBottom: '10px' }}>
                                     <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>💡 Topic/Idea</label>
-                                    <input type="text" value={writerTopic} onChange={e => setWriterTopic(e.target.value)} placeholder="What do you want to write about?"
-                                        style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <input type="text" value={writerTopic} onChange={e => setWriterTopic(e.target.value)} placeholder="What do you want to write about?"
+                                            style={{ flex: 1, padding: '9px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
+                                        {linkedInProfile && <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
+                                            style={{ padding: '9px 14px', background: linkedInGeneratingTopics ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: linkedInGeneratingTopics ? 'wait' : 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(245,158,11,0.3)' }}>
+                                            {linkedInGeneratingTopics ? '⏳...' : '💡 Topics'}
+                                        </button>}
+                                    </div>
+                                    {linkedInTopicSuggestions.length > 0 && (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                                            {linkedInTopicSuggestions.map((topic, idx) => (
+                                                <button key={idx} onClick={() => selectTopicSuggestion(topic)}
+                                                    style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '4px 8px', color: '#fbbf24', fontSize: '10px', cursor: 'pointer', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {topic}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                                     <div>
@@ -2297,387 +2455,169 @@ function DashboardContent() {
                                     </div>
                                 )}
                                 {/* Action Buttons */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '16px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 0.8fr', gap: '8px', marginTop: '12px' }}>
                                     <button onClick={sendToExtension} disabled={writerPosting}
-                                        style={{ padding: '13px 8px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '13px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 15px rgba(105,63,233,0.4)', opacity: writerPosting ? 0.7 : 1, transition: 'all 0.2s' }}>
-                                        {writerPosting ? '⏳ Sending...' : '🚀 Post to LinkedIn'}
+                                        style={{ padding: '11px 6px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 12px rgba(105,63,233,0.3)', opacity: writerPosting ? 0.7 : 1 }}>
+                                        {writerPosting ? '⏳...' : '🚀 Post to LinkedIn'}
                                     </button>
                                     <button onClick={saveDraft}
-                                        style={{ padding: '13px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
-                                        💾 Save Draft
+                                        style={{ padding: '11px 6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
+                                        💾 Draft
                                     </button>
                                     <button onClick={schedulePost}
-                                        style={{ padding: '13px 8px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '12px', color: '#c4b5fd', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+                                        style={{ padding: '11px 6px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '10px', color: '#c4b5fd', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
                                         📅 Schedule
                                     </button>
                                 </div>
-                                {/* Inline Schedule Controls */}
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px', alignItems: 'center' }}>
+                                {/* Schedule date/time */}
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
                                     <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
-                                        style={{ flex: 1, padding: '8px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontSize: '12px' }} />
+                                        style={{ flex: 1, padding: '6px 8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '11px' }} />
                                     <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
-                                        style={{ flex: 1, padding: '8px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontSize: '12px' }} />
+                                        style={{ flex: 1, padding: '6px 8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '11px' }} />
                                 </div>
                             </div>
-                            {/* Saved Drafts */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>
-                                    💾 Saved Drafts ({writerDrafts.length})
-                                </h3>
-                                {writerDrafts.length === 0 ? (
-                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', textAlign: 'center', padding: '20px 0' }}>No saved drafts yet</p>
-                                ) : (
-                                    <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        {writerDrafts.map((draft: any) => (
-                                            <div key={draft.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>
-                                                        {draft.status === 'scheduled' ? '📅 Scheduled' : '📝 Draft'} - {new Date(draft.createdAt).toLocaleDateString()}
-                                                    </span>
-                                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                                        <button onClick={() => { setWriterContent(draft.content); setWriterTopic(draft.topic || ''); }}
-                                                            style={{ background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}>
-                                                            Load
-                                                        </button>
-                                                        <button onClick={() => deleteDraft(draft.id)}
-                                                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}>
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {draft.content.substring(0, 120)}...
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
                         </div>
-                    </div>
-                    {/* Inspiration Sources Section - Below Grid */}
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><span>✨</span> Inspiration Sources</h3>
-                            <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>🔄 Refresh</button>
-                        </div>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '14px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic the style of your saved sources.</p>
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '14px' }}>
-                            <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={2}
-                                style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'system-ui, sans-serif', lineHeight: '1.5' }} />
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <select value={inspirationPostCount} onChange={e => setInspirationPostCount(parseInt(e.target.value))} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                                    <option value="5">5 posts</option><option value="10">10 posts</option><option value="15">15 posts</option><option value="20">20 posts</option><option value="30">30 posts</option>
-                                </select>
-                                <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '8px 16px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
-                                    {inspirationScraping ? '⏳ Scraping...' : '🔍 Scrape'}
-                                </button>
-                            </div>
-                        </div>
-                        {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 14px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
-                        {inspirationSources.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                                {inspirationSources.map((src: any, i: number) => {
-                                    const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
-                                    return (
-                                    <div key={i} onClick={() => {
-                                        if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
-                                        else if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== src.name));
-                                        else setInspirationSelected([...inspirationSelected, src.name]);
-                                    }}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: isChecked ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                        <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '15px', height: '15px', cursor: 'pointer' }} />
-                                        <span style={{ fontSize: '12px' }}>👤</span>
-                                        <span style={{ color: isChecked ? '#a78bfa' : 'white', fontSize: '13px', fontWeight: '600' }}>{src.name}</span>
-                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
-                                        <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>×</button>
-                                    </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                        {inspirationSources.length === 0 && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', textAlign: 'center', margin: '8px 0 0' }}>No sources yet. Add LinkedIn profiles above to get started.</p>}
-                        {inspirationSources.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(105,63,233,0.1)', borderRadius: '10px', border: '1px solid rgba(105,63,233,0.25)' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                    <strong>Use All Sources</strong>
-                                </label>
-                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>AI will mimic their writing style when generating posts</span>
-                            </div>
-                        )}
-                        {/* Kommentify Shared Profiles */}
-                        {sharedInspProfiles.length > 0 && (
-                            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.08)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.2)' }}>
-                                <div style={{ color: '#fbbf24', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>⭐ Kommentify Shared Profiles</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {sharedInspProfiles.map((p: any, i: number) => {
-                                        const isChecked = inspirationSelected.includes(p.profileName);
-                                        return (
-                                        <div key={i} onClick={() => {
-                                            if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== p.profileName));
-                                            else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
-                                        }}
-                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: isChecked ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '8px', border: isChecked ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                            <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '14px', height: '14px', cursor: 'pointer' }} />
-                                            <span style={{ fontSize: '11px' }}>👤</span>
-                                            <span style={{ color: isChecked ? '#fbbf24' : 'white', fontSize: '12px', fontWeight: '600' }}>{p.profileName}</span>
-                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{p.postCount} posts</span>
-                                        </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
                     </div>
                     
-                    {/* Scheduled Posts Calendar & Task Status */}
-                    {(writerScheduledPosts.length > 0 || taskCounts.pending > 0 || taskCounts.in_progress > 0 || taskCounts.completed > 0 || taskCounts.failed > 0) ? (
-                        <div style={{ marginTop: '24px' }}>
-                            {/* Task Status Overview */}
-                            <div style={{ 
-                                background: 'rgba(255,255,255,0.05)', 
-                                padding: '20px', 
-                                borderRadius: '16px', 
-                                border: '1px solid rgba(255,255,255,0.1)', 
-                                marginBottom: '20px' 
-                            }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span>📊</span> Task Status Overview
+                    {/* Calendar View — real month grid */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button onClick={() => { if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(calendarYear - 1); } else setCalendarMonth(calendarMonth - 1); }}
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>‹</button>
+                                <h3 style={{ color: 'white', fontSize: '15px', fontWeight: '700', margin: 0, minWidth: '160px', textAlign: 'center' }}>
+                                    📅 {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
                                 </h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-                                    {[
-                                        { label: 'Pending', count: taskCounts.pending, color: '#f59e0b', icon: '⏳' },
-                                        { label: 'In Progress', count: taskCounts.in_progress, color: '#3b82f6', icon: '🔄' },
-                                        { label: 'Completed', count: taskCounts.completed, color: '#10b981', icon: '✅' },
-                                        { label: 'Failed', count: taskCounts.failed, color: '#ef4444', icon: '❌' }
-                                    ].map((status, idx) => (
-                                        <div key={idx} style={{ 
-                                            background: 'rgba(255,255,255,0.05)', 
-                                            padding: '12px', 
-                                            borderRadius: '10px', 
-                                            border: `1px solid ${status.color}33`,
-                                            textAlign: 'center'
-                                        }}>
-                                            <div style={{ fontSize: '20px', marginBottom: '4px' }}>{status.icon}</div>
-                                            <div style={{ fontSize: '18px', fontWeight: '700', color: status.color, marginBottom: '2px' }}>
-                                                {status.count}
-                                            </div>
-                                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
-                                                {status.label}
+                                <button onClick={() => { if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(calendarYear + 1); } else setCalendarMonth(calendarMonth + 1); }}
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>›</button>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {/* Task status mini badges */}
+                                {[
+                                    { label: 'Pending', count: taskCounts.pending, color: '#f59e0b' },
+                                    { label: 'Done', count: taskCounts.completed, color: '#10b981' },
+                                    { label: 'Failed', count: taskCounts.failed, color: '#ef4444' },
+                                ].filter(s => s.count > 0).map(s => (
+                                    <span key={s.label} style={{ background: `${s.color}22`, border: `1px solid ${s.color}44`, borderRadius: '4px', padding: '2px 8px', color: s.color, fontSize: '10px', fontWeight: '700' }}>{s.count} {s.label}</span>
+                                ))}
+                                <button onClick={loadScheduledPosts} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'rgba(255,255,255,0.6)', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>🔄</button>
+                            </div>
+                        </div>
+                        {/* Day headers */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '4px' }}>
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                                <div key={d} style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '700', padding: '4px 0', textTransform: 'uppercase' }}>{d}</div>
+                            ))}
+                        </div>
+                        {/* Calendar grid */}
+                        {(() => {
+                            const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+                            const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+                            const today = new Date();
+                            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+                            const statusColors: Record<string, string> = { pending: '#f59e0b', in_progress: '#3b82f6', completed: '#10b981', failed: '#ef4444' };
+                            const postsByDay: Record<number, any[]> = {};
+                            writerScheduledPosts.forEach((p: any) => {
+                                const d = new Date(p.scheduledFor);
+                                if (d.getMonth() === calendarMonth && d.getFullYear() === calendarYear) {
+                                    const day = d.getDate();
+                                    if (!postsByDay[day]) postsByDay[day] = [];
+                                    postsByDay[day].push(p);
+                                }
+                            });
+                            const cells = [];
+                            for (let i = 0; i < firstDay; i++) cells.push(<div key={`e${i}`} />);
+                            for (let day = 1; day <= daysInMonth; day++) {
+                                const dateStr = `${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                                const isToday = dateStr === todayStr;
+                                const posts = postsByDay[day] || [];
+                                cells.push(
+                                    <div key={day} style={{ minHeight: '62px', padding: '4px', background: isToday ? 'rgba(105,63,233,0.12)' : posts.length > 0 ? 'rgba(255,255,255,0.04)' : 'transparent', borderRadius: '8px', border: isToday ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: isToday ? '800' : '600', color: isToday ? '#a78bfa' : 'rgba(255,255,255,0.6)', marginBottom: '2px' }}>{day}</div>
+                                        {posts.slice(0, 2).map((p: any, pi: number) => {
+                                            const col = statusColors[p.taskStatus || 'pending'] || '#f59e0b';
+                                            return (
+                                                <div key={pi} title={`${p.taskStatus || 'pending'} — ${(p.content || '').substring(0, 80)}...`}
+                                                    style={{ fontSize: '9px', color: col, background: `${col}15`, borderLeft: `2px solid ${col}`, padding: '1px 4px', borderRadius: '2px', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                                                    onClick={() => { setWriterContent(p.content || ''); setWriterTopic(p.topic || ''); }}>
+                                                    {new Date(p.scheduledFor).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} {p.topic ? p.topic.substring(0,12) : p.content?.substring(0,12)}
+                                                </div>
+                                            );
+                                        })}
+                                        {posts.length > 2 && <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>+{posts.length - 2}</div>}
+                                    </div>
+                                );
+                            }
+                            return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>{cells}</div>;
+                        })()}
+                        {/* Selected day detail — show posts for today or any day with posts */}
+                        {writerScheduledPosts.length > 0 && (
+                            <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px' }}>
+                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase' }}>Upcoming Posts</div>
+                                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {writerScheduledPosts
+                                        .sort((a: any, b: any) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
+                                        .slice(0, 8)
+                                        .map((post: any, idx: number) => {
+                                            const scheduledDate = new Date(post.scheduledFor);
+                                            const statusColors2: Record<string, string> = { pending: '#f59e0b', in_progress: '#3b82f6', completed: '#10b981', failed: '#ef4444' };
+                                            const col = statusColors2[post.taskStatus || 'pending'] || '#f59e0b';
+                                            return (
+                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', borderLeft: `3px solid ${col}` }}>
+                                                    <span style={{ background: col, color: 'white', padding: '1px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '600', textTransform: 'uppercase', flexShrink: 0 }}>{post.taskStatus || 'pending'}</span>
+                                                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', flexShrink: 0, minWidth: '100px' }}>{scheduledDate.toLocaleDateString()} {scheduledDate.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+                                                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.topic || post.content?.substring(0, 60)}</span>
+                                                    <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                                        {post.taskStatus === 'failed' && (
+                                                            <button onClick={() => { const nd = new Date(); nd.setDate(nd.getDate()+1); setWriterScheduleDate(nd.toISOString().split('T')[0]); setWriterScheduleTime('12:00'); setWriterContent(post.content); setWriterTopic(post.topic||''); }}
+                                                                style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#ef4444', fontSize: '9px', cursor: 'pointer' }}>🔄</button>
+                                                        )}
+                                                        <button onClick={() => { if (confirm('Delete this scheduled post?')) { fetch('/api/post-drafts', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }, body: JSON.stringify({ id: post.id }) }).then(() => loadScheduledPosts()); } }}
+                                                            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '4px', padding: '2px 6px', color: '#ef4444', fontSize: '9px', cursor: 'pointer' }}>×</button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Saved Drafts — below calendar */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '14px' }}>
+                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>
+                            💾 Saved Drafts ({writerDrafts.length})
+                        </h4>
+                        {writerDrafts.length === 0 ? (
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', textAlign: 'center', padding: '10px 0' }}>No saved drafts yet</p>
+                        ) : (
+                            <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {writerDrafts.map((draft: any) => (
+                                    <div key={draft.id} style={{ background: 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px' }}>
+                                                {draft.status === 'scheduled' ? '📅' : '📝'} {new Date(draft.createdAt).toLocaleDateString()}
+                                            </span>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                <button onClick={() => { setWriterContent(draft.content); setWriterTopic(draft.topic || ''); }}
+                                                    style={{ background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '5px', color: '#a78bfa', padding: '3px 8px', fontSize: '10px', cursor: 'pointer' }}>
+                                                    Load
+                                                </button>
+                                                <button onClick={() => deleteDraft(draft.id)}
+                                                    style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '5px', color: '#f87171', padding: '3px 8px', fontSize: '10px', cursor: 'pointer' }}>
+                                                    ×
+                                                </button>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                                {taskCounts.failed > 0 && (
-                                    <div style={{ 
-                                        marginTop: '12px', 
-                                        padding: '10px', 
-                                        background: 'rgba(239,68,68,0.1)', 
-                                        border: '1px solid rgba(239,68,68,0.3)', 
-                                        borderRadius: '8px',
-                                        color: '#f87171',
-                                        fontSize: '12px',
-                                        textAlign: 'center'
-                                    }}>
-                                        ⚠️ {taskCounts.failed} task{taskCounts.failed > 1 ? 's' : ''} failed due to extension inactivity. Consider rescheduling.
+                                        <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '12px', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {draft.content.substring(0, 100)}...
+                                        </p>
                                     </div>
-                                )}
+                                ))}
                             </div>
-
-                            {/* Calendar View */}
-                            {writerScheduledPosts.length > 0 && (
-                                <div style={{ 
-                                    background: 'rgba(255,255,255,0.05)', 
-                                    padding: '20px', 
-                                    borderRadius: '16px', 
-                                    border: '1px solid rgba(255,255,255,0.1)' 
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span>📅</span> Scheduled Posts Calendar
-                                        </h3>
-                                        <button
-                                            onClick={loadScheduledPosts}
-                                            style={{ 
-                                                background: 'rgba(255,255,255,0.1)', 
-                                                border: '1px solid rgba(255,255,255,0.2)', 
-                                                borderRadius: '6px', 
-                                                padding: '6px 12px', 
-                                                color: 'rgba(255,255,255,0.8)', 
-                                                fontSize: '12px', 
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '4px'
-                                            }}
-                                        >
-                                            🔄 Refresh
-                                        </button>
-                                    </div>
-                                    <div style={{ display: 'grid', gap: '12px' }}>
-                                        {writerScheduledPosts
-                                            .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
-                                            .map((post: any, idx: number) => {
-                                                const scheduledDate = new Date(post.scheduledFor);
-                                                const statusColor: { [key: string]: string } = {
-                                                    pending: '#f59e0b',
-                                                    in_progress: '#3b82f6',
-                                                    completed: '#10b981',
-                                                    failed: '#ef4444'
-                                                };
-                                                const color = statusColor[post.taskStatus || 'pending'] || '#f59e0b';
-                                                
-                                                return (
-                                                    <div key={idx} style={{ 
-                                                        background: 'rgba(255,255,255,0.05)', 
-                                                        padding: '14px', 
-                                                        borderRadius: '10px', 
-                                                        border: `1px solid ${color}33`,
-                                                        borderLeft: `4px solid ${color}`
-                                                    }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                                                            <div style={{ flex: 1 }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                                    <span style={{ 
-                                                                        background: color, 
-                                                                        color: 'white', 
-                                                                        padding: '2px 8px', 
-                                                                        borderRadius: '12px', 
-                                                                        fontSize: '10px', 
-                                                                        fontWeight: '600',
-                                                                        textTransform: 'uppercase'
-                                                                    }}>
-                                                                        {post.taskStatus || 'pending'}
-                                                                    </span>
-                                                                    {post.taskId && post.taskStatus === 'pending' && (
-                                                                        <span style={{ 
-                                                                            background: '#8b5cf6', 
-                                                                            color: 'white', 
-                                                                            padding: '2px 6px', 
-                                                                            borderRadius: '8px', 
-                                                                            fontSize: '9px', 
-                                                                            fontWeight: '600'
-                                                                        }}>
-                                                                            📤 Sent
-                                                                        </span>
-                                                                    )}
-                                                                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
-                                                                        {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                                    </span>
-                                                                </div>
-                                                                {post.topic && (
-                                                                    <div style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
-                                                                        📝 {post.topic}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                                {post.taskStatus === 'failed' && (
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            // Reschedule failed post
-                                                                            const newDate = new Date();
-                                                                            newDate.setDate(newDate.getDate() + 1);
-                                                                            setWriterScheduleDate(newDate.toISOString().split('T')[0]);
-                                                                            setWriterScheduleTime('12:00');
-                                                                            setWriterContent(post.content);
-                                                                            setWriterTopic(post.topic || '');
-                                                                            setWriterTemplate(post.template || '');
-                                                                            setWriterTone(post.tone || '');
-                                                                        }}
-                                                                        style={{ 
-                                                                            background: 'rgba(239,68,68,0.2)', 
-                                                                            border: '1px solid rgba(239,68,68,0.3)', 
-                                                                            borderRadius: '4px', 
-                                                                            padding: '4px 8px', 
-                                                                            color: '#ef4444', 
-                                                                            fontSize: '10px', 
-                                                                            cursor: 'pointer' 
-                                                                        }}
-                                                                        title="Reschedule this post"
-                                                                    >
-                                                                        🔄 Reschedule
-                                                                    </button>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => {
-                                                                        if (confirm('Delete this scheduled post?')) {
-                                                                            // Delete the post
-                                                                            fetch('/api/post-drafts', {
-                                                                                method: 'DELETE',
-                                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-                                                                                body: JSON.stringify({ id: post.id })
-                                                                            }).then(() => loadScheduledPosts());
-                                                                        }
-                                                                    }}
-                                                                    style={{ 
-                                                                        background: 'rgba(239,68,68,0.1)', 
-                                                                        border: '1px solid rgba(239,68,68,0.2)', 
-                                                                        borderRadius: '4px', 
-                                                                        padding: '4px 8px', 
-                                                                        color: '#ef4444', 
-                                                                        fontSize: '10px', 
-                                                                        cursor: 'pointer' 
-                                                                    }}
-                                                                    title="Delete this post"
-                                                                >
-                                                                    ×
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ 
-                                                            color: 'rgba(255,255,255,0.8)', 
-                                                            fontSize: '12px', 
-                                                            lineHeight: '1.4',
-                                                            maxHeight: '60px',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
-                                                        }}>
-                                                            {post.content}
-                                                        </div>
-                                                        {post.taskFailureReason && (
-                                                            <div style={{ 
-                                                                marginTop: '8px', 
-                                                                padding: '6px', 
-                                                                background: 'rgba(239,68,68,0.1)', 
-                                                                borderRadius: '4px', 
-                                                                color: '#f87171', 
-                                                                fontSize: '11px' 
-                                                            }}>
-                                                                ❌ {post.taskFailureReason}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div style={{ marginTop: '24px', textAlign: 'center', padding: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
-                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>No Scheduled Posts</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
-                                Schedule posts using the date and time inputs above. Your posts will appear here with their current status.
-                            </p>
-                            <button
-                                onClick={loadScheduledPosts}
-                                style={{ 
-                                    background: 'rgba(255,255,255,0.1)', 
-                                    border: '1px solid rgba(255,255,255,0.2)', 
-                                    borderRadius: '6px', 
-                                    padding: '8px 16px', 
-                                    color: 'rgba(255,255,255,0.8)', 
-                                    fontSize: '12px', 
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                🔄 Refresh
-                            </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                     </>
                 )}
 
@@ -2685,167 +2625,161 @@ function DashboardContent() {
                 {activeTab === 'comments' && (
                     <div>
                         {/* Comment Settings Section */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
-                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>⚙️</span> Comment Settings
-                            </h3>
-                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '20px' }}>
-                                These settings control how AI generates comments - both from the manual AI button on LinkedIn posts and auto-commenting.
-                            </p>
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h3 style={{ color: 'white', fontSize: '15px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span>⚙️</span> Comment Settings
+                                </h3>
+                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Controls AI comments — manual button & auto-commenting</span>
+                            </div>
                             {csSettingsLoading ? (
-                                <div style={{ textAlign: 'center', padding: '30px 0', color: 'rgba(255,255,255,0.5)' }}>Loading settings...</div>
+                                <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading settings...</div>
                             ) : (
                                 <>
                                 {/* Use Profile Style Toggle */}
-                                <div style={{ background: csUseProfileStyle ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)', padding: '16px 20px', borderRadius: '14px', border: `1px solid ${csUseProfileStyle ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                <div style={{ background: csUseProfileStyle ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: `1px solid ${csUseProfileStyle ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
                                     onClick={() => { const newVal = !csUseProfileStyle; setCsUseProfileStyle(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { if (d.success) showToast('Settings auto-saved!', 'success'); }); }, 100); }}>
-                                    <div style={{ width: '48px', height: '26px', borderRadius: '13px', background: csUseProfileStyle ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
-                                        <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileStyle ? '24px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                                    <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: csUseProfileStyle ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
+                                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileStyle ? '20px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', marginBottom: '2px' }}>
+                                        <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>
                                             🎨 Use Selected Profiles&apos; Comment Style
                                         </div>
-                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                                        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px' }}>
                                             {csUseProfileStyle 
-                                                ? 'AI will learn ONLY from your selected profiles\' scraped comments (up to 20). Goal, Tone, Length, and Style settings below are disabled.'
-                                                : 'Turn ON to let AI mimic the commenting style of your selected profiles instead of using manual settings below.'}
+                                                ? 'AI learns ONLY from scraped comments. Settings below disabled.'
+                                                : 'Turn ON to mimic commenting style of selected profiles.'}
                                         </div>
                                     </div>
                                 </div>
                                 {csUseProfileStyle && (
-                                    <div style={{ background: 'rgba(59,130,246,0.08)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(59,130,246,0.2)', marginBottom: '20px' }}>
-                                        <p style={{ color: '#60a5fa', fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
-                                            <strong>Profile Style Mode Active:</strong> AI will analyze up to 20 comments from your selected profiles below and generate comments that match their exact tone, structure, and personality. The Goal, Tone, Length, and Style settings are ignored in this mode.
+                                    <div style={{ background: 'rgba(59,130,246,0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.2)', marginBottom: '14px' }}>
+                                        <p style={{ color: '#60a5fa', fontSize: '12px', margin: 0, lineHeight: '1.4' }}>
+                                            <strong>Profile Style Active:</strong> AI analyzes up to 20 comments from selected profiles. Goal, Tone, Length & Style ignored.
                                         </p>
                                     </div>
                                 )}
                                 <div style={{ opacity: csUseProfileStyle ? 0.4 : 1, pointerEvents: csUseProfileStyle ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
 
-                                    {/* Comment Goal */}
-                                    <div style={{ marginBottom: '18px' }}>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Goal <span style={{ color: 'rgba(255,255,255,0.35)', textTransform: 'none', letterSpacing: 0, fontWeight: '400' }}>— what you want to achieve</span></label>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
-                                            {[{v:'AddValue',l:'Add Value',d:'Pure contribution, helpful insight',e:'💡'},{v:'ShareExperience',l:'Share Experience',d:'Personal story adds perspective',e:'💭'},{v:'AskQuestion',l:'Ask Question',d:'Deepen discussion with curiosity',e:'❓'},{v:'DifferentPerspective',l:'Different Perspective',d:'Respectfully challenge',e:'🔄'},{v:'BuildRelationship',l:'Build Relationship',d:'Warm, supportive engagement',e:'🤝'},{v:'SubtlePitch',l:'Subtle Pitch',d:'Strategic positioning with soft CTA',e:'🎯'}].map(o => (
-                                                <button key={o.v} onClick={() => setCsGoal(o.v)} style={{ padding:'8px 14px', background: csGoal===o.v ? 'linear-gradient(135deg,rgba(105,63,233,0.4),rgba(139,92,246,0.3))' : 'rgba(255,255,255,0.05)', border: csGoal===o.v ? '1px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csGoal===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csGoal===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', transition:'all 0.2s' }}>
-                                                    <span>{o.e}</span><span>{o.l}</span>
-                                                </button>
-                                            ))}
+                                    {/* Goal + Tone side by side */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Goal</label>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                                {[{v:'AddValue',l:'Add Value',e:'💡'},{v:'ShareExperience',l:'Experience',e:'💭'},{v:'AskQuestion',l:'Question',e:'❓'},{v:'DifferentPerspective',l:'Perspective',e:'🔄'},{v:'BuildRelationship',l:'Relationship',e:'🤝'},{v:'SubtlePitch',l:'Subtle Pitch',e:'🎯'}].map(o => (
+                                                    <button key={o.v} onClick={() => setCsGoal(o.v)} style={{ padding:'6px 10px', background: csGoal===o.v ? 'linear-gradient(135deg,rgba(105,63,233,0.4),rgba(139,92,246,0.3))' : 'rgba(255,255,255,0.05)', border: csGoal===o.v ? '1px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color: csGoal===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight: csGoal===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px' }}>
+                                                        <span>{o.e}</span><span>{o.l}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tone of Voice</label>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                                {[{v:'Professional',l:'Professional',e:'💼'},{v:'Friendly',l:'Friendly',e:'😊'},{v:'ThoughtProvoking',l:'Thought Provoking',e:'🤔'},{v:'Supportive',l:'Supportive',e:'🌟'},{v:'Contrarian',l:'Contrarian',e:'⚡'},{v:'Humorous',l:'Humorous',e:'😄'}].map(o => (
+                                                    <button key={o.v} onClick={() => setCsTone(o.v)} style={{ padding:'6px 10px', background: csTone===o.v ? 'linear-gradient(135deg,rgba(59,130,246,0.4),rgba(37,99,235,0.3))' : 'rgba(255,255,255,0.05)', border: csTone===o.v ? '1px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color: csTone===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight: csTone===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px' }}>
+                                                        <span>{o.e}</span><span>{o.l}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Tone of Voice */}
-                                    <div style={{ marginBottom: '18px' }}>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tone of Voice <span style={{ color: 'rgba(255,255,255,0.35)', textTransform: 'none', letterSpacing: 0, fontWeight: '400' }}>— AI comment personality</span></label>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
-                                            {[{v:'Professional',l:'Professional',e:'💼'},{v:'Friendly',l:'Friendly',e:'😊'},{v:'ThoughtProvoking',l:'Thought Provoking',e:'🤔'},{v:'Supportive',l:'Supportive',e:'🌟'},{v:'Contrarian',l:'Contrarian',e:'⚡'},{v:'Humorous',l:'Humorous',e:'😄'}].map(o => (
-                                                <button key={o.v} onClick={() => setCsTone(o.v)} style={{ padding:'8px 14px', background: csTone===o.v ? 'linear-gradient(135deg,rgba(59,130,246,0.4),rgba(37,99,235,0.3))' : 'rgba(255,255,255,0.05)', border: csTone===o.v ? '1px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csTone===o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csTone===o.v ? '700' : '500', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', transition:'all 0.2s' }}>
-                                                    <span>{o.e}</span><span>{o.l}</span>
-                                                </button>
-                                            ))}
+                                    {/* Length + Style side by side */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: '14px', marginBottom: '14px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Length</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                                                {[{v:'Brief',l:'Brief',d:'≤100'},{v:'Short',l:'Short',d:'≤300'},{v:'Mid',l:'Medium',d:'≤600'},{v:'Long',l:'Long',d:'≤900'}].map(o => (
+                                                    <button key={o.v} onClick={() => setCsLength(o.v)} style={{ padding:'7px 6px', background: csLength===o.v ? 'linear-gradient(135deg,rgba(16,185,129,0.3),rgba(5,150,105,0.2))' : 'rgba(255,255,255,0.05)', border: csLength===o.v ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color: csLength===o.v ? '#34d399' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight: csLength===o.v ? '700' : '500', cursor:'pointer', textAlign:'center' }}>
+                                                        <div>{o.l}</div><div style={{ fontSize:'9px', opacity:0.6 }}>{o.d}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    {/* Comment Length */}
-                                    <div style={{ marginBottom: '18px' }}>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Length</label>
-                                        <div style={{ display: 'flex', gap: '7px' }}>
-                                            {[{v:'Brief',l:'Brief',d:'≤100 chars'},{v:'Short',l:'Short',d:'≤300 chars'},{v:'Mid',l:'Medium',d:'≤600 chars'},{v:'Long',l:'Long',d:'≤900 chars'}].map(o => (
-                                                <button key={o.v} onClick={() => setCsLength(o.v)} style={{ flex:1, padding:'10px 8px', background: csLength===o.v ? 'linear-gradient(135deg,rgba(16,185,129,0.3),rgba(5,150,105,0.2))' : 'rgba(255,255,255,0.05)', border: csLength===o.v ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csLength===o.v ? '#34d399' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csLength===o.v ? '700' : '500', cursor:'pointer', textAlign:'center', transition:'all 0.2s' }}>
-                                                    <div>{o.l}</div><div style={{ fontSize:'10px', opacity:0.7, marginTop:'2px' }}>{o.d}</div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Comment Style */}
-                                    <div style={{ marginBottom: '18px' }}>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Style <span style={{ color: 'rgba(255,255,255,0.35)', textTransform: 'none', letterSpacing: 0, fontWeight: '400' }}>— structure of your comments</span></label>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '7px' }}>
-                                            {[{v:'direct',l:'Direct & Concise',d:'Single paragraph',e:'📝'},{v:'structured',l:'Structured',d:'2-3 short paragraphs',e:'📑'},{v:'storyteller',l:'Storyteller',d:'Personal anecdote lead',e:'📖'},{v:'challenger',l:'Challenger',d:'Different perspective',e:'⚡'},{v:'supporter',l:'Supporter',d:'Validate with evidence',e:'🤜'},{v:'expert',l:'Expert',d:'Data/experience refs',e:'🎓'},{v:'conversational',l:'Conversational',d:'Casual, colleague-like',e:'💬'}].map(o => (
-                                                <button key={o.v} onClick={() => setCsStyle(o.v)} style={{ padding:'10px 12px', background: csStyle===o.v ? 'linear-gradient(135deg,rgba(245,158,11,0.3),rgba(217,119,6,0.2))' : 'rgba(255,255,255,0.05)', border: csStyle===o.v ? '1px solid rgba(245,158,11,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'10px', color: csStyle===o.v ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize:'12px', fontWeight: csStyle===o.v ? '700' : '500', cursor:'pointer', textAlign:'left', transition:'all 0.2s' }}>
-                                                    <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'2px' }}><span>{o.e}</span><span>{o.l}</span></div>
-                                                    <div style={{ fontSize:'10px', opacity:0.65 }}>{o.d}</div>
-                                                </button>
-                                            ))}
+                                        <div>
+                                            <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Style</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '5px' }}>
+                                                {[{v:'direct',l:'Direct',d:'Single paragraph',e:'📝'},{v:'structured',l:'Structured',d:'2-3 paragraphs',e:'📑'},{v:'storyteller',l:'Storyteller',d:'Personal anecdote',e:'📖'},{v:'challenger',l:'Challenger',d:'Different view',e:'⚡'},{v:'supporter',l:'Supporter',d:'Validate',e:'🤜'},{v:'expert',l:'Expert',d:'Data refs',e:'🎓'},{v:'conversational',l:'Casual',d:'Colleague-like',e:'💬'}].map(o => (
+                                                    <button key={o.v} onClick={() => setCsStyle(o.v)} style={{ padding:'7px 8px', background: csStyle===o.v ? 'linear-gradient(135deg,rgba(245,158,11,0.3),rgba(217,119,6,0.2))' : 'rgba(255,255,255,0.05)', border: csStyle===o.v ? '1px solid rgba(245,158,11,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color: csStyle===o.v ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight: csStyle===o.v ? '700' : '500', cursor:'pointer', textAlign:'left' }}>
+                                                        <div style={{ display:'flex', alignItems:'center', gap:'4px' }}><span style={{fontSize:'12px'}}>{o.e}</span><span>{o.l}</span></div>
+                                                        <div style={{ fontSize:'9px', opacity:0.55 }}>{o.d}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* AI Model */}
-                                    <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Model</label>
+                                    <div style={{ marginBottom: '4px' }}>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Model</label>
                                         <select value={csModel} onChange={e => setCsModel(e.target.value)}
-                                            style={{ width: '100%', maxWidth: '400px', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none' }}>
+                                            style={{ width: '100%', maxWidth: '350px', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }}>
                                             {MODEL_OPTIONS.map(m => (
                                                 <option key={m.id} value={m.id} style={{ background: '#1a1a3e' }}>{m.name} ({m.inputCost} in / {m.outputCost} out)</option>
                                             ))}
                                         </select>
                                     </div>
                                 </div>
-                                {/* Expertise, Background, AI Behavior - always enabled */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginTop: '16px' }}>
-                                    {/* Expertise */}
+                                {/* Expertise, Background, AI Behavior — compact 3-col */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '12px' }}>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Your Expertise/Niche</label>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>Your Expertise</label>
                                         <input value={csExpertise} onChange={e => setCsExpertise(e.target.value)}
-                                            placeholder="e.g., SaaS Marketing, AI Development, Leadership Coach"
-                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Your role, industry, or what you&apos;re known for</p>
+                                            placeholder="e.g., SaaS Marketing, AI Dev"
+                                            style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
                                     </div>
-                                    {/* Background */}
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Your Background (Optional)</label>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>Background (Optional)</label>
                                         <input value={csBackground} onChange={e => setCsBackground(e.target.value)}
-                                            placeholder="e.g., Scaled 3 startups, 15 years in B2B sales"
-                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Experience, credentials, or results that add authority</p>
+                                            placeholder="e.g., Scaled 3 startups"
+                                            style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
                                     </div>
-                                    {/* AI Button Behavior */}
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>AI Button Behavior</label>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>AI Button Behavior</label>
                                         <select value={csAutoPost} onChange={e => setCsAutoPost(e.target.value)}
-                                            style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }}>
-                                            <option value="manual" style={{ background: '#1a1a3e' }}>Manual Review - Generate, paste, wait for me to post</option>
-                                            <option value="auto" style={{ background: '#1a1a3e' }}>Auto Post - Generate and submit automatically</option>
+                                            style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }}>
+                                            <option value="manual" style={{ background: '#1a1a3e' }}>Manual Review</option>
+                                            <option value="auto" style={{ background: '#1a1a3e' }}>Auto Post</option>
                                         </select>
-                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '4px' }}>Controls what happens when you click AI button on posts</p>
                                     </div>
                                 </div>
                                 </>
                             )}
-                            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
                                 <button onClick={saveCommentSettings} disabled={csSettingsSaving}
-                                    style={{ padding: '12px 28px', background: csSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: csSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)', opacity: csSettingsSaving ? 0.7 : 1, transition: 'all 0.2s' }}>
+                                    style={{ padding: '10px 24px', background: csSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: csSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)', opacity: csSettingsSaving ? 0.7 : 1 }}>
                                     {csSettingsSaving ? '⏳ Saving...' : '💾 Save Settings'}
                                 </button>
                             </div>
                         </div>
 
                         {/* Comment Style Sources Section */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <h3 style={{ color: 'white', fontSize: '15px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span>🎨</span> Comment Style Sources
                                 </h3>
                                 <button onClick={loadCommentStyleProfiles}
-                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', padding: '5px 12px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>
                                     🔄 Refresh
                                 </button>
                             </div>
-                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px' }}>
-                                Add LinkedIn profiles to learn from their commenting style. The extension will scrape their comments and AI will mimic their tone.
+                            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '10px' }}>
+                                Add LinkedIn profiles to learn from their commenting style. AI will mimic their tone.
                             </p>
                             {/* Add Profile Input */}
-                            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                <div style={{ flex: 1, minWidth: '250px' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '6px' }}>🔗 LinkedIn Profile URL</label>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'flex-end' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '4px' }}>🔗 LinkedIn Profile URL</label>
                                     <input value={commentStyleUrl} onChange={e => setCommentStyleUrl(e.target.value)}
                                         placeholder="https://linkedin.com/in/username"
-                                        style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                                        style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
                                 </div>
                                 <button onClick={scrapeCommentStyle} disabled={commentStyleScraping}
-                                    style={{ padding: '10px 20px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: commentStyleScraping ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)', marginTop: '18px', opacity: commentStyleScraping ? 0.7 : 1, transition: 'all 0.2s' }}>
-                                    {commentStyleScraping ? '⏳ Sending...' : '💬 Scrape Comments'}
+                                    style={{ padding: '8px 16px', background: commentStyleScraping ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: commentStyleScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                    {commentStyleScraping ? '⏳...' : '💬 Scrape'}
                                 </button>
                             </div>
                             {commentStyleStatus && (
@@ -3661,55 +3595,73 @@ function DashboardContent() {
 
                 {/* Limits & Delays Tab */}
                 {activeTab === 'limits' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {autoSettingsLoading ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : autoSettings && (<>
 
-                        {/* Row 1: Preset + Global Base Delay + Random Toggle */}
+                        {/* Preset + Delay Mode */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Account Preset</label>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', display: 'block', marginBottom: '5px', textTransform: 'uppercase' }}>Account Preset</label>
                                 <select value={autoSettings.accountPreset} onChange={e => setAutoSettings((p: any) => ({ ...p, accountPreset: e.target.value }))}
-                                    style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                                    <option value="your-choice">Custom</option>
-                                    <option value="new-conservative">New - Conservative</option>
-                                    <option value="new-moderate">New - Moderate</option>
-                                    <option value="matured-safe">Matured - Safe</option>
-                                    <option value="matured-aggressive">Matured - Aggressive</option>
-                                    <option value="premium-user">Premium User</option>
+                                    style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
+                                    <option value="your-choice">Custom (Your Settings)</option>
+                                    <option value="new-conservative">New Account (0-2 wk) — Cautious</option>
+                                    <option value="new-moderate">New Account (2-8 wk) — Moderate</option>
+                                    <option value="matured-safe">Matured (3+ mo) — Recommended</option>
+                                    <option value="matured-aggressive">Matured (6+ mo) — Faster</option>
+                                    <option value="premium-user">LinkedIn Premium</option>
                                     <option value="sales-navigator">Sales Navigator</option>
-                                    <option value="speed-mode">Speed Mode</option>
+                                    <option value="speed-mode">Speed Mode (Use Carefully)</option>
                                 </select>
                             </div>
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Base Delay (sec) — applied to all</label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <input type="number" min="0" max="120" value={autoSettings.baseDelay ?? 5} onChange={e => { const v = parseInt(e.target.value) || 0; setAutoSettings((p: any) => ({ ...p, baseDelay: v })); }}
-                                        style={{ width: '70px', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '700' }} />
-                                    <button onClick={() => { const b = autoSettings.baseDelay ?? 5; setAutoSettings((p: any) => ({ ...p, automationStartDelay: b * 2, networkingStartDelay: b * 2, importStartDelay: b * 2, postWriterPageLoad: b, postWriterClick: Math.max(1, Math.round(b * 0.6)), postWriterTyping: Math.max(1, Math.round(b * 0.8)), postWriterSubmit: Math.max(1, Math.round(b * 0.6)), searchDelayMin: b * 6, searchDelayMax: b * 12, commentDelayMin: b * 8, commentDelayMax: b * 18, networkingDelayMin: b * 4, networkingDelayMax: b * 9, beforeOpeningDelay: b, postPageLoadDelay: Math.max(1, Math.round(b * 0.8)), beforeLikeDelay: Math.max(1, Math.round(b * 0.6)), beforeCommentDelay: Math.max(1, Math.round(b * 0.8)), beforeShareDelay: Math.max(1, Math.round(b * 0.6)), beforeFollowDelay: Math.max(1, Math.round(b * 0.6)) })); showToast('All delays set from base value', 'success'); }}
-                                        style={{ padding: '8px 12px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>Apply to All</button>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', display: 'block', marginBottom: '5px', textTransform: 'uppercase' }}>Delay Mode</label>
+                                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                                    {[{v:'fixed',l:'Fixed Delay'},{v:'random',l:'Random Range'}].map(o => (
+                                        <button key={o.v} onClick={() => setAutoSettings((p:any)=>({...p,delayMode:o.v,randomDelayEnabled:o.v==='random'}))}
+                                            style={{ flex:1, padding:'7px', background:(autoSettings.delayMode??'random')===o.v?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.06)', border:(autoSettings.delayMode??'random')===o.v?'none':'1px solid rgba(255,255,255,0.12)', borderRadius:'8px', color:'white', fontSize:'11px', fontWeight:(autoSettings.delayMode??'random')===o.v?'700':'500', cursor:'pointer' }}>{o.l}</button>
+                                    ))}
                                 </div>
+                                {(autoSettings.delayMode??'random')==='fixed' ? (
+                                    <div>
+                                        <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                            <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'10px' }}>Fixed delay for all actions:</span>
+                                            <input type="number" min="1" max="120" value={autoSettings.baseDelay??5} onChange={e => {
+                                                const v = parseInt(e.target.value)||1;
+                                                setAutoSettings((p:any)=>({...p, baseDelay: v,
+                                                    searchDelayMin: v*3, searchDelayMax: v*3, commentDelayMin: v*5, commentDelayMax: v*5, networkingDelayMin: v*4, networkingDelayMax: v*4,
+                                                    beforeOpeningDelay: Math.max(1,Math.round(v*0.4)), postPageLoadDelay: Math.max(1,Math.round(v*0.6)),
+                                                    beforeLikeDelay: Math.max(1,Math.round(v*0.2)), beforeCommentDelay: Math.max(1,Math.round(v*0.4)),
+                                                    beforeShareDelay: Math.max(1,Math.round(v*0.2)), beforeFollowDelay: Math.max(1,Math.round(v*0.2)),
+                                                    postWriterPageLoad: Math.max(1,Math.round(v*0.6)), postWriterClick: Math.max(1,Math.round(v*0.2)),
+                                                    postWriterTyping: Math.max(1,Math.round(v*0.2)), postWriterSubmit: Math.max(1,Math.round(v*0.4)),
+                                                    automationStartDelay: v*2, networkingStartDelay: v*2, importStartDelay: v*2,
+                                                    randomIntervalMin: 0, randomIntervalMax: 0
+                                                }));
+                                            }}
+                                                style={{ width:'50px', padding:'5px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'#34d399', fontSize:'14px', textAlign:'center', fontWeight:'700' }} />
+                                            <span style={{ color:'rgba(255,255,255,0.4)', fontSize:'10px' }}>sec</span>
+                                        </div>
+                                        <div style={{ color:'rgba(255,255,255,0.3)', fontSize:'9px', marginTop:'4px' }}>All delays below auto-calculated from this value. No random jitter.</div>
+                                    </div>
+                                ) : (
+                                    <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
+                                        <span style={{ color:'rgba(255,255,255,0.4)', fontSize:'10px' }}>Jitter</span>
+                                        <input type="number" min="0" max="60" value={autoSettings.randomIntervalMin??3} onChange={e => setAutoSettings((p:any)=>({...p,randomIntervalMin:parseInt(e.target.value)||0}))}
+                                            style={{ width:'42px', padding:'4px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'12px', textAlign:'center' }} />
+                                        <span style={{ color:'rgba(255,255,255,0.3)' }}>–</span>
+                                        <input type="number" min="0" max="60" value={autoSettings.randomIntervalMax??10} onChange={e => setAutoSettings((p:any)=>({...p,randomIntervalMax:parseInt(e.target.value)||0}))}
+                                            style={{ width:'42px', padding:'4px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'12px', textAlign:'center' }} />
+                                        <span style={{ color:'rgba(255,255,255,0.4)', fontSize:'10px' }}>sec extra</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Random Delay Toggle + Range */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: '0 0 auto' }}>
-                                <input type="checkbox" checked={autoSettings.randomDelayEnabled !== false} onChange={e => setAutoSettings((p: any) => ({ ...p, randomDelayEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>Random Delay</span>
-                            </label>
-                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Add random jitter between</span>
-                            <input type="number" min="0" max="300" value={autoSettings.randomIntervalMin} onChange={e => setAutoSettings((p: any) => ({ ...p, randomIntervalMin: parseInt(e.target.value) || 0 }))}
-                                style={{ width: '55px', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
-                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>–</span>
-                            <input type="number" min="0" max="300" value={autoSettings.randomIntervalMax} onChange={e => setAutoSettings((p: any) => ({ ...p, randomIntervalMax: parseInt(e.target.value) || 0 }))}
-                                style={{ width: '55px', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
-                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>sec</span>
-                        </div>
-
-                        {/* Daily Limits — compact row */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>Daily Limits</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                        {/* Daily Limits */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>📊 Daily Limits — stops when reached</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                                 {[
                                     { key: 'dailyCommentLimit', label: 'Comments', icon: '💬' },
                                     { key: 'dailyLikeLimit', label: 'Likes', icon: '👍' },
@@ -3717,216 +3669,140 @@ function DashboardContent() {
                                     { key: 'dailyFollowLimit', label: 'Follows', icon: '➕' },
                                 ].map(f => (
                                     <div key={f.key} style={{ textAlign: 'center' }}>
-                                        <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', display: 'block', marginBottom: '4px' }}>{f.icon} {f.label}</label>
-                                        <input type="number" min="0" max="300" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '100%', padding: '7px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', textAlign: 'center', fontWeight: '600' }} />
+                                        <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', display: 'block', marginBottom: '3px' }}>{f.icon} {f.label}</label>
+                                        <input type="number" min="0" max="500" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
+                                            style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', textAlign: 'center', fontWeight: '700' }} />
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Automation + Networking Intervals — preset range buttons */}
+                        {/* Start Delays — before each task type begins */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>🚀 Start Delays — wait before task begins (sec)</h4>
+                            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '8px' }}>How long to wait before each task type starts running. Set 0 to start immediately.</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                                {[
+                                    { key: 'automationStartDelay', label: 'Automation' },
+                                    { key: 'networkingStartDelay', label: 'Networking' },
+                                    { key: 'importStartDelay', label: 'Import' },
+                                    { key: 'taskInitDelay', label: 'Task Init' },
+                                ].map(f => (
+                                    <div key={f.key} style={{ textAlign: 'center' }}>
+                                        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '9px', marginBottom: '2px' }}>{f.label}</div>
+                                        <input type="number" min="0" max="120" value={autoSettings[f.key]??0} onChange={e => setAutoSettings((p:any)=>({...p,[f.key]:parseInt(e.target.value)||0}))}
+                                            style={{ width:'100%', padding:'5px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'#fbbf24', fontSize:'13px', textAlign:'center', fontWeight:'700' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Between-Actions Delays — MOST IMPORTANT for safety */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(139,92,246,0.2)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>🛡️ Between-Actions Delays — keeps account safe</h4>
+                                <span style={{ color: '#a78bfa', fontSize: '10px', fontWeight: '600', background: 'rgba(139,92,246,0.15)', padding: '2px 8px', borderRadius: '4px' }}>SAFETY CRITICAL</span>
+                            </div>
+                            {(autoSettings.delayMode??'random')==='fixed' ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                                    {[
+                                        { label: 'Between Posts (search)', key: 'searchDelayMin' },
+                                        { label: 'Between Posts (comment)', key: 'commentDelayMin' },
+                                        { label: 'Between Connections', key: 'networkingDelayMin' },
+                                    ].map(d => (
+                                        <div key={d.label} style={{ textAlign:'center', padding:'10px', background:'rgba(255,255,255,0.04)', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                                            <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'10px', marginBottom:'4px' }}>{d.label}</div>
+                                            <div style={{ color:'#34d399', fontSize:'16px', fontWeight:'700' }}>{autoSettings[d.key]??15}s</div>
+                                            <div style={{ color:'rgba(255,255,255,0.3)', fontSize:'9px' }}>fixed (no range)</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                                    {[
+                                        { label: 'Between Posts (search)', minKey: 'searchDelayMin', maxKey: 'searchDelayMax', presets: [[5,12],[10,25],[15,30],[30,60],[60,120]] },
+                                        { label: 'Between Posts (comment)', minKey: 'commentDelayMin', maxKey: 'commentDelayMax', presets: [[8,20],[15,35],[25,60],[45,90],[60,120]] },
+                                        { label: 'Between Connections', minKey: 'networkingDelayMin', maxKey: 'networkingDelayMax', presets: [[8,20],[15,35],[20,45],[30,60],[60,120]] },
+                                    ].map(d => (
+                                        <div key={d.label}>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>{d.label} (sec)</div>
+                                            <div style={{ display: 'flex', gap: '4px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                                {d.presets.map(([mn,mx]) => {
+                                                    const on = autoSettings[d.minKey]===mn && autoSettings[d.maxKey]===mx;
+                                                    return <button key={`${mn}-${mx}`} onClick={() => setAutoSettings((p:any)=>({...p,[d.minKey]:mn,[d.maxKey]:mx}))} style={{ padding:'3px 7px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.06)', border: on?'none':'1px solid rgba(255,255,255,0.1)', borderRadius:'5px', color:'white', fontSize:'10px', cursor:'pointer', fontWeight: on?'700':'400' }}>{mn}–{mx}</button>;
+                                                })}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <input type="number" min="1" max="600" value={autoSettings[d.minKey]} onChange={e => setAutoSettings((p:any)=>({...p,[d.minKey]:parseInt(e.target.value)||1}))}
+                                                    style={{ width:'50px', padding:'4px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'12px', textAlign:'center' }} />
+                                                <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'10px' }}>–</span>
+                                                <input type="number" min="1" max="600" value={autoSettings[d.maxKey]} onChange={e => setAutoSettings((p:any)=>({...p,[d.maxKey]:parseInt(e.target.value)||1}))}
+                                                    style={{ width:'50px', padding:'4px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'12px', textAlign:'center' }} />
+                                                <span style={{ color:'rgba(255,255,255,0.3)', fontSize:'10px' }}>sec</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Per-Action Delays + Post Writer Delays — two columns */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 10px 0' }}>⚙️ Automation Intervals</h4>
-                                <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Search delay (sec)</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {[[30,60],[60,120],[90,180],[120,240],[180,360]].map(([mn,mx]) => {
-                                            const on = autoSettings.searchDelayMin===mn && autoSettings.searchDelayMax===mx;
-                                            return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,searchDelayMin:mn,searchDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
-                                        })}
-                                    </div>
-                                </div>
-                                <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Comment delay (sec)</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {[[60,120],[90,180],[120,240],[150,300],[180,360]].map(([mn,mx]) => {
-                                            const on = autoSettings.commentDelayMin===mn && autoSettings.commentDelayMax===mx;
-                                            return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,commentDelayMin:mn,commentDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
-                                        })}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Base delay (sec) — added to every action</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {[0, 2, 5, 10, 15, 20, 30].map(v => {
-                                            const on = autoSettings.baseDelay === v;
-                                            return <button key={v} onClick={() => setAutoSettings((p:any)=>({...p, baseDelay: v}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{v}s</button>;
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 10px 0' }}>🤝 Networking Intervals</h4>
-                                <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Connect delay (sec)</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {[[30,60],[60,120],[90,180],[120,240],[180,360]].map(([mn,mx]) => {
-                                            const on = autoSettings.networkingDelayMin===mn && autoSettings.networkingDelayMax===mx;
-                                            return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,networkingDelayMin:mn,networkingDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
-                                        })}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Task init delay (sec) — before each task starts</div>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {[0, 3, 5, 10, 15, 20, 30, 60].map(v => {
-                                            const on = (autoSettings.taskInitDelay ?? 0) === v;
-                                            return <button key={v} onClick={() => setAutoSettings((p:any)=>({...p, taskInitDelay: v}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{v}s</button>;
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Post Writer Delays — delay mode toggle */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>✍️ Post Writer Delays</h4>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    {[{v:'base',l:'Base Delay'},{v:'random',l:'Random Delay'}].map(o => (
-                                        <button key={o.v} onClick={() => setAutoSettings((p:any)=>({...p,postWriterDelayMode:o.v}))}
-                                            style={{ padding:'4px 10px', background:(autoSettings.postWriterDelayMode??'base')===o.v?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border:'none', borderRadius:'6px', color:'white', fontSize:'11px', fontWeight:'600', cursor:'pointer' }}>{o.l}</button>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>⚡ Per-Action Delays (sec)</h4>
+                                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '8px' }}>{(autoSettings.delayMode??'random')==='fixed' ? 'Auto-set from fixed delay value above' : 'Small pauses before each click — keep low (1-5s)'}</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                                    {[
+                                        { key: 'beforeOpeningDelay', label: 'Open Post' },
+                                        { key: 'postPageLoadDelay', label: 'Page Load' },
+                                        { key: 'beforeLikeDelay', label: 'Like' },
+                                        { key: 'beforeCommentDelay', label: 'Comment' },
+                                        { key: 'beforeShareDelay', label: 'Reshare' },
+                                        { key: 'beforeFollowDelay', label: 'Follow' },
+                                    ].map(f => (
+                                        <div key={f.key} style={{ textAlign: 'center' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '9px', marginBottom: '2px' }}>{f.label}</div>
+                                            <input type="number" min="0" max="60" value={autoSettings[f.key]??1}
+                                                readOnly={(autoSettings.delayMode??'random')==='fixed'}
+                                                onChange={e => { if((autoSettings.delayMode??'random')!=='fixed') setAutoSettings((p:any)=>({...p,[f.key]:parseInt(e.target.value)||0})); }}
+                                                style={{ width:'100%', padding:'4px', background:(autoSettings.delayMode??'random')==='fixed'?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'#34d399', fontSize:'13px', textAlign:'center', fontWeight:'700', cursor:(autoSettings.delayMode??'random')==='fixed'?'default':'text' }} />
+                                        </div>
                                     ))}
                                 </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
-                                {['Page Load','Click Btn','Before Type','Before Submit'].map(lbl => {
-                                    const mode = autoSettings.postWriterDelayMode??'base';
-                                    const val = mode==='random' ? `${autoSettings.randomIntervalMin??5}–${autoSettings.randomIntervalMax??15}s` : `${autoSettings.baseDelay??5}s`;
-                                    return (
-                                        <div key={lbl} style={{ textAlign:'center', padding:'8px', background:'rgba(255,255,255,0.04)', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
-                                            <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'10px', marginBottom:'4px' }}>{lbl}</div>
-                                            <div style={{ color: mode==='random'?'#a78bfa':'#34d399', fontSize:'13px', fontWeight:'700' }}>{val}</div>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>✍️ Post Writer Delays (sec)</h4>
+                                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '8px' }}>{(autoSettings.delayMode??'random')==='fixed' ? 'Auto-set from fixed delay value above' : 'For AI post writing — minimal DOM waits'}</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                                    {[
+                                        { key: 'postWriterPageLoad', label: 'Page Load' },
+                                        { key: 'postWriterClick', label: 'Click Compose' },
+                                        { key: 'postWriterTyping', label: 'Before Type' },
+                                        { key: 'postWriterSubmit', label: 'Before Submit' },
+                                    ].map(f => (
+                                        <div key={f.key} style={{ textAlign: 'center' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '9px', marginBottom: '2px' }}>{f.label}</div>
+                                            <input type="number" min="0" max="60" value={autoSettings[f.key]??1}
+                                                readOnly={(autoSettings.delayMode??'random')==='fixed'}
+                                                onChange={e => { if((autoSettings.delayMode??'random')!=='fixed') setAutoSettings((p:any)=>({...p,[f.key]:parseInt(e.target.value)||0})); }}
+                                                style={{ width:'100%', padding:'4px', background:(autoSettings.delayMode??'random')==='fixed'?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'#34d399', fontSize:'13px', textAlign:'center', fontWeight:'700', cursor:(autoSettings.delayMode??'random')==='fixed'?'default':'text' }} />
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Post Action Delays — delay mode toggle */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>📝 Post Action Delays</h4>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    {[{v:'base',l:'Base Delay'},{v:'random',l:'Random Delay'}].map(o => (
-                                        <button key={o.v} onClick={() => setAutoSettings((p:any)=>({...p,postActionDelayMode:o.v}))}
-                                            style={{ padding:'4px 10px', background:(autoSettings.postActionDelayMode??'base')===o.v?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border:'none', borderRadius:'6px', color:'white', fontSize:'11px', fontWeight:'600', cursor:'pointer' }}>{o.l}</button>
                                     ))}
                                 </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
-                                {['Open Post','Page Load','Like','Comment','Reshare','Follow'].map(lbl => {
-                                    const mode = autoSettings.postActionDelayMode??'base';
-                                    const val = mode==='random' ? `${autoSettings.randomIntervalMin??5}–${autoSettings.randomIntervalMax??15}s` : `${autoSettings.baseDelay??5}s`;
-                                    return (
-                                        <div key={lbl} style={{ textAlign:'center', padding:'8px', background:'rgba(255,255,255,0.04)', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
-                                            <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'10px', marginBottom:'4px' }}>{lbl}</div>
-                                            <div style={{ color: mode==='random'?'#a78bfa':'#34d399', fontSize:'13px', fontWeight:'700' }}>{val}</div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
                         </div>
 
-                        {/* Human Simulation — compact inline */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0' }}>🧑 Human Simulation</h4>
-                            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        {/* Human Simulation */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                            <span style={{ color: 'white', fontSize: '12px', fontWeight: '700' }}>🧑 Human Simulation</span>
+                            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                                 {[
                                     { key: 'mouseMovement', label: 'Mouse Curves' },
                                     { key: 'scrollSimulation', label: 'Random Scroll' },
                                     { key: 'readingPause', label: 'Reading Pause' },
                                 ].map(f => (
-                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer' }}>
+                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer' }}>
                                         <input type="checkbox" checked={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: e.target.checked }))}
-                                            style={{ accentColor: '#693fe9', width: '15px', height: '15px' }} />
-                                        {f.label}
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Save */}
-                        <button onClick={() => saveAutoSettings(autoSettings)} disabled={autoSettingsSaving}
-                            style={{ width: '100%', padding: '14px', background: autoSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: autoSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
-                            {autoSettingsSaving ? 'Saving...' : '💾 Save All Settings'}
-                        </button>
-                        </>)}
-                    </div>
-                )}
-
-                {/* Commenter Tab */}
-                {activeTab === 'commenter' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        {(commenterCfgLoading || csSettingsLoading) ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : commenterCfg && (<>
-
-                        {/* Row 1: Post Source + Processing Settings side-by-side */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            {/* Post Source */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>📌 Post Source</h4>
-                                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                    {[{ val: 'search', label: '🔍 Search' }, { val: 'feed', label: '📰 Feed' }].map(s => (
-                                        <button key={s.val} onClick={() => setCommenterCfg((p: any) => ({ ...p, postSource: s.val }))}
-                                            style={{ flex: 1, padding: '8px', background: commenterCfg.postSource === s.val ? 'linear-gradient(135deg,#693fe9,#8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.postSource === s.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontWeight: commenterCfg.postSource === s.val ? '700' : '500', cursor: 'pointer', fontSize: '12px' }}>
-                                            {s.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                {commenterCfg.postSource === 'search' && (
-                                    <textarea value={commenterCfg.searchKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, searchKeywords: e.target.value }))}
-                                        placeholder="AI marketing&#10;SaaS growth&#10;startup tips" rows={3}
-                                        style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical' }} />
-                                )}
-                                {commenterCfg.postSource === 'feed' && (
-                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: 0 }}>Processes your home feed, ignores ads</p>
-                                )}
-                            </div>
-
-                            {/* Processing Settings */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>⚙️ Processing</h4>
-                                {[
-                                    { key: 'totalPosts', label: 'Total Posts', min: 1, max: 50 },
-                                    { key: 'minLikes', label: 'Min Likes', min: 0, max: 9999 },
-                                    { key: 'minComments', label: 'Min Comments', min: 0, max: 9999 },
-                                ].map(f => (
-                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{f.label}</span>
-                                        <input type="number" min={f.min} max={f.max} value={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                            style={{ width: '65px', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '13px', textAlign: 'center' }} />
-                                    </div>
-                                ))}
-                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', margin: '4px 0 0 0' }}>0 = no minimum filter</p>
-                            </div>
-                        </div>
-
-                        {/* Actions + Window Prefs — single compact row */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>⚡ Actions</h4>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                    {[{ val: true, label: '🪟 Window' }, { val: false, label: '📑 Tabs' }].map(o => (
-                                        <button key={String(o.val)} onClick={() => setCommenterCfg((p: any) => ({ ...p, openInNewWindow: o.val }))}
-                                            style={{ padding: '4px 10px', background: commenterCfg.openInNewWindow === o.val ? '#693fe9' : 'rgba(255,255,255,0.08)', border: commenterCfg.openInNewWindow === o.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '10px', fontWeight: commenterCfg.openInNewWindow === o.val ? '700' : '500', cursor: 'pointer' }}>
-                                            {o.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                {[
-                                    { key: 'savePosts', label: '💾 Save' },
-                                    { key: 'likePosts', label: '👍 Like' },
-                                    { key: 'commentOnPosts', label: '💬 Comment' },
-                                    { key: 'likeOrComment', label: '🎲 Like/Comment' },
-                                    { key: 'sharePosts', label: '🔄 Share' },
-                                    { key: 'followAuthors', label: '➕ Follow' },
-                                ].map(f => (
-                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', padding: '7px 8px', background: commenterCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '8px', border: commenterCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
-                                        <input type="checkbox" checked={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
                                             style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
                                         {f.label}
                                     </label>
@@ -3934,53 +3810,171 @@ function DashboardContent() {
                             </div>
                         </div>
 
-                        {/* Ignore Keywords — collapsible-style compact */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>🚫 Ignore Keywords</h4>
-                            <textarea value={commenterCfg.ignoreKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, ignoreKeywords: e.target.value }))}
-                                placeholder="hiring&#10;we're hiring&#10;job opening&#10;apply now" rows={3}
-                                style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical', fontFamily: 'monospace' }} />
-                            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', margin: '4px 0 0 0' }}>One per line. Posts containing these are skipped.</p>
-                        </div>
+                        {/* Save Button */}
+                        <button onClick={() => saveAutoSettings(autoSettings)} disabled={autoSettingsSaving}
+                            style={{ width: '100%', padding: '13px', background: autoSettingsSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: autoSettingsSaving ? 'wait' : 'pointer', boxShadow: '0 4px 20px rgba(105,63,233,0.3)' }}>
+                            {autoSettingsSaving ? 'Saving...' : '💾 Save All Settings'}
+                        </button>
 
-                        {/* Schedule — compact inline */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        {/* Live Activity Timeline */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={commenterCfg.autoScheduleEnabled} onChange={e => setCommenterCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '15px', height: '15px' }} />
-                                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>Enabled</span>
-                                </label>
+                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0 }}>📡 Live Activity Log</h4>
+                                <button onClick={() => loadLiveActivity()} disabled={liveActivityLoading}
+                                    style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer' }}>
+                                    {liveActivityLoading ? '...' : 'Refresh'}
+                                </button>
                             </div>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                                {(() => { try { const sches = JSON.parse(commenterCfg.schedules || '[]'); return sches.map((s: any, i: number) => (
-                                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: 'rgba(167,139,250,0.15)', borderRadius: '6px', border: '1px solid rgba(167,139,250,0.3)', fontSize: '11px', color: '#a78bfa' }}>
-                                        {s.time} {s.ampm}
-                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
-                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}>✕</button>
-                                    </span>
-                                )); } catch { return null; } })()}
-                            </div>
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                <input id="commenter-sched-time" type="time" defaultValue="09:00" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }} />
-                                <select id="commenter-sched-ampm" defaultValue="AM" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }}>
-                                    <option value="AM">AM</option><option value="PM">PM</option>
-                                </select>
-                                <button onClick={() => { const t = (document.getElementById('commenter-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('commenter-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(commenterCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
-                                    style={{ padding: '5px 10px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>+ Add</button>
+                            <div style={{ maxHeight: '280px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '11px', lineHeight: '1.6' }}>
+                                {liveActivityLogs.length === 0 ? (
+                                    <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '20px', fontSize: '11px' }}>
+                                        No activity yet. Extension will log actions here in real-time.
+                                    </div>
+                                ) : (
+                                    liveActivityLogs.map((log: any) => {
+                                        const icons: any = { like: '👍', comment: '💬', share: '🔄', follow: '➕', connect: '🤝', post: '✍️', delay: '⏳', start: '🚀', stop: '🛑', error: '❌', info: 'ℹ️' };
+                                        const colors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
+                                        const icon = icons[log.action] || 'ℹ️';
+                                        const color = colors[log.level] || colors.info;
+                                        const time = new Date(log.createdAt).toLocaleTimeString();
+                                        return (
+                                            <div key={log.id} style={{ display: 'flex', gap: '8px', padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                                <span style={{ color: 'rgba(255,255,255,0.3)', minWidth: '65px', fontSize: '10px' }}>{time}</span>
+                                                <span>{icon}</span>
+                                                <span style={{ color, flex: 1 }}>{log.message}</span>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
 
-                        {/* Save + Start Buttons */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
-                                style={{ padding: '14px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer' }}>
-                                {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : '💾 Save Settings'}
-                            </button>
-                            <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
-                                style={{ padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                                🚀 Start Commenting
-                            </button>
+                        </>)}
+                    </div>
+                )}
+
+                {/* Commenter Tab */}
+                {activeTab === 'commenter' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {(commenterCfgLoading || csSettingsLoading) ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : commenterCfg && (<>
+
+                        {/* Row 1: Post Source + Processing side-by-side */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>📌 Post Source</h4>
+                                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                                    {[{ val: 'search', label: '🔍 Search' }, { val: 'feed', label: '📰 Feed' }].map(s => (
+                                        <button key={s.val} onClick={() => setCommenterCfg((p: any) => ({ ...p, postSource: s.val }))}
+                                            style={{ flex: 1, padding: '7px', background: commenterCfg.postSource === s.val ? 'linear-gradient(135deg,#693fe9,#8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.postSource === s.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontWeight: commenterCfg.postSource === s.val ? '700' : '500', cursor: 'pointer', fontSize: '12px' }}>
+                                            {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                {commenterCfg.postSource === 'search' && (
+                                    <textarea value={commenterCfg.searchKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, searchKeywords: e.target.value }))}
+                                        placeholder="AI marketing&#10;SaaS growth&#10;startup tips" rows={2}
+                                        style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical' }} />
+                                )}
+                                {commenterCfg.postSource === 'feed' && (
+                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: 0 }}>Processes your home feed, ignores ads</p>
+                                )}
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>⚙️ Processing</h4>
+                                {[
+                                    { key: 'totalPosts', label: 'Total Posts', min: 1, max: 50 },
+                                    { key: 'minLikes', label: 'Min Likes', min: 0, max: 9999 },
+                                    { key: 'minComments', label: 'Min Comments', min: 0, max: 9999 },
+                                ].map(f => (
+                                    <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{f.label}</span>
+                                        <input type="number" min={f.min} max={f.max} value={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
+                                            style={{ width: '60px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
+                                    </div>
+                                ))}
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', margin: '2px 0 0 0' }}>0 = no minimum filter</p>
+                            </div>
+                        </div>
+
+                        {/* Row 2: Actions + Ignore Keywords side-by-side */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>⚡ Actions</h4>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {[{ val: true, label: '🪟 Window' }, { val: false, label: '📑 Tabs' }].map(o => (
+                                            <button key={String(o.val)} onClick={() => setCommenterCfg((p: any) => ({ ...p, openInNewWindow: o.val }))}
+                                                style={{ padding: '3px 8px', background: commenterCfg.openInNewWindow === o.val ? '#693fe9' : 'rgba(255,255,255,0.08)', border: commenterCfg.openInNewWindow === o.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '10px', fontWeight: commenterCfg.openInNewWindow === o.val ? '700' : '500', cursor: 'pointer' }}>
+                                                {o.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                                    {[
+                                        { key: 'savePosts', label: '💾 Save' },
+                                        { key: 'likePosts', label: '👍 Like' },
+                                        { key: 'commentOnPosts', label: '💬 Comment' },
+                                        { key: 'likeOrComment', label: '🎲 Like/Comment' },
+                                        { key: 'sharePosts', label: '🔄 Share' },
+                                        { key: 'followAuthors', label: '➕ Follow' },
+                                    ].map(f => (
+                                        <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer', padding: '6px 7px', background: commenterCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '6px', border: commenterCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
+                                            <input type="checkbox" checked={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
+                                                style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
+                                            {f.label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0' }}>🚫 Ignore Keywords</h4>
+                                <textarea value={commenterCfg.ignoreKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, ignoreKeywords: e.target.value }))}
+                                    placeholder="hiring&#10;we're hiring&#10;job opening&#10;apply now" rows={4}
+                                    style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '11px', resize: 'vertical', fontFamily: 'monospace' }} />
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', margin: '3px 0 0 0' }}>One per line. Posts containing these are skipped.</p>
+                            </div>
+                        </div>
+
+                        {/* Row 3: Schedule + Save/Start all in one row */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="checkbox" checked={commenterCfg.autoScheduleEnabled} onChange={e => setCommenterCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Enabled</span>
+                                    </label>
+                                </div>
+                                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                                    {(() => { try { const sches = JSON.parse(commenterCfg.schedules || '[]'); return sches.map((s: any, i: number) => (
+                                        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', background: 'rgba(167,139,250,0.15)', borderRadius: '5px', border: '1px solid rgba(167,139,250,0.3)', fontSize: '10px', color: '#a78bfa' }}>
+                                            {s.time} {s.ampm}
+                                            <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
+                                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '9px', padding: '0 1px' }}>✕</button>
+                                        </span>
+                                    )); } catch { return null; } })()}
+                                </div>
+                                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                                    <input id="commenter-sched-time" type="time" defaultValue="09:00" style={{ padding: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '11px' }} />
+                                    <select id="commenter-sched-ampm" defaultValue="AM" style={{ padding: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '11px' }}>
+                                        <option value="AM">AM</option><option value="PM">PM</option>
+                                    </select>
+                                    <button onClick={() => { const t = (document.getElementById('commenter-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('commenter-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(commenterCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
+                                        style={{ padding: '4px 9px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '5px', color: 'white', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}>+ Add</button>
+                                </div>
+                            </div>
+                            {/* Save + Start Buttons stacked */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
+                                    style={{ flex: 1, padding: '14px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer' }}>
+                                    {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : '💾 Save Settings'}
+                                </button>
+                                <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('🚀 Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('✅ Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                                    style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                                    🚀 Start Commenting
+                                </button>
+                            </div>
                         </div>
                         </>)}
                     </div>
@@ -4048,116 +4042,118 @@ function DashboardContent() {
                             </div>
                         </div>
 
-                        {/* Engagement Method */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>🔄 Engagement Method</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                {[
-                                    { value: 'individual', label: '📄 Individual Posts', desc: 'Opens each post URL separately — more reliable, uses AI comments' },
-                                    { value: 'activity', label: '📋 Activity Page', desc: 'Engages directly on profile activity page — faster, less reliable' },
-                                ].map(m => {
-                                    const isActive = (importCfg.engagementMethod || 'individual') === m.value;
-                                    return (
-                                        <button key={m.value} onClick={() => setImportCfg((p: any) => ({ ...p, engagementMethod: m.value }))}
-                                            style={{ padding: '10px', background: isActive ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.03)', border: isActive ? '2px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', cursor: 'pointer', textAlign: 'left' }}>
-                                            <div style={{ color: 'white', fontSize: '12px', fontWeight: '700', marginBottom: '4px' }}>{m.label}</div>
-                                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', lineHeight: '1.3' }}>{m.desc}</div>
-                                            {isActive && <div style={{ color: '#34d399', fontSize: '10px', fontWeight: '700', marginTop: '4px' }}>✓ Selected</div>}
-                                        </button>
-                                    );
-                                })}
+                        {/* Engagement Method + Actions side-by-side */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>🔄 Engagement Method</h4>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {[
+                                        { value: 'individual', label: '📄 Individual Posts', desc: 'More reliable, AI comments' },
+                                        { value: 'activity', label: '📋 Activity Page', desc: 'Faster, less reliable' },
+                                    ].map(m => {
+                                        const isActive = (importCfg.engagementMethod || 'individual') === m.value;
+                                        return (
+                                            <button key={m.value} onClick={() => setImportCfg((p: any) => ({ ...p, engagementMethod: m.value }))}
+                                                style={{ flex: 1, padding: '8px', background: isActive ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.03)', border: isActive ? '2px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', textAlign: 'left' }}>
+                                                <div style={{ color: 'white', fontSize: '11px', fontWeight: '700', marginBottom: '2px' }}>{m.label}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px', lineHeight: '1.2' }}>{m.desc}</div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>⚡ Actions</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                                    {[
+                                        { key: 'sendConnections', label: '🤝 Connect' },
+                                        { key: 'engageLikes', label: '👍 Like' },
+                                        { key: 'engageComments', label: '💬 Comment' },
+                                        { key: 'engageShares', label: '🔄 Share' },
+                                        { key: 'engageFollows', label: '➕ Follow' },
+                                        { key: 'smartRandom', label: '🎲 Random' },
+                                    ].map(f => (
+                                        <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer', padding: '6px 7px', background: importCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '6px', border: importCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
+                                            <input type="checkbox" checked={importCfg[f.key]} onChange={e => setImportCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
+                                                style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
+                                            {f.label}
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Engagement Actions — compact */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>⚡ Engagement Actions</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                {[
-                                    { key: 'sendConnections', label: '🤝 Connect' },
-                                    { key: 'engageLikes', label: '👍 Like' },
-                                    { key: 'engageComments', label: '💬 Comment' },
-                                    { key: 'engageShares', label: '🔄 Share' },
-                                    { key: 'engageFollows', label: '➕ Follow' },
-                                    { key: 'smartRandom', label: '🎲 Random' },
-                                ].map(f => (
-                                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', padding: '7px 8px', background: importCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '8px', border: importCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
-                                        <input type="checkbox" checked={importCfg[f.key]} onChange={e => setImportCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
-                                            style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
-                                        {f.label}
+                        {/* Schedule + Save/Launch in one row */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                        <input type="checkbox" checked={importCfg.autoScheduleEnabled} onChange={e => setImportCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Enabled</span>
                                     </label>
-                                ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                                    {(() => { try { const sches = JSON.parse(importCfg.schedules || '[]'); return sches.map((s: any, i: number) => (
+                                        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', background: 'rgba(167,139,250,0.15)', borderRadius: '5px', border: '1px solid rgba(167,139,250,0.3)', fontSize: '10px', color: '#a78bfa' }}>
+                                            {s.time} {s.ampm}
+                                            <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
+                                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '9px', padding: '0 1px' }}>✕</button>
+                                        </span>
+                                    )); } catch { return null; } })()}
+                                </div>
+                                <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                                    <input id="import-sched-time" type="time" defaultValue="09:00" style={{ padding: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '11px' }} />
+                                    <select id="import-sched-ampm" defaultValue="AM" style={{ padding: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '11px' }}>
+                                        <option value="AM">AM</option><option value="PM">PM</option>
+                                    </select>
+                                    <button onClick={() => { const t = (document.getElementById('import-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('import-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(importCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
+                                        style={{ padding: '4px 9px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '5px', color: 'white', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}>+ Add</button>
+                                </div>
+                            </div>
+                            {/* Save + Launch stacked */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <button onClick={() => saveImportCfg(importCfg)} disabled={importCfgSaving}
+                                    style={{ flex: 1, padding: '14px', background: importCfgSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: importCfgSaving ? 'wait' : 'pointer' }}>
+                                    {importCfgSaving ? 'Saving...' : '💾 Save Settings'}
+                                </button>
+                                <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveImportCfg(importCfg); showToast('🚀 Launching import...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_import_automation', data: importCfg }) }); const data = await res.json(); if (data.success) showToast('Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
+                                    style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                                    🚀 Launch Import
+                                </button>
                             </div>
                         </div>
 
-                        {/* Schedule — compact inline */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📅 Auto-Schedule</h4>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked={importCfg.autoScheduleEnabled} onChange={e => setImportCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '15px', height: '15px' }} />
-                                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>Enabled</span>
-                                </label>
-                            </div>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                                {(() => { try { const sches = JSON.parse(importCfg.schedules || '[]'); return sches.map((s: any, i: number) => (
-                                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: 'rgba(167,139,250,0.15)', borderRadius: '6px', border: '1px solid rgba(167,139,250,0.3)', fontSize: '11px', color: '#a78bfa' }}>
-                                        {s.time} {s.ampm}
-                                        <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
-                                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}>✕</button>
-                                    </span>
-                                )); } catch { return null; } })()}
-                            </div>
-                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                <input id="import-sched-time" type="time" defaultValue="09:00" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }} />
-                                <select id="import-sched-ampm" defaultValue="AM" style={{ padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }}>
-                                    <option value="AM">AM</option><option value="PM">PM</option>
-                                </select>
-                                <button onClick={() => { const t = (document.getElementById('import-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('import-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(importCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setImportCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
-                                    style={{ padding: '5px 10px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>+ Add</button>
-                            </div>
-                        </div>
-
-                        {/* Save + Launch Buttons */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <button onClick={() => saveImportCfg(importCfg)} disabled={importCfgSaving}
-                                style={{ padding: '14px', background: importCfgSaving ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: importCfgSaving ? 'wait' : 'pointer' }}>
-                                {importCfgSaving ? 'Saving...' : '💾 Save Settings'}
-                            </button>
-                            <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveImportCfg(importCfg); showToast('🚀 Launching import...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_import_automation', data: importCfg }) }); const data = await res.json(); if (data.success) showToast('Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
-                                style={{ padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                                🚀 Launch Import
-                            </button>
-                        </div>
-
-                        {/* Import History — compact */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>📊 History</h4>
-                            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                                {[
-                                    { label: 'Profiles', val: importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0, color: '#a78bfa' },
-                                    { label: 'Connects', val: 0, color: '#34d399' },
-                                    { label: 'Posts', val: 0, color: '#60a5fa' },
-                                    { label: 'Comments', val: 0, color: '#fbbf24' },
-                                    { label: 'Rate', val: '0%', color: '#f472b6' },
-                                ].map(s => (
-                                    <div key={s.label} style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '16px', fontWeight: '800', color: s.color }}>{s.val}</div>
-                                        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
-                                    </div>
-                                ))}
+                        {/* Import History — compact inline stats + table */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>📊 History</h4>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    {[
+                                        { label: 'Profiles', val: importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0, color: '#a78bfa' },
+                                        { label: 'Connects', val: 0, color: '#34d399' },
+                                        { label: 'Posts', val: 0, color: '#60a5fa' },
+                                        { label: 'Comments', val: 0, color: '#fbbf24' },
+                                        { label: 'Rate', val: '0%', color: '#f472b6' },
+                                    ].map(s => (
+                                        <div key={s.label} style={{ textAlign: 'center' }}>
+                                            <div style={{ fontSize: '14px', fontWeight: '800', color: s.color }}>{s.val}</div>
+                                            <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.45)' }}>{s.label}</div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                                             {['Date', 'Profile', 'Connect', 'Likes', 'Comments', 'Status'].map(h => (
-                                                <th key={h} style={{ padding: '6px 4px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                                                <th key={h} style={{ padding: '5px 4px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colSpan={6} style={{ padding: '14px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>No actions yet. Launch to see history.</td></tr>
+                                        <tr><td colSpan={6} style={{ padding: '10px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>No actions yet. Launch to see history.</td></tr>
                                     </tbody>
                                 </table>
                             </div>

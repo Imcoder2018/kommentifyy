@@ -9,6 +9,7 @@ import { browser } from '../shared/utils/browser.js';
 import { generatePostWithOpenAI } from '../shared/utils/openaiConfig.js';
 import { postToLinkedIn } from './automationExecutor.js';
 import { backgroundStatistics } from './statisticsManager.js';
+import { liveLog } from '../shared/services/liveActivityLogger.js';
 
 class TrendingContentGenerator {
     constructor() {
@@ -278,6 +279,7 @@ class TrendingContentGenerator {
      */
     async generateAndPublishTrendingPost(options = {}) {
         console.log('TRENDING: Starting auto-post generation...');
+        liveLog.start('post_writer', 'Starting trending post generation');
 
         try {
             // Step 1: Get trending topic
@@ -296,10 +298,10 @@ class TrendingContentGenerator {
             // Step 3: Load delay settings from Limits tab
             const { delaySettings: trendDelays } = await chrome.storage.local.get('delaySettings');
             const postWriterDelays = {
-                postWriterPageLoadDelay: (trendDelays && trendDelays.postWriterPageLoadDelay) || 10,
-                postWriterClickDelay: (trendDelays && trendDelays.postWriterClickDelay) || 5,
-                postWriterTypingDelay: (trendDelays && trendDelays.postWriterTypingDelay) || 5,
-                postWriterSubmitDelay: (trendDelays && trendDelays.postWriterSubmitDelay) || 3,
+                postWriterPageLoadDelay: (trendDelays && trendDelays.postWriterPageLoadDelay) || 3,
+                postWriterClickDelay: (trendDelays && trendDelays.postWriterClickDelay) || 1,
+                postWriterTypingDelay: (trendDelays && trendDelays.postWriterTypingDelay) || 1,
+                postWriterSubmitDelay: (trendDelays && trendDelays.postWriterSubmitDelay) || 2,
             };
 
             // Step 4: Publish to LinkedIn
@@ -328,6 +330,7 @@ class TrendingContentGenerator {
                 });
 
                 console.log('TRENDING: Post published successfully!');
+                liveLog.post('post_writer', `Published trending post: "${topic.headline}"`, { topic: topic.headline });
                 return {
                     success: true,
                     topic: topic.headline,
@@ -338,6 +341,7 @@ class TrendingContentGenerator {
             }
         } catch (error) {
             console.error('TRENDING: Error in auto-post:', error);
+            liveLog.error('post_writer', `Failed to publish: ${error.message}`);
             return {
                 success: false,
                 error: error.message

@@ -4,6 +4,7 @@ import { scrapePostsFromSearchEnhanced, scrapePostsFromFeed } from './enhancedSc
 import { businessHoursScheduler } from './businessHoursScheduler.js';
 import { backgroundStatistics } from './statisticsManager.js';
 import { featureChecker } from '../shared/utils/featureChecker.js';
+import { liveLog } from '../shared/services/liveActivityLogger.js';
 
 // Global stop flag and processing state
 let stopProcessingFlag = false;
@@ -324,15 +325,19 @@ export async function executeBulkProcessing(settings) {
         const storageResult = await chrome.storage.local.get(['delaySettings', 'automationPreferences', 'randomIntervalSettings', 'randomDelayEnabled']);
         const delaySettings = storageResult.delaySettings || {
             automationStartDelay: 0,
-            searchMinDelay: 30,
-            searchMaxDelay: 60,
+            searchMinDelay: 15,
+            searchMaxDelay: 30,
+            commentMinDelay: 25,
+            commentMaxDelay: 60,
             postPageLoadDelay: 3,
-            beforeLikeDelay: 2,
-            beforeCommentDelay: 3,
-            beforeShareDelay: 2,
-            beforeFollowDelay: 2,
+            beforeOpeningPostsDelay: 2,
+            beforeLikeDelay: 1,
+            beforeCommentDelay: 2,
+            beforeShareDelay: 1,
+            beforeFollowDelay: 1,
             baseDelay: 0,
-            taskInitDelay: 0
+            taskInitDelay: 0,
+            warmupDelay: 5
         };
         const automationPreferences = storageResult.automationPreferences || { openSearchInWindow: true };
         const randomIntervalSettings = storageResult.randomIntervalSettings || { minInterval: 15, maxInterval: 35, enabled: true };
@@ -356,6 +361,7 @@ export async function executeBulkProcessing(settings) {
         console.log("🔧 BULK PROCESSING: Delay settings loaded:", JSON.stringify(delaySettings));
         console.log("🪟 BULK PROCESSING: Automation preferences:", automationPreferences);
         console.log("🎲 BULK PROCESSING: Random interval settings:", JSON.stringify(randomIntervalSettings));
+        liveLog.start('automation', `🚀 Bulk processing started — ${settings.keywords?.length || 0} keywords, ${settings.quota || 20} posts target`);
         
         // Apply task init delay
         const taskInitDelay = delaySettings.taskInitDelay || 0;
@@ -731,6 +737,7 @@ export async function executeBulkProcessing(settings) {
                             likeSuccess = true;
                             console.log(`✅ BULK PROCESSING: Liked post ${postData.urn}`);
                             await broadcastStatus(`👍 Liked post ${i + 1}/${allPostUrns.length}`, 'success');
+                            liveLog.like('automation', `Liked post ${i + 1}/${allPostUrns.length}`, { postUrn: postData.urn });
                             
                             // Record statistics and track backend usage
                             try {
@@ -952,6 +959,7 @@ export async function executeBulkProcessing(settings) {
                             actionResults.commented = true;
                             console.log(`BULK PROCESSING: ✅ Posted AI comment on ${postData.urn}`);
                             await broadcastStatus(`💬 Commented on post ${i + 1}/${allPostUrns.length}`, 'success');
+                            liveLog.comment('automation', `Commented on post ${i + 1}/${allPostUrns.length}: "${(result.comment || '').substring(0, 60)}..."`, { postUrn: postData.urn });
                             
                             // Save automation post record for analytics display
                             await saveAutomationPostRecord({
@@ -1069,6 +1077,7 @@ export async function executeBulkProcessing(settings) {
                         if (result && result.success) {
                             actionResults.shared = true;
                             console.log(`BULK PROCESSING: ✅ Reposted ${postData.urn}`);
+                            liveLog.share('automation', `Reposted post ${i + 1}/${allPostUrns.length}`, { postUrn: postData.urn });
                             
                             // Record statistics and track backend usage
                             try {
@@ -1170,6 +1179,7 @@ export async function executeBulkProcessing(settings) {
                         if (result && result.success) {
                             actionResults.followed = true;
                             console.log(`BULK PROCESSING: ✅ Followed author of post ${postData.urn}`);
+                            liveLog.follow('automation', `Followed author of post ${i + 1}/${allPostUrns.length}`, { postUrn: postData.urn });
                             
                             // Record statistics and track backend usage
                             try {
@@ -1243,6 +1253,7 @@ export async function executeBulkProcessing(settings) {
                     betweenPostDelay = applyRandomJitter(betweenPostDelay, 'betweenPosts');
                     const delaySec = Math.round(betweenPostDelay / 1000);
                     console.log(`⏱️ BULK PROCESSING: Waiting ${delaySec}s before next post (random jitter: ${randomDelayEnabled ? 'ON' : 'OFF'})...`);
+                    liveLog.delay('automation', delaySec, 'between posts');
                     for (let remaining = delaySec; remaining > 0; remaining -= 5) {
                         if (stopProcessingFlag) break;
                         await broadcastStatus(`⏳ Next post in ${remaining}s...`, 'info');
@@ -1257,6 +1268,7 @@ export async function executeBulkProcessing(settings) {
         
         console.log(`BULK PROCESSING: Processing complete! Processed ${processedCount}/${allPostUrns.length} posts.`);
         await broadcastStatus(`🎉 Complete! Processed ${processedCount} posts`, 'success', false);
+        liveLog.stop('automation', `✅ Bulk processing complete — ${processedCount}/${allPostUrns.length} posts processed`);
         
         // Clear processing state
         await chrome.storage.local.set({ bulkProcessingActive: false });

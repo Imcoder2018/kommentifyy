@@ -245,25 +245,28 @@ export async function getDelaySettings() {
     try {
         const result = await chrome.storage.local.get('delaySettings');
         return result.delaySettings || {
-            automationStartDelay: 30,
-            networkingStartDelay: 30,
-            importStartDelay: 10,
-            searchMinDelay: 30,
-            searchMaxDelay: 60,
-            commentMinDelay: 60,
-            commentMaxDelay: 120,
-            networkingMinDelay: 30,
-            networkingMaxDelay: 60,
-            beforeOpeningPostsDelay: 4,
+            automationStartDelay: 0,
+            networkingStartDelay: 0,
+            importStartDelay: 0,
+            warmupDelay: 5,
+            searchMinDelay: 15,
+            searchMaxDelay: 30,
+            commentMinDelay: 25,
+            commentMaxDelay: 60,
+            networkingMinDelay: 20,
+            networkingMaxDelay: 45,
+            beforeOpeningPostsDelay: 2,
             postPageLoadDelay: 3,
-            beforeLikeDelay: 2,
-            beforeCommentDelay: 3,
-            beforeShareDelay: 2,
-            beforeFollowDelay: 2,
-            postWriterPageLoadDelay: 5,
-            postWriterClickDelay: 2,
-            postWriterTypingDelay: 2,
-            postWriterSubmitDelay: 2
+            beforeLikeDelay: 1,
+            beforeCommentDelay: 2,
+            beforeShareDelay: 1,
+            beforeFollowDelay: 1,
+            postWriterPageLoadDelay: 3,
+            postWriterClickDelay: 1,
+            postWriterTypingDelay: 1,
+            postWriterSubmitDelay: 2,
+            baseDelay: 0,
+            taskInitDelay: 0
         };
     } catch (error) {
         console.error('Error getting delay settings:', error);

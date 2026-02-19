@@ -72,6 +72,10 @@ async function syncAutomationSettings(token, apiUrl) {
             postWriterClickDelay: s.postWriterClick,
             postWriterTypingDelay: s.postWriterTyping,
             postWriterSubmitDelay: s.postWriterSubmit,
+            baseDelay: s.baseDelay || 0,
+            taskInitDelay: s.taskInitDelay || 0,
+            warmupDelay: s.warmupDelay || 0,
+            delayMode: s.delayMode || 'random',
         };
 
         const dailyLimits = {
@@ -99,7 +103,8 @@ async function syncAutomationSettings(token, apiUrl) {
             humanSimulation,
             randomIntervalSettings,
             accountPreset: s.accountPreset,
-            baseDelay: s.baseDelay || 5,
+            baseDelay: s.baseDelay ?? 0,
+            delayMode: s.delayMode || 'random',
             randomDelayEnabled: s.randomDelayEnabled !== false,
             limitsPresetApplied: true,
         });

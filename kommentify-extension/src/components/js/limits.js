@@ -666,71 +666,71 @@ const ACCOUNT_PRESETS = {
     'new-conservative': {
         // For brand new accounts (0-2 weeks old) - Very cautious to build trust
         dailyLimits: { comments: 5, likes: 15, shares: 3, follows: 8 },
-        startingDelays: { automation: 60, networking: 60, import: 60 },
-        postWriterDelays: { pageLoad: 20, click: 12, typing: 15, submit: 10 },
-        automationDelays: { searchMin: 180, searchMax: 300, commentMin: 240, commentMax: 420 },
-        networkingDelays: { min: 120, max: 180 },
-        postActionDelays: { opening: 20, page: 15, like: 12, comment: 18, share: 15, follow: 12 }
+        startingDelays: { automation: 10, networking: 10, import: 10 },
+        postWriterDelays: { pageLoad: 5, click: 2, typing: 2, submit: 3 },
+        automationDelays: { searchMin: 45, searchMax: 90, commentMin: 60, commentMax: 120 },
+        networkingDelays: { min: 60, max: 120 },
+        postActionDelays: { opening: 3, page: 4, like: 2, comment: 3, share: 2, follow: 2 }
     },
     
     'new-moderate': {
         // For newer accounts (2-8 weeks old) - Building activity gradually
         dailyLimits: { comments: 15, likes: 35, shares: 8, follows: 18 },
-        startingDelays: { automation: 45, networking: 45, import: 45 },
-        postWriterDelays: { pageLoad: 18, click: 10, typing: 12, submit: 8 },
-        automationDelays: { searchMin: 120, searchMax: 240, commentMin: 180, commentMax: 360 },
-        networkingDelays: { min: 90, max: 150 },
-        postActionDelays: { opening: 18, page: 12, like: 10, comment: 15, share: 12, follow: 10 }
+        startingDelays: { automation: 5, networking: 5, import: 5 },
+        postWriterDelays: { pageLoad: 4, click: 1, typing: 2, submit: 2 },
+        automationDelays: { searchMin: 30, searchMax: 60, commentMin: 45, commentMax: 90 },
+        networkingDelays: { min: 45, max: 90 },
+        postActionDelays: { opening: 2, page: 3, like: 2, comment: 2, share: 2, follow: 2 }
     },
     
     'matured-safe': {
-        // For established accounts (3+ months) - Safe daily use with human-like delays
+        // For established accounts (3+ months) - Safe daily use, optimized speed
         dailyLimits: { comments: 30, likes: 60, shares: 15, follows: 30 },
-        startingDelays: { automation: 30, networking: 30, import: 30 },
-        postWriterDelays: { pageLoad: 15, click: 8, typing: 10, submit: 8 },
-        automationDelays: { searchMin: 90, searchMax: 180, commentMin: 120, commentMax: 300 },
-        networkingDelays: { min: 60, max: 120 },
-        postActionDelays: { opening: 15, page: 10, like: 8, comment: 12, share: 10, follow: 8 }
+        startingDelays: { automation: 3, networking: 3, import: 3 },
+        postWriterDelays: { pageLoad: 3, click: 1, typing: 1, submit: 2 },
+        automationDelays: { searchMin: 15, searchMax: 30, commentMin: 25, commentMax: 60 },
+        networkingDelays: { min: 30, max: 60 },
+        postActionDelays: { opening: 2, page: 3, like: 1, comment: 2, share: 1, follow: 1 }
     },
     
     'matured-aggressive': {
         // For mature accounts (6+ months) - Higher activity, still safe
         dailyLimits: { comments: 50, likes: 100, shares: 25, follows: 50 },
-        startingDelays: { automation: 20, networking: 20, import: 20 },
-        postWriterDelays: { pageLoad: 12, click: 6, typing: 8, submit: 5 },
-        automationDelays: { searchMin: 60, searchMax: 120, commentMin: 90, commentMax: 180 },
-        networkingDelays: { min: 45, max: 90 },
-        postActionDelays: { opening: 12, page: 8, like: 6, comment: 10, share: 8, follow: 6 }
+        startingDelays: { automation: 2, networking: 2, import: 2 },
+        postWriterDelays: { pageLoad: 3, click: 1, typing: 1, submit: 2 },
+        automationDelays: { searchMin: 10, searchMax: 25, commentMin: 20, commentMax: 45 },
+        networkingDelays: { min: 20, max: 45 },
+        postActionDelays: { opening: 1, page: 3, like: 1, comment: 1, share: 1, follow: 1 }
     },
     
     'premium-user': {
         // For LinkedIn Premium users - Higher limits expected
         dailyLimits: { comments: 60, likes: 120, shares: 30, follows: 60 },
-        startingDelays: { automation: 15, networking: 15, import: 15 },
-        postWriterDelays: { pageLoad: 10, click: 5, typing: 6, submit: 4 },
-        automationDelays: { searchMin: 45, searchMax: 90, commentMin: 75, commentMax: 150 },
-        networkingDelays: { min: 40, max: 75 },
-        postActionDelays: { opening: 10, page: 6, like: 5, comment: 8, share: 6, follow: 5 }
+        startingDelays: { automation: 2, networking: 2, import: 2 },
+        postWriterDelays: { pageLoad: 3, click: 1, typing: 1, submit: 2 },
+        automationDelays: { searchMin: 10, searchMax: 20, commentMin: 15, commentMax: 35 },
+        networkingDelays: { min: 15, max: 35 },
+        postActionDelays: { opening: 1, page: 3, like: 1, comment: 1, share: 1, follow: 1 }
     },
     
     'sales-navigator': {
         // For Sales Navigator users - Professional high volume
         dailyLimits: { comments: 75, likes: 150, shares: 40, follows: 75 },
-        startingDelays: { automation: 10, networking: 10, import: 10 },
-        postWriterDelays: { pageLoad: 8, click: 4, typing: 5, submit: 3 },
-        automationDelays: { searchMin: 35, searchMax: 75, commentMin: 60, commentMax: 120 },
-        networkingDelays: { min: 35, max: 60 },
-        postActionDelays: { opening: 8, page: 5, like: 4, comment: 7, share: 5, follow: 4 }
+        startingDelays: { automation: 0, networking: 0, import: 0 },
+        postWriterDelays: { pageLoad: 3, click: 1, typing: 1, submit: 2 },
+        automationDelays: { searchMin: 8, searchMax: 18, commentMin: 12, commentMax: 30 },
+        networkingDelays: { min: 12, max: 30 },
+        postActionDelays: { opening: 1, page: 2, like: 1, comment: 1, share: 1, follow: 1 }
     },
     
     'speed-mode': {
-        // Fast processing - Use at your own risk (still with some delay)
+        // Fast processing - Use at your own risk (minimal delays)
         dailyLimits: { comments: 100, likes: 200, shares: 50, follows: 100 },
-        startingDelays: { automation: 5, networking: 5, import: 5 },
-        postWriterDelays: { pageLoad: 5, click: 3, typing: 3, submit: 2 },
-        automationDelays: { searchMin: 25, searchMax: 45, commentMin: 45, commentMax: 90 },
-        networkingDelays: { min: 25, max: 45 },
-        postActionDelays: { opening: 5, page: 3, like: 3, comment: 5, share: 3, follow: 3 }
+        startingDelays: { automation: 0, networking: 0, import: 0 },
+        postWriterDelays: { pageLoad: 2, click: 1, typing: 1, submit: 1 },
+        automationDelays: { searchMin: 5, searchMax: 12, commentMin: 8, commentMax: 20 },
+        networkingDelays: { min: 8, max: 20 },
+        postActionDelays: { opening: 1, page: 2, like: 1, comment: 1, share: 1, follow: 1 }
     }
 };
 

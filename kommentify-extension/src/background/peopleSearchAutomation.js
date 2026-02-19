@@ -8,6 +8,7 @@ import { browser } from '../shared/utils/browser.js';
 import { storage } from '../shared/storage/storage.background.js';
 import { backgroundStatistics } from './statisticsManager.js';
 import { randomDelay } from '../shared/utils/helpers.js';
+import { liveLog } from '../shared/services/liveActivityLogger.js';
 
 class PeopleSearchAutomation {
     constructor() {
@@ -1286,6 +1287,7 @@ class PeopleSearchAutomation {
                         console.log(`   Total connected: ${this.searchState.totalConnected}`);
                         console.log(`   Remaining: ${targetConnections - connected}`);
                         await this.broadcastStatus(`✅ Connected: ${profile.name} (${connected}/${targetConnections})`, 'success');
+                        liveLog.connect('networking', `Connected: ${profile.name} (${connected}/${targetConnections})`, { profileUrl: profile.profileUrl });
                     } else {
                         console.error(`❌ FAILED: Could not send connection to ${profile.name}`);
                         console.error(`   Reason: ${sendResult.reason || sendResult.error || 'Unknown'}`);
@@ -1295,14 +1297,15 @@ class PeopleSearchAutomation {
                     // Load networking delay settings from Limits tab
                     const delayData = await chrome.storage.local.get('delaySettings');
                     const profileDelaySettings = delayData.delaySettings || {};
-                    const minDelay = (profileDelaySettings.networkingMinDelay || 45) * 1000;
-                    const maxDelay = (profileDelaySettings.networkingMaxDelay || 90) * 1000;
+                    const minDelay = (profileDelaySettings.networkingMinDelay || 20) * 1000;
+                    const maxDelay = (profileDelaySettings.networkingMaxDelay || 45) * 1000;
                     const netBaseDelay = (profileDelaySettings.baseDelay || 0) * 1000;
                     
                     // Random delay between min and max + baseDelay
                     const delay = minDelay + Math.floor(Math.random() * (maxDelay - minDelay)) + netBaseDelay;
                     const delaySeconds = Math.round(delay / 1000);
                     console.log(`⏰ NETWORKING DELAY: Waiting ${delaySeconds}s (range=${minDelay/1000}-${maxDelay/1000}s + base=${netBaseDelay/1000}s) before next profile...`);
+                    liveLog.delay('networking', delaySeconds, 'between connections');
                     
                     // Show countdown in status indicator
                     for (let remaining = delaySeconds; remaining > 0; remaining -= 5) {
@@ -1331,6 +1334,7 @@ class PeopleSearchAutomation {
             
             // Broadcast completion before closing tab
             await this.broadcastStatus(`🎉 Complete! ${this.searchState.totalConnected} connected`, 'success');
+            liveLog.stop('networking', `✅ Networking complete — ${this.searchState.totalConnected} connections sent, ${connected} profiles processed`);
             await new Promise(resolve => setTimeout(resolve, 2000)); // Let user see the message
             
             // Close search tab

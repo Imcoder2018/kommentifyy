@@ -97,6 +97,7 @@ import { versionChecker } from './versionChecker.js';
 import { syncAllSettingsFromWebsite } from '../shared/services/settingsSync.js';
 import { profileScanner } from './profileScanner.js';
 import { startAnalyticsSyncService, forceAnalyticsSync } from '../shared/services/analyticsSync.js';
+import { startLiveLogger, liveLog } from '../shared/services/liveActivityLogger.js';
 
 // Force-clean old cached apiBaseUrl on startup (prevents hitting old backend URLs)
 (async () => {
@@ -131,7 +132,8 @@ setInterval(() => {
 // Start analytics sync service (syncs extension analytics to website backend)
 try {
     startAnalyticsSyncService();
-    console.log("BACKGROUND: Analytics sync service started");
+    startLiveLogger();
+    console.log("BACKGROUND: Analytics sync + live logger started");
 } catch (error) {
     console.error("BACKGROUND: Failed to start analytics sync service:", error);
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/next'
 import { ClerkProvider } from '@clerk/nextjs'
+import I18nProvider from '@/lib/i18n/I18nProvider'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://kommentify.com'),
@@ -178,7 +179,9 @@ export default function RootLayout({
           `}</style>
         </head>
         <body style={{ margin: 0, padding: 0 }}>
-          {children}
+          <I18nProvider>
+            {children}
+          </I18nProvider>
           <SpeedInsights />
           <Analytics />
         </body>

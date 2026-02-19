@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, getLanguageDir } from '@/lib/i18n';
 
 interface ReferralData {
     referralCode: string;
@@ -37,6 +39,18 @@ export default function DashboardPage() {
 function DashboardContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { t, i18n } = useTranslation();
+    const [dashLang, setDashLang] = useState<string>(() => {
+        if (typeof window !== 'undefined') return localStorage.getItem('dashboard-language') || 'en';
+        return 'en';
+    });
+    const changeDashboardLanguage = (lang: string) => {
+        setDashLang(lang);
+        i18n.changeLanguage(lang);
+        localStorage.setItem('dashboard-language', lang);
+        document.documentElement.dir = getLanguageDir(lang);
+        document.documentElement.lang = lang;
+    };
     const [user, setUser] = useState<any>(null);
     const [usage, setUsage] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -1320,7 +1334,7 @@ function DashboardContent() {
             }}>
                 <div style={{ textAlign: 'center', color: 'white' }}>
                     <div style={{ marginBottom: '20px' }}>{miniIcon('M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9', '#a78bfa', 48)}</div>
-                    <div style={{ fontSize: '18px', opacity: 0.8 }}>Logging out...</div>
+                    <div style={{ fontSize: '18px', opacity: 0.8 }}>{t('common.loggingOut')}</div>
                 </div>
             </div>
         );
@@ -1337,7 +1351,7 @@ function DashboardContent() {
             }}>
                 <div style={{ textAlign: 'center', color: 'white' }}>
                     <div style={{ marginBottom: '20px', animation: 'spin 1s linear infinite' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', '#a78bfa', 48)}</div>
-                    <div style={{ fontSize: '18px', opacity: 0.8 }}>Loading your dashboard...</div>
+                    <div style={{ fontSize: '18px', opacity: 0.8 }}>{t('common.loading')}</div>
                 </div>
                 <style>{`
                     @keyframes spin {
@@ -1351,31 +1365,31 @@ function DashboardContent() {
 
     // Navigation items with grouped sections
     const navItems = [
-        { id: 'overview', label: 'Overview', icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'), section: 'dashboard' },
+        { id: 'overview', label: t('nav.overview'), icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'), section: 'dashboard' },
         // Posts section
-        { id: 'trending-posts', label: 'Viral Posts Writer', icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z'), section: 'posts' },
-        { id: 'writer', label: 'Personalized Post Writer', icon: svgIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'), section: 'posts' },
+        { id: 'trending-posts', label: t('nav.viralPostsWriter'), icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z'), section: 'posts' },
+        { id: 'writer', label: t('nav.personalizedPostWriter'), icon: svgIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'), section: 'posts' },
         // Comments section
-        { id: 'commenter', label: 'Auto Commenter', icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'), section: 'comments' },
-        { id: 'comments', label: 'Comments Settings', icon: svgIcon('M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'), section: 'comments' },
-        { id: 'import', label: 'Import Profiles', icon: svgIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6'), section: 'comments' },
+        { id: 'commenter', label: t('nav.autoCommenter'), icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'), section: 'comments' },
+        { id: 'comments', label: t('nav.commentsSettings'), icon: svgIcon('M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'), section: 'comments' },
+        { id: 'import', label: t('nav.importProfiles'), icon: svgIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6'), section: 'comments' },
         // Other
-        { id: 'limits', label: 'Limits & Delays', icon: svgIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), section: 'management' },
-        { id: 'tasks', label: 'Tasks', icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'), section: 'management' },
-        { id: 'activity', label: 'Activity Logs', icon: svgIcon('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8'), section: 'management' },
-        { id: 'history', label: 'History', icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'), section: 'management' },
+        { id: 'limits', label: t('nav.limitsDelays'), icon: svgIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), section: 'management' },
+        { id: 'tasks', label: t('nav.tasks'), icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'), section: 'management' },
+        { id: 'activity', label: t('nav.activityLogs'), icon: svgIcon('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8'), section: 'management' },
+        { id: 'history', label: t('nav.history'), icon: svgIcon('M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'), section: 'management' },
     ];
 
     const accountItems = [
-        { id: 'analytics', label: 'Analytics', icon: svgIcon('M3 3v18h18 M9 17V9 M13 17V5 M17 17v-4 M5 17v-2') },
-        { id: 'usage', label: 'Usage & Limits', icon: svgIcon('M18 20V10 M12 20V4 M6 20v-6') },
-        { id: 'referrals', label: 'Referrals', icon: svgIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z') },
-        { id: 'extension', label: 'Extension', icon: svgIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z') },
+        { id: 'analytics', label: t('nav.analytics'), icon: svgIcon('M3 3v18h18 M9 17V9 M13 17V5 M17 17v-4 M5 17v-2') },
+        { id: 'usage', label: t('nav.usageLimits'), icon: svgIcon('M18 20V10 M12 20V4 M6 20v-6') },
+        { id: 'referrals', label: t('nav.referrals'), icon: svgIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z') },
+        { id: 'extension', label: t('nav.extension'), icon: svgIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z') },
     ];
 
     const settingsItems = [
-        { id: 'account', label: 'Account', icon: svgIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z') },
-        { id: 'billing', label: 'Billing', icon: svgIcon('M1 4h22v16H1z M1 10h22'), action: () => router.push('/plans') },
+        { id: 'account', label: t('nav.account'), icon: svgIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z') },
+        { id: 'billing', label: t('nav.billing'), icon: svgIcon('M1 4h22v16H1z M1 10h22'), action: () => router.push('/plans') },
     ];
 
     return (
@@ -1721,7 +1735,7 @@ function DashboardContent() {
                 <div style={{ flex: 1, padding: '0 12px', overflowY: 'auto' }}>
                     {!sidebarCollapsed && (
                         <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', marginBottom: '8px', paddingLeft: '12px', letterSpacing: '1.5px', fontWeight: '600' }}>
-                            Dashboard
+                            {t('sidebar.dashboard')}
                         </div>
                     )}
                     {navItems.filter(i => i.section === 'dashboard').map(item => (
@@ -1732,7 +1746,7 @@ function DashboardContent() {
                         </button>
                     ))}
 
-                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>Posts</div>}
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.posts')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'posts').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
@@ -1742,7 +1756,7 @@ function DashboardContent() {
                         </button>
                     ))}
 
-                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>Comments</div>}
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.comments')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'comments').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
@@ -1752,7 +1766,7 @@ function DashboardContent() {
                         </button>
                     ))}
 
-                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>Management</div>}
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.management')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'management').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
@@ -1764,7 +1778,7 @@ function DashboardContent() {
 
                     {!sidebarCollapsed && (
                         <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
-                            Account
+                            {t('sidebar.account')}
                         </div>
                     )}
 
@@ -1872,7 +1886,7 @@ function DashboardContent() {
                         }}
                     >
                         <span>{miniIcon('M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9', sidebarCollapsed ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.7)', 18)}</span>
-                        {!sidebarCollapsed && 'Logout'}
+                        {!sidebarCollapsed && t('common.logout')}
                     </button>
 
                     {sidebarCollapsed && (
@@ -1918,36 +1932,10 @@ function DashboardContent() {
                             color: 'white',
                             margin: '0 0 8px 0',
                         }}>
-                            {activeTab === 'overview' && 'Overview'}
-                            {activeTab === 'writer' && 'Personalized Post Writer'}
-                            {activeTab === 'comments' && 'Comments Settings'}
-                            {activeTab === 'trending-posts' && 'Viral Posts Writer'}
-                            {activeTab === 'tasks' && 'Tasks'}
-                            {activeTab === 'history' && 'History'}
-                            {activeTab === 'limits' && 'Limits & Delays'}
-                            {activeTab === 'commenter' && 'Auto Commenter'}
-                            {activeTab === 'import' && 'Import Profiles'}
-                            {activeTab === 'analytics' && 'Analytics'}
-                            {activeTab === 'usage' && 'Usage & Limits'}
-                            {activeTab === 'referrals' && 'Referral Program'}
-                            {activeTab === 'extension' && 'Chrome Extension'}
-                            {activeTab === 'account' && 'Account Settings'}
+                            {t(`headers.${activeTab}`, activeTab)}
                         </h1>
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '15px', margin: 0 }}>
-                            {activeTab === 'overview' && 'Here\'s what\'s happening with your LinkedIn automation'}
-                            {activeTab === 'writer' && 'Create personalized AI posts that match your unique voice and style'}
-                            {activeTab === 'trending-posts' && 'Generate viral posts inspired by top-performing LinkedIn content'}
-                            {activeTab === 'comments' && 'Configure AI comment style, tone, goal, and voice profiles'}
-                            {activeTab === 'tasks' && 'View and manage extension tasks'}
-                            {activeTab === 'history' && 'Browse your generation and publishing history'}
-                            {activeTab === 'limits' && 'LinkedIn-safe automation limits and timing controls'}
-                            {activeTab === 'commenter' && 'AI-powered bulk commenting and automated engagement'}
-                            {activeTab === 'import' && 'Import LinkedIn profiles for automated engagement'}
-                            {activeTab === 'analytics' && 'Track engagement metrics, automation history, networking sessions, and import activities'}
-                            {activeTab === 'usage' && 'Monitor your daily usage and plan limits'}
-                            {activeTab === 'referrals' && 'Earn 30% commission on every paid referral'}
-                            {activeTab === 'extension' && 'Install the Chrome extension to get started'}
-                            {activeTab === 'account' && 'Manage your account settings'}
+                            {t(`descriptions.${activeTab}`, '')}
                         </p>
                     </div>
                     
@@ -2034,9 +2022,9 @@ function DashboardContent() {
                                 borderRadius: '20px',
                                 border: '1px solid rgba(105,63,233,0.3)'
                             }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Current Plan</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.currentPlan')}</div>
                                 <div style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>{user?.plan?.name || 'Free'}</div>
-                                <div style={{ fontSize: '14px', color: '#10b981' }}>Active Plan</div>
+                                <div style={{ fontSize: '14px', color: '#10b981' }}>{t('overviewTab.activePlan')}</div>
                             </div>
 
                             {/* Referral Earnings */}
@@ -2046,9 +2034,9 @@ function DashboardContent() {
                                 borderRadius: '20px',
                                 border: '1px solid rgba(245,158,11,0.3)'
                             }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Referral Earnings</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.referralEarnings')}</div>
                                 <div style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>${(referralData?.stats.commission || 0).toFixed(2)}</div>
-                                <div style={{ fontSize: '14px', color: '#f59e0b' }}>{referralData?.stats.totalPaidReferrals || 0} paid users</div>
+                                <div style={{ fontSize: '14px', color: '#f59e0b' }}>{referralData?.stats.totalPaidReferrals || 0} {t('overviewTab.paidUsers')}</div>
                             </div>
 
                             {/* Total Referrals */}
@@ -2058,9 +2046,9 @@ function DashboardContent() {
                                 borderRadius: '20px',
                                 border: '1px solid rgba(16,185,129,0.3)'
                             }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Total Referrals</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.totalReferrals')}</div>
                                 <div style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>{referralData?.stats.totalReferrals || 0}</div>
-                                <div style={{ fontSize: '14px', color: '#10b981' }}>users joined</div>
+                                <div style={{ fontSize: '14px', color: '#10b981' }}>{t('overviewTab.usersJoined')}</div>
                             </div>
 
                             {/* Member Since */}
@@ -2070,7 +2058,7 @@ function DashboardContent() {
                                 borderRadius: '20px',
                                 border: '1px solid rgba(255,255,255,0.1)'
                             }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Member Since</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.memberSince')}</div>
                                 <div style={{ fontSize: '20px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</div>
                                 <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>{user?.email}</div>
                             </div>
@@ -4629,31 +4617,82 @@ function DashboardContent() {
 
                 {/* Account Tab */}
                 {activeTab === 'account' && (
-                    <div style={{ 
-                        background: 'rgba(255,255,255,0.05)',
-                        padding: '30px',
-                        borderRadius: '20px',
-                        border: '1px solid rgba(255,255,255,0.1)'
-                    }}>
-                        <div style={{ display: 'grid', gap: '20px', maxWidth: '500px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Full Name</label>
-                                <div style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>{user?.name || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Email Address</label>
-                                <div style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>{user?.email || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Current Plan</label>
-                                <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, rgba(105,63,233,0.2), rgba(139,92,246,0.1))', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(105,63,233,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span>{user?.plan?.name || 'Free'}</span>
-                                    <button onClick={() => router.push('/plans')} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Change Plan</button>
+                    <div style={{ display: 'grid', gap: '24px' }}>
+                        {/* Account Info Card */}
+                        <div style={{ 
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '30px',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                            <div style={{ display: 'grid', gap: '20px', maxWidth: '500px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>{t('accountTab.fullName')}</label>
+                                    <div style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>{user?.name || t('accountTab.na')}</div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>{t('accountTab.emailAddress')}</label>
+                                    <div style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>{user?.email || t('accountTab.na')}</div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>{t('accountTab.currentPlan')}</label>
+                                    <div style={{ padding: '14px 18px', background: 'linear-gradient(135deg, rgba(105,63,233,0.2), rgba(139,92,246,0.1))', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(105,63,233,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>{user?.plan?.name || t('common.free')}</span>
+                                        <button onClick={() => router.push('/plans')} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>{t('accountTab.changePlan')}</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>{t('accountTab.memberSince')}</label>
+                                    <div style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString(dashLang === 'en' ? 'en-US' : dashLang, { month: 'long', day: 'numeric', year: 'numeric' }) : t('accountTab.na')}</div>
                                 </div>
                             </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>Member Since</label>
-                                <div style={{ padding: '14px 18px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', color: 'white', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)' }}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}</div>
+                        </div>
+
+                        {/* Language Selector Card */}
+                        <div style={{ 
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '30px',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {miniIcon('M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z', '#a78bfa', 20)}
+                                {t('accountTab.language')}
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '20px', marginTop: 0 }}>{t('accountTab.selectLanguage')}</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', maxWidth: '600px' }}>
+                                {SUPPORTED_LANGUAGES.map((lang) => (
+                                    <button
+                                        key={lang.code}
+                                        onClick={() => changeDashboardLanguage(lang.code)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '10px',
+                                            padding: '12px 16px',
+                                            background: dashLang === lang.code 
+                                                ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
+                                                : 'rgba(255,255,255,0.05)',
+                                            border: dashLang === lang.code 
+                                                ? '2px solid rgba(105,63,233,0.6)' 
+                                                : '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '12px',
+                                            color: dashLang === lang.code ? 'white' : 'rgba(255,255,255,0.7)',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: dashLang === lang.code ? '600' : '400',
+                                            transition: 'all 0.2s ease',
+                                            textAlign: 'left',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '16px', fontWeight: '700', opacity: 0.8 }}>{lang.nativeName}</span>
+                                        {dashLang === lang.code && (
+                                            <span style={{ marginLeft: 'auto', color: '#a78bfa', display: 'flex' }}>
+                                                {miniIcon('M9 11l3 3L22 4', '#a78bfa', 14)}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>

@@ -1001,8 +1001,25 @@ class PeopleSearchAutomation {
             sessionData.query = `URL: ${options._searchUrl.substring(0, 50)}...`;
         }
         
-        // Apply networking start delay from limits settings with stop flag checking
+        // Apply networking delays from limits settings
         const { delaySettings } = await chrome.storage.local.get('delaySettings');
+        console.log('⚙️ NETWORKING DELAYS LOADED:', JSON.stringify(delaySettings || {}));
+        
+        // Apply task init delay first
+        const taskInitDelay = (delaySettings && delaySettings.taskInitDelay) || 0;
+        if (taskInitDelay > 0) {
+            console.log(`⏱️ NETWORKING: Task init delay: ${taskInitDelay}s...`);
+            for (let i = 0; i < taskInitDelay; i++) {
+                if (this.stopFlag) {
+                    console.log('⏹️ NETWORKING: Stop requested during task init delay');
+                    await recordSession('stopped', 0, 0);
+                    return { success: true, message: 'Stopped during task init delay', connected: 0, target: targetConnections, pagesProcessed: 0 };
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            console.log('✅ NETWORKING: Task init delay complete');
+        }
+        
         const networkingStartDelay = (delaySettings && delaySettings.networkingStartDelay) || 0;
         if (networkingStartDelay > 0) {
             console.log(`⏰ NETWORKING DELAY: Waiting ${networkingStartDelay}s before starting networking...`);
@@ -1277,14 +1294,15 @@ class PeopleSearchAutomation {
                     
                     // Load networking delay settings from Limits tab
                     const delayData = await chrome.storage.local.get('delaySettings');
-                    const delaySettings = delayData.delaySettings || {};
-                    const minDelay = (delaySettings.networkingMinDelay || 45) * 1000; // Convert to milliseconds
-                    const maxDelay = (delaySettings.networkingMaxDelay || 90) * 1000; // Convert to milliseconds
+                    const profileDelaySettings = delayData.delaySettings || {};
+                    const minDelay = (profileDelaySettings.networkingMinDelay || 45) * 1000;
+                    const maxDelay = (profileDelaySettings.networkingMaxDelay || 90) * 1000;
+                    const netBaseDelay = (profileDelaySettings.baseDelay || 0) * 1000;
                     
-                    // Random delay between min and max
-                    const delay = minDelay + Math.floor(Math.random() * (maxDelay - minDelay));
+                    // Random delay between min and max + baseDelay
+                    const delay = minDelay + Math.floor(Math.random() * (maxDelay - minDelay)) + netBaseDelay;
                     const delaySeconds = Math.round(delay / 1000);
-                    console.log(`⏰ NETWORKING DELAY: Waiting ${delaySeconds}s (${minDelay/1000}-${maxDelay/1000}s range) before next profile...`);
+                    console.log(`⏰ NETWORKING DELAY: Waiting ${delaySeconds}s (range=${minDelay/1000}-${maxDelay/1000}s + base=${netBaseDelay/1000}s) before next profile...`);
                     
                     // Show countdown in status indicator
                     for (let remaining = delaySeconds; remaining > 0; remaining -= 5) {

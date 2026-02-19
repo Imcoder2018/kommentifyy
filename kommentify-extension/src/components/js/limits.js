@@ -368,7 +368,9 @@ export async function loadLimitsSettings() {
             postWriterPageLoadDelay: 3,
             postWriterClickDelay: 2,
             postWriterTypingDelay: 2,
-            postWriterSubmitDelay: 3
+            postWriterSubmitDelay: 3,
+            baseDelay: 5,
+            taskInitDelay: 0
         };
 
         const automationPreferences = result.automationPreferences || {
@@ -611,7 +613,9 @@ export async function saveLimitsSettings() {
             postWriterPageLoadDelay: parseInt(document.getElementById('post-writer-page-load-delay').value) || 3,
             postWriterClickDelay: parseInt(document.getElementById('post-writer-click-delay').value) || 2,
             postWriterTypingDelay: parseInt(document.getElementById('post-writer-typing-delay').value) || 2,
-            postWriterSubmitDelay: parseInt(document.getElementById('post-writer-submit-delay').value) || 3
+            postWriterSubmitDelay: parseInt(document.getElementById('post-writer-submit-delay').value) || 3,
+            baseDelay: parseInt(document.getElementById('base-delay')?.value) || 5,
+            taskInitDelay: parseInt(document.getElementById('task-init-delay')?.value) || 0
         };
 
         const automationPreferences = {

@@ -358,6 +358,12 @@ window.viewNetworkingSession = (id) => {
 export async function loadAnalytics() {
     try {
         console.log('📊 ANALYTICS: Loading stats from local storage...');
+        
+        // Trigger background sync to push analytics to website backend
+        try {
+            chrome.runtime.sendMessage({ action: 'syncAnalytics' }).catch(() => {});
+        } catch (e) { /* ignore if background not available */ }
+        
         const stats = await chrome.storage.local.get('engagementStatistics');
         let data = stats.engagementStatistics;
         console.log('📊 ANALYTICS: Raw storage data:', data);

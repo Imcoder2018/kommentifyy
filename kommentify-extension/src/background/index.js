@@ -96,6 +96,7 @@ import { API_CONFIG } from '../shared/config.js';
 import { versionChecker } from './versionChecker.js';
 import { syncAllSettingsFromWebsite } from '../shared/services/settingsSync.js';
 import { profileScanner } from './profileScanner.js';
+import { startAnalyticsSyncService, forceAnalyticsSync } from '../shared/services/analyticsSync.js';
 
 // Force-clean old cached apiBaseUrl on startup (prevents hitting old backend URLs)
 (async () => {
@@ -126,6 +127,14 @@ try {
 setInterval(() => {
     syncAllSettingsFromWebsite().catch(e => console.warn("BACKGROUND: Periodic settings sync failed:", e));
 }, 5 * 60 * 1000);
+
+// Start analytics sync service (syncs extension analytics to website backend)
+try {
+    startAnalyticsSyncService();
+    console.log("BACKGROUND: Analytics sync service started");
+} catch (error) {
+    console.error("BACKGROUND: Failed to start analytics sync service:", error);
+}
 
 // Initialize Post Scheduler
 let postScheduler = null;
@@ -505,6 +514,7 @@ async function pollCommandsDirectly() {
                                 engageFollows: cfgData.engageFollows !== false,
                                 smartRandom: cfgData.smartRandom || false,
                                 postsPerProfile: cfgData.postsPerProfile || 2,
+                                engagementMethod: cfgData.engagementMethod || 'individual',
                             },
                             pendingImportProfiles: profileUrls,
                         });
@@ -524,6 +534,7 @@ async function pollCommandsDirectly() {
                                 sendConnections: cfgData.sendConnections !== false,
                                 postsPerProfile: cfgData.postsPerProfile || 2,
                                 randomMode: cfgData.smartRandom || false,
+                                engagementMethod: cfgData.engagementMethod || 'individual',
                                 actions: {
                                     like: cfgData.engageLikes !== false,
                                     comment: cfgData.engageComments !== false,
@@ -1253,6 +1264,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true });
             } catch (error) {
                 console.error('BACKGROUND: Error clearing update info:', error);
+                sendResponse({ success: false, error: error.message });
+            }
+        })();
+        return true;
+    }
+    
+    // Force sync analytics to backend
+    if (request.action === "syncAnalytics") {
+        (async () => {
+            try {
+                console.log('BACKGROUND: Manual analytics sync triggered');
+                forceAnalyticsSync();
+                sendResponse({ success: true, message: 'Analytics sync triggered' });
+            } catch (error) {
+                console.error('BACKGROUND: Error syncing analytics:', error);
                 sendResponse({ success: false, error: error.message });
             }
         })();

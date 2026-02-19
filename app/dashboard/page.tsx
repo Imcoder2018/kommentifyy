@@ -1057,6 +1057,7 @@ function DashboardContent() {
         if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
+        if (tab === 'analytics') loadAnalytics();
         if (tab === 'referrals') loadReferralData();
         if (tab === 'account') loadAccountSettings();
     }, [loading, user, activeTab]);
@@ -1160,12 +1161,13 @@ function DashboardContent() {
     };
 
     // Analytics functions
-    const loadAnalytics = async () => {
+    const loadAnalytics = async (periodOverride?: string) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         setAnalyticsLoading(true);
         try {
-            const res = await fetch(`/api/analytics?period=${analyticsPeriod}`, {
+            const period = periodOverride || analyticsPeriod;
+            const res = await fetch(`/api/analytics?period=${period}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             const data = await res.json();
@@ -2064,117 +2066,73 @@ function DashboardContent() {
                 {/* Writer Tab */}
                 {activeTab === 'writer' && (
                     <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                        {/* Left Column: Settings */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            {/* LinkedIn Profile Scan Card */}
-                            <div style={{ background: 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <span style={{ fontSize: '24px' }}>🔗</span>
-                                        <h4 style={{ margin: 0, color: 'white', fontSize: '15px', fontWeight: '700' }}>LinkedIn Profile Data</h4>
-                                    </div>
-                                    <button onClick={scanLinkedInProfile} disabled={linkedInProfileScanning}
-                                        style={{ background: 'white', color: '#0077b5', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: linkedInProfileScanning ? 'wait' : 'pointer' }}>
-                                        {linkedInProfileScanning ? '⏳ Scanning...' : '📡 Scan My Profile'}
-                                    </button>
-                                </div>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '12px' }}>
-                                    {linkedInProfileStatus || 'Scan your LinkedIn profile to use your data for AI-generated content that matches your style.'}
-                                </div>
-                                
-                                {/* Toggle for using profile data */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 }}>
-                                        <input type="checkbox" checked={linkedInUseProfileData} onChange={e => toggleLinkedInProfileData(e.target.checked)}
-                                            style={{ width: '18px', height: '18px', accentColor: '#0077b5' }} />
-                                        <span style={{ color: 'white', fontSize: '13px', fontWeight: '500' }}>Use my profile data in AI prompts</span>
-                                    </label>
-                                    <button onClick={loadLinkedInProfile} disabled={linkedInProfileLoading}
-                                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '6px 12px', color: 'white', fontSize: '11px', cursor: 'pointer' }}>
-                                        {linkedInProfileLoading ? '...' : '🔄'}
-                                    </button>
-                                </div>
-
-                                {/* Profile Data Display */}
+                    {/* LinkedIn Profile — full-width compact banner */}
+                    <div style={{ background: 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.15)', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                                <span style={{ fontSize: '20px', flexShrink: 0 }}>🔗</span>
                                 {linkedInProfile ? (
-                                    <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                            <div>
-                                                <h4 style={{ color: 'white', fontSize: '14px', fontWeight: '600', margin: '0' }}>
-                                                    {linkedInProfile.name || 'LinkedIn Profile'}
-                                                </h4>
-                                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>
-                                                    {linkedInProfile.lastScannedAt ? `Scanned: ${new Date(linkedInProfile.lastScannedAt).toLocaleDateString()}` : ''}
-                                                </span>
-                                            </div>
-                                            <button 
-                                                onClick={deleteLinkedInProfile}
-                                                style={{ 
-                                                    background: 'rgba(239, 68, 68, 0.2)', 
-                                                    border: '1px solid rgba(239, 68, 68, 0.3)', 
-                                                    borderRadius: '4px', 
-                                                    padding: '4px 8px', 
-                                                    color: '#ef4444', 
-                                                    fontSize: '16px', 
-                                                    cursor: 'pointer',
-                                                    lineHeight: '1'
-                                                }}
-                                                title="Delete profile data"
-                                            >
-                                                ×
-                                            </button>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ color: 'white', fontSize: '14px', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedInProfile.name || 'LinkedIn Profile'}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', flexShrink: 0 }}>{linkedInProfile.lastScannedAt ? new Date(linkedInProfile.lastScannedAt).toLocaleDateString() : ''}</span>
                                         </div>
-                                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', margin: '0 0 10px 0', lineHeight: '1.4' }}>
-                                            {linkedInProfile.headline || ''}
-                                        </p>
-                                        
-                                        {/* Topic Suggestions */}
-                                        <div style={{ marginTop: '12px' }}>
-                                            <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
-                                                style={{ width: '100%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '6px', padding: '8px', color: 'white', fontSize: '12px', cursor: 'pointer', marginBottom: '8px' }}>
-                                                {linkedInGeneratingTopics ? '⏳ Generating...' : '💡 Get Topic Ideas from My Profile'}
-                                            </button>
-                                            
-                                            {/* View All Data Button */}
-                                            <button onClick={() => setShowLinkedInDataModal(true)}
-                                                style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>
-                                                📊 View All Profile Data
-                                            </button>
-                                            {linkedInTopicSuggestions.length > 0 && (
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                    {linkedInTopicSuggestions.map((topic, idx) => (
-                                                        <button key={idx} onClick={() => selectTopicSuggestion(topic)}
-                                                            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', padding: '6px 10px', color: 'white', fontSize: '11px', cursor: 'pointer', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            {topic}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedInProfile.headline || ''}</div>
                                     </div>
                                 ) : (
-                                    <div style={{ textAlign: 'center', padding: '16px', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
-                                        No profile data scanned yet. Click "Scan My Profile" to get started.
-                                    </div>
+                                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>{linkedInProfileStatus || 'Scan your profile for AI-personalized content'}</span>
                                 )}
                             </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, marginLeft: '12px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={linkedInUseProfileData} onChange={e => toggleLinkedInProfileData(e.target.checked)}
+                                        style={{ width: '14px', height: '14px', accentColor: '#0077b5' }} />
+                                    <span style={{ color: 'white', fontSize: '11px' }}>Use in AI</span>
+                                </label>
+                                {linkedInProfile && <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
+                                    style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    {linkedInGeneratingTopics ? '⏳' : '💡 Topics'}
+                                </button>}
+                                {linkedInProfile && <button onClick={() => setShowLinkedInDataModal(true)}
+                                    style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>📊 Data</button>}
+                                {linkedInProfile && <button onClick={deleteLinkedInProfile}
+                                    style={{ background: 'rgba(239,68,68,0.3)', border: 'none', borderRadius: '4px', padding: '4px 8px', color: '#fca5a5', fontSize: '13px', cursor: 'pointer', lineHeight: '1' }}>×</button>}
+                                <button onClick={linkedInProfile ? () => { loadLinkedInProfile(); } : scanLinkedInProfile} disabled={linkedInProfileScanning || linkedInProfileLoading}
+                                    style={{ background: 'white', color: '#0077b5', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: (linkedInProfileScanning || linkedInProfileLoading) ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                    {linkedInProfileScanning ? '⏳...' : linkedInProfile ? '🔄' : '📡 Scan Profile'}
+                                </button>
+                            </div>
+                        </div>
+                        {linkedInTopicSuggestions.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                                {linkedInTopicSuggestions.map((topic, idx) => (
+                                    <button key={idx} onClick={() => selectTopicSuggestion(topic)}
+                                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px', padding: '4px 8px', color: 'white', fontSize: '10px', cursor: 'pointer', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {topic}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
+                    <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '16px' }}>
+                        {/* Left Column: Settings */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                             {/* Post Settings */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span>⚙️</span> Post Settings
                                 </h3>
-                                <div style={{ marginBottom: '16px' }}>
-                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>💡 Topic/Idea</label>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>💡 Topic/Idea</label>
                                     <input type="text" value={writerTopic} onChange={e => setWriterTopic(e.target.value)} placeholder="What do you want to write about?"
-                                        style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                                        style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>📝 Template</label>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>📝 Template</label>
                                         <select value={writerTemplate} onChange={e => setWriterTemplate(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             <option value="lead_magnet">Lead Magnet</option>
                                             <option value="thought_leadership">Thought Leadership</option>
                                             <option value="personal_story">Personal Story</option>
@@ -2192,9 +2150,9 @@ function DashboardContent() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>🎭 Tone</label>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🎭 Tone</label>
                                         <select value={writerTone} onChange={e => setWriterTone(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             <option value="professional">Professional</option>
                                             <option value="friendly">Friendly</option>
                                             <option value="inspirational">Inspirational</option>
@@ -2206,57 +2164,40 @@ function DashboardContent() {
                                         </select>
                                     </div>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>📏 Post Length</label>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>📏 Length</label>
                                         <select value={writerLength} onChange={e => setWriterLength(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
-                                            <option value="500">Short (500 chars)</option>
-                                            <option value="900">Medium (900 chars)</option>
-                                            <option value="1500">Long (1500 chars)</option>
-                                            <option value="2500">Extra Long (2500 chars)</option>
+                                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
+                                            <option value="500">Short (500)</option>
+                                            <option value="900">Medium (900)</option>
+                                            <option value="1500">Long (1500)</option>
+                                            <option value="2500">Extra Long (2500)</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', marginBottom: '6px' }}>🤖 AI Model</label>
+                                        <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>🤖 AI Model</label>
                                         <select value={writerModel} onChange={e => setWriterModel(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px' }}>
+                                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             {MODEL_OPTIONS.map(m => (
                                                 <option key={m.id} value={m.id}>{m.name}</option>
                                             ))}
                                         </select>
                                     </div>
                                 </div>
-                                {/* Advanced Settings */}
-                                <div style={{ marginBottom: '16px' }}>
-                                    <button onClick={() => setWriterShowAdvanced(!writerShowAdvanced)}
-                                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', padding: '10px 16px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '13px', fontWeight: '600', width: '100%', textAlign: 'left' }}>
-                                        ⚙️ Advanced Settings {writerShowAdvanced ? '▲' : '▼'}
-                                    </button>
-                                    {writerShowAdvanced && (
-                                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            <input type="text" value={writerTargetAudience} onChange={e => setWriterTargetAudience(e.target.value)} placeholder="Target Audience (e.g., Startup founders)"
-                                                style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                            <input type="text" value={writerKeyMessage} onChange={e => setWriterKeyMessage(e.target.value)} placeholder="Key Message/CTA (e.g., Book a call)"
-                                                style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                            <input type="text" value={writerBackground} onChange={e => setWriterBackground(e.target.value)} placeholder="Your Background (e.g., CEO at TechCorp)"
-                                                style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                        </div>
-                                    )}
-                                </div>
-                                {/* Options */}
-                                <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={writerHashtags} onChange={e => setWriterHashtags(e.target.checked)} style={{ accentColor: '#693fe9' }} />
+                                {/* Options row */}
+                                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer' }}>
+                                        <input type="checkbox" checked={writerHashtags} onChange={e => setWriterHashtags(e.target.checked)} style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
                                         #️⃣ Hashtags
                                     </label>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={writerEmojis} onChange={e => setWriterEmojis(e.target.checked)} style={{ accentColor: '#693fe9' }} />
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer' }}>
+                                        <input type="checkbox" checked={writerEmojis} onChange={e => setWriterEmojis(e.target.checked)} style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
                                         😊 Emojis
                                     </label>
                                     <select value={writerLanguage} onChange={e => setWriterLanguage(e.target.value)}
-                                        style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '12px' }}>
-                                        <option value="">Language: Auto</option>
+                                        style={{ padding: '5px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px', marginLeft: 'auto' }}>
+                                        <option value="">🌐 Auto</option>
                                         <option value="English">English</option>
                                         <option value="Spanish">Spanish</option>
                                         <option value="French">French</option>
@@ -2279,24 +2220,41 @@ function DashboardContent() {
                                         <option value="Vietnamese">Vietnamese</option>
                                     </select>
                                 </div>
+                                {/* Advanced Settings */}
+                                <div style={{ marginBottom: '10px' }}>
+                                    <button onClick={() => setWriterShowAdvanced(!writerShowAdvanced)}
+                                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '7px 12px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '11px', fontWeight: '600', width: '100%', textAlign: 'left' }}>
+                                        ⚙️ Advanced Settings {writerShowAdvanced ? '▲' : '▼'}
+                                    </button>
+                                    {writerShowAdvanced && (
+                                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <input type="text" value={writerTargetAudience} onChange={e => setWriterTargetAudience(e.target.value)} placeholder="Target Audience (e.g., Startup founders)"
+                                                style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                            <input type="text" value={writerKeyMessage} onChange={e => setWriterKeyMessage(e.target.value)} placeholder="Key Message/CTA (e.g., Book a call)"
+                                                style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                            <input type="text" value={writerBackground} onChange={e => setWriterBackground(e.target.value)} placeholder="Your Background (e.g., CEO at TechCorp)"
+                                                style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                        </div>
+                                    )}
+                                </div>
                                 <button onClick={generatePost} disabled={writerGenerating}
-                                    style={{ width: '100%', padding: '14px', background: writerGenerating ? 'rgba(105,63,233,0.5)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: writerGenerating ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)' }}>
+                                    style={{ width: '100%', padding: '12px', background: writerGenerating ? 'rgba(105,63,233,0.5)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: writerGenerating ? 'wait' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)' }}>
                                     {writerGenerating ? '⏳ Generating...' : '✨ Generate AI Post'}
                                 </button>
                             </div>
                         </div>
                         {/* Right Column: Content Editor */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                                         <span>📝</span> Post Content
                                     </h3>
-                                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>{writerContent.length} / 3,000</span>
+                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{writerContent.length} / 3,000</span>
                                 </div>
                                 <textarea value={writerContent} onChange={e => setWriterContent(e.target.value)}
                                     placeholder="Your AI-generated post will appear here... or start writing your own!"
-                                    style={{ flex: 1, minHeight: '350px', width: '100%', padding: '16px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: 'white', fontSize: '14px', lineHeight: '1.7', resize: 'vertical', outline: 'none', fontFamily: 'system-ui, sans-serif' }} />
+                                    style={{ flex: 1, minHeight: '300px', width: '100%', padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '14px', lineHeight: '1.7', resize: 'vertical', outline: 'none', fontFamily: 'system-ui, sans-serif' }} />
                                 {/* Status */}
                                 {writerStatus && (
                                     <div style={{ marginTop: '12px', padding: '10px 16px', background: writerStatus.includes('Error') || writerStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${writerStatus.includes('Error') || writerStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '10px', color: writerStatus.includes('Error') || writerStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '13px', fontWeight: '500' }}>
@@ -3780,7 +3738,7 @@ function DashboardContent() {
                                         })}
                                     </div>
                                 </div>
-                                <div>
+                                <div style={{ marginBottom: '10px' }}>
                                     <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Comment delay (sec)</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                                         {[[60,120],[90,180],[120,240],[150,300],[180,360]].map(([mn,mx]) => {
@@ -3789,15 +3747,35 @@ function DashboardContent() {
                                         })}
                                     </div>
                                 </div>
+                                <div>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Base delay (sec) — added to every action</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {[0, 2, 5, 10, 15, 20, 30].map(v => {
+                                            const on = autoSettings.baseDelay === v;
+                                            return <button key={v} onClick={() => setAutoSettings((p:any)=>({...p, baseDelay: v}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{v}s</button>;
+                                        })}
+                                    </div>
+                                </div>
                             </div>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 10px 0' }}>🤝 Networking Intervals</h4>
-                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Connect delay (sec)</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                    {[[30,60],[60,120],[90,180],[120,240],[180,360]].map(([mn,mx]) => {
-                                        const on = autoSettings.networkingDelayMin===mn && autoSettings.networkingDelayMax===mx;
-                                        return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,networkingDelayMin:mn,networkingDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
-                                    })}
+                                <div style={{ marginBottom: '10px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Connect delay (sec)</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {[[30,60],[60,120],[90,180],[120,240],[180,360]].map(([mn,mx]) => {
+                                            const on = autoSettings.networkingDelayMin===mn && autoSettings.networkingDelayMax===mx;
+                                            return <button key={mn} onClick={() => setAutoSettings((p:any)=>({...p,networkingDelayMin:mn,networkingDelayMax:mx}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{mn}–{mx}</button>;
+                                        })}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '5px' }}>Task init delay (sec) — before each task starts</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                        {[0, 3, 5, 10, 15, 20, 30, 60].map(v => {
+                                            const on = (autoSettings.taskInitDelay ?? 0) === v;
+                                            return <button key={v} onClick={() => setAutoSettings((p:any)=>({...p, taskInitDelay: v}))} style={{ padding:'4px 9px', background: on?'linear-gradient(135deg,#693fe9,#8b5cf6)':'rgba(255,255,255,0.08)', border: on?'none':'1px solid rgba(255,255,255,0.15)', borderRadius:'6px', color:'white', fontSize:'11px', cursor:'pointer' }}>{v}s</button>;
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -4070,6 +4048,27 @@ function DashboardContent() {
                             </div>
                         </div>
 
+                        {/* Engagement Method */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>🔄 Engagement Method</h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                {[
+                                    { value: 'individual', label: '📄 Individual Posts', desc: 'Opens each post URL separately — more reliable, uses AI comments' },
+                                    { value: 'activity', label: '📋 Activity Page', desc: 'Engages directly on profile activity page — faster, less reliable' },
+                                ].map(m => {
+                                    const isActive = (importCfg.engagementMethod || 'individual') === m.value;
+                                    return (
+                                        <button key={m.value} onClick={() => setImportCfg((p: any) => ({ ...p, engagementMethod: m.value }))}
+                                            style={{ padding: '10px', background: isActive ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.03)', border: isActive ? '2px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', cursor: 'pointer', textAlign: 'left' }}>
+                                            <div style={{ color: 'white', fontSize: '12px', fontWeight: '700', marginBottom: '4px' }}>{m.label}</div>
+                                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', lineHeight: '1.3' }}>{m.desc}</div>
+                                            {isActive && <div style={{ color: '#34d399', fontSize: '10px', fontWeight: '700', marginTop: '4px' }}>✓ Selected</div>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         {/* Engagement Actions — compact */}
                         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0' }}>⚡ Engagement Actions</h4>
@@ -4175,7 +4174,7 @@ function DashboardContent() {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                                 <h3 style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>📊 Engagement Analytics</h3>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <select value={analyticsPeriod} onChange={e => { setAnalyticsPeriod(e.target.value); loadAnalytics(); }}
+                                    <select value={analyticsPeriod} onChange={e => { const newPeriod = e.target.value; setAnalyticsPeriod(newPeriod); loadAnalytics(newPeriod); }}
                                         style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
                                         <option value="today">Today</option>
                                         <option value="yesterday">Yesterday</option>
@@ -4184,7 +4183,7 @@ function DashboardContent() {
                                         <option value="30days">Last 30 Days</option>
                                         <option value="90days">Last 90 Days</option>
                                     </select>
-                                    <button onClick={loadAnalytics} style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', cursor: 'pointer', fontSize: '13px' }}>🔄</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', cursor: 'pointer', fontSize: '13px' }}>🔄</button>
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
@@ -4208,7 +4207,7 @@ function DashboardContent() {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>👥 Leads Database</h3>
                                 <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button onClick={loadAnalytics} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
                                     <button style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
                                 </div>
                             </div>
@@ -4257,7 +4256,7 @@ function DashboardContent() {
                                         <option value="success">Success</option>
                                         <option value="failed">Failed</option>
                                     </select>
-                                    <button onClick={loadAnalytics} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
                                     <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
                                 </div>
                             </div>
@@ -4308,7 +4307,7 @@ function DashboardContent() {
                                         <option value="stopped">Stopped</option>
                                         <option value="failed">Failed</option>
                                     </select>
-                                    <button onClick={loadAnalytics} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
                                     <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
                                 </div>
                             </div>
@@ -4354,7 +4353,7 @@ function DashboardContent() {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0 }}>📥 Import Profile History</h3>
                                 <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button onClick={loadAnalytics} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
+                                    <button onClick={() => loadAnalytics()} style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>🔄</button>
                                     <button style={{ padding: '5px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '11px' }}>📥</button>
                                 </div>
                             </div>

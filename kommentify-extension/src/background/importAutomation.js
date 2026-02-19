@@ -14,68 +14,345 @@ class ImportAutomation {
         this.activeTabId = null;
     }
 
-    // Fallback: open individual post URL and engage
-    async engageSinglePostUrl(postUrl, actions, randomMode, commentSettings) {
+    // Engage with a single post URL (used by individual method and fallback)
+    async engageSinglePostUrl(postUrl, actions, randomMode, commentSettings, delays = {}) {
+        console.log(`📱 INDIVIDUAL: Opening post: ${postUrl}`);
         const normalizedActions = {
             likes: !!(actions?.likes ?? actions?.like),
             comments: !!(actions?.comments ?? actions?.comment),
             shares: !!(actions?.shares ?? actions?.share),
             follows: !!(actions?.follows ?? actions?.follow)
         };
+
+        // Random mode: pick ONE action per post
+        let postActions = { ...normalizedActions };
+        if (randomMode) {
+            const available = [];
+            if (normalizedActions.likes) available.push('likes');
+            if (normalizedActions.comments) available.push('comments');
+            if (normalizedActions.shares) available.push('shares');
+            if (available.length > 0) {
+                const picked = available[Math.floor(Math.random() * available.length)];
+                postActions = { likes: picked === 'likes', comments: picked === 'comments', shares: picked === 'shares', follows: normalizedActions.follows };
+                console.log(`🎲 INDIVIDUAL: Random mode picked: ${picked}`);
+            }
+        }
+        console.log('📱 INDIVIDUAL: Actions for this post:', JSON.stringify(postActions));
+
         const tabId = await browser.openTab(postUrl, true);
-        if (!tabId) return { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] };
+        if (!tabId) { console.error('📱 INDIVIDUAL: Failed to open tab'); return { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] }; }
+
         try {
             await this.waitForLinkedInReady(tabId, 20000);
             const res = await chrome.scripting.executeScript({
                 target: { tabId },
-                func: async (normalizedActions, commentSettings) => {
+                func: async (postActions, commentSettings, delays) => {
+                    // Jitter helper with debug logs
+                    const jitter = async (ms = 0, label = 'generic') => {
+                        const { randomMin = 0, randomMax = 0, baseDelay = 0 } = delays || {};
+                        const extra = randomMax > 0 ? Math.floor(Math.random() * (randomMax - randomMin + 1)) + randomMin : 0;
+                        const total = ms + baseDelay + extra;
+                        console.log(`⏱️ INDIVIDUAL [${label}]: action=${ms}ms + base=${baseDelay}ms + jitter=${extra}ms = TOTAL ${total}ms (${(total/1000).toFixed(1)}s)`);
+                        if (total > 0) await new Promise(r => setTimeout(r, total));
+                        console.log(`✅ INDIVIDUAL [${label}]: Done`);
+                    };
+
                     let likes = 0, comments = 0, shares = 0, follows = 0;
                     const postDetails = [];
-                    const likeBtn = document.querySelector('button[aria-label*="React Like"], button[aria-label*="Like"], button[data-control-name="like_toggle"]');
-                    if (normalizedActions.likes && likeBtn && likeBtn.getAttribute('aria-pressed') !== 'true') {
-                        likeBtn.click();
-                        likes++;
+
+                    // Wait for page to fully settle
+                    await jitter(delays.postPageLoadDelay || 2000, 'postPageLoad');
+
+                    // --- LIKE ---
+                    if (postActions.likes) {
+                        await jitter(delays.beforeLikeDelay || 0, 'beforeLike');
+                        const likeSelectors = [
+                            'button[aria-label*="React Like"]',
+                            'span.reactions-react-button button',
+                            'button.react-button__trigger',
+                            'button[aria-label*="like" i]',
+                            'button[data-control-name="like_toggle"]'
+                        ];
+                        let likeBtn = null;
+                        for (const sel of likeSelectors) {
+                            likeBtn = document.querySelector(sel);
+                            if (likeBtn) { console.log(`📱 INDIVIDUAL: Like btn matched: ${sel}`); break; }
+                        }
+                        console.log(`📱 INDIVIDUAL: Like button found: ${!!likeBtn}, aria-pressed=${likeBtn?.getAttribute('aria-pressed')}`);
+                        if (likeBtn && likeBtn.getAttribute('aria-pressed') !== 'true') {
+                            likeBtn.click();
+                            likes++;
+                            console.log('📱 INDIVIDUAL: ✅ Liked post');
+                            await jitter(1000, 'afterLike');
+                        } else if (!likeBtn) {
+                            console.warn('📱 INDIVIDUAL: ⚠️ No like button found on page');
+                        }
                     }
-                    if (normalizedActions.comments) {
-                        const commentBtn = document.querySelector('button[aria-label*="Comment"], button.comment-button, button[data-control-name="comment_toggle"]');
+
+                    // --- COMMENT with AI generation ---
+                    if (postActions.comments) {
+                        await jitter(delays.beforeCommentDelay || 0, 'beforeComment');
+                        const commentBtnSelectors = [
+                            'button[aria-label*="Comment" i]',
+                            'button.comment-button',
+                            'button[data-control-name="comment_toggle"]'
+                        ];
+                        let commentBtn = null;
+                        for (const sel of commentBtnSelectors) {
+                            commentBtn = document.querySelector(sel);
+                            if (commentBtn) { console.log(`📱 INDIVIDUAL: Comment btn matched: ${sel}`); break; }
+                        }
                         if (commentBtn) {
                             commentBtn.click();
-                            await new Promise(r => setTimeout(r, 1500));
+                            await jitter(2000, 'afterCommentBtnClick');
+
                             let commentBox = document.querySelector('div[data-placeholder]') || document.querySelector('div.ql-editor, div[contenteditable="true"]');
+                            console.log(`📱 INDIVIDUAL: Comment box found: ${!!commentBox}`);
+
                             if (commentBox) {
-                                const postText = (document.querySelector('.update-components-text')?.innerText || '').trim().substring(0,500) || 'Interesting professional content shared on LinkedIn';
-                                const authorName = 'there';
-                                let commentText = `Great insights, ${authorName}! Thanks for sharing.`;
+                                // Extract post text
+                                const postTextEl = document.querySelector('.update-components-text');
+                                const postText = postTextEl ? postTextEl.innerText.trim().substring(0, 500) : 'Interesting professional content';
+
+                                // Extract author name
+                                let authorName = 'there';
+                                const authorLinks = document.querySelectorAll('a[aria-label]');
+                                for (const link of authorLinks) {
+                                    const label = link.getAttribute('aria-label') || '';
+                                    const match = label.match(/^View\s+(.+?)[''\u2019]s/i) || label.match(/^(.+?)[''\u2019]s\s+profile/i);
+                                    if (match && match[1] && match[1].length > 1 && match[1].length < 40) {
+                                        const invalidTerms = ['comment', 'view', 'profile', 'linkedin'];
+                                        if (!invalidTerms.some(t => match[1].toLowerCase().includes(t))) {
+                                            authorName = match[1].trim().split(' ')[0];
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                console.log(`📱 INDIVIDUAL: Author="${authorName}", Post="${postText.substring(0, 80)}..."`);
+
+                                // Generate AI comment via background script
+                                let commentText = '';
+                                try {
+                                    console.log('📱 INDIVIDUAL: Requesting AI comment from background...');
+                                    const response = await new Promise((resolve, reject) => {
+                                        chrome.runtime.sendMessage({
+                                            action: 'generateCommentFromContent',
+                                            postText, authorName,
+                                            goal: commentSettings.goal || 'AddValue',
+                                            tone: commentSettings.tone || 'Professional',
+                                            commentLength: commentSettings.commentLength || 'Short',
+                                            userExpertise: commentSettings.userExpertise || '',
+                                            userBackground: commentSettings.userBackground || ''
+                                        }, (resp) => {
+                                            if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+                                            else resolve(resp);
+                                        });
+                                    });
+                                    if (response?.success && response?.comment) {
+                                        commentText = response.comment;
+                                        console.log(`📱 INDIVIDUAL: AI comment: "${commentText.substring(0, 60)}..."`);
+                                    } else {
+                                        console.log('📱 INDIVIDUAL: AI response error:', response?.error || 'No comment');
+                                    }
+                                } catch (aiErr) {
+                                    console.error('📱 INDIVIDUAL: AI comment failed:', aiErr);
+                                }
+
+                                // Fallback template
+                                if (!commentText) {
+                                    const templates = [
+                                        `Great insights, ${authorName}! Thanks for sharing this perspective.`,
+                                        `Really valuable content here. Appreciate you sharing this, ${authorName}!`,
+                                        `This resonates with me. Thanks for the thoughtful post, ${authorName}!`,
+                                        `Excellent points! Looking forward to more content like this.`,
+                                        `Well articulated thoughts. Thanks for sharing your expertise!`
+                                    ];
+                                    commentText = templates[Math.floor(Math.random() * templates.length)];
+                                    console.log('📱 INDIVIDUAL: Using template comment (AI fallback)');
+                                }
+
+                                // Store post details for history
+                                postDetails.push({
+                                    authorName, postContent: postText, generatedComment: commentText,
+                                    postLink: location.href, timestamp: Date.now()
+                                });
+
+                                // Insert comment
                                 commentBox.focus();
                                 commentBox.innerHTML = `<p>${commentText}</p>`;
                                 commentBox.dispatchEvent(new Event('input', { bubbles: true }));
                                 commentBox.dispatchEvent(new Event('change', { bubbles: true }));
-                                await new Promise(r => setTimeout(r, 1200));
-                                const submitBtn = document.querySelector('button.comments-comment-box__submit-button:not(:disabled), button[data-control-name="add_comment"]:not(:disabled), button.comments-comment-texteditor__submit-button:not(:disabled)');
+                                commentBox.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'a' }));
+
+                                console.log('📱 INDIVIDUAL: Comment inserted, looking for submit button...');
+                                await jitter(1500, 'beforeCommentSubmit');
+
+                                const submitSelectors = [
+                                    'button.comments-comment-box__submit-button:not(:disabled)',
+                                    'button.comments-comment-box__submit-button--cr:not(:disabled)',
+                                    'form.comments-comment-box__form button[type="submit"]:not(:disabled)',
+                                    'button[data-control-name="add_comment"]:not(:disabled)',
+                                    '.comments-comment-box button.artdeco-button--primary:not(:disabled)',
+                                    'button.comments-comment-texteditor__submit-button:not(:disabled)'
+                                ];
+                                let submitBtn = null;
+                                for (const sel of submitSelectors) {
+                                    submitBtn = document.querySelector(sel);
+                                    if (submitBtn) { console.log(`📱 INDIVIDUAL: Submit btn matched: ${sel}`); break; }
+                                }
                                 if (submitBtn) {
                                     submitBtn.click();
                                     comments++;
-                                    postDetails.push({ postLink: location.href, generatedComment: commentText, timestamp: Date.now() });
+                                    console.log('📱 INDIVIDUAL: ✅ Posted comment');
+                                    await jitter(2500, 'afterCommentSubmit');
+                                } else {
+                                    const altBtn = document.querySelector('button.artdeco-button--primary:not(:disabled)');
+                                    if (altBtn) {
+                                        altBtn.click(); comments++;
+                                        console.log('📱 INDIVIDUAL: ✅ Posted with alt button');
+                                        await jitter(2500, 'afterAltCommentSubmit');
+                                    } else {
+                                        console.warn('📱 INDIVIDUAL: ⚠️ No submit button found');
+                                    }
                                 }
+                            }
+                        } else {
+                            console.warn('📱 INDIVIDUAL: ⚠️ No comment button found on page');
+                        }
+                    }
+
+                    // --- SHARE ---
+                    if (postActions.shares) {
+                        await jitter(delays.beforeShareDelay || 0, 'beforeShare');
+                        const shareBtn = document.querySelector('button[aria-label*="Repost" i], button.social-reshare-button, button[data-control-name="share_toggle"]');
+                        if (shareBtn) {
+                            shareBtn.click();
+                            await jitter(1500, 'afterShareBtnClick');
+                            let repostOption = document.querySelector('li:nth-child(2) div.artdeco-dropdown__item');
+                            if (!repostOption) {
+                                const items = document.querySelectorAll('.artdeco-dropdown__item, [role="menuitem"]');
+                                for (const item of items) {
+                                    if (item.innerText.toLowerCase().includes('instant')) { repostOption = item; break; }
+                                }
+                            }
+                            if (repostOption) {
+                                repostOption.click(); shares++;
+                                console.log('📱 INDIVIDUAL: ✅ Shared post');
+                                await jitter(1500, 'afterShare');
                             }
                         }
                     }
-                    if (normalizedActions.shares) {
-                        const shareBtn = document.querySelector('button[aria-label*="Repost"], button.social-reshare-button, button[data-control-name="share_toggle"]');
-                        if (shareBtn) { shareBtn.click(); shares++; }
-                    }
-                    if (normalizedActions.follows) {
+
+                    // --- FOLLOW ---
+                    if (postActions.follows) {
+                        await jitter(delays.beforeFollowDelay || 0, 'beforeFollow');
                         const followBtn = document.querySelector('button.follow');
-                        if (followBtn && !followBtn.getAttribute('data-followed')) { followBtn.click(); follows++; }
+                        if (followBtn && !followBtn.getAttribute('data-followed')) {
+                            followBtn.click(); follows++;
+                            console.log('📱 INDIVIDUAL: ✅ Followed user');
+                            await jitter(1000, 'afterFollow');
+                        }
                     }
+
+                    console.log(`📱 INDIVIDUAL: Post result: L=${likes} C=${comments} S=${shares} F=${follows}`);
                     return { likes, comments, shares, follows, postDetails };
                 },
-                args: [normalizedActions, commentSettings]
+                args: [postActions, commentSettings, delays]
             });
-            return res?.[0]?.result || { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] };
+
+            const engagement = res?.[0]?.result || { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [] };
+            console.log('📱 INDIVIDUAL: Engagement result:', JSON.stringify({ likes: engagement.likes, comments: engagement.comments, shares: engagement.shares, follows: engagement.follows }));
+            return engagement;
         } finally {
             try { await chrome.tabs.remove(tabId); } catch {}
         }
+    }
+
+    // Individual method: collect URLs from activity page, then engage each post in its own tab
+    async engagePostsIndividualMethod(activityUrl, postsCount, actions, randomMode, commentSettings, delays) {
+        console.log('📱 IMPORT [INDIVIDUAL METHOD]: Collecting post URLs from activity page...');
+
+        // Step 1: Open activity page and collect post URLs
+        const tabId = await browser.openTab(activityUrl, true);
+        if (!tabId) throw new Error('Failed to open activity tab');
+
+        await this.waitForLinkedInReady(tabId, 25000);
+        await this.ensureLinkedInPosts(tabId, 5);
+
+        // Extract URLs only (lightweight script)
+        const urlResult = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (maxPosts) => {
+                // Scroll to load more posts
+                for (let i = 0; i < 5; i++) {
+                    window.scrollBy(0, 1500);
+                }
+                // Brute-force URN scan
+                const allElements = document.getElementsByTagName('*');
+                const postLinks = new Set();
+                for (let i = 0; i < allElements.length; i++) {
+                    const el = allElements[i];
+                    if (el.hasAttribute('data-urn')) {
+                        const urn = el.getAttribute('data-urn') || '';
+                        if (urn.includes('urn:li:activity:') || urn.includes('urn:li:ugcPost:') || urn.includes('urn:li:share:')) {
+                            postLinks.add(`https://www.linkedin.com/feed/update/${urn}`);
+                        }
+                    }
+                }
+                const urls = Array.from(postLinks).slice(0, maxPosts);
+                console.log(`📱 URL COLLECTOR: Found ${postLinks.size} total, returning ${urls.length}`);
+                return urls;
+            },
+            args: [postsCount]
+        });
+
+        const postUrls = urlResult?.[0]?.result || [];
+        console.log(`📱 IMPORT [INDIVIDUAL METHOD]: Collected ${postUrls.length} post URLs:`, postUrls);
+
+        // Close activity page tab
+        try { await chrome.tabs.remove(tabId); } catch {}
+
+        if (postUrls.length === 0) {
+            console.warn('📱 IMPORT [INDIVIDUAL METHOD]: No post URLs found');
+            return { likes: 0, comments: 0, shares: 0, follows: 0, postDetails: [], error: 'No posts found on activity page' };
+        }
+
+        // Task init delay
+        if (delays.taskInitDelay > 0) {
+            console.log(`⏱️ IMPORT [INDIVIDUAL METHOD]: Task init delay: ${delays.taskInitDelay}ms`);
+            await new Promise(r => setTimeout(r, delays.taskInitDelay));
+        }
+
+        // Step 2: Engage each post individually
+        let totalLikes = 0, totalComments = 0, totalShares = 0, totalFollows = 0;
+        const allPostDetails = [];
+
+        for (let i = 0; i < postUrls.length; i++) {
+            const url = postUrls[i];
+            console.log(`📱 IMPORT [INDIVIDUAL METHOD]: === Post ${i + 1}/${postUrls.length} === ${url}`);
+
+            // Delay between posts (not before first)
+            if (i > 0 && delays.beforeOpeningPostsDelay > 0) {
+                console.log(`⏱️ IMPORT [INDIVIDUAL METHOD]: Before-opening delay: ${delays.beforeOpeningPostsDelay}ms`);
+                await new Promise(r => setTimeout(r, delays.beforeOpeningPostsDelay));
+            }
+
+            try {
+                const res = await this.engageSinglePostUrl(url, actions, randomMode, commentSettings, delays);
+                totalLikes += res.likes || 0;
+                totalComments += res.comments || 0;
+                totalShares += res.shares || 0;
+                totalFollows += res.follows || 0;
+                if (res.postDetails?.length) allPostDetails.push(...res.postDetails);
+                console.log(`📱 IMPORT [INDIVIDUAL METHOD]: Post ${i + 1} done: L=${res.likes} C=${res.comments} S=${res.shares} F=${res.follows}`);
+            } catch (e) {
+                console.error(`📱 IMPORT [INDIVIDUAL METHOD]: Post ${i + 1} failed:`, e?.message || e);
+            }
+        }
+
+        console.log(`📱 IMPORT [INDIVIDUAL METHOD]: All posts done. Total: L=${totalLikes} C=${totalComments} S=${totalShares} F=${totalFollows}`);
+        return { likes: totalLikes, comments: totalComments, shares: totalShares, follows: totalFollows, postDetails: allPostDetails };
     }
 
     async waitForLinkedInReady(tabId, timeoutMs = 25000) {
@@ -562,12 +839,13 @@ class ImportAutomation {
             profilePostDetails: {} // Store post details keyed by profile URL
         };
 
-        const { postsPerProfile = 2, randomMode = false, actions = {}, extractContactInfo = false, sendConnections = true } = options;
+        const { postsPerProfile = 2, randomMode = false, actions = {}, extractContactInfo = false, sendConnections = true, engagementMethod = 'individual' } = options;
 
         console.log(`🚀 IMPORT: Starting combined automation for ${profiles.length} profiles`);
         console.log('🚀 IMPORT: Actions enabled:', actions);
         console.log('🔗 IMPORT: Send connections:', sendConnections ? 'ENABLED' : 'DISABLED');
         console.log('🎲 IMPORT: Random mode:', randomMode ? 'ENABLED (pick one action per post)' : 'DISABLED (all selected actions)');
+        console.log('📱 IMPORT: Engagement method:', engagementMethod);
         await this.broadcastStatus(`🚀 Starting: ${profiles.length} profiles (combined)`, 'info');
         
         // Send start progress to popup
@@ -659,7 +937,7 @@ class ImportAutomation {
                     console.log('❤️ IMPORT: Starting post engagement...');
                     const activityUrl = profile.replace(/\/$/, '') + '/recent-activity/all/';
                     
-                    const engagementResult = await this.engageWithProfilePosts(activityUrl, postsPerProfile, actions, randomMode);
+                    const engagementResult = await this.engageWithProfilePosts(activityUrl, postsPerProfile, actions, randomMode, engagementMethod);
                     
                     results.totalLikes += engagementResult.likes || 0;
                     results.totalComments += engagementResult.comments || 0;
@@ -800,11 +1078,12 @@ class ImportAutomation {
             errors: []
         };
 
-        const { postsPerProfile = 2, randomMode = false, actions = {} } = options;
+        const { postsPerProfile = 2, randomMode = false, actions = {}, engagementMethod = 'individual' } = options;
 
         console.log(`❤️ IMPORT: Starting post engagement for ${profiles.length} profiles`);
         console.log('❤️ IMPORT: Actions enabled:', actions);
         console.log('🎲 IMPORT: Random mode:', randomMode ? 'ENABLED (pick one action per post)' : 'DISABLED (all selected actions)');
+        console.log('📱 IMPORT: Engagement method:', engagementMethod);
         await this.broadcastStatus(`❤️ Starting: ${profiles.length} profiles (engagement)`, 'info');
 
         // Apply import start delay from limits settings
@@ -837,7 +1116,7 @@ class ImportAutomation {
                     // Convert to recent activity URL
                     const activityUrl = profile.replace(/\/$/, '') + '/recent-activity/all/';
                     
-                    const engagementResult = await this.engageWithProfilePosts(activityUrl, postsPerProfile, actions, randomMode);
+                    const engagementResult = await this.engageWithProfilePosts(activityUrl, postsPerProfile, actions, randomMode, engagementMethod);
                     
                     results.profilesProcessed++;
                     results.totalLikes += engagementResult.likes || 0;
@@ -1013,9 +1292,48 @@ class ImportAutomation {
 
     /**
      * Engage with posts from a profile's activity page
+     * @param {string} engagementMethod - 'individual' (default, opens each post URL) or 'activity' (engages on activity page)
      */
-    async engageWithProfilePosts(activityUrl, postsCount, actions, randomMode = false) {
+    async engageWithProfilePosts(activityUrl, postsCount, actions, randomMode = false, engagementMethod = 'individual') {
         try {
+            console.log(`📱 IMPORT: Engagement method: ${engagementMethod}`);
+            console.log(`📱 IMPORT: Activity URL: ${activityUrl}`);
+            console.log(`📱 IMPORT: Posts to process: ${postsCount}, Random mode: ${randomMode}`);
+
+            // Load delay settings
+            const { delaySettings = {}, randomIntervalSettings = {} } = await chrome.storage.local.get(['delaySettings', 'randomIntervalSettings']);
+            const delays = {
+                baseDelay: (delaySettings.baseDelay || 0) * 1000,
+                randomMin: (randomIntervalSettings?.minInterval || 0) * 1000,
+                randomMax: (randomIntervalSettings?.maxInterval || 0) * 1000,
+                beforeOpeningPostsDelay: (delaySettings.beforeOpeningPostsDelay || 0) * 1000,
+                postPageLoadDelay: (delaySettings.postPageLoadDelay || 0) * 1000,
+                beforeLikeDelay: (delaySettings.beforeLikeDelay || 0) * 1000,
+                beforeCommentDelay: (delaySettings.beforeCommentDelay || 0) * 1000,
+                beforeShareDelay: (delaySettings.beforeShareDelay || 0) * 1000,
+                beforeFollowDelay: (delaySettings.beforeFollowDelay || 0) * 1000,
+                taskInitDelay: (delaySettings.taskInitDelay || 0) * 1000
+            };
+            console.log('⚙️ IMPORT DELAYS LOADED (ms):', JSON.stringify(delays, null, 2));
+
+            // Load comment settings
+            const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
+            const commentSettings = storage.commentSettings || {
+                goal: 'AddValue',
+                tone: 'Friendly',
+                commentLength: 'Short',
+                userExpertise: '',
+                userBackground: ''
+            };
+
+            // === INDIVIDUAL METHOD (default — most reliable) ===
+            if (engagementMethod === 'individual') {
+                console.log('📱 IMPORT: Using INDIVIDUAL method (open each post URL separately)');
+                return await this.engagePostsIndividualMethod(activityUrl, postsCount, actions, randomMode, commentSettings, delays);
+            }
+
+            // === ACTIVITY METHOD (engage directly on activity page) ===
+            console.log('📱 IMPORT: Using ACTIVITY method (engage on activity page)');
             console.log(`📱 IMPORT: Opening activity page: ${activityUrl}`);
             
             // Open activity page in active tab to ensure feed loads properly
@@ -1031,30 +1349,18 @@ class ImportAutomation {
             // Extra safeguard: scroll to ensure posts render before executing actions
             await this.ensureLinkedInPosts(tabId, 5);
 
-            // Get auth token and comment settings for AI generation
-            const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
-            const authToken = storage.authToken;
-            const apiBaseUrl = (storage.apiBaseUrl && !storage.apiBaseUrl.includes('backend-buxx') && !storage.apiBaseUrl.includes('backend-api-orcin') && !storage.apiBaseUrl.includes('backend-4poj')) ? storage.apiBaseUrl : 'https://kommentify.com';
-            const commentSettings = storage.commentSettings || {
-                goal: 'AddValue',
-                tone: 'Friendly',
-                commentLength: 'Short',
-                userExpertise: '',
-                userBackground: ''
-            };
-            
             // Get profile name from URL for fallback
             const profileMatch = activityUrl.match(/linkedin\.com\/in\/([^\/]+)/);
             const profileSlug = profileMatch ? profileMatch[1].replace(/-/g, ' ') : '';
 
             console.log('📱 IMPORT: Executing script in tab...');
-            
+
             let result;
             try {
                 result = await chrome.scripting.executeScript({
                     target: { tabId },
                     // Use ISOLATED world so we can use chrome.runtime.sendMessage
-                    func: async (postsCount, actions, randomMode, commentSettings, profileSlug) => {
+                    func: async (postsCount, actions, randomMode, commentSettings, profileSlug, delays) => {
                     return new Promise(async (resolve) => {
                         try {
                             console.log('📱 SCRIPT: Import automation script started');
@@ -1181,7 +1487,16 @@ class ImportAutomation {
                             };
 
                             // Wait a bit more for dynamic content
-                            await new Promise(r => setTimeout(r, 2000));
+                            const jitter = async (ms = 0, label = 'generic') => {
+                                const { randomMin = 0, randomMax = 0, baseDelay = 0 } = delays || {};
+                                const extra = randomMax > 0 ? Math.floor(Math.random() * (randomMax - randomMin + 1)) + randomMin : 0;
+                                const total = ms + baseDelay + extra;
+                                console.log(`⏱️ DELAY [${label}]: action=${ms}ms + base=${baseDelay}ms + jitter=${extra}ms = TOTAL ${total}ms (${(total/1000).toFixed(1)}s)`);
+                                if (total > 0) await new Promise(r => setTimeout(r, total));
+                                console.log(`✅ DELAY [${label}]: Done waiting ${total}ms`);
+                            };
+
+                            await jitter(delays.postPageLoadDelay || 2000, 'postPageLoad');
                             
                             // Brute-force URN scan (exact provided logic)
                             const extractLinkedInPosts = () => {
@@ -1280,16 +1595,21 @@ class ImportAutomation {
                                 return;
                             }
 
+                            // Task initialization delay
+                            if (delays.taskInitDelay > 0) {
+                                await jitter(delays.taskInitDelay, 'taskInit');
+                            }
+
                             // Follow user first (if enabled)
                             if (normalizedActions.follows) {
-                                setTimeout(() => {
-                                    const followBtn = document.querySelector('button.follow');
-                                    if (followBtn && !followBtn.getAttribute('data-followed')) {
-                                        followBtn.click();
-                                        follows++;
-                                        console.log(`📱 SCRIPT: Followed user`);
-                                    }
-                                }, 500);
+                                await jitter(delays.beforeFollowDelay || 0, 'beforeFollow-user');
+                                const followBtn = document.querySelector('button.follow');
+                                if (followBtn && !followBtn.getAttribute('data-followed')) {
+                                    followBtn.click();
+                                    follows++;
+                                    console.log(`📱 SCRIPT: Followed user`);
+                                    await jitter(1000, 'afterFollow-user');
+                                }
                             }
 
                             // Process each post sequentially
@@ -1332,23 +1652,25 @@ class ImportAutomation {
                                     try {
                                         // Like post
                                         if (postActions.likes) {
+                                            await jitter(delays.beforeLikeDelay || 0, `beforeLike-post${index+1}`);
                                             const likeBtn = post.querySelector('button[aria-label*="React Like"], button[aria-label*="Like"], button[data-control-name="like_toggle"]');
                                             if (likeBtn && likeBtn.getAttribute('aria-pressed') !== 'true') {
                                                 likeBtn.click();
                                                 likes++;
                                                 console.log(`📱 SCRIPT: Liked post ${index + 1}`);
-                                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                                await jitter(1000, `afterLike-post${index+1}`);
                                             }
                                         }
 
                                         // Comment on post - Generate AI comment and post it
                                         if (postActions.comments) {
+                                            await jitter(delays.beforeCommentDelay || 0, `beforeComment-post${index+1}`);
                                             const commentBtn = post.querySelector('button[aria-label*="Comment"], button.comment-button, button[data-control-name="comment_toggle"]');
                                             if (commentBtn) {
                                                 // Click to open comment box
                                                 console.log(`📱 SCRIPT: Clicking comment button for post ${index + 1}...`);
                                                 commentBtn.click();
-                                                await new Promise(resolve => setTimeout(resolve, 2000));
+                                                await jitter(2000, `afterCommentBtnClick-post${index+1}`);
                                                 
                                                 // Find comment box - use data-placeholder which is most reliable
                                                 let commentBox = post.querySelector('div[data-placeholder]');
@@ -1437,7 +1759,7 @@ class ImportAutomation {
                                                     commentBox.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'a' }));
                                                     
                                                     console.log(`📱 SCRIPT: Inserted comment text, waiting for submit button...`);
-                                                    await new Promise(resolve => setTimeout(resolve, 1500));
+                                                    await jitter(1500, `beforeCommentSubmit-post${index+1}`);
                                                     
                                                     // Find and click submit button - multiple selector options
                                                     const submitSelectors = [
@@ -1462,7 +1784,7 @@ class ImportAutomation {
                                                         submitBtn.click();
                                                         comments++;
                                                         console.log(`📱 SCRIPT: Posted comment on post ${index + 1}`);
-                                                        await new Promise(resolve => setTimeout(resolve, 2500));
+                                                        await jitter(2500, `afterCommentSubmit-post${index+1}`);
                                                     } else {
                                                         console.log(`📱 SCRIPT: Submit button not found for post ${index + 1}, trying alternative...`);
                                                         // Try to find any enabled button in the comment form area
@@ -1472,7 +1794,7 @@ class ImportAutomation {
                                                             anySubmitBtn.click();
                                                             comments++;
                                                             console.log(`📱 SCRIPT: Posted with alternative button on post ${index + 1}`);
-                                                            await new Promise(resolve => setTimeout(resolve, 2500));
+                                                            await jitter(2500, `afterAltCommentSubmit-post${index+1}`);
                                                         }
                                                     }
                                                 }
@@ -1481,10 +1803,11 @@ class ImportAutomation {
 
                                         // Share post
                                         if (postActions.shares) {
+                                            await jitter(delays.beforeShareDelay || 0, `beforeShare-post${index+1}`);
                                             const shareBtn = post.querySelector('button[aria-label*="Repost"], button.social-reshare-button, button[data-control-name="share_toggle"]');
                                             if (shareBtn) {
                                                 shareBtn.click();
-                                                await new Promise(resolve => setTimeout(resolve, 1500));
+                                                await jitter(1500, `afterShareBtnClick-post${index+1}`);
                                                 
                                                 // STRATEGY 1: Exact CSS Path - targets 2nd list item (Instant Repost)
                                                 let repostOption = document.querySelector('li:nth-child(2) div.artdeco-dropdown__item');
@@ -1507,17 +1830,10 @@ class ImportAutomation {
                                                     repostOption.click();
                                                     shares++;
                                                     console.log(`📱 SCRIPT: Shared post ${index + 1}`);
-                                                    await new Promise(resolve => setTimeout(resolve, 1500));
+                                                    await jitter(1500, `afterShare-post${index+1}`);
                                                 }
                                             }
                                         }
-
-                                        // Wait between posts
-                                        if (index < postsToProcess.length - 1) {
-                                            console.log(`📱 SCRIPT: Waiting before next post...`);
-                                            await new Promise(resolve => setTimeout(resolve, 2000));
-                                        }
-
                                     } catch (error) {
                                         console.error(`📱 SCRIPT: Error processing post ${index + 1}:`, error);
                                     }
@@ -1535,7 +1851,7 @@ class ImportAutomation {
                         }
                     });
                 },
-                args: [postsCount, actions, randomMode, commentSettings, profileSlug]
+                args: [postsCount, actions, randomMode, commentSettings, profileSlug, delays]
                 });
                 
                 console.log('📱 IMPORT: Script executed, result:', result);
@@ -1565,7 +1881,7 @@ class ImportAutomation {
                 const fallbackDetails = [];
                 for (const link of links) {
                     try {
-                        const res = await this.engageSinglePostUrl(link, actions, randomMode, commentSettings);
+                        const res = await this.engageSinglePostUrl(link, actions, randomMode, commentSettings, delays);
                         engagement.likes += res.likes || 0;
                         engagement.comments += res.comments || 0;
                         engagement.shares += res.shares || 0;

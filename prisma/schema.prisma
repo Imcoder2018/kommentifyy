@@ -429,6 +429,7 @@ model AutomationSettings {
   automationStartDelay  Int      @default(10)
   networkingStartDelay  Int      @default(10)
   importStartDelay      Int      @default(10)
+  taskInitDelay         Int      @default(0)       // delay before each task starts processing
   // Post writer delays (seconds)
   postWriterPageLoad    Int      @default(5)
   postWriterClick       Int      @default(3)
@@ -505,6 +506,7 @@ model ImportConfig {
   engageFollows         Boolean  @default(true)
   smartRandom           Boolean  @default(false)
   postsPerProfile       Int      @default(2)
+  engagementMethod      String   @default("individual") // 'individual' = open each post URL, 'activity' = engage on activity page
   // Schedules (JSON array)
   schedules             String   @default("[]") @db.Text
   autoScheduleEnabled   Boolean  @default(false)
@@ -545,6 +547,22 @@ model BlogPost {
 
   @@index([slug])
   @@index([published, publishedAt])
+}
+
+// Analytics data synced from extension to website
+model UserAnalyticsSync {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  engagementStats     String   @default("{}") @db.Text
+  automationRecords   String   @default("[]") @db.Text
+  networkingSessions  String   @default("[]") @db.Text
+  importRecords       String   @default("[]") @db.Text
+  leads               String   @default("[]") @db.Text
+  lastSyncedAt        DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // User's own LinkedIn profile data - scanned and stored for AI content generation

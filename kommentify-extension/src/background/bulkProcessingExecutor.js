@@ -330,23 +330,40 @@ export async function executeBulkProcessing(settings) {
             beforeLikeDelay: 2,
             beforeCommentDelay: 3,
             beforeShareDelay: 2,
-            beforeFollowDelay: 2
+            beforeFollowDelay: 2,
+            baseDelay: 0,
+            taskInitDelay: 0
         };
         const automationPreferences = storageResult.automationPreferences || { openSearchInWindow: true };
         const randomIntervalSettings = storageResult.randomIntervalSettings || { minInterval: 15, maxInterval: 35, enabled: true };
         const randomDelayEnabled = storageResult.randomDelayEnabled !== false;
         
-        // Helper: add random jitter to a delay if enabled
-        const applyRandomJitter = (baseDelayMs) => {
-            if (!randomDelayEnabled || !randomIntervalSettings.enabled) return baseDelayMs;
-            const jitterMin = (randomIntervalSettings.minInterval || 15) * 1000;
-            const jitterMax = (randomIntervalSettings.maxInterval || 35) * 1000;
-            const jitter = Math.floor(Math.random() * (jitterMax - jitterMin + 1)) + jitterMin;
-            return baseDelayMs + jitter;
+        // Helper: add random jitter + baseDelay to a delay if enabled
+        const userBaseDelay = (delaySettings.baseDelay || 0) * 1000;
+        const applyRandomJitter = (actionDelayMs, label = 'generic') => {
+            let total = actionDelayMs + userBaseDelay;
+            let jitter = 0;
+            if (randomDelayEnabled && randomIntervalSettings.enabled) {
+                const jitterMin = (randomIntervalSettings.minInterval || 15) * 1000;
+                const jitterMax = (randomIntervalSettings.maxInterval || 35) * 1000;
+                jitter = Math.floor(Math.random() * (jitterMax - jitterMin + 1)) + jitterMin;
+                total += jitter;
+            }
+            console.log(`⏱️ BULK DELAY [${label}]: action=${actionDelayMs}ms + base=${userBaseDelay}ms + jitter=${jitter}ms = TOTAL ${total}ms (${(total/1000).toFixed(1)}s)`);
+            return total;
         };
         
-        console.log("🔧 BULK PROCESSING: Delay settings loaded:", delaySettings);
+        console.log("🔧 BULK PROCESSING: Delay settings loaded:", JSON.stringify(delaySettings));
         console.log("🪟 BULK PROCESSING: Automation preferences:", automationPreferences);
+        console.log("🎲 BULK PROCESSING: Random interval settings:", JSON.stringify(randomIntervalSettings));
+        
+        // Apply task init delay
+        const taskInitDelay = delaySettings.taskInitDelay || 0;
+        if (taskInitDelay > 0) {
+            console.log(`⏱️ BULK PROCESSING: Task init delay: ${taskInitDelay}s...`);
+            await new Promise(resolve => setTimeout(resolve, taskInitDelay * 1000));
+            console.log('✅ BULK PROCESSING: Task init delay complete');
+        }
         
         // Apply starting delay
         const startDelay = delaySettings.automationStartDelay || 0;
@@ -1223,7 +1240,7 @@ export async function executeBulkProcessing(settings) {
                         betweenPostDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
                     }
                     // Apply random jitter on top if enabled
-                    betweenPostDelay = applyRandomJitter(betweenPostDelay);
+                    betweenPostDelay = applyRandomJitter(betweenPostDelay, 'betweenPosts');
                     const delaySec = Math.round(betweenPostDelay / 1000);
                     console.log(`⏱️ BULK PROCESSING: Waiting ${delaySec}s before next post (random jitter: ${randomDelayEnabled ? 'ON' : 'OFF'})...`);
                     for (let remaining = delaySec; remaining > 0; remaining -= 5) {

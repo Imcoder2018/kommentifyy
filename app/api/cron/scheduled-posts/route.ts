@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
             'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal-api-key'}`
           },
           body: JSON.stringify({
-            command: 'post_scheduled_draft',
+            command: 'post_scheduled_content',
             targetUserId: post.userId,
             data: {
               draftId: post.id,
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
             'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal-api-key'}`
           },
           body: JSON.stringify({
-            command: 'post_scheduled_draft',
+            command: 'post_scheduled_content',
             targetUserId: post.userId,
             data: {
               draftId: post.id,

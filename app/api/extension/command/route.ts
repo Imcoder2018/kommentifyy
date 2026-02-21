@@ -23,6 +23,46 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+    
+    // Check for internal API key (for cron jobs) or JWT token
+    const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || 'internal-api-key';
+    let userId: string | null = null;
+    let targetUserId: string | null = null;
+    
+    if (token === INTERNAL_API_KEY) {
+      // Internal API call from cron - get targetUserId from body
+      const body = await request.json();
+      targetUserId = body.targetUserId || null;
+      if (!targetUserId) {
+        return NextResponse.json({ success: false, error: 'targetUserId required for internal API calls' }, { status: 400 });
+      }
+      userId = targetUserId;
+      
+      // Re-parse body for command/data since we consumed it
+      const { command, data, targetUserId: _t } = body;
+      
+      if (!command) {
+        return NextResponse.json({ success: false, error: 'Command is required' }, { status: 400 });
+      }
+
+      // Store the command for the extension to pick up
+      const activity = await prisma.activity.create({
+        data: {
+          userId: userId,
+          type: `extension_command_${command}`,
+          metadata: JSON.stringify({
+            command,
+            data,
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+          }),
+        },
+      });
+
+      return NextResponse.json({ success: true, commandId: activity.id, command });
+    }
+    
+    // Regular JWT auth flow
     let payload;
     try {
       payload = verifyToken(token);

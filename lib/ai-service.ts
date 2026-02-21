@@ -80,6 +80,32 @@ export async function getModelConfig(modelId: string): Promise<AIModelConfig | n
   };
 }
 
+// Valid OpenRouter model ID prefixes
+const VALID_OPENROUTER_PREFIXES = [
+  'openai/', 'anthropic/', 'google/', 'meta-llama/', 'mistralai/',
+  'deepseek/', 'qwen/', 'microsoft/', 'nousresearch/', 'cognitivecomputations/',
+  'perplexity/', 'x-ai/', '01-ai/', 'cohere/', 'nvidia/', 'adept/', 'fireworks/',
+  'anyscale/', 'leptonai/', 'sglang/', 'hyper/', 'togetherai/', 'replicate/', 'together/',
+  'ai21/', 'cohere-', 'voyage/', 'jamba/', 'minimax/', 'abacusai/', 'lightonai/',
+  'volcengine/', 'baichuan/', 'yi/', 'infinite/', 'openchat/', 'lmsys/', 'mlc-ai/',
+  'samba-', 'starling/', 'teknium/', 'upstage/', 'vllm/', 'x/', 'yandex/', 'zhipuai/',
+  'z-ai/', 'moonshot/', 'bytedance/', 'xiaomi/', 'allenai/', 'stability-ai/', 'aether/',
+  'intel/', 'togethercomputer/', 'undi95/', 'databricks/', 'sao10k/', 'inflection/',
+  'huggingfaceh4/', 'neversleep/', 'gryphe/', 'pygmalion-ai/', 'snowflake/', 'tiiuae/',
+  'huggingface/'
+];
+
+function isValidOpenRouterModel(modelId: string): boolean {
+  // OpenAI direct models (gpt-*, o1-*, o3-*) are valid even without slash - they use OpenAI API
+  if (modelId.startsWith('gpt-') || modelId.startsWith('o1') || modelId.startsWith('o3')) {
+    return true;
+  }
+  // Must contain a slash and start with a valid provider prefix
+  if (!modelId.includes('/')) return false;
+  const prefix = modelId.toLowerCase().split('/')[0] + '/';
+  return VALID_OPENROUTER_PREFIXES.some(p => prefix.startsWith(p));
+}
+
 // Get user's preferred model for a content type
 export async function getUserModel(userId: string, contentType: 'post' | 'comment' | 'topic'): Promise<string> {
   const settings = await prisma.userAIModelSettings.findUnique({
@@ -95,15 +121,51 @@ export async function getUserModel(userId: string, contentType: 'post' | 'commen
   const selectedModel = settings?.[modelField];
   
   if (selectedModel) {
-    // Verify model is still enabled
+    // Verify model is still enabled, valid, and has correct format
     const model = await prisma.aIModel.findFirst({
       where: { modelId: selectedModel, isEnabled: true }
     });
-    if (model) return selectedModel;
+    
+    // Check if model ID format is valid for OpenRouter
+    const isValidFormat = isValidOpenRouterModel(selectedModel);
+    
+    if (model && isValidFormat) {
+      console.log(`✅ Using user-selected model: ${selectedModel} for ${contentType}`);
+      return selectedModel;
+    } else {
+      if (!isValidFormat) {
+        console.warn(`⚠️ Model ${selectedModel} has invalid format, falling back`);
+      } else {
+        console.warn(`⚠️ Model ${selectedModel} not found or disabled, falling back`);
+      }
+    }
   }
 
-  // Fallback to default model
-  return settings?.fallbackModelId || 'openai/gpt-4o-mini';
+  // Fallback to default model - verify it exists and has valid format
+  const fallbackModel = settings?.fallbackModelId || 'openai/gpt-4o-mini';
+  const fallbackExists = await prisma.aIModel.findFirst({
+    where: { modelId: fallbackModel, isEnabled: true }
+  });
+  
+  if (fallbackExists && isValidOpenRouterModel(fallbackModel)) {
+    console.log(`✅ Using fallback model: ${fallbackModel} for ${contentType}`);
+    return fallbackModel;
+  }
+  
+  // Ultimate fallback - find any enabled model with valid format
+  const anyModel = await prisma.aIModel.findFirst({
+    where: { isEnabled: true },
+    orderBy: { isFeatured: 'desc' }
+  });
+  
+  if (anyModel && isValidOpenRouterModel(anyModel.modelId)) {
+    console.log(`✅ Using any available model: ${anyModel.modelId} for ${contentType}`);
+    return anyModel.modelId;
+  }
+  
+  // Hard fallback to OpenAI (always valid)
+  console.log(`⚠️ No valid models in database, using hardcoded fallback: openai/gpt-4o-mini`);
+  return 'openai/gpt-4o-mini';
 }
 
 // Track usage
@@ -153,10 +215,44 @@ export async function generateContent(params: {
   userId?: string;
   trackUsage?: boolean;
 }): Promise<AIGenerationResult> {
-  const modelConfig = await getModelConfig(params.model);
-  
+  let modelConfig = await getModelConfig(params.model);
+   
+  // If model not found in database, try to find a fallback
   if (!modelConfig) {
-    throw new Error(`Model not found: ${params.model}`);
+    console.warn(`⚠️ Model ${params.model} not found in database, finding fallback...`);
+    
+    // Find any enabled model
+    const fallbackModel = await prisma.aIModel.findFirst({
+      where: { isEnabled: true },
+      orderBy: { isFeatured: 'desc' }
+    });
+    
+    if (fallbackModel) {
+      console.log(`✅ Using fallback model: ${fallbackModel.modelId}`);
+      modelConfig = {
+        modelId: fallbackModel.modelId,
+        provider: fallbackModel.provider,
+        apiSource: fallbackModel.apiSource as 'openai' | 'openrouter',
+        inputCostPer1M: fallbackModel.inputCostPer1M,
+        outputCostPer1M: fallbackModel.outputCostPer1M,
+        maxContextTokens: fallbackModel.maxContextTokens,
+        maxOutputTokens: fallbackModel.maxOutputTokens
+      };
+      params.model = fallbackModel.modelId; // Update model to fallback
+    } else {
+      // Ultimate fallback to OpenAI GPT-4o-mini
+      console.log(`⚠️ No models in database, using hardcoded fallback: openai/gpt-4o-mini`);
+      modelConfig = {
+        modelId: 'openai/gpt-4o-mini',
+        provider: 'OpenAI',
+        apiSource: 'openai',
+        inputCostPer1M: 0.15,
+        outputCostPer1M: 0.60,
+        maxContextTokens: 128000,
+        maxOutputTokens: 16384
+      };
+      params.model = 'openai/gpt-4o-mini';
+    }
   }
 
   let result: { content: string; usage: { promptTokens: number; completionTokens: number; totalTokens: number } };

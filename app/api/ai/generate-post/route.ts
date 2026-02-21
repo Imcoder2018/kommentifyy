@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, extractToken } from '@/lib/auth';
 import { limitService } from '@/lib/limit-service';
-import { generateLinkedInPost, getUserModel } from '@/lib/ai-service';
+import { generateLinkedInPost, getUserModel, generateContent } from '@/lib/ai-service';
 import { generatePostPrompt } from '@/lib/openai-config';
 import { formatForLinkedIn } from '@/lib/linkedin-formatter';
 import { Index } from '@upstash/vector';
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    const { topic, template, tone, length, includeHashtags, includeEmojis, language, targetAudience, keyMessage, userBackground, useInspirationSources, inspirationSourceNames, model: requestedModel } = await request.json();
+    const { topic, template, tone, length, includeHashtags, includeEmojis, language, targetAudience, keyMessage, userBackground, useInspirationSources, inspirationSourceNames, useProfileData, profileData, model: requestedModel } = await request.json();
 
     // Get user and check limits
     const user = await prisma.user.findUnique({
@@ -164,32 +164,104 @@ CRITICAL: Every sentence in your output should pass this test: "Would the author
       }
     }
 
-    // Generate prompt using shared logic with new elite prompt
-    const prompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground, language) + inspirationContext;
+    // Build profile data context if enabled
+    let profileDataContext = '';
+    if (useProfileData && profileData) {
+      console.log('📋 Using LinkedIn profile data for personalization');
+      const profileParts: string[] = [];
+      
+      if (profileData.headline) {
+        profileParts.push(`HEADLINE: ${profileData.headline}`);
+      }
+      if (profileData.about) {
+        profileParts.push(`ABOUT: ${profileData.about}`);
+      }
+      if (profileData.skills && profileData.skills.length > 0) {
+        profileParts.push(`SKILLS: ${profileData.skills.slice(0, 10).join(', ')}`);
+      }
+      if (profileData.experience && profileData.experience.length > 0) {
+        profileParts.push(`EXPERIENCE:\n${profileData.experience.slice(0, 3).join('\n')}`);
+      }
+      if (profileData.education && profileData.education.length > 0) {
+        profileParts.push(`EDUCATION: ${profileData.education.slice(0, 2).join(', ')}`);
+      }
+      if (profileData.posts && profileData.posts.length > 0) {
+        const postsSample = profileData.posts.slice(0, 3).map((p: string, i: number) => 
+          `[Post ${i + 1}]: "${p.substring(0, 300)}${p.length > 300 ? '...' : ''}"`
+        ).join('\n\n');
+        profileParts.push(`RECENT POSTS:\n${postsSample}`);
+      }
+      
+      if (profileParts.length > 0) {
+        profileDataContext = `
 
-    // Generate content using unified AI service
+═══════════════════════════════════════════════════════════
+👤 USER'S LINKEDIN PROFILE DATA (PERSONALIZE CONTENT)
+═══════════════════════════════════════════════════════════
+
+Use this profile information to personalize the post content. Write as if YOU are this person:
+
+${profileParts.join('\n\n')}
+
+═══════════════════════════════════════════════════════════
+PERSONALIZATION GUIDELINES:
+═══════════════════════════════════════════════════════════
+1. Write in FIRST PERSON - use "I", "my", "me" as if you are this person
+2. Reference specific experiences, skills, or background naturally
+3. Match the tone and style of their recent posts
+4. Include relevant details from their headline/about when appropriate
+5. Make the content feel authentic to their professional identity
+`;
+      }
+    }
+
+    // Generate prompt using shared logic with new elite prompt
+    const basePrompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground, language);
+    const fullPrompt = basePrompt + inspirationContext + profileDataContext;
+    
+    // 🐛 DEBUG: Log full prompt for Vercel logs
+    console.log('\n' + '='.repeat(80));
+    console.log('🤖 AI POST GENERATION - FULL PROMPT');
+    console.log('='.repeat(80));
+    console.log('📋 Request params:', JSON.stringify({
+      topic,
+      template,
+      tone,
+      length,
+      includeHashtags,
+      includeEmojis,
+      language,
+      targetAudience,
+      keyMessage,
+      useInspirationSources,
+      inspirationSourceNames,
+      useProfileData,
+      model: selectedModel
+    }, null, 2));
+    console.log('-'.repeat(80));
+    console.log('📝 FULL PROMPT (length: ' + fullPrompt.length + ' chars):');
+    console.log('-'.repeat(80));
+    console.log(fullPrompt);
+    console.log('='.repeat(80) + '\n');
+
+    // Generate content using unified AI service with FULL prompt
     let content;
     let tokenUsage: any = null;
     try {
-      const result = await generateLinkedInPost({
+      // Use generateContent with full prompt instead of generateLinkedInPost
+      // This ensures the full prompt with inspiration sources and profile data is used
+      const result = await generateContent({
         model: selectedModel,
-        topic,
-        tone,
-        length: parseInt(length) || 1500,
-        template,
-        userProfile: userBackground,
-        inspirationPosts: inspirationContext ? [inspirationContext] : undefined,
-        includeHashtags,
-        includeEmojis,
-        language,
-        targetAudience,
-        keyMessage,
-        background: userBackground,
-        userId: user.id
+        systemPrompt: 'You are an expert LinkedIn content writer. Create engaging, professional posts that drive engagement and establish thought leadership.',
+        userPrompt: fullPrompt,
+        maxTokens: Math.min(4096, Math.ceil((parseInt(length) || 1500) * 2)),
+        temperature: 0.8,
+        userId: user.id,
+        trackUsage: true
       });
 
       content = result.content;
-      console.log('✅ Post generation successful with model:', result.model);
+      console.log('✅ Post generation successful with model:', result.model, 'output length:', content?.length || 0);
       
       // Extract token usage for developers
       if (isDeveloper && result.usage) {

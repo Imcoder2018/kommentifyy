@@ -21,7 +21,11 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
         scheduledFor: { lte: now },
         taskId: null // Not yet sent to extension
       },
-      include: { user: true }
+      include: {
+        user: {
+          select: { email: true, id: true }
+        }
+      }
     });
 
     if (duePosts.length === 0) {
@@ -68,7 +72,7 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
           }
         });
 
-        console.log(`✅ Triggered scheduled post for user ${post.user.email}, task ID: ${activity.id}`);
+        console.log(`✅ Triggered scheduled post for user ${post.user?.email || post.userId}, task ID: ${activity.id}`);
         triggeredCount++;
       } catch (error) {
         console.error(`❌ Failed to trigger scheduled post ${post.id}:`, error);

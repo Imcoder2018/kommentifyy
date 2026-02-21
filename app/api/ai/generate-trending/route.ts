@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Daily AI post limit reached' }, { status: 429 });
     }
 
-    const { trendingPosts, customPrompt, includeHashtags, language, model: requestedModel } = await request.json();
+    const { trendingPosts, customPrompt, includeHashtags, language, model: requestedModel, useProfileData, profileData } = await request.json();
 
     if (!trendingPosts || trendingPosts.length === 0) {
       return NextResponse.json({ success: false, error: 'No trending posts provided' }, { status: 400 });
@@ -62,6 +62,23 @@ export async function POST(request: NextRequest) {
     // Select model - default to gpt-4o for best quality voice matching
     const selectedModel = requestedModel && MODEL_PRICING[requestedModel] ? requestedModel : 'gpt-4o';
     const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
+
+    // Build profile context if profile data is provided and enabled
+    let profileContext = '';
+    if (useProfileData && profileData) {
+      profileContext = `
+═══════════════════════════════════════════════════════════
+👤 USER PROFILE DATA (Use this to personalize the posts)
+═══════════════════════════════════════════════════════════
+Name: ${profileData.name || 'Not specified'}
+Headline: ${profileData.headline || 'Not specified'}
+${profileData.about ? `About: ${profileData.about.substring(0, 500)}...` : ''}
+${profileData.experience && profileData.experience.length > 0 ? `Experience:\n${profileData.experience.slice(0, 3).map((exp: string, i: number) => `  ${i + 1}. ${exp.substring(0, 200)}`).join('\n')}` : ''}
+${profileData.skills && profileData.skills.length > 0 ? `Skills: ${profileData.skills.slice(0, 10).join(', ')}` : ''}
+
+⚠️ IMPORTANT: Incorporate the user's real experience, skills, and background into the posts. Make them personal and authentic.
+`;
+    }
 
     // Build detailed trending posts context with structural analysis
     const postsContext = trendingPosts.slice(0, 10).map((p: any, i: number) => {
@@ -115,6 +132,7 @@ CRITICAL RULES:
 Study these ${trendingPosts.length} high-performing posts from LinkedIn creators. Your job is to DEEPLY ANALYZE their collective voice patterns, then write 3 NEW posts that could have been written by these same authors.
 
 ${postsContext}
+${profileContext}
 
 ═══════════════════════════════════════════════════════════
 STEP 1: DEEP VOICE DNA EXTRACTION (Do this analysis internally)
@@ -180,6 +198,28 @@ Return ONLY this JSON (no markdown, no explanation):
   {"title": "Topic/angle description", "content": "Full post matching their voice"},
   {"title": "Topic/angle description", "content": "Full post matching their voice"}
 ]`;
+
+    // 🐛 DEBUG: Log full prompt for Vercel logs
+    console.log('\n' + '='.repeat(80));
+    console.log('🔥 AI TRENDING POST GENERATION - FULL PROMPT');
+    console.log('='.repeat(80));
+    console.log('📋 Request params:', JSON.stringify({
+      postsCount: trendingPosts.length,
+      customPrompt: customPrompt?.substring(0, 100) || 'none',
+      includeHashtags,
+      language: language || 'auto',
+      useProfileData,
+      model: selectedModel
+    }, null, 2));
+    console.log('-'.repeat(80));
+    console.log('📝 SYSTEM PROMPT (length: ' + systemPrompt.length + ' chars):');
+    console.log('-'.repeat(80));
+    console.log(systemPrompt);
+    console.log('-'.repeat(80));
+    console.log('📝 USER PROMPT (length: ' + userPrompt.length + ' chars):');
+    console.log('-'.repeat(80));
+    console.log(userPrompt);
+    console.log('='.repeat(80) + '\n');
 
     const completion = await openai.chat.completions.create({
       model: selectedModel,

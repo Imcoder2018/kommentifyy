@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, extractToken } from '@/lib/auth';
+import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
+
+// Helper to handle JWT errors gracefully
+function handleAuthError(error: any) {
+  if (error.name === 'TokenExpiredError') {
+    return { error: 'token_expired', message: 'Authentication token has expired. Please re-authenticate.', shouldReauth: true };
+  }
+  if (error.name === 'JsonWebTokenError') {
+    return { error: 'invalid_token', message: 'Invalid authentication token.', shouldReauth: true };
+  }
+  return { error: 'auth_failed', message: error.message || 'Authentication failed.', shouldReauth: false };
+}
 
 // POST - Queue a command for the extension (e.g., post to LinkedIn)
 export async function POST(request: NextRequest) {
@@ -11,7 +23,18 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-    const payload = verifyToken(token);
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch (authError: any) {
+      const authInfo = handleAuthError(authError);
+      return NextResponse.json({ 
+        success: false, 
+        error: authInfo.error, 
+        message: authInfo.message,
+        shouldReauth: authInfo.shouldReauth 
+      }, { status: 401 });
+    }
 
     const { command, data } = await request.json();
 
@@ -48,7 +71,19 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-    const payload = verifyToken(token);
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch (authError: any) {
+      const authInfo = handleAuthError(authError);
+      console.error('Get extension commands error:', authInfo.message);
+      return NextResponse.json({ 
+        success: false, 
+        error: authInfo.error, 
+        message: authInfo.message,
+        shouldReauth: authInfo.shouldReauth 
+      }, { status: 401 });
+    }
 
     // Get recent commands from last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);

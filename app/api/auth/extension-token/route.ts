@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'linkedin-automation-super-secret-jwt-key-min-32-characters-long-2024';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'linkedin-automation-super-secret-refresh-key-min-32-characters-long-2024';
+import { generateToken, generateRefreshToken } from '@/lib/auth';
 
 // CORS headers for extension access
 const corsHeaders = {
@@ -96,22 +93,16 @@ export async function GET(request: NextRequest) {
       }, { status: 500, headers: corsHeaders });
     }
 
-    // Generate JWT tokens for the extension
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        clerkUserId: user.clerkUserId 
-      },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate JWT tokens for the extension using shared auth functions
+    const token = generateToken({ 
+      userId: user.id, 
+      email: user.email
+    });
 
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      JWT_REFRESH_SECRET,
-      { expiresIn: '30d' }
-    );
+    const refreshToken = generateRefreshToken({ 
+      userId: user.id, 
+      email: user.email
+    });
 
     // Return auth data for the extension
     return NextResponse.json({

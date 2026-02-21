@@ -46,19 +46,79 @@ export class OpenRouterService {
   private siteName: string;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.OPENROUTER_API_KEY || '';
+    // Clean the API key - remove any whitespace/newlines
+    this.apiKey = (apiKey || process.env.OPENROUTER_API_KEY || '').trim();
     this.siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kommentify.com';
     this.siteName = 'Kommentify';
   }
 
   setApiKey(apiKey: string) {
-    this.apiKey = apiKey;
+    this.apiKey = apiKey.trim();
+  }
+
+  // Validate model ID format - log warning but don't block (let OpenRouter return actual error)
+  private validateModelId(modelId: string): boolean {
+    // Common valid patterns: provider/model-name
+    const validPatterns = [
+      /^openai\//i,
+      /^anthropic\//i,
+      /^google\//i,
+      /^meta-llama\//i,
+      /^mistralai\//i,
+      /^deepseek\//i,
+      /^qwen\//i,
+      /^microsoft\//i,
+      /^nousresearch\//i,
+      /^cognitivecomputations\//i,
+      /^perplexity\//i,
+      /^x-ai\//i,
+      /^01-ai\//i,
+      /^cohere\//i,
+      /^nvidia\//i,
+      /^adept\//i,
+      /^fireworks\//i,
+      /^anyscale\//i,
+      /^leptonai\//i,
+      /^sglang\//i,
+      /^hyper\//i,
+      /^togetherai\//i,
+      /^replicate\//i,
+      /^ai21\//i,
+      /^voyage\//i,
+      /^jamba\//i,
+      /^minimax\//i,
+      /^abacusai\//i,
+      /^lightonai\//i,
+      /^volcengine\//i,
+      /^baichuan\//i,
+      /^yi\//i,
+      /^infinite\//i,
+      /^openchat\//i,
+      /^lmsys\//i,
+      /^mlc-ai\//i,
+      /^samba-\//i,
+      /^starling\//i,
+      /^teknium\//i,
+      /^upstage\//i,
+      /^vllm\//i,
+      /^yandex\//i,
+      /^zhipuai\//i,
+      /^z-ai\//i,  // Added for z.ai models
+    ];
+    const isValid = validPatterns.some(p => p.test(modelId));
+    if (!isValid) {
+      console.warn(`⚠️ Model ID ${modelId} may not be valid - letting OpenRouter handle it`);
+    }
+    return true; // Always return true to let OpenRouter return actual error
   }
 
   async chat(request: OpenRouterRequest): Promise<OpenRouterResponse> {
     if (!this.apiKey) {
       throw new Error('OpenRouter API key not configured');
     }
+
+    // Validate model ID - log warning but don't block
+    this.validateModelId(request.model);
 
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',

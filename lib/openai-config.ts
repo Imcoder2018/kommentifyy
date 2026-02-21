@@ -382,7 +382,10 @@ POST STRUCTURE
 FORMATTING
 ══════════════════════════════════════════════════
 
-CHARACTER COUNT: Target ${length} characters
+CHARACTER COUNT: ⚠️ CRITICAL - Your post MUST be between ${Math.max(100, parseInt(length) - 200)} and ${parseInt(length)} characters. This is a HARD requirement.
+- If your post is too short, expand with more specific details and examples
+- If your post is too long, trim while keeping the core message
+- Target length: ${length} characters (approximately ${Math.round(parseInt(length) / 5)} words)
 LINE BREAKS: One sentence per paragraph, blank line between each
 EMOJIS: ${includeEmojis ? 'Use 2-4 strategically placed emojis, never in hook' : 'NO emojis - zero allowed'}
 HASHTAGS: ${includeHashtags ? 'Add 3-5 relevant hashtags at the VERY END after a blank line' : 'NO hashtags'}

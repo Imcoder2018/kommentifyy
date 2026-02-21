@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, extractToken } from '@/lib/auth';
 import { limitService } from '@/lib/limit-service';
-import { generateLinkedInComment, getUserModel } from '@/lib/ai-service';
+import { generateLinkedInComment, getUserModel, generateContent } from '@/lib/ai-service';
 import { generateCommentPrompt } from '@/lib/openai-config';
 import { formatCommentForLinkedIn } from '@/lib/linkedin-formatter';
 
@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
     let finalBackground = userBackground;
     // Use admin global setting as default, user/request can override
     let useProfileStyle = reqUseProfileStyle === true ? true : adminProfileStyleMode;
+    let useProfileData = false;
     try {
       const savedSettings = await (prisma as any).commentSettings.findUnique({
         where: { userId: user.id },
@@ -111,16 +112,59 @@ export async function POST(request: NextRequest) {
       if (savedSettings) {
         // Request body override takes priority, then DB value, then admin global setting
         useProfileStyle = reqUseProfileStyle === true ? true : (savedSettings.useProfileStyle != null ? savedSettings.useProfileStyle === true : adminProfileStyleMode);
+        useProfileData = savedSettings.useProfileData === true;
         finalTone = finalTone || savedSettings.tone;
         finalGoal = finalGoal || savedSettings.goal;
         finalLength = finalLength || savedSettings.commentLength;
         finalStyle = finalStyle || savedSettings.commentStyle;
         finalExpertise = finalExpertise || savedSettings.userExpertise;
         finalBackground = finalBackground || savedSettings.userBackground;
-        console.log('📋 Settings from DB:', { useProfileStyle, tone: finalTone, goal: finalGoal, length: finalLength, style: finalStyle });
+        console.log('📋 Settings from DB:', { useProfileStyle, useProfileData, tone: finalTone, goal: finalGoal, length: finalLength, style: finalStyle });
       }
     } catch (settingsErr) {
       console.error('Error loading saved comment settings:', settingsErr);
+    }
+    
+    // Fetch user's LinkedIn profile data if useProfileData is enabled
+    let userProfileContext = '';
+    if (useProfileData) {
+      try {
+        const linkedInProfile = await (prisma as any).linkedInProfile.findFirst({
+          where: { userId: user.id },
+          orderBy: { updatedAt: 'desc' },
+        });
+        if (linkedInProfile) {
+          const profileParts: string[] = [];
+          if (linkedInProfile.headline) profileParts.push(`HEADLINE: ${linkedInProfile.headline}`);
+          if (linkedInProfile.about) profileParts.push(`ABOUT: ${linkedInProfile.about}`);
+          if (linkedInProfile.skills && Array.isArray(linkedInProfile.skills)) {
+            profileParts.push(`SKILLS: ${linkedInProfile.skills.slice(0, 10).join(', ')}`);
+          }
+          if (linkedInProfile.experience && Array.isArray(linkedInProfile.experience)) {
+            profileParts.push(`EXPERIENCE: ${linkedInProfile.experience.slice(0, 3).join('; ')}`);
+          }
+          if (profileParts.length > 0) {
+            userProfileContext = `
+
+═══════════════════════════════════════════════════════════
+👤 COMMENTER'S LINKEDIN PROFILE (PERSONALIZE COMMENT)
+═══════════════════════════════════════════════════════════
+
+Write the comment as if YOU are this person. Use their background naturally:
+
+${profileParts.join('\n')}
+
+GUIDELINES:
+- Reference relevant experience/skills naturally when appropriate
+- Match the professional tone of their headline/about
+- Write in first person ("I", "my", "me")
+`;
+            console.log('📋 Using LinkedIn profile data for comment personalization');
+          }
+        }
+      } catch (profileErr) {
+        console.warn('Could not load LinkedIn profile for comment:', profileErr);
+      }
     }
     
     // Fetch comment style examples from selected profiles
@@ -186,7 +230,7 @@ export async function POST(request: NextRequest) {
 ═══════════════════════════════════════════════════════════
 
 ${styleExamples.map((ex, i) => `[Example ${i + 1}]: "${ex}"`).join('\n\n')}
-
+${userProfileContext}
 ═══════════════════════════════════════════════════════════
 📄 POST TO COMMENT ON
 ═══════════════════════════════════════════════════════════
@@ -207,7 +251,6 @@ Post: ${postText}
 3. The comment must be relevant to the post content.
 4. Do NOT use hashtags. Do NOT include quotation marks around your response.
 5. Output ONLY the comment text, nothing else.${finalExpertise ? `\n6. The commenter's expertise: ${finalExpertise}` : ''}${finalBackground ? `\n7. The commenter's background: ${finalBackground}` : ''}`;
-      console.log(`📝 PROMPT: PROFILE STYLE MODE, ${styleExamples.length} examples, length: ${prompt.length}`);
     } else {
       // NORMAL MODE: Use goal/tone/style settings + optional style examples
       prompt = generateCommentPrompt(
@@ -220,29 +263,47 @@ Post: ${postText}
         authorName || 'there',
         finalStyle || 'direct',
         styleExamples
-      );
-      console.log(`📝 PROMPT: NORMAL MODE, length: ${prompt.length}, style examples: ${styleExamples.length}`);
+      ) + userProfileContext;
     }
 
-    // Generate content using unified AI service
+    // 🐛 DEBUG: Log full prompt for Vercel logs
+    console.log('\n' + '='.repeat(80));
+    console.log('� AI COMMENT GENERATION - FULL PROMPT');
+    console.log('='.repeat(80));
+    console.log('📋 Request params:', JSON.stringify({
+      postText: postText.substring(0, 100) + '...',
+      goal: finalGoal,
+      tone: finalTone,
+      length: finalLength,
+      style: finalStyle,
+      useProfileStyle,
+      styleExamplesCount: styleExamples.length,
+      useProfileData,
+      model: selectedModel
+    }, null, 2));
+    console.log('-'.repeat(80));
+    console.log('📝 FULL PROMPT (length: ' + prompt.length + ' chars):');
+    console.log('-'.repeat(80));
+    console.log(prompt);
+    console.log('='.repeat(80) + '\n');
+
+    // Generate content using unified AI service with FULL prompt
     let content;
     let tokenUsage: any = null;
     try {
-      const result = await generateLinkedInComment({
+      // Use generateContent with full prompt to ensure all context is used
+      const result = await generateContent({
         model: selectedModel,
-        postContent: postText,
-        goal: finalGoal || 'AddValue',
-        tone: finalTone || 'Professional',
-        length: finalLength || 'Short',
-        style: finalStyle || 'direct',
-        userProfile: userBackground,
-        userExpertise: finalExpertise,
-        userBackground: finalBackground,
-        userId: user.id
+        systemPrompt: 'You are an expert LinkedIn comment writer. Write engaging, authentic comments that add value and spark conversations.',
+        userPrompt: prompt,
+        maxTokens: 500,
+        temperature: 0.7,
+        userId: user.id,
+        trackUsage: true
       });
 
       content = result.content;
-      console.log('✅ Comment generation successful with model:', result.model);
+      console.log('✅ Comment generation successful with model:', result.model, 'output length:', content?.length || 0);
       
       // Extract token usage for developers
       if (isDeveloper && result.usage) {

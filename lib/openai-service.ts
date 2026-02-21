@@ -22,15 +22,20 @@ export class OpenAIService {
   private apiKey: string;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.OPENAI_API_KEY || '';
+    // Clean the API key - remove any whitespace/newlines that could cause header issues
+    this.apiKey = (apiKey || process.env.OPENAI_API_KEY || '').trim();
     this.initClient();
   }
 
   private initClient() {
-    if (this.apiKey) {
-      this.client = new OpenAI({
-        apiKey: this.apiKey
-      });
+    if (this.apiKey && this.apiKey.length > 0) {
+      try {
+        this.client = new OpenAI({
+          apiKey: this.apiKey
+        });
+      } catch (e) {
+        console.error('Failed to initialize OpenAI client:', e);
+      }
     }
   }
 

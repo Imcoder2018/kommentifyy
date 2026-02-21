@@ -5,8 +5,20 @@ import { verifyToken, extractToken } from '@/lib/auth';
 export async function GET(request: NextRequest) {
   try {
     const token = extractToken(request.headers.get('authorization'));
-    if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    const payload = verifyToken(token);
+    if (!token) return NextResponse.json({ success: false, error: 'Unauthorized', shouldReauth: true }, { status: 401 });
+    
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch (authError: any) {
+      const isExpired = authError.name === 'TokenExpiredError';
+      return NextResponse.json({ 
+        success: false, 
+        error: isExpired ? 'token_expired' : 'invalid_token',
+        message: isExpired ? 'Authentication token has expired. Please re-authenticate.' : 'Invalid authentication token.',
+        shouldReauth: true 
+      }, { status: 401 });
+    }
 
     let config = await (prisma as any).commenterConfig.findUnique({ where: { userId: payload.userId } });
     if (!config) {
@@ -21,8 +33,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const token = extractToken(request.headers.get('authorization'));
-    if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    const payload = verifyToken(token);
+    if (!token) return NextResponse.json({ success: false, error: 'Unauthorized', shouldReauth: true }, { status: 401 });
+    
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch (authError: any) {
+      const isExpired = authError.name === 'TokenExpiredError';
+      return NextResponse.json({ 
+        success: false, 
+        error: isExpired ? 'token_expired' : 'invalid_token',
+        message: isExpired ? 'Authentication token has expired. Please re-authenticate.' : 'Invalid authentication token.',
+        shouldReauth: true 
+      }, { status: 401 });
+    }
+    
     const body = await request.json();
 
     delete body.id;

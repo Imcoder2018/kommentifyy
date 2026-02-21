@@ -33,6 +33,7 @@ model User {
   activities       Activity[]
   apiUsage         ApiUsage[]
   plan             Plan?      @relation(fields: [planId], references: [id])
+  postDrafts       PostDraft[]
 
   @@index([email])
   @@index([planId])
@@ -339,6 +340,9 @@ model PostDraft {
   taskFailureReason String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([status])
@@ -713,4 +717,19 @@ model AIModelUsage {
   @@index([userId])
   @@index([modelId])
   @@index([periodStart])
+}
+
+// Extension heartbeat - tracks extension online status
+model ExtensionHeartbeat {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  lastSeen     DateTime @default(now())
+  version      String?  // Extension version
+  status       String   @default("online")  // online, offline, busy
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([lastSeen])
 }

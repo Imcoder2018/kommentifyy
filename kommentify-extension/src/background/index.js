@@ -172,6 +172,12 @@ if (!globalThis._commandPollAlarmCreated) {
 
 // Standalone command polling function - called by alarm, no dependency on content scripts
 async function pollCommandsDirectly() {
+    // Helper to get fresh token
+    const getFreshToken = async () => {
+        const storage = await chrome.storage.local.get(['authToken']);
+        return storage.authToken;
+    };
+
     // Reuse the same lock as the message handler
     if (typeof globalThis._pollCommandsRunning === 'undefined') globalThis._pollCommandsRunning = false;
     if (typeof globalThis._pollLockTimestamp === 'undefined') globalThis._pollLockTimestamp = 0;
@@ -191,23 +197,48 @@ async function pollCommandsDirectly() {
     globalThis._pollCommandsRunning = true;
     globalThis._pollLockTimestamp = Date.now();
     try {
-        const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+        const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
         const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-        if (!authToken) { globalThis._pollCommandsRunning = false; return; }
+        
+        // authToken now fetched via getFreshToken()
+        if (!(await getFreshToken())) { globalThis._pollCommandsRunning = false; return; }
 
         // Send heartbeat to let dashboard know extension is alive
         try {
+            const freshToken = await getFreshToken();
             await fetch(`${apiUrl}/api/extension/heartbeat`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${freshToken}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ timestamp: new Date().toISOString() })
             });
         } catch (hbErr) { /* heartbeat failure is non-critical */ }
 
+        // Re-fetch token before command fetch to use fresh token
+        const freshTokenForCommand = await getFreshToken();
         const response = await fetch(`${apiUrl}/api/extension/command`, {
             method: 'GET',
-            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+            headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json' }
         });
+        
+        // Handle 401 authentication errors
+        if (response.status === 401) {
+            console.error('🔐 POLL-ALARM: Authentication token expired');
+            // Clear the expired token
+            await chrome.storage.local.remove(['authToken']);
+            // Notify user to re-authenticate
+            try {
+                await chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                    title: 'Kommentify - Authentication Expired',
+                    message: 'Please re-login to the extension to continue.',
+                    priority: 2
+                });
+            } catch (e) { /* notification may fail in MV3 */ }
+            globalThis._pollCommandsRunning = false;
+            return;
+        }
+        
         const data = await response.json();
 
         if (data.success && data.commands && data.commands.length > 0) {
@@ -222,9 +253,10 @@ async function pollCommandsDirectly() {
 
                 // Mark as in_progress
                 try {
+                    const token = await getFreshToken();
                     await fetch(`${apiUrl}/api/extension/command`, {
                         method: 'PUT',
-                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
                     });
                 } catch (e) {}
@@ -234,15 +266,19 @@ async function pollCommandsDirectly() {
                     console.log('🔍 POLL-ALARM: Executing scrape_profile for:', cmd.data.profileUrl);
                     try {
                         const result = await scrapeProfilePostsImpl(cmd.data.profileUrl, cmd.data.postCount || 10);
+                        const token = await getFreshToken();
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
-                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ commandId: cmd.id, status: result.success ? 'completed' : 'failed' })
                         });
                         console.log('✅ POLL-ALARM: scrape_profile done:', result.success);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_profile failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { 
+                            const token = await getFreshToken();
+                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); 
+                        } catch (x) {}
                     } finally { globalThis._processingCommandIds.delete(cmd.id); }
                 }
 
@@ -253,7 +289,8 @@ async function pollCommandsDirectly() {
                     let scrapeWindowId = null;
                     try {
                         // Mark as in_progress
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { postsFound: 0, scrollCount: 0, message: 'Opening LinkedIn feed...' } }) });
+                        const token = await getFreshToken();
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { postsFound: 0, scrollCount: 0, message: 'Opening LinkedIn feed...' } }) });
                         // Open in a new focused window (half screen width)
                         const currentWindow = await chrome.windows.getCurrent();
                         const halfWidth = Math.floor((currentWindow.width || 1920) / 2);
@@ -286,7 +323,7 @@ async function pollCommandsDirectly() {
                         while (Date.now() - startTime < durationMs) {
                             // Check if cancelled
                             try {
-                                const statusRes = await fetch(`${apiUrl}/api/extension/command/all`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                                const statusRes = await fetch(`${apiUrl}/api/extension/command/all`, { headers: { 'Authorization': `Bearer ${await getFreshToken()}` } });
                                 const statusData = await statusRes.json();
                                 const currentCmd = statusData.commands?.find(c => c.id === cmd.id);
                                 if (currentCmd && (currentCmd.status === 'cancelled' || currentCmd.status === 'failed')) {
@@ -352,7 +389,7 @@ async function pollCommandsDirectly() {
                                 // Update command status with progress
                                 const counts = countResult?.[0]?.result || { totalPosts: 0, qualifiedPosts: 0 };
                                 if (scrollCount % 3 === 0) {
-                                    await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { ...cmd.data, postsFound: counts.totalPosts, qualifiedPosts: counts.qualifiedPosts, scrollCount, elapsedSeconds: elapsed, remainingSeconds: remaining, message: `Scrolling feed... ${counts.totalPosts} posts found, ${counts.qualifiedPosts} qualified` } }) });
+                                    await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { ...cmd.data, postsFound: counts.totalPosts, qualifiedPosts: counts.qualifiedPosts, scrollCount, elapsedSeconds: elapsed, remainingSeconds: remaining, message: `Scrolling feed... ${counts.totalPosts} posts found, ${counts.qualifiedPosts} qualified` } }) });
                                 }
                             } catch (overlayErr) { /* tab may have issues */ }
                             await new Promise(r => setTimeout(r, 3000));
@@ -393,13 +430,13 @@ async function pollCommandsDirectly() {
                         const scrapedPosts = scrapeResult?.[0]?.result || [];
                         console.log(`POLL-ALARM: Scraped ${scrapedPosts.length} posts from feed`);
                         if (scrapedPosts.length > 0) {
-                            await fetch(`${apiUrl}/api/scraped-posts`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: scrapedPosts }) });
+                            await fetch(`${apiUrl}/api/scraped-posts`, { method: 'POST', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: scrapedPosts }) });
                         }
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { ...cmd.data, postsFound: scrapedPosts.length, scrollCount, message: `Completed! Saved ${scrapedPosts.length} posts from feed.` } }) });
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { ...cmd.data, postsFound: scrapedPosts.length, scrollCount, message: `Completed! Saved ${scrapedPosts.length} posts from feed.` } }) });
                         console.log(`✅ POLL-ALARM: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_feed_now failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (e.message || 'unknown error') } }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (e.message || 'unknown error') } }) }); } catch (x) {}
                     } finally {
                         if (scrapeWindowId) { try { await chrome.windows.remove(scrapeWindowId); } catch (e) {} }
                         if (scrapeTab) { globalThis._commandLinkedInTabs.delete(scrapeTab.id); }
@@ -459,15 +496,15 @@ async function pollCommandsDirectly() {
                         if (result.comments.length > 0) {
                             await fetch(`${apiUrl}/api/scraped-comments`, {
                                 method: 'POST',
-                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ profileUrl: cmd.data.profileUrl, profileId: targetProfileId, profileName: cmd.data.profileName || targetProfileId, comments: result.comments })
                             });
                         }
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
                         console.log(`✅ POLL-ALARM: scrape_comments done, saved ${result.count} comments`);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_comments failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                     } finally {
                         if (commentTab) { try { await chrome.tabs.remove(commentTab.id); } catch (e) {} globalThis._commandLinkedInTabs.delete(commentTab.id); }
                         globalThis._processingCommandIds.delete(cmd.id);
@@ -680,7 +717,7 @@ async function pollCommandsDirectly() {
                         const finalStatus = scriptResult?.posted ? 'completed' : (scriptResult?.success ? 'completed_manual' : 'failed');
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
-                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
                         });
                         console.log(`✅ POLL-ALARM: post_to_linkedin ${finalStatus}`);
@@ -696,7 +733,7 @@ async function pollCommandsDirectly() {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                             ll.error('post_writer', `❌ Post failed: ${postError.message}`);
                         } catch (e) {}
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                     } finally {
                         if (postTab) {
                             try { await chrome.tabs.remove(postTab.id); } catch (e) {}
@@ -765,7 +802,7 @@ async function pollCommandsDirectly() {
                         // Mark as in_progress on server (NOT completed — processing is async)
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
-                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
                         });
                         
@@ -776,7 +813,7 @@ async function pollCommandsDirectly() {
                             try {
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
                                 });
                             } catch (x) { console.error('Failed to update command status:', x); }
@@ -786,7 +823,7 @@ async function pollCommandsDirectly() {
                             try {
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                 });
                             } catch (x) {}
@@ -796,7 +833,7 @@ async function pollCommandsDirectly() {
                         console.log('✅ POLL-ALARM: start_bulk_commenting launched (in_progress)');
                     } catch (e) {
                         console.error('❌ POLL-ALARM: start_bulk_commenting failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
@@ -832,7 +869,7 @@ async function pollCommandsDirectly() {
                         // Mark as in_progress on server immediately
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
-                            headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                            headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
                         });
 
@@ -857,7 +894,7 @@ async function pollCommandsDirectly() {
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
                                     });
                                 } catch (x) { console.error('Failed to update import command status:', x); }
@@ -867,7 +904,7 @@ async function pollCommandsDirectly() {
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                     });
                                 } catch (x) {}
@@ -877,7 +914,7 @@ async function pollCommandsDirectly() {
                             // No profiles to import — mark as failed
                             await fetch(`${apiUrl}/api/extension/command`, {
                                 method: 'PUT',
-                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                             });
                             globalThis._processingCommandIds.delete(cmd.id);
@@ -886,7 +923,7 @@ async function pollCommandsDirectly() {
                         console.log('✅ POLL-ALARM: start_import_automation launched (in_progress)');
                     } catch (e) {
                         console.error('❌ POLL-ALARM: start_import_automation failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
@@ -896,7 +933,7 @@ async function pollCommandsDirectly() {
                     console.log('🔗 POLL-ALARM: Executing scan_my_linkedin_profile...');
                     try {
                         // Mark as in_progress
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
 
                         // Navigate to LinkedIn profile root (generic /in/ redirects to the user's slug)
                         const profileUrl = 'https://www.linkedin.com/in/';
@@ -971,7 +1008,7 @@ async function pollCommandsDirectly() {
                             const saveData = { ...scanData.data, profileUrl };
                             await fetch(`${apiUrl}/api/linkedin-profile`, {
                                 method: 'POST',
-                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify(saveData)
                             });
                             console.log('🔗 POLL-ALARM: Profile data saved to database');
@@ -985,13 +1022,13 @@ async function pollCommandsDirectly() {
                         }
 
                         // Mark command as completed
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
                         console.log('✅ POLL-ALARM: scan_my_linkedin_profile completed');
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scan_my_linkedin_profile failed:', e);
                         // Close the LinkedIn tab on error
                         try { await chrome.tabs.remove(tab.id); } catch (tabError) {}
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                     } finally {
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
@@ -1000,41 +1037,44 @@ async function pollCommandsDirectly() {
                 // --- post_scheduled_content command ---
                 else if (cmd.command === 'post_scheduled_content') {
                     console.log('📅 POLL-ALARM: Executing post_scheduled_content...');
+                    let postTab = null;
                     try {
                         // Mark as in_progress
-                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
                         
-                        // Update draft task status to in_progress and mark as sent
-                        const payload = JSON.parse(cmd.payload || '{}');
+                        // Get payload from cmd (could be in payload field or metadata)
+                        const payload = typeof cmd.payload === 'string' ? JSON.parse(cmd.payload || '{}') : (cmd.payload || cmd.data || {});
+                        console.log('📅 POLL-ALARM: Payload:', payload);
+                        
                         if (payload.draftId) {
                             await fetch(`${apiUrl}/api/scheduled-posts`, {
                                 method: 'POST',
-                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
                                     taskId: cmd.id, 
                                     status: 'in_progress' 
                                 })
                             });
-                            
-                            // Also update the draft to mark task as sent
-                            await fetch(`${apiUrl}/api/post-drafts`, {
-                                method: 'PUT',
-                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    id: payload.draftId,
-                                    taskSentAt: new Date().toISOString()
-                                })
-                            });
                         }
 
-                        // Open LinkedIn tab
-                        const tab = await chrome.tabs.create({ url: 'https://www.linkedin.com/', active: false });
-                        console.log('📅 POLL-ALARM: Opened LinkedIn tab for posting:', tab.id);
+                        // Log start
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.start('post_writer', `✍️ Posting scheduled content to LinkedIn...`);
+                        } catch (e) {}
 
-                        // Wait for page to load
+                        // Step 1: Open LinkedIn feed tab
+                        console.log('📅 POLL-ALARM: Opening LinkedIn tab...');
+                        postTab = await chrome.tabs.create({
+                            url: 'https://www.linkedin.com/feed/',
+                            active: true
+                        });
+                        globalThis._commandLinkedInTabs.add(postTab.id);
+
+                        // Step 2: Wait for tab to fully load
                         await new Promise((resolve) => {
                             const checkComplete = (tabId, changeInfo) => {
-                                if (tabId === tab.id && changeInfo.status === 'complete') {
+                                if (tabId === postTab.id && changeInfo.status === 'complete') {
                                     chrome.tabs.onUpdated.removeListener(checkComplete);
                                     resolve();
                                 }
@@ -1043,122 +1083,217 @@ async function pollCommandsDirectly() {
                             setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
                         });
 
-                        // Give LinkedIn a moment to render
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-
-                        // Execute posting script
-                        const postResult = await chrome.scripting.executeScript({
-                            target: { tabId: tab.id },
-                            func: (content, topic, template, tone) => {
-                                // This function will post the content to LinkedIn
-                                // Implementation depends on LinkedIn's current UI
-                                try {
-                                    // Find the post creation area
-                                    const postBox = document.querySelector('[data-test-id="share-box"]') || 
-                                                   document.querySelector('.share-box-feed__inner') ||
-                                                   document.querySelector('[role="textbox"]') ||
-                                                   document.querySelector('div[contenteditable="true"]');
-                                    
-                                    if (!postBox) {
-                                        return { success: false, error: 'Could not find post creation area' };
-                                    }
-
-                                    // Click on the post box to activate it
-                                    postBox.click();
-                                    
-                                    // Type the content
-                                    if (postBox.contentEditable === 'true') {
-                                        postBox.innerText = content;
-                                    } else {
-                                        postBox.value = content;
-                                    }
-
-                                    // Wait a moment (simulate with setTimeout)
-                                    setTimeout(() => {
-                                        // Find and click the post button
-                                        const postButton = document.querySelector('button[data-test-id="post-submit"]') ||
-                                                          document.querySelector('button[aria-label*="Post"]') ||
-                                                          document.querySelector('.share-actions__primary button') ||
-                                                          Array.from(document.querySelectorAll('button')).find(btn => btn.textContent.includes('Post'));
-
-                                        if (!postButton) {
-                                            return { success: false, error: 'Could not find post button' };
-                                        }
-
-                                        // Click post button
-                                        postButton.click();
-                                    }, 1000);
-
-                                    return { success: true, message: 'Post published successfully' };
-                                } catch (error) {
-                                    return { success: false, error: error.message };
-                                }
-                            },
-                            args: [payload.content, payload.topic || '', payload.template || '', payload.tone || '']
-                        });
-
-                        const result = postResult?.[0]?.result;
-                        console.log('📅 POLL-ALARM: Post result:', result);
-
-                        // Wait a moment for the post to complete
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-
-                        if (result?.success) {
-                            // Update draft task status to completed
-                            if (payload.draftId) {
-                                await fetch(`${apiUrl}/api/scheduled-posts`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ 
-                                        taskId: cmd.id, 
-                                        status: 'completed' 
-                                    })
-                                });
-                            }
-                            
-                            // Mark command as completed
-                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
-                            console.log('✅ POLL-ALARM: post_scheduled_content completed');
-                        } else {
-                            // Update draft task status to failed
-                            if (payload.draftId) {
-                                await fetch(`${apiUrl}/api/scheduled-posts`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ 
-                                        taskId: cmd.id, 
-                                        status: 'failed',
-                                        failureReason: result?.error || 'Unknown posting error'
-                                    })
-                                });
-                            }
-                            
-                            // Mark command as failed
-                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) });
-                            console.log('❌ POLL-ALARM: post_scheduled_content failed');
+                        if (globalThis._stopAllTasks) {
+                            console.log('🛑 POLL-ALARM: Stop flag set, aborting post_scheduled_content');
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            globalThis._commandLinkedInTabs.delete(postTab.id);
+                            globalThis._processingCommandIds.delete(cmd.id);
+                            continue;
                         }
 
-                        // Close the LinkedIn tab
-                        await chrome.tabs.remove(tab.id);
-                    } catch (e) {
-                        console.error('❌ POLL-ALARM: post_scheduled_content failed:', e);
+                        // Step 3: Apply page load delay from Limits tab
+                        const { delaySettings: pwDelays } = await chrome.storage.local.get('delaySettings');
+                        const pageLoadWait = ((pwDelays && pwDelays.postWriterPageLoadDelay) || 5) * 1000;
+                        console.log(`📅 POLL-ALARM: Page loaded, waiting ${pageLoadWait/1000}s for render...`);
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.delay('post_writer', Math.round(pageLoadWait/1000), 'page load delay');
+                        } catch (e) {}
+                        await new Promise(resolve => setTimeout(resolve, pageLoadWait));
+
+                        // Step 4: Inject posting script (same as post_to_linkedin)
+                        const content = payload.content || '';
+                        const imageDataUrl = payload.imageDataUrl || null;
+                        console.log('📅 POLL-ALARM: Injecting post script, content length:', content.length, 'hasImage:', !!imageDataUrl);
                         
-                        // Update draft task status to failed
-                        const payload = JSON.parse(cmd.payload || '{}');
+                        // Load click delay from limits
+                        const clickDelay = ((pwDelays && pwDelays.postWriterClickDelay) || 3) * 1000;
+                        const typingDelay = ((pwDelays && pwDelays.postWriterTypingDelay) || 3) * 1000;
+                        const submitDelay = ((pwDelays && pwDelays.postWriterSubmitDelay) || 2) * 1000;
+                        
+                        const result = await chrome.scripting.executeScript({
+                            target: { tabId: postTab.id },
+                            func: (postContent, imgDataUrl, clickDelayMs, typingDelayMs, submitDelayMs) => {
+                                return new Promise((resolve) => {
+                                    const _poll = (fn, interval, timeout) => new Promise(r => {
+                                        const start = Date.now();
+                                        const check = () => { const el = fn(); if (el) return r(el); if (Date.now() - start > timeout) return r(null); setTimeout(check, interval); };
+                                        check();
+                                    });
+                                    const _findStartBtn = () => {
+                                        const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
+                                        if (s1) return s1;
+                                        for (const btn of document.querySelectorAll('button')) {
+                                            if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
+                                        }
+                                        return document.querySelector('.share-box-feed-entry__trigger');
+                                    };
+                                    const _findEditor = () => {
+                                        const dialog = document.querySelector('[role="dialog"]');
+                                        if (dialog) {
+                                            const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
+                                            if (e1) return e1;
+                                            const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+                                            if (e2) return e2;
+                                            const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
+                                            if (e3) return e3;
+                                        }
+                                        const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
+                                        if (e4) return e4;
+                                        for (const el of document.querySelectorAll('[contenteditable="true"]')) {
+                                            const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                            if (ph.includes('want to talk about')) return el;
+                                        }
+                                        return null;
+                                    };
+                                    const _findPostBtn = () => {
+                                        const dialog = document.querySelector('[role="dialog"]');
+                                        const scope = dialog || document;
+                                        for (const btn of scope.querySelectorAll('button')) {
+                                            const txt = (btn.textContent || '').trim().toLowerCase();
+                                            if (txt === 'post') return btn;
+                                        }
+                                        return null;
+                                    };
+                                    try {
+                                        console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
+                                        const startPostBtn = _findStartBtn();
+                                        if (!startPostBtn) {
+                                            resolve({ success: false, error: 'Start post button not found' });
+                                            return;
+                                        }
+                                        startPostBtn.click();
+                                        console.log(`LinkedIn Post Script: Clicked start post, polling for editor (timeout ${clickDelayMs + 8000}ms)...`);
+                                        _poll(_findEditor, 500, clickDelayMs + 8000).then(async (editor) => {
+                                            try {
+                                                if (!editor) {
+                                                    resolve({ success: false, error: 'Editor not found after polling' });
+                                                    return;
+                                                }
+                                                console.log('LinkedIn Post Script: Editor found via logic-based detection');
+                                                editor.innerHTML = '';
+                                                editor.focus();
+                                                const lines = postContent.split('\n');
+                                                lines.forEach((line) => {
+                                                    if (line.trim() === '') {
+                                                        editor.appendChild(document.createElement('br'));
+                                                    } else {
+                                                        const p = document.createElement('p');
+                                                        p.textContent = line;
+                                                        editor.appendChild(p);
+                                                    }
+                                                });
+                                                editor.dispatchEvent(new Event('input', { bubbles: true }));
+                                                console.log('LinkedIn Post Script: Text inserted');
+
+                                                // Handle image attachment via clipboard paste
+                                                const pasteImage = async () => {
+                                                    if (!imgDataUrl) return false;
+                                                    try {
+                                                        console.log('LinkedIn Post Script: Pasting image via clipboard...');
+                                                        const byteString = atob(imgDataUrl.split(',')[1]);
+                                                        const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                                        const ab = new ArrayBuffer(byteString.length);
+                                                        const ia = new Uint8Array(ab);
+                                                        for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
+                                                        const blob = new Blob([ab], { type: mimeString });
+                                                        const file = new File([blob], 'image.png', { type: mimeString });
+                                                        try {
+                                                            await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
+                                                        } catch (clipErr) {
+                                                            console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
+                                                        }
+                                                        editor.focus();
+                                                        const dt = new DataTransfer();
+                                                        dt.items.add(file);
+                                                        const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
+                                                        editor.dispatchEvent(pasteEvt);
+                                                        const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
+                                                        if (shareBox) {
+                                                            shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
+                                                        }
+                                                        await new Promise(r => setTimeout(r, 3000));
+                                                        return true;
+                                                    } catch (imgErr) {
+                                                        console.error('LinkedIn Post Script: Image paste error:', imgErr);
+                                                        return false;
+                                                    }
+                                                };
+
+                                                const imageAttached = await pasteImage();
+                                                console.log('LinkedIn Post Script: Image attached:', imageAttached);
+                                                const extraWait = imgDataUrl ? 4000 : 0;
+                                                console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
+                                                await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
+
+                                                const postButton = _findPostBtn();
+                                                if (postButton && !postButton.disabled) {
+                                                    postButton.click();
+                                                    console.log('LinkedIn Post Script: Post button clicked');
+                                                    resolve({ success: true, posted: true, imageAttached });
+                                                } else {
+                                                    console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                    resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
+                                                }
+                                            } catch (innerErr) {
+                                                resolve({ success: false, error: 'Inner error: ' + innerErr.message });
+                                            }
+                                        });
+                                    } catch (outerErr) {
+                                        resolve({ success: false, error: 'Outer error: ' + outerErr.message });
+                                    }
+                                });
+                            },
+                            args: [content, imageDataUrl, clickDelay, typingDelay, submitDelay]
+                        });
+
+                        const scriptResult = result?.[0]?.result;
+                        console.log('📅 POLL-ALARM: Post script result:', scriptResult);
+
+                        // Wait for LinkedIn to process the post
+                        console.log('📅 POLL-ALARM: Waiting 5s before closing tab...');
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+
+                        // Mark as completed
+                        const finalStatus = scriptResult?.posted ? 'completed' : (scriptResult?.success ? 'completed_manual' : 'failed');
+                        
                         if (payload.draftId) {
                             await fetch(`${apiUrl}/api/scheduled-posts`, {
                                 method: 'POST',
-                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ 
                                     taskId: cmd.id, 
-                                    status: 'failed',
-                                    failureReason: e.message || 'Extension error'
+                                    status: finalStatus === 'completed' ? 'completed' : 'failed',
+                                    failureReason: scriptResult?.error || null
                                 })
                             });
                         }
                         
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
+                        });
+                        console.log(`✅ POLL-ALARM: post_scheduled_content ${finalStatus}`);
+                        
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            if (scriptResult?.posted) ll.post('post_writer', `✅ Scheduled post published to LinkedIn`);
+                            else if (scriptResult?.success) ll.info('post_writer', `⚠️ Content inserted but needs manual post click`);
+                            else ll.error('post_writer', `❌ Scheduled post failed: ${scriptResult?.error || 'Unknown error'}`);
+                        } catch (e) {}
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: post_scheduled_content failed:', e);
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.error('post_writer', `❌ Scheduled post failed: ${e.message}`);
+                        } catch (logErr) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                     } finally {
+                        if (postTab) {
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            globalThis._commandLinkedInTabs.delete(postTab.id);
+                        }
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
@@ -1683,12 +1818,12 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
 
         // Save to backend
         try {
-            const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+            const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
             const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-            if (!authToken) return { success: false, error: 'Not authenticated.' };
+            if (!(await getFreshToken())) return { success: false, error: 'Not authenticated.' };
             const ingestResponse = await fetch(`${apiUrl}/api/vector/ingest`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ posts: scrapedPosts, inspirationSource: { name: profileData.name, profileUrl } })
             });
             const ingestData = await ingestResponse.json();
@@ -1861,7 +1996,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 // Get auth token and API URL
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
-                const token = storage.authToken;
+                const token = await getFreshToken();
                 let apiUrl = storage.apiBaseUrl;
                 if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
@@ -2175,10 +2310,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 
                 // STEP 4: Save directly to backend API (don't rely on popup staying open)
                 try {
-                    const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                    const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                     const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                     
-                    if (!authToken) {
+                    if (!(await getFreshToken())) {
                         console.error('BACKGROUND: No auth token, cannot save to backend');
                         sendResponse({ success: false, error: 'Not authenticated. Please log in first.' });
                         return;
@@ -2189,7 +2324,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     const ingestResponse = await fetch(`${apiUrl}/api/vector/ingest`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${authToken}`,
+                            'Authorization': `Bearer ${await getFreshToken()}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
@@ -2260,10 +2395,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         (async () => {
             try {
                 console.log('💾 BACKGROUND: Saving scraped posts to database...');
-                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 
-                if (!authToken) {
+                if (!(await getFreshToken())) {
                     sendResponse({ success: false, error: 'Not authenticated' });
                     return;
                 }
@@ -2279,7 +2414,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const response = await fetch(`${apiUrl}/api/scraped-posts`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
+                        'Authorization': `Bearer ${await getFreshToken()}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ posts })
@@ -2374,12 +2509,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 globalThis._processingCommandIds.clear();
                 
                 // Cancel all pending commands via API
-                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 if (authToken) {
                     await fetch(`${apiUrl}/api/extension/command/stop-all`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }
                     });
                 }
                 
@@ -2415,10 +2550,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             globalThis._pollCommandsRunning = true;
             globalThis._pollLockTimestamp = Date.now();
             try {
-                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 
-                if (!authToken) {
+                if (!(await getFreshToken())) {
                     globalThis._pollCommandsRunning = false;
                     sendResponse({ success: false, commands: [] });
                     return;
@@ -2427,7 +2562,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const response = await fetch(`${apiUrl}/api/extension/command`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
+                        'Authorization': `Bearer ${await getFreshToken()}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -2464,7 +2599,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         try {
                             await fetch(`${apiUrl}/api/extension/command`, {
                                 method: 'PUT',
-                                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
                             });
                         } catch (e) { /* continue anyway */ }
@@ -2657,7 +2792,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.posted ? 'completed' : 'completed_manual' })
                                     });
                                     console.log('✅ BACKGROUND: Post to LinkedIn command completed');
@@ -2677,7 +2812,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                     });
                                 } catch (e) {}
@@ -2700,7 +2835,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: scrapeResult.success ? 'completed' : 'failed' })
                                 });
                                 console.log('✅ BACKGROUND: scrape_profile command done:', scrapeResult.success);
@@ -2708,7 +2843,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 console.error('❌ BACKGROUND: scrape_profile failed:', scrapeError);
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                 });
                             } finally {
@@ -2723,7 +2858,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             let scrapeWindowId = null;
                             try {
                                 // Mark as in_progress
-                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { postsFound: 0, scrollCount: 0, message: 'Opening LinkedIn feed...' } }) });
+                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { postsFound: 0, scrollCount: 0, message: 'Opening LinkedIn feed...' } }) });
                                 // Open in a new focused window (half screen width)
                                 const currentWindow = await chrome.windows.getCurrent();
                                 const halfWidth = Math.floor((currentWindow.width || 1920) / 2);
@@ -2763,7 +2898,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 while (Date.now() - startTime < durationMs) {
                                     // Check if cancelled
                                     try {
-                                        const statusRes = await fetch(`${apiUrl}/api/extension/command/all`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                                        const statusRes = await fetch(`${apiUrl}/api/extension/command/all`, { headers: { 'Authorization': `Bearer ${await getFreshToken()}` } });
                                         const statusData = await statusRes.json();
                                         const currentCmd = statusData.commands?.find(c => c.id === cmd.id);
                                         if (currentCmd && (currentCmd.status === 'cancelled' || currentCmd.status === 'failed')) {
@@ -2826,7 +2961,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                         });
                                         const counts = countResult?.[0]?.result || { totalPosts: 0, qualifiedPosts: 0 };
                                         if (scrollCount % 3 === 0) {
-                                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { ...cmd.data, postsFound: counts.totalPosts, qualifiedPosts: counts.qualifiedPosts, scrollCount, elapsedSeconds: elapsed, remainingSeconds: remaining, message: `Scrolling feed... ${counts.totalPosts} posts found, ${counts.qualifiedPosts} qualified` } }) });
+                                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { ...cmd.data, postsFound: counts.totalPosts, qualifiedPosts: counts.qualifiedPosts, scrollCount, elapsedSeconds: elapsed, remainingSeconds: remaining, message: `Scrolling feed... ${counts.totalPosts} posts found, ${counts.qualifiedPosts} qualified` } }) });
                                         }
                                     } catch (overlayErr) { /* tab may have issues */ }
                                     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -2881,14 +3016,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 if (scrapedPosts.length > 0) {
                                     await fetch(`${apiUrl}/api/scraped-posts`, {
                                         method: 'POST',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ posts: scrapedPosts })
                                     });
                                 }
 
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { ...cmd.data, postsFound: scrapedPosts.length, scrollCount, message: `Completed! Saved ${scrapedPosts.length} posts from feed.` } })
                                 });
                                 console.log(`✅ BACKGROUND: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
@@ -2897,7 +3032,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (feedError.message || 'unknown error') } })
                                     });
                                 } catch (e) {}
@@ -3034,7 +3169,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 if (result.comments.length > 0) {
                                     const saveRes = await fetch(`${apiUrl}/api/scraped-comments`, {
                                         method: 'POST',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                             action: 'saveComments',
                                             profileUrl: cmd.data.profileUrl,
@@ -3049,7 +3184,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                                 await fetch(`${apiUrl}/api/extension/command`, {
                                     method: 'PUT',
-                                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
                                 });
                                 console.log(`✅ BACKGROUND: scrape_comments done, saved ${result.count} comments for ${targetProfileId}`);
@@ -3058,7 +3193,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                     });
                                 } catch (e) {}
@@ -3077,7 +3212,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             let scanTab = null;
                             try {
                                 // Mark as in_progress
-                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
 
                                 // Navigate to LinkedIn profile root
                                 const profileUrl = 'https://www.linkedin.com/in/';
@@ -3143,7 +3278,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     const saveData = { ...scanData.data, profileUrl };
                                     await fetch(`${apiUrl}/api/linkedin-profile`, {
                                         method: 'POST',
-                                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify(saveData)
                                     });
                                     console.log('🔗 BACKGROUND: Profile data saved to database');
@@ -3157,13 +3292,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 }
 
                                 // Mark command as completed
-                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
+                                await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
                                 console.log('✅ BACKGROUND: scan_my_linkedin_profile completed');
                             } catch (e) {
                                 console.error('❌ BACKGROUND: scan_my_linkedin_profile failed:', e);
                                 // Close the LinkedIn tab on error
                                 try { await chrome.tabs.remove(scanTab.id); } catch (tabError) {}
-                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                             } finally {
                                 globalThis._processingCommandIds.delete(cmd.id);
                             }
@@ -3186,10 +3321,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "getFeedSchedule") {
         (async () => {
             try {
-                const { authToken, apiBaseUrl } = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
                 
-                if (!authToken) {
+                if (!(await getFreshToken())) {
                     sendResponse({ success: false, error: 'Not authenticated' });
                     return;
                 }
@@ -3197,7 +3332,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const response = await fetch(`${apiUrl}/api/feed-schedules`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
+                        'Authorization': `Bearer ${await getFreshToken()}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -3230,7 +3365,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 // Try to fetch from website API first
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const token = storage.authToken;
+                const token = await getFreshToken();
                 let apiUrl = storage.apiBaseUrl;
                 if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) apiUrl = API_CONFIG.BASE_URL;
                 
@@ -3398,7 +3533,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 // Get auth token
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const token = storage.authToken;
+                const token = await getFreshToken();
                 let apiUrl = storage.apiBaseUrl;
                 if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
@@ -3665,7 +3800,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 // Get auth token and API URL
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const token = storage.authToken;
+                const token = await getFreshToken();
                 // Force use of config URL if storage URL is suspicious, undefined, or localhost
                 let apiUrl = storage.apiBaseUrl;
                 if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj') || apiUrl.includes('localhost')) {
@@ -3745,7 +3880,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 // Get auth token and API URL
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
-                const token = storage.authToken;
+                const token = await getFreshToken();
                 let apiUrl = storage.apiBaseUrl;
                 if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
@@ -4313,7 +4448,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 // Get auth token and API URL
                 const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl', 'commentSettings']);
-                const token = storage.authToken;
+                const token = await getFreshToken();
                 let apiUrl = storage.apiBaseUrl;
                 if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
                     apiUrl = API_CONFIG.BASE_URL;
@@ -4584,6 +4719,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true, logs: result.schedulerLogs || [] });
             } catch (error) {
                 sendResponse({ success: false, error: error.message });
+            }
+        })();
+        return true;
+    }
+    
+    // Handle authComplete from authBridge - authentication was successful
+    if (request.action === "authComplete") {
+        (async () => {
+            console.log('🔐 BACKGROUND: Auth complete received, token stored');
+            // Clear any cached token state
+            globalThis._lastTokenFetch = 0;
+            // Verify token is stored
+            const { authToken } = await chrome.storage.local.get(['authToken']);
+            if (authToken) {
+                console.log('🔐 BACKGROUND: ✅ Token verified in storage');
+                sendResponse({ success: true, message: 'Authentication complete' });
+            } else {
+                console.log('🔐 BACKGROUND: ❌ Token not found in storage');
+                sendResponse({ success: false, error: 'Token not stored' });
             }
         })();
         return true;

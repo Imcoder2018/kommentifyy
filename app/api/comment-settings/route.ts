@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       success: true,
       settings: settings || {
         useProfileStyle: false,
+        useProfileData: false,
         goal: 'AddValue',
         tone: 'Friendly',
         commentLength: 'Short',
@@ -41,13 +42,14 @@ export async function POST(request: NextRequest) {
     const payload = verifyToken(token);
 
     const body = await request.json();
-    const { useProfileStyle, goal, tone, commentLength, commentStyle, model, userExpertise, userBackground, aiAutoPost } = body;
+    const { useProfileStyle, useProfileData, goal, tone, commentLength, commentStyle, model, userExpertise, userBackground, aiAutoPost } = body;
 
     const settings = await (prisma as any).commentSettings.upsert({
       where: { userId: payload.userId },
       create: {
         userId: payload.userId,
         useProfileStyle: useProfileStyle === true,
+        useProfileData: useProfileData === true,
         goal: goal || 'AddValue',
         tone: tone || 'Friendly',
         commentLength: commentLength || 'Short',
@@ -59,6 +61,7 @@ export async function POST(request: NextRequest) {
       },
       update: {
         useProfileStyle: useProfileStyle !== undefined ? useProfileStyle : undefined,
+        useProfileData: useProfileData !== undefined ? useProfileData : undefined,
         goal: goal !== undefined ? goal : undefined,
         tone: tone !== undefined ? tone : undefined,
         commentLength: commentLength !== undefined ? commentLength : undefined,

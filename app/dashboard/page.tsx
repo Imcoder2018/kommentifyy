@@ -133,6 +133,7 @@ function DashboardContent() {
     const [trendingStatus, setTrendingStatus] = useState('');
     const [trendingModel, setTrendingModel] = useState<string>('gpt-4o');
     const [trendingTokenUsage, setTrendingTokenUsage] = useState<any>(null);
+    const [trendingUseProfileData, setTrendingUseProfileData] = useState(false); // Profile data toggle for trending
     // Feed scrape live status
     const [feedScrapeCommandId, setFeedScrapeCommandId] = useState<string | null>(null);
     const [feedScrapeStatus, setFeedScrapeStatus] = useState<any>(null);
@@ -250,6 +251,7 @@ function DashboardContent() {
     const [inspirationLoading, setInspirationLoading] = useState(false);
     const [inspirationUseAll, setInspirationUseAll] = useState(true);
     const [inspirationSelected, setInspirationSelected] = useState<string[]>([]);
+    const [useProfileData, setUseProfileData] = useState(false);
     const [showInspirationPopup, setShowInspirationPopup] = useState(false);
     const [showSharedProfilesPopup, setShowSharedProfilesPopup] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
@@ -286,6 +288,7 @@ function DashboardContent() {
 
     // Comment settings state (synced to server)
     const [csUseProfileStyle, setCsUseProfileStyle] = useState(false);
+    const [csUseProfileData, setCsUseProfileData] = useState(false);
     const [csGoal, setCsGoal] = useState('AddValue');
     const [csTone, setCsTone] = useState('Friendly');
     const [csLength, setCsLength] = useState('Short');
@@ -462,6 +465,15 @@ function DashboardContent() {
                     targetAudience: writerTargetAudience, keyMessage: writerKeyMessage, userBackground: writerBackground,
                     useInspirationSources: inspirationSources.length > 0 && (inspirationUseAll || inspirationSelected.length > 0),
                     inspirationSourceNames: inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected,
+                    useProfileData: useProfileData && linkedInProfile,
+                    profileData: useProfileData && linkedInProfile ? {
+                        headline: linkedInProfile.headline,
+                        about: linkedInProfile.about,
+                        skills: linkedInProfile.skills,
+                        experience: linkedInProfile.experience,
+                        education: linkedInProfile.education,
+                        posts: linkedInProfile.posts
+                    } : null,
                     model: writerModel
                 }),
             });
@@ -838,6 +850,14 @@ function DashboardContent() {
     };
 
     const toggleProfileSelect = async (profileId: string) => {
+        // Optimistic update - immediately update UI
+        const profile = commentStyleProfiles.find(p => p.id === profileId);
+        if (!profile) return;
+        
+        const newSelectedState = !profile.isSelected;
+        setCommentStyleProfiles(prev => prev.map(p => p.id === profileId ? { ...p, isSelected: newSelectedState } : p));
+        
+        // Sync with server in background
         const token = localStorage.getItem('authToken');
         if (!token) return;
         try {
@@ -846,8 +866,10 @@ function DashboardContent() {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ action: 'toggleSelect', profileId }),
             });
-            setCommentStyleProfiles(prev => prev.map(p => p.id === profileId ? { ...p, isSelected: !p.isSelected } : p));
-        } catch {}
+        } catch (e) {
+            // Revert on error
+            setCommentStyleProfiles(prev => prev.map(p => p.id === profileId ? { ...p, isSelected: !newSelectedState } : p));
+        }
     };
 
     const deleteCommentStyleProfile = async (profileId: string) => {
@@ -870,6 +892,7 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success && data.settings) {
                 setCsUseProfileStyle(data.settings.useProfileStyle === true);
+                setCsUseProfileData(data.settings.useProfileData === true);
                 setCsGoal(data.settings.goal || 'AddValue');
                 setCsTone(data.settings.tone || 'Friendly');
                 setCsLength(data.settings.commentLength || 'Short');
@@ -892,6 +915,7 @@ function DashboardContent() {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
                     useProfileStyle: csUseProfileStyle, 
+                    useProfileData: csUseProfileData,
                     goal: csGoal, 
                     tone: csTone, 
                     commentLength: csLength, 
@@ -1438,7 +1462,9 @@ function DashboardContent() {
                     customPrompt: trendingCustomPrompt, 
                     includeHashtags: trendingIncludeHashtags, 
                     language: trendingLanguage,
-                    model: trendingModel 
+                    model: trendingModel,
+                    useProfileData: trendingUseProfileData,
+                    profileData: trendingUseProfileData ? linkedInProfile : null
                 }),
             });
             const data = await res.json();
@@ -2526,118 +2552,100 @@ function DashboardContent() {
                         </div>
                     </div>
 
-                    {/* Added Sources — compact banner showing all names */}
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            {miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', '#a78bfa', 14)}
-                            <span style={{ color: 'white', fontSize: '13px', fontWeight: '700', flexShrink: 0 }}>Added Sources</span>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1, minWidth: 0, alignItems: 'center' }}>
-                                {(inspirationSources.length > 0 || sharedInspProfiles.some((p: any) => inspirationSelected.includes(p.profileName))) ? (
-                                    <>
-                                        {inspirationSources.map((src: any, i: number) => (
-                                            <span key={`own-${i}`} style={{ background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#a78bfa', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>{src.name}</span>
-                                        ))}
-                                        {sharedInspProfiles.filter((p: any) => inspirationSelected.includes(p.profileName)).map((p: any, i: number) => (
-                                            <span key={`shared-${i}`} style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#fbbf24', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>★ {p.profileName}</span>
-                                        ))}
-                                    </>
-                                ) : (
-                                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>No sources — add profiles below to mimic writing style</span>
-                                )}
+                    {/* Added Sources — clickable toggles for all sources */}
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', '#a78bfa', 14)}
+                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '700' }}>Added Sources</span>
+                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>({inspirationSources.length + sharedInspProfiles.length} profiles)</span>
                             </div>
-                            <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '5px', color: 'rgba(255,255,255,0.5)', padding: '4px 7px', fontSize: '10px', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'rgba(255,255,255,0.5)', 10)}</button>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <button onClick={loadInspirationSources} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '5px', color: 'rgba(255,255,255,0.5)', padding: '4px 7px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'rgba(255,255,255,0.5)', 10)}</button>
+                                <button onClick={() => setShowInspirationPopup(true)} style={{ background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', border: 'none', borderRadius: '5px', color: 'white', padding: '5px 10px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 5v14 M5 12h14', 'white', 10)} Scrape</button>
+                            </div>
                         </div>
+                        {/* Select All / Deselect All */}
+                        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                            <button onClick={() => { setInspirationUseAll(true); setInspirationSelected([...inspirationSources.map((s: any) => s.name), ...sharedInspProfiles.map((p: any) => p.profileName)]); }} style={{ padding: '4px 8px', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '4px', color: '#34d399', fontSize: '10px', cursor: 'pointer' }}>Select All</button>
+                            <button onClick={() => { setInspirationUseAll(false); setInspirationSelected([]); }} style={{ padding: '4px 8px', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '4px', color: '#f87171', fontSize: '10px', cursor: 'pointer' }}>Deselect All</button>
+                        </div>
+                        {/* My Sources - clickable toggles */}
+                        {inspirationSources.length > 0 && (
+                            <div style={{ marginBottom: '8px' }}>
+                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '6px', fontWeight: '600' }}>My Sources</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                {inspirationSources.map((src: any, i: number) => {
+                                    const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
+                                    return (
+                                        <div key={`own-${i}`} onClick={() => {
+                                            if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
+                                            else if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== src.name));
+                                            else setInspirationSelected([...inspirationSelected, src.name]);
+                                        }} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: isChecked ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '12px', height: '12px' }} />
+                                            <span style={{ color: isChecked ? '#a78bfa' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '500' }}>{src.name}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{src.count}p</span>
+                                            <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '12px', padding: '0', marginLeft: '2px' }}>×</button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            </div>
+                        )}
+                        {/* Shared Profiles - clickable toggles */}
+                        {sharedInspProfiles.length > 0 && (
+                            <div>
+                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '6px', fontWeight: '600' }}>Kommentify Shared Profiles</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                {sharedInspProfiles.map((p: any, i: number) => {
+                                    const isChecked = inspirationSelected.includes(p.profileName);
+                                    return (
+                                        <div key={`shared-${i}`} onClick={() => {
+                                            if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== p.profileName));
+                                            else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
+                                        }} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: isChecked ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(245,158,11,0.35)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '12px', height: '12px' }} />
+                                            <span style={{ color: isChecked ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '500' }}>{p.profileName}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{p.postCount}p</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            </div>
+                        )}
+                        {inspirationSources.length === 0 && sharedInspProfiles.length === 0 && (
+                            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', textAlign: 'center', padding: '12px 0' }}>No sources yet. Click "Scrape" to add LinkedIn profiles.</div>
+                        )}
                     </div>
 
-                    {/* Inspiration Sources Popup Modal */}
+                    {/* Scrape Popup Modal - simplified for adding new profiles */}
                     {showInspirationPopup && (
                         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowInspirationPopup(false)}>
-                            <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '600px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+                            <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '500px', width: '100%' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 16)} Inspiration Sources</h3>
+                                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 16)} Add LinkedIn Profiles</h3>
                                     <button onClick={() => setShowInspirationPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
                                 </div>
                                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '12px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic them when generating posts.</p>
-                                {/* Scrape input */}
                                 <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', marginBottom: '12px' }}>
-                                    <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={2}
-                                        style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none', resize: 'vertical', fontFamily: 'monospace', lineHeight: '1.5' }} />
+                                    <textarea value={inspirationProfiles} onChange={e => setInspirationProfiles(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={3}
+                                        style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none', resize: 'vertical', fontFamily: 'monospace', lineHeight: '1.5' }} />
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         <select value={inspirationPostCount} onChange={e => setInspirationPostCount(parseInt(e.target.value))} style={{ padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
                                             <option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="30">30</option>
                                         </select>
-                                        <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '7px 14px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
-                                            {inspirationScraping ? '...' : 'Scrape'}
+                                        <button onClick={scrapeInspirationProfiles} disabled={inspirationScraping} style={{ padding: '10px 16px', background: inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                            {inspirationScraping ? 'Scraping...' : 'Scrape'}
                                         </button>
                                     </div>
                                 </div>
                                 {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 12px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '8px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
-                                {/* Source list */}
-                                {inspirationSources.length > 0 ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-                                        {inspirationSources.map((src: any, i: number) => {
-                                            const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
-                                            return (
-                                                <div key={i} onClick={() => {
-                                                    if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
-                                                    else if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== src.name));
-                                                    else setInspirationSelected([...inspirationSelected, src.name]);
-                                                }}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isChecked ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
-                                                    <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '15px', height: '15px', cursor: 'pointer' }} />
-                                                    {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', isChecked ? '#a78bfa' : 'rgba(255,255,255,0.5)', 14)}
-                                                    <span style={{ color: isChecked ? '#a78bfa' : 'white', fontSize: '13px', fontWeight: '600', flex: 1 }}>{src.name}</span>
-                                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{src.count} posts</span>
-                                                    <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '16px', padding: '0 4px', lineHeight: 1 }}>×</button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', textAlign: 'center', padding: '16px 0' }}>No sources yet. Add LinkedIn profiles above.</p>
-                                )}
-                                {inspirationSources.length > 0 && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(105,63,233,0.1)', borderRadius: '10px', border: '1px solid rgba(105,63,233,0.25)' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', cursor: 'pointer' }}>
-                                            <input type="checkbox" checked={inspirationUseAll} onChange={e => { setInspirationUseAll(e.target.checked); if (e.target.checked) setInspirationSelected(inspirationSources.map(s => s.name)); }} style={{ accentColor: '#693fe9', width: '16px', height: '16px' }} />
-                                            <strong>Use All Sources</strong>
-                                        </label>
-                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>AI mimics their writing style</span>
-                                    </div>
-                                )}
+                                <button onClick={() => setShowInspirationPopup(false)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer' }}>Done</button>
                             </div>
                         </div>
                     )}
 
-                    {/* Shared Profiles Popup Modal */}
-                    {showSharedProfilesPopup && (
-                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowSharedProfilesPopup(false)}>
-                            <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '550px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <h3 style={{ color: '#fbbf24', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 16)} Kommentify Shared Profiles</h3>
-                                    <button onClick={() => setShowSharedProfilesPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
-                                </div>
-                                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '12px' }}>Pre-scraped profiles from top LinkedIn creators. Select to use their style.</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {sharedInspProfiles.map((p: any, i: number) => {
-                                        const isChecked = inspirationSelected.includes(p.profileName);
-                                        return (
-                                            <div key={i} onClick={() => {
-                                                if (isChecked) setInspirationSelected(inspirationSelected.filter(n => n !== p.profileName));
-                                                else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
-                                            }}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isChecked ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '10px', border: isChecked ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
-                                                <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '15px', height: '15px', cursor: 'pointer' }} />
-                                                {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', isChecked ? '#a78bfa' : 'rgba(255,255,255,0.5)', 14)}
-                                                <span style={{ color: isChecked ? '#fbbf24' : 'white', fontSize: '13px', fontWeight: '600', flex: 1 }}>{p.profileName}</span>
-                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>{p.postCount} posts</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '16px' }}>
                         {/* Left Column: Settings */}
@@ -2649,23 +2657,18 @@ function DashboardContent() {
                                 </h3>
                                 {/* Source Selection Buttons — prominent */}
                                 <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                                    {inspirationSources.length > 0 && (
-                                        <button onClick={() => { setInspirationUseAll(!inspirationUseAll); if (!inspirationUseAll) setInspirationSelected(inspirationSources.map(s => s.name)); }}
+                                    {(inspirationSources.length > 0 || inspirationSelected.length > 0) && (
+                                        <button onClick={() => { setInspirationUseAll(!inspirationUseAll); if (!inspirationUseAll) setInspirationSelected([...inspirationSources.map((s: any) => s.name), ...sharedInspProfiles.map((p: any) => p.profileName)]); }}
                                             style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: inspirationUseAll ? 'linear-gradient(135deg, rgba(105,63,233,0.3), rgba(139,92,246,0.2))' : 'rgba(255,255,255,0.06)', border: inspirationUseAll ? '1px solid rgba(105,63,233,0.5)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: inspirationUseAll ? '#a78bfa' : 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
                                             {miniIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11', inspirationUseAll ? '#a78bfa' : 'rgba(255,255,255,0.6)', 13)}
                                             {inspirationUseAll ? 'All Sources Active' : 'Use All Sources'}
                                         </button>
                                     )}
-                                    <button onClick={() => setShowInspirationPopup(true)}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.35)', borderRadius: '8px', color: '#a78bfa', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
-                                        {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#a78bfa', 13)}
-                                        My Sources ({inspirationSources.length})
-                                    </button>
-                                    {sharedInspProfiles.length > 0 && (
-                                        <button onClick={() => setShowSharedProfilesPopup(true)}
-                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '8px', color: '#fbbf24', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
-                                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 13)}
-                                            Shared ({sharedInspProfiles.length})
+                                    {linkedInProfile && (
+                                        <button onClick={() => setUseProfileData(!useProfileData)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: useProfileData ? 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(34,197,94,0.2))' : 'rgba(255,255,255,0.06)', border: useProfileData ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: useProfileData ? '#34d399' : 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                                            {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', useProfileData ? '#34d399' : 'rgba(255,255,255,0.6)', 13)}
+                                            {useProfileData ? 'Profile Data Active' : 'Use Profile Data'}
                                         </button>
                                     )}
                                 </div>
@@ -3300,6 +3303,25 @@ function DashboardContent() {
                                         </p>
                                     </div>
                                 )}
+                                {/* Use Profile Data Toggle */}
+                                {linkedInProfile && (
+                                <div style={{ background: csUseProfileData ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: `1px solid ${csUseProfileData ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                    onClick={() => { const newVal = !csUseProfileData; setCsUseProfileData(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: csUseProfileStyle, useProfileData: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { if (d.success) showToast('Settings auto-saved!', 'success'); }); }, 100); }}>
+                                    <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: csUseProfileData ? 'linear-gradient(135deg, #10b981, #059669)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
+                                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileData ? '20px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>
+                                            {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 13)} Use My Profile Data
+                                        </div>
+                                        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px' }}>
+                                            {csUseProfileData 
+                                                ? 'AI uses your LinkedIn profile to personalize comments.'
+                                                : 'Turn ON to include your profile headline, about, skills in AI prompts.'}
+                                        </div>
+                                    </div>
+                                </div>
+                                )}
                                 <div style={{ opacity: csUseProfileStyle ? 0.4 : 1, pointerEvents: csUseProfileStyle ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
 
                                     {/* Goal + Tone side by side */}
@@ -3719,7 +3741,6 @@ function DashboardContent() {
                                 style={{ padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontSize: '11px' }}>
                                 <option value="comments">Comments</option>
                                 <option value="likes">Likes</option>
-                                <option value="shares">Shares</option>
                                 <option value="scrapedAt">Date</option>
                             </select>
                             <button onClick={() => loadSavedPosts(1)}
@@ -3736,10 +3757,25 @@ function DashboardContent() {
                                     {trendingSelectedPosts.length > 0 && <span style={{ marginLeft: '10px', color: '#a78bfa', fontWeight: '600' }}>{trendingSelectedPosts.length} selected <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>(max 10)</span></span>}
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                    <button onClick={() => { if (trendingSelectedPosts.length > 0) setTrendingSelectedPosts([]); else setTrendingSelectedPosts(savedPosts.slice(0, 3).map(p => p.id)); }}
-                                        style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '11px' }}>
-                                        {trendingSelectedPosts.length > 0 ? 'Clear' : 'Auto-Select 3'}
+                                    <button onClick={() => { if (trendingSelectedPosts.length >= 10) setTrendingSelectedPosts([]); else setTrendingSelectedPosts(savedPosts.slice(0, 10).map(p => p.id)); }}
+                                        style={{ padding: '6px 12px', background: trendingSelectedPosts.length >= 10 ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.06)', border: trendingSelectedPosts.length >= 10 ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: trendingSelectedPosts.length >= 10 ? '#a78bfa' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '11px' }}>
+                                        {trendingSelectedPosts.length >= 10 ? 'Deselect All' : 'Select All'}
                                     </button>
+                                    {trendingSelectedPosts.length > 0 && (
+                                        <button onClick={async () => {
+                                            if (!confirm(`Delete ${trendingSelectedPosts.length} selected posts?`)) return;
+                                            const token = localStorage.getItem('authToken');
+                                            if (!token) return;
+                                            try {
+                                                const res = await fetch('/api/scraped-posts/delete-selected', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                    body: JSON.stringify({ ids: trendingSelectedPosts })
+                                                });
+                                                if (res.ok) { setTrendingSelectedPosts([]); loadSavedPosts(1); }
+                                            } catch (e) { console.error(e); }
+                                        }} style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', cursor: 'pointer', fontSize: '11px' }}>Delete Selected</button>
+                                    )}
                                     <button onClick={generateTrendingPosts} disabled={trendingGenerating || trendingSelectedPosts.length === 0}
                                         style={{ padding: '6px 14px', background: trendingGenerating ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: trendingGenerating ? 'wait' : 'pointer', fontSize: '11px', boxShadow: '0 2px 8px rgba(105,63,233,0.3)' }}>
                                         {trendingGenerating ? 'Generating...' : <><span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 11)} AI Generate</span></>}
@@ -3758,8 +3794,8 @@ function DashboardContent() {
                                     rows={2}
                                     style={{ width: '100%', padding: '8px 12px', background: 'rgba(105,63,233,0.08)', border: '1px solid rgba(105,63,233,0.2)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none', resize: 'vertical', lineHeight: '1.5', fontFamily: 'inherit' }} />
                             </div>
-                            {/* Model + Language + Hashtags — single compact row */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'end' }}>
+                            {/* Model + Language + Hashtags + Profile Data — single compact row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '8px', alignItems: 'end' }}>
                                 <div>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M4 4h16v16H4z M9 9h6v6H9z M9 2v2 M15 2v2 M9 20v2 M15 20v2 M2 9h2 M2 15h2 M20 9h2 M20 15h2', 'rgba(255,255,255,0.5)', 11)} AI Model</label>
                                     <select value={trendingModel} onChange={e => setTrendingModel(e.target.value)}
@@ -3784,6 +3820,10 @@ function DashboardContent() {
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer', padding: '7px 0' }}>
                                     <input type="checkbox" checked={trendingIncludeHashtags} onChange={e => setTrendingIncludeHashtags(e.target.checked)} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
                                     {miniIcon('M4 9h16 M4 15h16 M10 3l-2 18 M16 3l-2 18', 'rgba(255,255,255,0.6)', 12)} Tags
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: trendingUseProfileData ? '#10b981' : 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer', padding: '7px 0' }}>
+                                    <input type="checkbox" checked={trendingUseProfileData} onChange={e => setTrendingUseProfileData(e.target.checked)} style={{ accentColor: '#10b981', width: '14px', height: '14px' }} />
+                                    {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8', trendingUseProfileData ? '#10b981' : 'rgba(255,255,255,0.6)', 12)} Profile
                                 </label>
                             </div>
                         </div>
@@ -3946,7 +3986,6 @@ function DashboardContent() {
                                                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                                         <span style={{ color: '#ec4899', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 11)} {post.likes}</span>
                                                         <span style={{ color: '#8b5cf6', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', '#8b5cf6', 11)} {post.comments}</span>
-                                                        <span style={{ color: '#06b6d4', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#06b6d4', 11)} {post.shares}</span>
                                                         {post.postUrl && (
                                                             <a href={post.postUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                                                                 style={{ color: '#693fe9', fontSize: '10px', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>{miniIcon('M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3', '#693fe9', 11)}</a>

@@ -8,9 +8,15 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const token = extractToken(request.headers.get('authorization'));
-    if (!token) return NextResponse.json({ success: false }, { status: 401 });
+    if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
-    const payload = verifyToken(token);
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch (authError: any) {
+      console.error('Heartbeat auth error:', authError.message);
+      return NextResponse.json({ success: false, error: 'token_expired', shouldReauth: true }, { status: 401 });
+    }
 
     // Find existing heartbeat record for this user
     const existing = await prisma.activity.findFirst({

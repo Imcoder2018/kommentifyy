@@ -11,7 +11,13 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-    const payload = verifyToken(token);
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch (authError: any) {
+      console.error('Command/all auth error:', authError.message);
+      return NextResponse.json({ success: false, error: 'token_expired', shouldReauth: true }, { status: 401 });
+    }
 
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const commands = await prisma.activity.findMany({

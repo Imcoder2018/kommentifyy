@@ -116,7 +116,8 @@ export async function GET(request: NextRequest) {
       payload = verifyToken(token);
     } catch (authError: any) {
       const authInfo = handleAuthError(authError);
-      console.error('Get extension commands error:', authInfo.message);
+      // Debug: log the actual error and token prefix
+      console.error('Get extension commands error:', authInfo.message, 'Token prefix:', token.substring(0, 20) + '...');
       return NextResponse.json({ 
         success: false, 
         error: authInfo.error, 

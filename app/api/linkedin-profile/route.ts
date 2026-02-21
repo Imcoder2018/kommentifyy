@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       certifications: JSON.parse(profileData.certifications || '[]'),
       projects: JSON.parse(profileData.projects || '[]'),
       skills: JSON.parse(profileData.skills || '[]'),
+      interests: JSON.parse(profileData.interests || '[]'),
     };
 
     return NextResponse.json({ success: true, data: parsedData, hasScanned: true });
@@ -38,7 +39,11 @@ export async function POST(request: NextRequest) {
     const payload = verifyToken(token);
 
     const body = await request.json();
-    const { profileUrl, name, headline, about, language, posts, experience, education, certifications, projects, skills, postsTokenLimit } = body;
+    const { 
+      profileUrl, name, headline, location, connections, profileViews,
+      about, language, posts, experience, education, certifications, 
+      projects, skills, interests, postsTokenLimit, totalPostsCount 
+    } = body;
 
     // Store arrays as JSON strings
     const profileData = await (prisma as any).linkedInProfileData.upsert({
@@ -47,6 +52,9 @@ export async function POST(request: NextRequest) {
         profileUrl,
         name,
         headline,
+        location,
+        connections,
+        profileViews,
         about,
         language,
         posts: JSON.stringify(posts || []),
@@ -55,7 +63,9 @@ export async function POST(request: NextRequest) {
         certifications: JSON.stringify(certifications || []),
         projects: JSON.stringify(projects || []),
         skills: JSON.stringify(skills || []),
+        interests: JSON.stringify(interests || []),
         postsTokenLimit: postsTokenLimit || 3000,
+        totalPostsCount: totalPostsCount || (posts?.length || 0),
         lastScannedAt: new Date(),
       },
       create: {
@@ -63,6 +73,9 @@ export async function POST(request: NextRequest) {
         profileUrl,
         name,
         headline,
+        location,
+        connections,
+        profileViews,
         about,
         language,
         posts: JSON.stringify(posts || []),
@@ -71,7 +84,9 @@ export async function POST(request: NextRequest) {
         certifications: JSON.stringify(certifications || []),
         projects: JSON.stringify(projects || []),
         skills: JSON.stringify(skills || []),
+        interests: JSON.stringify(interests || []),
         postsTokenLimit: postsTokenLimit || 3000,
+        totalPostsCount: totalPostsCount || (posts?.length || 0),
         lastScannedAt: new Date(),
       },
     });

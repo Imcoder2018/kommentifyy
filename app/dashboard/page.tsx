@@ -143,16 +143,87 @@ function DashboardContent() {
     const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
     const isDeveloper = user?.email ? DEVELOPER_EMAILS.includes(user.email) : false;
     
-    // Model options with pricing - best models first, cheap ones at end
-    const MODEL_OPTIONS = [
-        { id: 'o1', name: 'o1 (Reasoning - Best)', inputCost: '$15.00/1M', outputCost: '$60.00/1M' },
-        { id: 'o1-mini', name: 'o1-mini (Fast Reasoning)', inputCost: '$3.00/1M', outputCost: '$12.00/1M' },
-        { id: 'gpt-4o', name: 'GPT-4o (Best Quality)', inputCost: '$2.50/1M', outputCost: '$10.00/1M' },
-        { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast)', inputCost: '$0.15/1M', outputCost: '$0.60/1M' },
-        { id: 'gpt-4-turbo', name: 'GPT-4 Turbo (Premium)', inputCost: '$10.00/1M', outputCost: '$30.00/1M' },
-        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Budget)', inputCost: '$0.50/1M', outputCost: '$1.50/1M' },
-    ];
+    // AI Models state - fetched from database (admin-controlled)
+    const [aiModels, setAiModels] = useState<any[]>([]);
+    const [aiModelsLoading, setAiModelsLoading] = useState(false);
+    const [userModelSettings, setUserModelSettings] = useState<any>(null);
     
+    // Model options derived from fetched models - sorted by writing score
+    const MODEL_OPTIONS = aiModels.length > 0 
+        ? aiModels.map(m => ({
+            id: m.modelId,
+            name: m.name,
+            inputCost: `$${m.inputCostPer1M.toFixed(2)}/1M`,
+            outputCost: `$${m.outputCostPer1M.toFixed(2)}/1M`,
+            category: m.category,
+            isFeatured: m.isFeatured,
+            writingScore: m.writingScore,
+            speedScore: m.speedScore,
+            provider: m.provider,
+            isReasoningModel: m.isReasoningModel
+        }))
+        : [
+            { id: 'gpt-4o', name: 'GPT-4o (Best Quality)', inputCost: '$2.50/1M', outputCost: '$10.00/1M', category: 'premium', isFeatured: true, writingScore: 9, speedScore: 8, provider: 'openai', isReasoningModel: false },
+            { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast)', inputCost: '$0.15/1M', outputCost: '$0.60/1M', category: 'budget', isFeatured: true, writingScore: 8, speedScore: 10, provider: 'openai', isReasoningModel: false },
+        ];
+    
+    // Fetch AI models from database
+    const fetchAIModels = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setAiModelsLoading(true);
+        try {
+            const res = await fetch('/api/ai-models', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAiModels(data.models || []);
+                setUserModelSettings(data.userSettings);
+                // Set default models from user settings
+                if (data.userSettings?.postModelId) setWriterModel(data.userSettings.postModelId);
+                if (data.userSettings?.commentModelId) setCsModel(data.userSettings.commentModelId);
+            }
+        } catch (e) {
+            console.error('Failed to fetch AI models:', e);
+        } finally {
+            setAiModelsLoading(false);
+        }
+    };
+    
+    // Save user model preferences when changed
+    const handleWriterModelChange = async (modelId: string) => {
+        setWriterModel(modelId);
+        await saveUserModelSettings({ postModelId: modelId });
+    };
+
+    const handleCommentModelChange = async (modelId: string) => {
+        setCsModel(modelId);
+        await saveUserModelSettings({ commentModelId: modelId });
+    };
+    
+    // Save user model preferences
+    const saveUserModelSettings = async (settings: { postModelId?: string; commentModelId?: string; topicModelId?: string }) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/ai-models/settings', {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            const data = await res.json();
+            if (data.success) {
+                setUserModelSettings(data.settings);
+                showToast('Model preferences saved!', 'success');
+            }
+        } catch (e) {
+            console.error('Failed to save model settings:', e);
+        }
+    };
     // Analysis state
     const [analysisResults, setAnalysisResults] = useState<any[]>([]);
     const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -183,6 +254,25 @@ function DashboardContent() {
     const [showSharedProfilesPopup, setShowSharedProfilesPopup] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
     const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+
+    // Content Planner state
+    const [plannerOpen, setPlannerOpen] = useState(false);
+    const [plannerMode, setPlannerMode] = useState<'7days' | '30days'>('7days');
+    const [plannerStep, setPlannerStep] = useState<'context' | 'select' | 'time' | 'generating' | 'done'>('context');
+    const [plannerContext, setPlannerContext] = useState('');
+    const [plannerTopics, setPlannerTopics] = useState<string[]>([]);
+    const [plannerSelected, setPlannerSelected] = useState<boolean[]>([]);
+    const [plannerGeneratingTopics, setPlannerGeneratingTopics] = useState(false);
+    const [plannerPublishTime, setPlannerPublishTime] = useState('09:00');
+    const [plannerStartDate, setPlannerStartDate] = useState('');
+    const [plannerTemplate, setPlannerTemplate] = useState('thought_leadership');
+    const [plannerTone, setPlannerTone] = useState('professional');
+    const [plannerLength, setPlannerLength] = useState('1500');
+    const [plannerGenerating, setPlannerGenerating] = useState(false);
+    const [plannerDoneCount, setPlannerDoneCount] = useState(0);
+    const [plannerTotal, setPlannerTotal] = useState(0);
+    const [plannerStatusMsg, setPlannerStatusMsg] = useState('');
+    const plannerAbortRef = useRef<boolean>(false);
 
     // Comment Style Sources state
     const [commentStyleProfiles, setCommentStyleProfiles] = useState<any[]>([]);
@@ -242,6 +332,16 @@ function DashboardContent() {
     const [linkedInTopicSuggestions, setLinkedInTopicSuggestions] = useState<string[]>([]);
     const [linkedInGeneratingTopics, setLinkedInGeneratingTopics] = useState(false);
     const [showLinkedInDataModal, setShowLinkedInDataModal] = useState(false);
+    const [selectedInspirationPosts, setSelectedInspirationPosts] = useState<string[]>([]);
+
+    // Toggle inspiration post selection
+    const toggleInspirationPost = (post: string) => {
+        setSelectedInspirationPosts(prev => 
+            prev.includes(post) 
+                ? prev.filter(p => p !== post)
+                : [...prev, post]
+        );
+    };
 
     // Analytics tab state
     const [analyticsData, setAnalyticsData] = useState<any>({ engagements: { total: 0, comments: 0, likes: 0, shares: 0, follows: 0 }, automationHistory: [], networkingHistory: [], importHistory: [], leads: [] });
@@ -820,6 +920,17 @@ function DashboardContent() {
             if (data.success && data.data) {
                 setLinkedInProfile(data.data);
                 setLinkedInUseProfileData(data.data.isSelected !== false);
+                // Select all items by default for AI inspiration
+                const allItems: string[] = [
+                    ...(data.data.posts || []),
+                    ...(data.data.experience || []),
+                    ...(data.data.education || []),
+                    ...(data.data.skills || []),
+                    ...(data.data.certifications || []),
+                    ...(data.data.projects || []),
+                    ...(data.data.interests || [])
+                ];
+                setSelectedInspirationPosts(allItems);
             }
         } catch {} finally { setLinkedInProfileLoading(false); }
     };
@@ -908,6 +1019,133 @@ function DashboardContent() {
     const selectTopicSuggestion = (topic: string) => {
         setWriterTopic(topic);
         showToast('Topic added to input!', 'success');
+    };
+
+    // Content Planner functions
+    const openPlanner = (mode: '7days' | '30days') => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+        const dd = String(tomorrow.getDate()).padStart(2, '0');
+        const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        setPlannerMode(mode);
+        setPlannerStep('context');
+        setPlannerTopics([]);
+        setPlannerSelected([]);
+        setPlannerContext('');
+        setPlannerDoneCount(0);
+        setPlannerStatusMsg('');
+        setPlannerStartDate(`${tomorrow.getFullYear()}-${mm}-${dd}`);
+        plannerAbortRef.current = false;
+        // Check localStorage for incomplete session
+        const key = `planner_${user?.id}_${mode}`;
+        try {
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                const s = JSON.parse(saved);
+                if (s.step === 'generating' && s.doneCount < s.total) {
+                    setPlannerTopics(s.topics || []);
+                    setPlannerSelected(s.selected || []);
+                    setPlannerPublishTime(s.publishTime || '09:00');
+                    setPlannerStartDate(s.startDate || `${tomorrow.getFullYear()}-${mm}-${dd}`);
+                    setPlannerTemplate(s.template || 'thought_leadership');
+                    setPlannerTone(s.tone || 'professional');
+                    setPlannerLength(s.length || '1500');
+                    setPlannerDoneCount(s.doneCount || 0);
+                    setPlannerTotal(s.total || 0);
+                    setPlannerStep('generating');
+                    setPlannerOpen(true);
+                    return;
+                }
+            }
+        } catch {}
+        setPlannerOpen(true);
+    };
+
+    const generatePlannerTopics = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setPlannerGeneratingTopics(true);
+        setPlannerStatusMsg('');
+        try {
+            const profileData = linkedInProfile ? {
+                name: linkedInProfile.name,
+                headline: linkedInProfile.headline,
+                about: linkedInProfile.about,
+                skills: Array.isArray(linkedInProfile.skills) ? linkedInProfile.skills : [],
+                experience: Array.isArray(linkedInProfile.experience) ? linkedInProfile.experience : [],
+                posts: Array.isArray(linkedInProfile.posts) ? linkedInProfile.posts : [],
+            } : null;
+            const res = await fetch('/api/ai/content-planner', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ mode: plannerMode, userContext: plannerContext, profileData }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPlannerTopics(data.topics);
+                const count = plannerMode === '7days' ? 7 : 30;
+                setPlannerSelected(data.topics.map((_: string, i: number) => i < count));
+                setPlannerStep('select');
+            } else {
+                setPlannerStatusMsg('Error: ' + data.error);
+            }
+        } catch (e: any) {
+            setPlannerStatusMsg('Error: ' + e.message);
+        } finally {
+            setPlannerGeneratingTopics(false);
+        }
+    };
+
+    const startPlannerGeneration = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token || !plannerStartDate || !plannerPublishTime) return;
+        const topics = plannerTopics.filter((_, i) => plannerSelected[i]);
+        if (topics.length === 0) return;
+        plannerAbortRef.current = false;
+        setPlannerGenerating(true);
+        setPlannerDoneCount(0);
+        setPlannerTotal(topics.length);
+        setPlannerStep('generating');
+        // Save session for disconnect resilience
+        const key = `planner_${user?.id}_${plannerMode}`;
+        const session = { step: 'generating', topics: plannerTopics, selected: plannerSelected, publishTime: plannerPublishTime, startDate: plannerStartDate, template: plannerTemplate, tone: plannerTone, length: plannerLength, doneCount: 0, total: topics.length };
+        try { localStorage.setItem(key, JSON.stringify(session)); } catch {}
+        for (let i = 0; i < topics.length; i++) {
+            if (plannerAbortRef.current) break;
+            const topic = topics[i];
+            const scheduledDate = new Date(plannerStartDate + 'T' + plannerPublishTime + ':00');
+            scheduledDate.setDate(scheduledDate.getDate() + i);
+            setPlannerStatusMsg(`Generating post ${i + 1} of ${topics.length}: "${topic.substring(0, 60)}..."`);
+            try {
+                const genRes = await fetch('/api/ai/generate-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ topic, template: plannerTemplate, tone: plannerTone, length: plannerLength, includeHashtags: writerHashtags, includeEmojis: writerEmojis, userBackground: linkedInProfile?.headline || '', useInspirationSources: writerUseInspirationSources, model: writerModel }),
+                });
+                const genData = await genRes.json();
+                if (!genData.success) { setPlannerStatusMsg(`Post ${i + 1} failed: ${genData.error}`); continue; }
+                const schedRes = await fetch('/api/post-drafts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ content: genData.content, topic, template: plannerTemplate, tone: plannerTone, scheduledFor: scheduledDate.toISOString() }),
+                });
+                const schedData = await schedRes.json();
+                if (schedData.success) {
+                    const newCount = i + 1;
+                    setPlannerDoneCount(newCount);
+                    try { localStorage.setItem(key, JSON.stringify({ ...session, doneCount: newCount })); } catch {}
+                    loadScheduledPosts();
+                }
+            } catch (e: any) {
+                setPlannerStatusMsg(`Error on post ${i + 1}: ${e.message}`);
+            }
+            await new Promise(r => setTimeout(r, 400));
+        }
+        setPlannerGenerating(false);
+        setPlannerStep('done');
+        setPlannerStatusMsg('');
+        try { localStorage.removeItem(key); } catch {}
+        loadScheduledPosts();
     };
 
     const toggleLinkedInProfileData = async (enabled: boolean) => {
@@ -1099,8 +1337,8 @@ function DashboardContent() {
     useEffect(() => {
         if (loading || !user) return;
         const tab = activeTab;
-        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); }
-        if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
+        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
+        if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); fetchAIModels(); }
         if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
@@ -1366,8 +1604,8 @@ function DashboardContent() {
         setActiveTab(tabId);
         // Update URL without full navigation so reload preserves tab
         window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
-        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); }
-        if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); }
+        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
+        if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); fetchAIModels(); }
         if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tabId === 'tasks') loadTasks();
@@ -2294,10 +2532,13 @@ function DashboardContent() {
                             {miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', '#a78bfa', 14)}
                             <span style={{ color: 'white', fontSize: '13px', fontWeight: '700', flexShrink: 0 }}>Added Sources</span>
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1, minWidth: 0, alignItems: 'center' }}>
-                                {inspirationSources.length > 0 ? (
+                                {(inspirationSources.length > 0 || sharedInspProfiles.some((p: any) => inspirationSelected.includes(p.profileName))) ? (
                                     <>
                                         {inspirationSources.map((src: any, i: number) => (
-                                            <span key={i} style={{ background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#a78bfa', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>{src.name}</span>
+                                            <span key={`own-${i}`} style={{ background: 'rgba(105,63,233,0.15)', border: '1px solid rgba(105,63,233,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#a78bfa', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>{src.name}</span>
+                                        ))}
+                                        {sharedInspProfiles.filter((p: any) => inspirationSelected.includes(p.profileName)).map((p: any, i: number) => (
+                                            <span key={`shared-${i}`} style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#fbbf24', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '110px' }}>★ {p.profileName}</span>
                                         ))}
                                     </>
                                 ) : (
@@ -2498,7 +2739,7 @@ function DashboardContent() {
                                     </div>
                                     <div>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M4 4h16v16H4z M9 9h6v6H9z M9 2v2 M15 2v2 M9 20v2 M15 20v2 M2 9h2 M2 15h2 M20 9h2 M20 15h2', 'rgba(255,255,255,0.6)', 11)} AI Model</label>
-                                        <select value={writerModel} onChange={e => setWriterModel(e.target.value)}
+                                        <select value={writerModel} onChange={e => handleWriterModelChange(e.target.value)}
                                             style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
                                             {MODEL_OPTIONS.map(m => (
                                                 <option key={m.id} value={m.id}>{m.name}</option>
@@ -2617,8 +2858,8 @@ function DashboardContent() {
                                         </div>
                                     </div>
                                 )}
-                                {/* Action Buttons */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 0.8fr', gap: '8px', marginTop: '12px' }}>
+                                {/* Action Buttons — Row 1: Post to LinkedIn + Draft */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '8px', marginTop: '12px' }}>
                                     <button onClick={sendToExtension} disabled={writerPosting}
                                         style={{ padding: '11px 6px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 12px rgba(105,63,233,0.3)', opacity: writerPosting ? 0.7 : 1 }}>
                                         {writerPosting ? '...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Post to LinkedIn</span>}
@@ -2627,22 +2868,258 @@ function DashboardContent() {
                                         style={{ padding: '11px 6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
                                         {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', 'white', 12)} Draft
                                     </button>
-                                    <button onClick={schedulePost}
-                                        style={{ padding: '11px 6px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '10px', color: '#c4b5fd', fontWeight: '600', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                        {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 12)} Schedule
-                                    </button>
                                 </div>
-                                {/* Schedule date/time */}
+                                {/* Row 2: Date + Time + Schedule button */}
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
                                     <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
                                         style={{ flex: 1, padding: '6px 8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '11px' }} />
                                     <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
                                         style={{ flex: 1, padding: '6px 8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '11px' }} />
+                                    <button onClick={schedulePost}
+                                        style={{ padding: '6px 12px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '8px', color: '#c4b5fd', fontWeight: '600', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                        {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 11)} Schedule
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
+                    {/* Content Planner — mode selector above calendar */}
+                    <div style={{ background: 'linear-gradient(135deg, rgba(105,63,233,0.15) 0%, rgba(139,92,246,0.1) 100%)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.3)', marginTop: '16px', marginBottom: '0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#a78bfa', 16)}
+                                <span style={{ color: 'white', fontWeight: '700', fontSize: '14px' }}>AI Content Planner</span>
+                                <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>Generate &amp; schedule a full content calendar with one click</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => openPlanner('7days')}
+                                    style={{ padding: '8px 18px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 3px 10px rgba(105,63,233,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', 'white', 13)} 7 Days Planner
+                                </button>
+                                <button onClick={() => openPlanner('30days')}
+                                    style={{ padding: '8px 18px', background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 3px 10px rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', 'white', 13)} 30 Days Planner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content Planner Wizard Modal */}
+                    {plannerOpen && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+                            <div style={{ background: '#13132b', borderRadius: '20px', border: '1px solid rgba(105,63,233,0.4)', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '28px' }}>
+                                {/* Header */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <div>
+                                        <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '800', margin: 0 }}>
+                                            {plannerMode === '7days' ? '7-Day' : '30-Day'} AI Content Planner
+                                        </h2>
+                                        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginTop: '3px' }}>
+                                            {plannerStep === 'context' && 'Step 1 of 3 — Add context & generate topics'}
+                                            {plannerStep === 'select' && 'Step 2 of 3 — Select your topics'}
+                                            {plannerStep === 'time' && 'Step 3 of 3 — Set schedule & generate posts'}
+                                            {plannerStep === 'generating' && `Generating posts… ${plannerDoneCount}/${plannerTotal}`}
+                                            {plannerStep === 'done' && '✅ All posts generated & scheduled!'}
+                                        </div>
+                                    </div>
+                                    {plannerStep !== 'generating' && (
+                                        <button onClick={() => { plannerAbortRef.current = true; setPlannerOpen(false); }}
+                                            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'white', fontSize: '16px', cursor: 'pointer' }}>✕</button>
+                                    )}
+                                </div>
+
+                                {/* Step 1: Context */}
+                                {plannerStep === 'context' && (
+                                    <div>
+                                        {linkedInProfile ? (
+                                            <div style={{ padding: '12px 14px', background: 'rgba(0,119,181,0.15)', border: '1px solid rgba(0,119,181,0.3)', borderRadius: '10px', marginBottom: '16px' }}>
+                                                <div style={{ color: '#60a5fa', fontSize: '12px', fontWeight: '700', marginBottom: '4px' }}>📋 Profile Data Available</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>{linkedInProfile.name} · {linkedInProfile.headline}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '3px' }}>AI will use your profile data to personalise topics to your niche and expertise.</div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '10px', marginBottom: '16px' }}>
+                                                <div style={{ color: '#fbbf24', fontSize: '12px' }}>⚠️ No LinkedIn profile scanned. Topics will be generic. Scan your profile for personalised results.</div>
+                                            </div>
+                                        )}
+                                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
+                                            Your context, goals &amp; target audience <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: '400' }}>(optional but highly recommended)</span>
+                                        </label>
+                                        <textarea value={plannerContext} onChange={e => setPlannerContext(e.target.value)}
+                                            placeholder={`Example:\n"I'm a SaaS founder targeting startup CTOs. My goal is to generate inbound leads for our DevOps tool. I want to position myself as a thought leader in developer productivity."`}
+                                            rows={5} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none', resize: 'vertical', lineHeight: '1.6', boxSizing: 'border-box' }} />
+                                        {plannerStatusMsg && <div style={{ marginTop: '10px', color: '#f87171', fontSize: '12px' }}>{plannerStatusMsg}</div>}
+                                        <button onClick={generatePlannerTopics} disabled={plannerGeneratingTopics}
+                                            style={{ marginTop: '16px', width: '100%', padding: '13px', background: plannerGeneratingTopics ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: plannerGeneratingTopics ? 'wait' : 'pointer' }}>
+                                            {plannerGeneratingTopics ? `Generating ${plannerMode === '7days' ? '12' : '40'} topics…` : `✨ Generate ${plannerMode === '7days' ? '12' : '40'} Topic Ideas`}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Step 2: Topic Selection */}
+                                {plannerStep === 'select' && (
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                                                {plannerSelected.filter(Boolean).length} of {plannerTopics.length} selected (need {plannerMode === '7days' ? '7' : '30'})
+                                            </span>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button onClick={() => setPlannerSelected(plannerTopics.map((_, i) => i < (plannerMode === '7days' ? 7 : 30)))}
+                                                    style={{ padding: '5px 12px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', fontSize: '11px', cursor: 'pointer' }}>Auto-select Top</button>
+                                                <button onClick={() => setPlannerSelected(plannerTopics.map(() => true))}
+                                                    style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer' }}>All</button>
+                                                <button onClick={() => setPlannerSelected(plannerTopics.map(() => false))}
+                                                    style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer' }}>None</button>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+                                            {plannerTopics.map((topic, i) => (
+                                                <div key={i} onClick={() => { const s = [...plannerSelected]; s[i] = !s[i]; setPlannerSelected(s); }}
+                                                    style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 14px', background: plannerSelected[i] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${plannerSelected[i] ? 'rgba(105,63,233,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '10px', cursor: 'pointer' }}>
+                                                    <input type="checkbox" checked={!!plannerSelected[i]} readOnly style={{ accentColor: '#693fe9', marginTop: '2px', flexShrink: 0 }} />
+                                                    <span style={{ color: plannerSelected[i] ? '#c4b5fd' : 'rgba(255,255,255,0.75)', fontSize: '13px', lineHeight: '1.5' }}><strong style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginRight: '6px' }}>Day {i + 1}</strong>{topic}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                                            <button onClick={() => setPlannerStep('context')}
+                                                style={{ padding: '11px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>← Back</button>
+                                            <button onClick={() => setPlannerStep('time')} disabled={plannerSelected.filter(Boolean).length === 0}
+                                                style={{ flex: 1, padding: '11px', background: plannerSelected.filter(Boolean).length === 0 ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: plannerSelected.filter(Boolean).length === 0 ? 'default' : 'pointer' }}>
+                                                Continue with {plannerSelected.filter(Boolean).length} topics →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Step 3: Schedule Settings */}
+                                {plannerStep === 'time' && (
+                                    <div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                                            <div>
+                                                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>📅 Start Date</label>
+                                                <input type="date" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)}
+                                                    style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} />
+                                            </div>
+                                            <div>
+                                                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>🕐 Daily Publish Time</label>
+                                                <input type="time" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)}
+                                                    style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} />
+                                            </div>
+                                            <div>
+                                                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Template</label>
+                                                <select value={plannerTemplate} onChange={e => setPlannerTemplate(e.target.value)}
+                                                    style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
+                                                    <option value="thought_leadership">Thought Leadership</option>
+                                                    <option value="personal_story">Personal Story</option>
+                                                    <option value="advice">Advice/Tips</option>
+                                                    <option value="case_study">Case Study</option>
+                                                    <option value="how_to">How-To Guide</option>
+                                                    <option value="insight">Industry Insight</option>
+                                                    <option value="lead_magnet">Lead Magnet</option>
+                                                    <option value="controversial">Controversial Opinion</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Tone</label>
+                                                <select value={plannerTone} onChange={e => setPlannerTone(e.target.value)}
+                                                    style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
+                                                    <option value="professional">Professional</option>
+                                                    <option value="friendly">Friendly</option>
+                                                    <option value="inspirational">Inspirational</option>
+                                                    <option value="bold">Bold/Provocative</option>
+                                                    <option value="educational">Educational</option>
+                                                    <option value="conversational">Conversational</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Post Length</label>
+                                                <select value={plannerLength} onChange={e => setPlannerLength(e.target.value)}
+                                                    style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
+                                                    <option value="500">Short (500)</option>
+                                                    <option value="900">Medium (900)</option>
+                                                    <option value="1500">Long (1500)</option>
+                                                    <option value="2500">Extra Long (2500)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div style={{ padding: '12px 14px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', marginBottom: '16px' }}>
+                                            <div style={{ color: '#34d399', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>📌 Disconnect Resilience</div>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>If your browser closes during generation, re-open the planner to resume. All already-scheduled posts will auto-post at their time even if you are offline — the server handles delivery. If a post time passes while offline, it will be sent instantly when your browser reconnects.</div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button onClick={() => setPlannerStep('select')}
+                                                style={{ padding: '11px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>← Back</button>
+                                            <button onClick={startPlannerGeneration} disabled={!plannerStartDate || !plannerPublishTime}
+                                                style={{ flex: 1, padding: '13px', background: (!plannerStartDate || !plannerPublishTime) ? 'rgba(16,185,129,0.3)' : 'linear-gradient(135deg, #059669, #10b981)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: (!plannerStartDate || !plannerPublishTime) ? 'default' : 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.35)' }}>
+                                                🚀 Generate &amp; Schedule {plannerSelected.filter(Boolean).length} Posts
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Step 4: Generating */}
+                                {plannerStep === 'generating' && (
+                                    <div>
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                <span style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>Generating &amp; Scheduling Posts</span>
+                                                <span style={{ color: '#a78bfa', fontSize: '14px', fontWeight: '700' }}>{plannerDoneCount}/{plannerTotal}</span>
+                                            </div>
+                                            <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', height: '10px', overflow: 'hidden' }}>
+                                                <div style={{ background: 'linear-gradient(90deg, #693fe9, #10b981)', height: '100%', borderRadius: '8px', width: `${plannerTotal > 0 ? (plannerDoneCount / plannerTotal) * 100 : 0}%`, transition: 'width 0.5s ease' }} />
+                                            </div>
+                                        </div>
+                                        {plannerStatusMsg && (
+                                            <div style={{ padding: '12px 14px', background: 'rgba(105,63,233,0.12)', border: '1px solid rgba(105,63,233,0.3)', borderRadius: '10px', color: '#c4b5fd', fontSize: '12px', marginBottom: '16px', lineHeight: '1.5' }}>
+                                                {plannerStatusMsg}
+                                            </div>
+                                        )}
+                                        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', textAlign: 'center', marginBottom: '16px' }}>
+                                            Posts appear on your calendar below as they are generated. You can close this modal and watch the calendar update live.
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', gap: '6px', marginBottom: '20px' }}>
+                                            {plannerTopics.filter((_, i) => plannerSelected[i]).map((topic, i) => (
+                                                <div key={i} style={{ padding: '6px', background: i < plannerDoneCount ? 'rgba(16,185,129,0.2)' : i === plannerDoneCount && plannerGenerating ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${i < plannerDoneCount ? 'rgba(16,185,129,0.4)' : i === plannerDoneCount && plannerGenerating ? 'rgba(105,63,233,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '10px', color: i < plannerDoneCount ? '#34d399' : i === plannerDoneCount && plannerGenerating ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}>
+                                                        {i < plannerDoneCount ? '✓' : i === plannerDoneCount && plannerGenerating ? '⟳' : '○'}
+                                                    </div>
+                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px' }}>Day {i + 1}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button onClick={() => { plannerAbortRef.current = true; setPlannerOpen(false); }}
+                                                style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+                                                Close (runs in background)
+                                            </button>
+                                            <button onClick={() => { plannerAbortRef.current = true; setPlannerGenerating(false); }}
+                                                style={{ padding: '11px 20px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', color: '#f87171', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+                                                Stop
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Step: Done */}
+                                {plannerStep === 'done' && (
+                                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                        <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
+                                        <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>Content Calendar Ready!</h3>
+                                        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', marginBottom: '20px' }}>
+                                            {plannerDoneCount} posts have been generated and auto-scheduled on your calendar. They will be automatically posted at your chosen time each day.
+                                        </p>
+                                        <button onClick={() => setPlannerOpen(false)}
+                                            style={{ padding: '12px 32px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>
+                                            View Calendar →
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Calendar View — real month grid */}
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', marginTop: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -2727,7 +3204,7 @@ function DashboardContent() {
                                             const statusColors2: Record<string, string> = { pending: '#f59e0b', in_progress: '#3b82f6', completed: '#10b981', failed: '#ef4444' };
                                             const col = statusColors2[post.taskStatus || 'pending'] || '#f59e0b';
                                             return (
-                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', borderLeft: `3px solid ${col}` }}>
+                                                <div key={idx} onClick={() => { setWriterContent(post.content || ''); setWriterTopic(post.topic || ''); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', borderLeft: `3px solid ${col}`, cursor: 'pointer' }}>
                                                     <span style={{ background: col, color: 'white', padding: '1px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '600', textTransform: 'uppercase', flexShrink: 0 }}>{post.taskStatus || 'pending'}</span>
                                                     <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', flexShrink: 0, minWidth: '100px' }}>{scheduledDate.toLocaleDateString()} {scheduledDate.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
                                                     <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.topic || post.content?.substring(0, 60)}</span>
@@ -2877,7 +3354,7 @@ function DashboardContent() {
                                     {/* AI Model */}
                                     <div style={{ marginBottom: '4px' }}>
                                         <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Model</label>
-                                        <select value={csModel} onChange={e => setCsModel(e.target.value)}
+                                        <select value={csModel} onChange={e => handleCommentModelChange(e.target.value)}
                                             style={{ width: '100%', maxWidth: '350px', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }}>
                                             {MODEL_OPTIONS.map(m => (
                                                 <option key={m.id} value={m.id} style={{ background: '#1a1a3e' }}>{m.name} ({m.inputCost} in / {m.outputCost} out)</option>
@@ -5000,70 +5477,180 @@ function DashboardContent() {
                             </div>
                             
                             <div>
+                                <strong style={{ color: '#0077b5' }}>Location:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.location || 'N/A'}</p>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Connections:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.connections || 'N/A'}</p>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Profile Views:</strong>
+                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.profileViews || 'N/A'}</p>
+                            </div>
+                            
+                            <div>
                                 <strong style={{ color: '#0077b5' }}>About:</strong>
                                 <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)', whiteSpace: 'pre-wrap' }}>{linkedInProfile.about || 'N/A'}</p>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Language:</strong>
-                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.language || 'N/A'}</p>
-                            </div>
-                            
-                            <div>
                                 <strong style={{ color: '#0077b5' }}>Skills ({Array.isArray(linkedInProfile.skills) ? linkedInProfile.skills.length : 0}):</strong>
-                                <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {Array.isArray(linkedInProfile.skills) ? 
+                                <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
+                                    {Array.isArray(linkedInProfile.skills) && linkedInProfile.skills.length > 0 ? 
                                         linkedInProfile.skills.map((skill: string, idx: number) => (
-                                            <li key={idx}>{skill}</li>
+                                            <div key={idx} style={{ 
+                                                display: 'flex', alignItems: 'center', gap: '8px',
+                                                padding: '4px 8px', margin: '2px 0',
+                                                background: selectedInspirationPosts.includes(skill) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
+                                            }}
+                                            onClick={() => toggleInspirationPost(skill)}
+                                            >
+                                                <input type="checkbox" checked={selectedInspirationPosts.includes(skill)} onChange={() => toggleInspirationPost(skill)} style={{ accentColor: '#693fe9' }} />
+                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{skill}</span>
+                                            </div>
                                         )) : 
-                                        <li>Error loading skills</li>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No skills found</span>
                                     }
-                                </ul>
+                                </div>
                             </div>
                             
                             <div>
                                 <strong style={{ color: '#0077b5' }}>Experience ({Array.isArray(linkedInProfile.experience) ? linkedInProfile.experience.length : 0}):</strong>
-                                <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {Array.isArray(linkedInProfile.experience) ? 
+                                <div style={{ maxHeight: '200px', overflow: 'auto', margin: '4px 0' }}>
+                                    {Array.isArray(linkedInProfile.experience) && linkedInProfile.experience.length > 0 ? 
                                         linkedInProfile.experience.map((exp: string, idx: number) => (
-                                            <li key={idx} style={{ marginBottom: '8px' }}>{exp}</li>
+                                            <div key={idx} style={{ 
+                                                padding: '8px', margin: '4px 0',
+                                                background: selectedInspirationPosts.includes(exp) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                border: selectedInspirationPosts.includes(exp) ? '1px solid rgba(105, 63, 233, 0.5)' : '1px solid transparent',
+                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
+                                            }}
+                                            onClick={() => toggleInspirationPost(exp)}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                    <input type="checkbox" checked={selectedInspirationPosts.includes(exp)} onChange={() => toggleInspirationPost(exp)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
+                                                    <div style={{ flex: 1, color: 'rgba(255,255,255,0.8)' }}>
+                                                        {exp.length > 200 ? exp.substring(0, 200) + '...' : exp}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )) : 
-                                        <li>Error loading experience</li>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No experience found</span>
                                     }
-                                </ul>
+                                </div>
                             </div>
                             
                             <div>
                                 <strong style={{ color: '#0077b5' }}>Education ({Array.isArray(linkedInProfile.education) ? linkedInProfile.education.length : 0}):</strong>
-                                <ul style={{ margin: '4px 0', paddingLeft: '20px', color: 'rgba(255,255,255,0.8)' }}>
-                                    {Array.isArray(linkedInProfile.education) ? 
+                                <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
+                                    {Array.isArray(linkedInProfile.education) && linkedInProfile.education.length > 0 ? 
                                         linkedInProfile.education.map((edu: string, idx: number) => (
-                                            <li key={idx}>{edu}</li>
+                                            <div key={idx} style={{ 
+                                                display: 'flex', alignItems: 'flex-start', gap: '8px',
+                                                padding: '6px 8px', margin: '2px 0',
+                                                background: selectedInspirationPosts.includes(edu) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
+                                            }}
+                                            onClick={() => toggleInspirationPost(edu)}
+                                            >
+                                                <input type="checkbox" checked={selectedInspirationPosts.includes(edu)} onChange={() => toggleInspirationPost(edu)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
+                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{edu}</span>
+                                            </div>
                                         )) : 
-                                        <li>Error loading education</li>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No education found</span>
                                     }
-                                </ul>
+                                </div>
                             </div>
                             
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Posts ({Array.isArray(linkedInProfile.posts) ? linkedInProfile.posts.length : 0}):</strong>
-                                <div style={{ maxHeight: '200px', overflow: 'auto', margin: '4px 0' }}>
-                                    {Array.isArray(linkedInProfile.posts) ? 
+                                <strong style={{ color: '#0077b5' }}>Certifications ({Array.isArray(linkedInProfile.certifications) ? linkedInProfile.certifications.length : 0}):</strong>
+                                <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
+                                    {Array.isArray(linkedInProfile.certifications) && linkedInProfile.certifications.length > 0 ? 
+                                        linkedInProfile.certifications.map((cert: string, idx: number) => (
+                                            <div key={idx} style={{ 
+                                                display: 'flex', alignItems: 'flex-start', gap: '8px',
+                                                padding: '6px 8px', margin: '2px 0',
+                                                background: selectedInspirationPosts.includes(cert) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
+                                            }}
+                                            onClick={() => toggleInspirationPost(cert)}
+                                            >
+                                                <input type="checkbox" checked={selectedInspirationPosts.includes(cert)} onChange={() => toggleInspirationPost(cert)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
+                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{cert}</span>
+                                            </div>
+                                        )) : 
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No certifications found</span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Projects ({Array.isArray(linkedInProfile.projects) ? linkedInProfile.projects.length : 0}):</strong>
+                                <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
+                                    {Array.isArray(linkedInProfile.projects) && linkedInProfile.projects.length > 0 ? 
+                                        linkedInProfile.projects.map((proj: string, idx: number) => (
+                                            <div key={idx} style={{ 
+                                                display: 'flex', alignItems: 'flex-start', gap: '8px',
+                                                padding: '6px 8px', margin: '2px 0',
+                                                background: selectedInspirationPosts.includes(proj) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
+                                            }}
+                                            onClick={() => toggleInspirationPost(proj)}
+                                            >
+                                                <input type="checkbox" checked={selectedInspirationPosts.includes(proj)} onChange={() => toggleInspirationPost(proj)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
+                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{proj}</span>
+                                            </div>
+                                        )) : 
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No projects found</span>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <strong style={{ color: '#0077b5' }}>Posts ({linkedInProfile.totalPostsCount || (Array.isArray(linkedInProfile.posts) ? linkedInProfile.posts.length : 0)}):</strong>
+                                <div style={{ maxHeight: '300px', overflow: 'auto', margin: '4px 0' }}>
+                                    {Array.isArray(linkedInProfile.posts) && linkedInProfile.posts.length > 0 ? 
                                         linkedInProfile.posts.map((post: string, idx: number) => (
                                             <div key={idx} style={{ 
                                                 padding: '8px', 
                                                 margin: '4px 0', 
-                                                background: 'rgba(255,255,255,0.05)', 
+                                                background: selectedInspirationPosts.includes(post) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)', 
+                                                border: selectedInspirationPosts.includes(post) ? '1px solid rgba(105, 63, 233, 0.5)' : '1px solid transparent',
                                                 borderRadius: '4px',
                                                 fontSize: '12px',
-                                                whiteSpace: 'pre-wrap'
-                                            }}>
-                                                {post}
+                                                whiteSpace: 'pre-wrap',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => toggleInspirationPost(post)}
+                                            title="Click to select/deselect for AI inspiration"
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={selectedInspirationPosts.includes(post)}
+                                                        onChange={() => toggleInspirationPost(post)}
+                                                        style={{ marginTop: '2px', accentColor: '#693fe9' }}
+                                                    />
+                                                    <div style={{ flex: 1 }}>
+                                                        {post.length > 300 ? post.substring(0, 300) + '...' : post}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )) : 
-                                        <div>Error loading posts</div>
+                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No posts found. Scan your profile to extract posts.</div>
                                     }
                                 </div>
+                                {selectedInspirationPosts.length > 0 && (
+                                    <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(105, 63, 233, 0.1)', borderRadius: '4px' }}>
+                                        <span style={{ color: '#a78bfa', fontSize: '11px' }}>
+                                            {selectedInspirationPosts.length} post(s) selected for AI inspiration
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             
                             <div>

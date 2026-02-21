@@ -109,6 +109,73 @@ async function checkFailedScheduledPosts(): Promise<{ failedCount: number }> {
   }
 }
 
+// Re-trigger stale 'pending' posts — Activity was created but extension never picked it up (PC was offline)
+// Resets taskId so triggerScheduledPosts can re-create a fresh command
+async function retriggerStalePendingPosts(): Promise<{ retriggeredCount: number }> {
+  try {
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const stalePending = await (prisma as any).postDraft.findMany({
+      where: {
+        status: 'scheduled',
+        taskStatus: 'pending',
+        taskId: { not: null },
+        taskSentAt: { lt: thirtyMinutesAgo },
+      }
+    });
+
+    if (stalePending.length === 0) return { retriggeredCount: 0 };
+
+    // Reset them so triggerScheduledPosts picks them up again
+    await (prisma as any).postDraft.updateMany({
+      where: {
+        id: { in: stalePending.map((p: any) => p.id) }
+      },
+      data: {
+        taskId: null,
+        taskSentAt: null,
+        taskStatus: 'pending',
+      }
+    });
+
+    console.log(`🔄 Reset ${stalePending.length} stale pending posts for re-triggering`);
+    return { retriggeredCount: stalePending.length };
+  } catch (error) {
+    console.error('❌ Error retriggering stale pending posts:', error);
+    return { retriggeredCount: 0 };
+  }
+}
+
+// Re-queue failed posts whose schedule time has passed — handles "post instantly when user comes back online"
+async function requeueFailedPastDuePosts(): Promise<{ requeuedCount: number }> {
+  try {
+    const now = new Date();
+    const requeuedPosts = await (prisma as any).postDraft.updateMany({
+      where: {
+        status: 'scheduled',
+        taskStatus: 'failed',
+        scheduledFor: { lte: now },
+        taskFailureReason: { contains: 'Extension Inactive' }
+      },
+      data: {
+        taskId: null,
+        taskSentAt: null,
+        taskStatus: 'pending',
+        taskFailedAt: null,
+        taskFailureReason: null,
+      }
+    });
+
+    if (requeuedPosts.count > 0) {
+      console.log(`🔄 Re-queued ${requeuedPosts.count} failed past-due posts for immediate delivery`);
+    }
+
+    return { requeuedCount: requeuedPosts.count };
+  } catch (error) {
+    console.error('❌ Error requeuing failed past-due posts:', error);
+    return { requeuedCount: 0 };
+  }
+}
+
 // Check and downgrade expired trials
 async function checkExpiredTrials(): Promise<{ downgradedCount: number }> {
   try {
@@ -197,19 +264,25 @@ export async function GET(request: NextRequest) {
 
     console.log('🕐 Starting cron job processing...');
     
-    // 1. Trigger scheduled posts whose time has arrived
+    // 1. Re-queue failed past-due posts (disconnect resilience — runs first so they get picked up below)
+    const requeueResult = await requeueFailedPastDuePosts();
+
+    // 2. Re-trigger stale pending posts (extension was offline when Activity was created)
+    const retriggerResult = await retriggerStalePendingPosts();
+
+    // 3. Trigger scheduled posts whose time has arrived
     const triggerResult = await triggerScheduledPosts();
     
-    // 2. Check failed scheduled posts (runs every minute)
+    // 4. Check failed scheduled posts (runs every minute)
     const failedPostsResult = await checkFailedScheduledPosts();
     
-    // 3. Check expired trials (runs every 10 minutes)
+    // 5. Check expired trials (runs every 10 minutes)
     const trialResult = await checkExpiredTrials();
     
-    // 4. Process email queue
+    // 6. Process email queue
     const emailResult = await processEmailQueue(20);
 
-    console.log(`✅ Cron complete: ${emailResult.processed} emails sent, ${emailResult.failed} failed, ${trialResult.downgradedCount} trials downgraded, ${triggerResult.triggeredCount} posts triggered, ${failedPostsResult.failedCount} posts failed`);
+    console.log(`✅ Cron complete: ${emailResult.processed} emails sent, ${trialResult.downgradedCount} trials downgraded, ${triggerResult.triggeredCount} posts triggered, ${failedPostsResult.failedCount} posts failed, ${retriggerResult.retriggeredCount} retriggered, ${requeueResult.requeuedCount} requeued`);
 
     return NextResponse.json({
       success: true,
@@ -223,7 +296,9 @@ export async function GET(request: NextRequest) {
       },
       scheduledPosts: {
         triggered: triggerResult.triggeredCount,
-        failed: failedPostsResult.failedCount
+        failed: failedPostsResult.failedCount,
+        retriggered: retriggerResult.retriggeredCount,
+        requeued: requeueResult.requeuedCount
       },
       timestamp: new Date().toISOString()
     });

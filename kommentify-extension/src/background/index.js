@@ -952,13 +952,22 @@ async function pollCommandsDirectly() {
                         // Final small delay before extraction
                         await new Promise(resolve => setTimeout(resolve, 1000));
 
-                        // Extract using the same logic as your working browser script
+                        // Auto-scroll the profile page to load all content
+                        console.log('🔗 POLL-ALARM: Auto-scrolling profile page to load all content...');
+                        await autoScrollProfilePage(tab.id);
+
+                        // Extract using the combined extraction logic (selector-based posts + text-based profile)
                         const scanData = await scanLinkedInProfileInTab(tab.id);
                         console.log('🔗 POLL-ALARM: Scan result:', scanData);
 
                         if (scanData?.success) {
-                            // Save to database - add profileUrl from the tab
-                            const profileUrl = (await chrome.tabs.get(tab.id)).url;
+                            // Get profile URL from the tab
+                            const profileUrl = (await chrome.tabs.get(tab.id)).url.split('?')[0];
+                            scanData.data.totalPostsCount = scanData.data.posts?.length || 0;
+                            
+                            console.log(`🔗 POLL-ALARM: Total posts extracted: ${scanData.data.totalPostsCount}`);
+                            
+                            // Save to database
                             const saveData = { ...scanData.data, profileUrl };
                             await fetch(`${apiUrl}/api/linkedin-profile`, {
                                 method: 'POST',
@@ -1166,130 +1175,291 @@ async function pollCommandsDirectly() {
     }
 }
 
-// LinkedIn profile scan helper - uses the same logic as the working browser script
+// Auto-scroll profile page to load all content
+async function autoScrollProfilePage(tabId) {
+    try {
+        console.log('🔗 SCROLL: Starting auto-scroll...');
+        
+        const maxScrollAttempts = 10;
+        let lastHeight = 0;
+        let noChangeCount = 0;
+        
+        for (let i = 0; i < maxScrollAttempts; i++) {
+            // Get current scroll height
+            const heightResult = await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => document.body.scrollHeight
+            });
+            const currentHeight = heightResult?.[0]?.result || 0;
+            
+            // Scroll down
+            await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => {
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+            
+            // Wait for content to load
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Check if new content loaded
+            const newHeightResult = await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => document.body.scrollHeight
+            });
+            const newHeight = newHeightResult?.[0]?.result || 0;
+            
+            console.log(`🔗 SCROLL: Attempt ${i+1}, height: ${currentHeight} -> ${newHeight}`);
+            
+            if (newHeight === lastHeight) {
+                noChangeCount++;
+                if (noChangeCount >= 2) {
+                    console.log('🔗 SCROLL: No new content, stopping');
+                    break;
+                }
+            } else {
+                noChangeCount = 0;
+            }
+            lastHeight = newHeight;
+        }
+        
+        // Scroll back to top
+        await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: () => window.scrollTo(0, 0)
+        });
+        
+        console.log('🔗 SCROLL: Auto-scroll complete');
+    } catch (error) {
+        console.error('🔗 SCROLL: Error during auto-scroll:', error);
+    }
+}
+
+// LinkedIn profile scan helper - selector-based posts + text-based profile extraction
 async function scanLinkedInProfileInTab(tabId) {
     const execResult = await chrome.scripting.executeScript({
         target: { tabId },
         func: () => {
-            const data = {
-                name: "",
-                headline: "",
-                about: "",
-                posts: [],
-                experience: [],
-                education: [],
-                certifications: [],
-                projects: [],
-                skills: [],
-                language: "",
-            };
+            console.clear();
+            console.log("🚀 Starting Combined Extraction...");
 
+            // Helper function to sanitize text
             function clean(text) {
                 if (!text) return "";
-                return text
-                    .replace(/…\s?more|Show all|See more|^\s*[\r\n]/gm, "")
-                    .replace(/\s+/g, " ")
-                    .trim();
+                return text.replace(/…\s*more/gi, "").replace(/^\s*[\r\n]/gm, "").replace(/\s+/g, " ").trim();
             }
 
-            // --- 1. NAME & HEADLINE ---
-            const nameEl = document.querySelector('h2._2cda7f44._00316ad5') || document.querySelector('h2');
-            if (nameEl) {
-                data.name = clean(nameEl.innerText);
+            const data = {
+                name: "", headline: "", location: "", connections: "", about: "",
+                posts: [], experience: [], education: [], certifications: [], projects: [],
+                skills: [], interests: [], language: "", profileViews: "", profileUrl: ""
+            };
 
-                const topCard = nameEl.closest('section') || nameEl.closest('div.d9511fd4');
-                if (topCard) {
-                    const headlineEl = topCard.querySelector('p.f53b12a2');
-                    if (headlineEl && headlineEl !== nameEl) {
-                        data.headline = clean(headlineEl.innerText);
-                    }
-                }
-            }
+            // Get profile URL
+            data.profileUrl = window.location.href.split('?')[0];
 
-            // --- 2. ABOUT ---
-            const aboutEl = document.querySelector('[data-testid="expandable-text-box"]');
-            if (aboutEl) {
-                data.about = clean(aboutEl.innerText);
-            } else {
-                const aboutHeader = Array.from(document.querySelectorAll('h2')).find(h => h.innerText.includes("About"));
-                if (aboutHeader) {
-                    const container = aboutHeader.closest('section');
-                    const text = container ? container.innerText.replace("About", "") : "";
-                    if (text.length > 50) data.about = clean(text);
-                }
-            }
-
-            // --- 3. SKILLS ---
-            const skillsHeader = Array.from(document.querySelectorAll('h2, span')).find(h => h.innerText.trim() === "Skills");
-            if (skillsHeader) {
-                const skillsSection = skillsHeader.closest('section') || skillsHeader.closest('div.e574b0ac');
-                if (skillsSection) {
-                    const items = skillsSection.querySelectorAll('[componentkey*="profile.skill"]');
-                    items.forEach(item => {
-                        const txt = clean(item.innerText);
-                        if (txt) data.skills.push(txt);
-                    });
-
-                    if (data.skills.length === 0) {
-                        const pTags = skillsSection.querySelectorAll('p');
-                        pTags.forEach(p => {
-                            const t = clean(p.innerText);
-                            if (t && t !== "Skills" && !t.includes("Show all")) {
-                                data.skills.push(t);
-                            }
-                        });
-                    }
-                }
-                data.skills = [...new Set(data.skills)];
-            }
-
-            // --- 4. GENERIC SECTIONS (Experience, Education, etc) ---
-            function extractList(sectionTitle, targetArray) {
-                const header = Array.from(document.querySelectorAll('h2, span')).find(h => h.innerText.includes(sectionTitle));
-                if (header) {
-                    const section = header.closest('section') || header.parentElement?.parentElement;
-                    if (section) {
-                        const listItems = section.querySelectorAll('li, .pvs-list__item--line-separated, [componentkey*="entity-collection-item"]');
-                        listItems.forEach(item => {
-                            const txt = clean(item.innerText);
-                            if (txt) {
-                                targetArray.push(txt);
-                            }
-                        });
-                    }
-                }
-            }
-
-            extractList("Experience", data.experience);
-            extractList("Education", data.education);
-            extractList("Licenses", data.certifications);
-            extractList("Projects", data.projects);
-
-            // --- 5. POSTS ---
-            const postEls = document.querySelectorAll('[data-view-name="feed-commentary"]');
+            // ========== STEP 1: TRY SELECTOR-BASED POSTS EXTRACTION ==========
+            console.log("🚀 Step 1: Trying selector-based posts extraction...");
+            
+            const postEls = document.querySelectorAll('[data-view-name="feed-commentary"], .update-components-text');
+            const selectorPosts = [];
+            
             postEls.forEach(el => {
-                const txt = clean(el.innerText);
-                if (txt && !data.posts.includes(txt)) {
-                    data.posts.push(txt);
+                const clone = el.cloneNode(true);
+                // Destroy the "… more" button before reading text
+                clone.querySelectorAll('button, .see-more').forEach(b => b.remove());
+                
+                let txt = clean(clone.textContent);
+                
+                // Filter out empty, short, or junk strings
+                if (txt && !txt.startsWith("http") && txt !== "# | # | #" && txt.length > 20 && !txt.startsWith("#")) {
+                    selectorPosts.push(txt);
+                }
+            });
+            
+            // Remove exact duplicates
+            const uniqueSelectorPosts = [...new Set(selectorPosts)];
+            console.log(`🚀 Selector-based posts found: ${uniqueSelectorPosts.length}`);
+            
+            if (uniqueSelectorPosts.length > 0) {
+                data.posts = uniqueSelectorPosts;
+                console.log("🚀 Using selector-based posts (successful)");
+            } else {
+                console.log("🚀 Selector-based posts failed, will fallback to text-based");
+            }
+
+            // ========== STEP 2: TEXT-BASED PROFILE EXTRACTION ==========
+            console.log("🚀 Step 2: Text-based profile extraction...");
+            
+            // Get raw text from the entire page
+            const rawText = document.body.innerText || "";
+
+            // Define exact UI noise to completely destroy
+            const exactJunk = new Set([
+                "0 notifications", "Skip to main content", "Home", "My Network", "Jobs",
+                "Messaging", "Notifications", "Me", "For Business", "Create a post",
+                "Posts", "Comments", "Videos", "Images", "Top Voices", "Companies",
+                "Groups", "Newsletters", "Schools", "Show all", "Like", "Comment",
+                "Repost", "Send", "Show credential", "Show project", "Add section",
+                "Enhance profile", "Open to", "Get started", "Add services", "Private to you",
+                "Discover who's viewed your profile.", "Check out who's engaging with your posts.",
+                "See how often you appear in search results.", "Add verification badge",
+                "LinkedIn helped me get this job", "helped me get this job", "Contact info",
+                "Profile language", "Who your viewers also viewed", "People you may know", "You might like",
+                "Received", "Given", "Ask for a recommendation", "Message", "View", "Connect", "Follow"
+            ]);
+
+            // Clean the text line-by-line using smart filters
+            let lines = rawText.split('\n').map(l => l.trim()).filter(l => {
+                if (!l) return false;
+                if (exactJunk.has(l)) return false;
+                if (/^\d+$/.test(l)) return false;
+                if (/^\d+\s+(reactions?|comments?|reposts?|views|followers)$/i.test(l)) return false;
+                if (l.includes("Reactivate Premium") || l.includes("Try Premium")) return false;
+                if (l.endsWith(".jpg") || l.endsWith(".png") || l.endsWith(".pdf")) return false;
+                if (l === "• You" || l === "You" || l.toLowerCase().includes("reposted this")) return false;
+                if (l.toLowerCase().startsWith("show all ")) return false;
+                if (l === "·" || l === "•") return false;
+                return true;
+            });
+
+            lines = lines.map(l => clean(l));
+            lines = lines.filter((l, i, a) => i === 0 || l !== a[i-1]);
+
+            const sectionHeaders = [
+                "About", "Activity", "Experience", "Education", 
+                "Licenses & certifications", "Projects", "Skills", 
+                "Recommendations", "Interests"
+            ];
+
+            // --- EXTRACT TOP SKILLS FIRST ---
+            const topSkillsIdx = lines.findIndex(l => l === "Top skills");
+            if (topSkillsIdx !== -1) {
+                if (lines[topSkillsIdx + 1]) {
+                    data.skills.push(...lines[topSkillsIdx + 1].split(/[•·]/).map(s => clean(s)).filter(Boolean));
+                }
+                lines.splice(topSkillsIdx, 2); 
+            }
+
+            // --- EXTRACT TOP CARD ---
+            let topBound = lines.findIndex(l => sectionHeaders.includes(l));
+            if (topBound === -1) topBound = lines.length;
+            let topLines = lines.slice(0, topBound);
+
+            const connIdx = topLines.findIndex(l => l.toLowerCase().includes("connections"));
+            if (connIdx !== -1) data.connections = topLines[connIdx];
+
+            const viewIdx = topLines.findIndex(l => l.toLowerCase().includes("profile views"));
+            if (viewIdx !== -1) data.profileViews = topLines[viewIdx];
+
+            const cleanTop = topLines.filter(l => !l.toLowerCase().includes("connections") && !l.toLowerCase().includes("profile views") && !l.toLowerCase().includes("search appearances") && !l.toLowerCase().includes("post impressions") && !l.includes("Past 7 days"));
+            
+            if (cleanTop.length > 0) data.name = cleanTop[0];
+            if (cleanTop.length > 1) data.headline = cleanTop[1];
+            if (cleanTop.length > 2) data.location = cleanTop[2];
+
+            lines = lines.filter(l => l !== data.name && l !== data.headline);
+
+            // --- SECTION PARSER ---
+            function getSectionLines(header) {
+                let start = lines.findIndex(l => l === header);
+                if (start === -1) return [];
+                let end = lines.length;
+                for (let i = start + 1; i < lines.length; i++) {
+                    if (sectionHeaders.includes(lines[i])) {
+                        end = i;
+                        break;
+                    }
+                }
+                return lines.slice(start + 1, end);
+            }
+
+            // --- ABOUT ---
+            data.about = getSectionLines("About").join(" ");
+
+            // --- FALLBACK: TEXT-BASED POSTS (only if selector-based failed) ---
+            if (data.posts.length === 0) {
+                console.log("🚀 Fallback: Using text-based posts extraction...");
+                const actLines = getSectionLines("Activity");
+                let currentPost = [];
+                const timeRegex = /^\d+[dwmoqy]\s*•/i;
+                
+                actLines.forEach(l => {
+                    if (timeRegex.test(l)) {
+                        if (currentPost.length > 0 && currentPost.join(" ").length > 20) {
+                            data.posts.push(currentPost.join(" "));
+                        }
+                        currentPost = [];
+                    } else {
+                        currentPost.push(l);
+                    }
+                });
+                if (currentPost.length > 0 && currentPost.join(" ").length > 20) data.posts.push(currentPost.join(" "));
+                data.posts = [...new Set(data.posts)];
+            }
+
+            // --- GENERIC LIST CHUNKER ---
+            function chunkList(linesArray) {
+                let items = [];
+                let current = [];
+                const dateRegex = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4}|\b\d{4}\s*[–-]\s*(?:Present|\d{4})\b/i;
+                
+                for (let i = 0; i < linesArray.length; i++) {
+                    let l = linesArray[i];
+                    
+                    if (l.includes("skills") && l.includes("+")) continue;
+                    if (l.startsWith("Issued ")) continue;
+                    
+                    let hasDate = current.some(x => dateRegex.test(x));
+                    let nextLinesHaveDate = linesArray.slice(i, i+3).some(x => dateRegex.test(x));
+
+                    if (hasDate && l.length < 60 && nextLinesHaveDate && !dateRegex.test(l) && !l.startsWith("•") && !l.startsWith("-")) {
+                        items.push(current.join(" | "));
+                        current = [];
+                    }
+                    current.push(l);
+                }
+                if (current.length > 0) items.push(current.join(" | "));
+                return items;
+            }
+
+            data.experience = chunkList(getSectionLines("Experience"));
+            data.education = chunkList(getSectionLines("Education"));
+            data.certifications = chunkList(getSectionLines("Licenses & certifications"));
+            data.projects = chunkList(getSectionLines("Projects"));
+
+            // --- SKILLS ---
+            const skillLines = getSectionLines("Skills");
+            skillLines.forEach(l => {
+                if (l.length < 50 && !l.includes("Endorsed by")) {
+                    data.skills.push(...l.split(/[•·]/).map(s => clean(s)).filter(Boolean));
                 }
             });
 
-            // --- 6. LANGUAGE ---
-            const langHeader = Array.from(document.querySelectorAll('h2')).find(h => h.innerText.includes("Profile language"));
-            if (langHeader) {
-                const container = langHeader.closest('div')?.parentElement;
-                const val = container?.querySelector('p:not(.f53b12a2)');
-                if (val) {
-                    data.language = clean(val.innerText);
-                } else {
-                    const nextDiv = langHeader.closest('div')?.nextElementSibling;
-                    if (nextDiv) data.language = clean(nextDiv.innerText);
+            // --- INTERESTS ---
+            const intLines = getSectionLines("Interests");
+            intLines.forEach(l => {
+                if (l.length < 40 && !l.includes("Managing General") && !l.includes("stuff")) {
+                    data.interests.push(l);
+                }
+            });
+
+            // --- FINAL CLEANUP ---
+            for(let key in data) {
+                if(Array.isArray(data[key])) {
+                    data[key] = [...new Set(data[key].map(clean).filter(Boolean))];
                 }
             }
 
+            console.log(`🚀 Final posts count: ${data.posts.length}`);
+            console.log(JSON.stringify(data, null, 2));
             return {
                 success: true,
-                data: { ...data, lastScannedAt: new Date().toISOString() },
+                data: { ...data, lastScannedAt: new Date().toISOString() }
             };
         },
     });
@@ -1390,7 +1560,7 @@ async function scrollAndLoadContent(tabId, maxAttempts = 3) {
 // Standalone scrape function (extracted so command handler can call directly - chrome.runtime.sendMessage to self doesn't work in MV3)
 async function scrapeProfilePostsImpl(profileUrl, postCount) {
     try {
-        console.log('✨ BACKGROUND: Scraping profile posts for inspiration...');
+        console.log('✨ BACKGROUND: Scraping comprehensive profile data...');
         console.log('BACKGROUND: Profile URL:', profileUrl);
         console.log('BACKGROUND: Post count:', postCount);
 
@@ -1398,89 +1568,118 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
         if (!urlMatch) return { success: false, error: 'Invalid LinkedIn profile URL' };
         const username = urlMatch[1];
 
-        const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
-        console.log('BACKGROUND: Opening activity page:', activityUrl);
-        const activityTab = await chrome.tabs.create({ url: activityUrl, active: false });
-        await waitForContentLoad(activityTab.id, 12000);
-        await scrollAndLoadContent(activityTab.id, 3);
+        // Open the main profile page to extract comprehensive data
+        const mainProfileUrl = `https://www.linkedin.com/in/${username}/`;
+        console.log('BACKGROUND: Opening profile page:', mainProfileUrl);
+        // Open in a new focused window so LinkedIn renders the full SDUI top card (name/headline)
+        const profileWindow = await chrome.windows.create({ url: mainProfileUrl, type: 'popup', focused: true, width: 1200, height: 800 });
+        const profileTab = profileWindow.tabs[0];
+        const profileWindowId = profileWindow.id;
+        await waitForContentLoad(profileTab.id, 12000);
+        await scrollAndLoadContent(profileTab.id, 3);
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const extractResult = await chrome.scripting.executeScript({
-            target: { tabId: activityTab.id },
-            func: (maxPosts) => {
-                const postUrns = [];
-                let authorName = 'Unknown Author';
-                const authorSelectors = [
-                    '.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]',
-                    '.feed-shared-actor__title span[aria-hidden="true"]',
-                    'h1.text-heading-xlarge',
-                    '.profile-top-card-person-list__name'
-                ];
-                for (const selector of authorSelectors) {
-                    const element = document.querySelector(selector);
-                    if (element) { authorName = element.textContent?.trim() || 'Unknown Author'; break; }
-                }
-                const postElements = document.querySelectorAll('[data-urn*="urn:li:activity:"], [data-id*="urn:li:activity:"]');
-                for (const post of postElements) {
-                    if (postUrns.length >= maxPosts) break;
-                    let urn = post.getAttribute('data-urn') || post.getAttribute('data-id');
-                    if (!urn || !urn.includes('urn:li:activity:')) continue;
-                    const activityMatch = urn.match(/urn:li:activity:(\d+)/);
-                    if (activityMatch) {
-                        const isRepost = post.querySelector('.feed-shared-reshared-content') || post.querySelector('.update-components-mini-update-v2');
-                        if (!isRepost) postUrns.push({ activityId: activityMatch[1], urn });
-                    }
-                }
-                return { postUrns, authorName };
-            },
-            args: [postCount + 5]
+        // Extract comprehensive profile data using the new scraper
+        const profileResult = await chrome.scripting.executeScript({
+            target: { tabId: profileTab.id },
+            func: profileScraper
         });
 
-        await chrome.tabs.remove(activityTab.id);
-        const { postUrns, authorName } = extractResult[0]?.result || { postUrns: [], authorName: 'Unknown' };
-        if (postUrns.length === 0) return { success: false, error: 'Could not find posts on this profile.' };
-
-        console.log(`BACKGROUND: Found ${postUrns.length} post URNs, now opening each...`);
-        const scrapedPosts = [];
-        let skippedCount = 0;
-
-        for (let i = 0; i < Math.min(postUrns.length, postCount); i++) {
-            const { activityId } = postUrns[i];
-            const postUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`;
-            try {
-                const postTab = await chrome.tabs.create({ url: postUrl, active: false });
-                await new Promise(resolve => setTimeout(resolve, 4000));
-                const postResult = await chrome.scripting.executeScript({
-                    target: { tabId: postTab.id },
-                    func: () => {
-                        let content = '';
-                        for (const sel of ['.feed-shared-update-v2__description .update-components-text','.update-components-text','.feed-shared-text','.feed-shared-inline-show-more-text','article .break-words']) {
-                            const el = document.querySelector(sel);
-                            if (el) { content = el.innerText || el.textContent || ''; if (content.length > 50) break; }
-                        }
-                        content = content.replace(/\s+/g, ' ').replace(/…more$/i, '').replace(/See more$/i, '').replace(/See translation$/i, '').trim();
-                        let likes = 0, comments = 0;
-                        const likesEl = document.querySelector('.social-details-social-counts__reactions-count');
-                        if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
-                        const commentsBtn = document.querySelector('button[aria-label*="comment"]');
-                        if (commentsBtn) { const m = commentsBtn.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
-                        return { content, likes, comments };
-                    }
-                });
-                await chrome.tabs.remove(postTab.id);
-                const postData = postResult[0]?.result;
-                if (postData && postData.content && postData.content.length >= 50) {
-                    const skipPatterns = [/^is now/i, /updated their profile/i, /shared this/i, /endorsed/i, /started following/i, /celebrated/i, /has a new profile photo/i, /reacted to this/i];
-                    if (!skipPatterns.some(p => p.test(postData.content))) {
-                        scrapedPosts.push({ content: postData.content.substring(0, 5000), likes: postData.likes || 0, comments: postData.comments || 0, authorName, postUrl });
-                    } else skippedCount++;
-                } else skippedCount++;
-                await new Promise(resolve => setTimeout(resolve, 1500));
-            } catch (postError) { console.warn(`BACKGROUND: Failed to scrape post ${i + 1}:`, postError.message); skippedCount++; }
+        const profileData = profileResult[0]?.result;
+        if (!profileData) {
+            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
+            return { success: false, error: 'Failed to extract profile data' };
         }
 
-        if (scrapedPosts.length === 0) return { success: false, error: `Could not extract content from posts. Tried ${postUrns.length} posts, skipped ${skippedCount}.` };
-        console.log(`✅ BACKGROUND: Successfully scraped ${scrapedPosts.length} posts from ${authorName}`);
+        console.log('BACKGROUND: Profile data extracted:', { name: profileData.name, headline: profileData.headline, skillsCount: profileData.skills.length, experienceCount: profileData.experience.length });
+
+        // Now extract posts from the activity page if posts are requested
+        let scrapedPosts = [];
+        if (postCount > 0 && profileData.posts && profileData.posts.length > 0) {
+            // Use posts extracted directly from the profile page
+            scrapedPosts = profileData.posts.slice(0, postCount).map(postContent => ({
+                content: postContent.substring(0, 5000),
+                authorName: profileData.name || 'Unknown',
+                postUrl: profileUrl
+            }));
+            console.log(`BACKGROUND: Found ${profileData.posts.length} posts on profile, using ${scrapedPosts.length}`);
+            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
+        } else if (postCount > 0) {
+            // Fallback to activity page scraping if no posts found on main profile
+            console.log('BACKGROUND: No posts found on main profile, checking activity page...');
+            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
+            
+            const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
+            const activityTab = await chrome.tabs.create({ url: activityUrl, active: false });
+            await waitForContentLoad(activityTab.id, 12000);
+            await scrollAndLoadContent(activityTab.id, 3);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            const extractResult = await chrome.scripting.executeScript({
+                target: { tabId: activityTab.id },
+                func: (maxPosts) => {
+                    const postUrns = [];
+                    const postElements = document.querySelectorAll('[data-urn*="urn:li:activity:"], [data-id*="urn:li:activity:"]');
+                    for (const post of postElements) {
+                        if (postUrns.length >= maxPosts) break;
+                        let urn = post.getAttribute('data-urn') || post.getAttribute('data-id');
+                        if (!urn || !urn.includes('urn:li:activity:')) continue;
+                        const activityMatch = urn.match(/urn:li:activity:(\d+)/);
+                        if (activityMatch) {
+                            const isRepost = post.querySelector('.feed-shared-reshared-content') || post.querySelector('.update-components-mini-update-v2');
+                            if (!isRepost) postUrns.push({ activityId: activityMatch[1], urn });
+                        }
+                    }
+                    return postUrns;
+                },
+                args: [postCount + 5]
+            });
+
+            await chrome.tabs.remove(activityTab.id);
+            const postUrns = extractResult[0]?.result || [];
+            if (postUrns.length > 0) {
+                console.log(`BACKGROUND: Found ${postUrns.length} post URNs in activity, extracting content...`);
+                
+                for (let i = 0; i < Math.min(postUrns.length, postCount); i++) {
+                    const { activityId } = postUrns[i];
+                    const postUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`;
+                    try {
+                        const postTab = await chrome.tabs.create({ url: postUrl, active: false });
+                        await new Promise(resolve => setTimeout(resolve, 4000));
+                        const postResult = await chrome.scripting.executeScript({
+                            target: { tabId: postTab.id },
+                            func: () => {
+                                let content = '';
+                                for (const sel of ['.feed-shared-update-v2__description .update-components-text','.update-components-text','.feed-shared-text','.feed-shared-inline-show-more-text','article .break-words']) {
+                                    const el = document.querySelector(sel);
+                                    if (el) { content = el.innerText || el.textContent || ''; if (content.length > 50) break; }
+                                }
+                                content = content.replace(/\s+/g, ' ').replace(/…more$/i, '').replace(/See more$/i, '').replace(/See translation$/i, '').trim();
+                                let likes = 0, comments = 0;
+                                const likesEl = document.querySelector('.social-details-social-counts__reactions-count');
+                                if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
+                                const commentsBtn = document.querySelector('button[aria-label*="comment"]');
+                                if (commentsBtn) { const m = commentsBtn.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
+                                return { content, likes, comments };
+                            }
+                        });
+                        await chrome.tabs.remove(postTab.id);
+                        const postData = postResult[0]?.result;
+                        if (postData && postData.content && postData.content.length >= 50) {
+                            const skipPatterns = [/^is now/i, /updated their profile/i, /shared this/i, /endorsed/i, /started following/i, /celebrated/i, /has a new profile photo/i, /reacted to this/i];
+                            if (!skipPatterns.some(p => p.test(postData.content))) {
+                                scrapedPosts.push({ content: postData.content.substring(0, 5000), likes: postData.likes || 0, comments: postData.comments || 0, authorName: profileData.name || 'Unknown', postUrl });
+                            }
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    } catch (postError) { console.warn(`BACKGROUND: Failed to scrape post ${i + 1}:`, postError.message); }
+                }
+            }
+        } else {
+            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
+        }
+
+        console.log(`✅ BACKGROUND: Successfully extracted profile data and ${scrapedPosts.length} posts`);
 
         // Save to backend
         try {
@@ -1490,16 +1689,16 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
             const ingestResponse = await fetch(`${apiUrl}/api/vector/ingest`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ posts: scrapedPosts, inspirationSource: { name: authorName, profileUrl } })
+                body: JSON.stringify({ posts: scrapedPosts, inspirationSource: { name: profileData.name, profileUrl } })
             });
             const ingestData = await ingestResponse.json();
             if (ingestData.success) {
-                await chrome.storage.local.set({ lastInspirationResult: { success: true, authorName, postCount: ingestData.count, profileUrl, timestamp: Date.now() } });
-                return { success: true, posts: scrapedPosts, authorName, skippedCount, savedToBackend: true, savedCount: ingestData.count };
+                await chrome.storage.local.set({ lastInspirationResult: { success: true, authorName: profileData.name, postCount: ingestData.count, profileUrl, timestamp: Date.now() } });
+                return { success: true, posts: scrapedPosts, profileData, skippedCount, savedToBackend: true, savedCount: ingestData.count };
             }
-            return { success: true, posts: scrapedPosts, authorName, skippedCount, savedToBackend: false, backendError: ingestData.error };
+            return { success: true, posts: scrapedPosts, profileData, skippedCount, savedToBackend: false, backendError: ingestData.error };
         } catch (apiError) {
-            return { success: true, posts: scrapedPosts, authorName, skippedCount, savedToBackend: false, backendError: apiError.message };
+            return { success: true, posts: scrapedPosts, profileData, skippedCount, savedToBackend: false, backendError: apiError.message };
         }
     } catch (error) {
         console.error('❌ BACKGROUND: Error scraping profile posts:', error);

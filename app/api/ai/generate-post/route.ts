@@ -2,23 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, extractToken } from '@/lib/auth';
 import { limitService } from '@/lib/limit-service';
-import OpenAI from 'openai';
-import { OpenAIConfig, generatePostPrompt } from '@/lib/openai-config';
+import { generateLinkedInPost, getUserModel } from '@/lib/ai-service';
+import { generatePostPrompt } from '@/lib/openai-config';
 import { formatForLinkedIn } from '@/lib/linkedin-formatter';
 import { Index } from '@upstash/vector';
 
 // Developer emails that can see token usage and costs
 const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
-
-// Model pricing per 1M tokens (USD)
-const modelPricing: Record<string, { input: number; output: number; name: string }> = {
-  'o1': { input: 15.00, output: 60.00, name: 'o1 (Reasoning - Best)' },
-  'o1-mini': { input: 3.00, output: 12.00, name: 'o1-mini (Fast Reasoning)' },
-  'gpt-4o': { input: 2.50, output: 10.00, name: 'GPT-4o (Best Quality)' },
-  'gpt-4o-mini': { input: 0.15, output: 0.60, name: 'GPT-4o Mini (Fast & Cheap)' },
-  'gpt-4-turbo': { input: 10.00, output: 30.00, name: 'GPT-4 Turbo (Premium)' },
-  'gpt-3.5-turbo': { input: 0.50, output: 1.50, name: 'GPT-3.5 Turbo (Budget)' },
-};
 
 let vectorIndex: any = null;
 try {
@@ -29,21 +19,6 @@ try {
     });
   }
 } catch (e) { console.warn('Vector index not available for post generation'); }
-
-// Initialize OpenAI client with proper error handling
-let openai: OpenAI | null = null;
-try {
-  if (process.env.OPENAI_API_KEY) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY.trim(),
-    });
-    console.log('OpenAI client initialized for post generation');
-  } else {
-    console.warn('OPENAI_API_KEY not found for post generation');
-  }
-} catch (error) {
-  console.error('Failed to initialize OpenAI client for posts:', error);
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,32 +64,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if OpenAI API key is available
-    if (!openai || !process.env.OPENAI_API_KEY) {
-      console.log('Using fallback post - OpenAI not available');
-      // Fallback: Generate mock post when OpenAI key is not available
-      const mockContent = `${topic}
+    // Get user's preferred model or use requested model
+    const selectedModel = requestedModel || await getUserModel(user.id, 'post');
+    const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
 
-I've been thinking a lot about this topic lately, and wanted to share some insights.
-
-${topic} is becoming increasingly important in today's professional landscape. Here are a few key observations:
-
-• It's transforming the way we work and collaborate
-• The impact on productivity and efficiency is significant  
-• Organizations that embrace this see measurable results
-
-What's your experience with ${topic}? I'd love to hear your thoughts in the comments.
-
-${includeHashtags ? `#${topic.replace(/\s+/g, '')} #ProfessionalDevelopment #Innovation` : ''}`;
-      
-      return NextResponse.json({
-        success: true,
-        content: mockContent,
-        fallback: true
-      });
-    }
-    
-    console.log('Calling OpenAI API for post generation...');
+    console.log('Generating post with model:', selectedModel);
     
     // Fetch global admin settings for AI generation
     let adminPostEmbeddingsCount = 8;
@@ -213,50 +167,49 @@ CRITICAL: Every sentence in your output should pass this test: "Would the author
     // Generate prompt using shared logic with new elite prompt
     const prompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground, language) + inspirationContext;
 
-    // Select model - default to gpt-4o for best quality
-    const selectedModel = requestedModel && modelPricing[requestedModel] ? requestedModel : 'gpt-4o';
-    const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
-
+    // Generate content using unified AI service
     let content;
     let tokenUsage: any = null;
     try {
-      const completion = await openai.chat.completions.create({
+      const result = await generateLinkedInPost({
         model: selectedModel,
-        messages: [
-          { role: 'system', content: 'You are an elite LinkedIn ghostwriter who specializes in voice cloning and authentic content creation. When inspiration source posts are provided, your TOP priority is matching their exact voice DNA - structural patterns, vocabulary fingerprint, specificity level, emotional texture, and rhythm. Every sentence must pass this test: "Would the original authors write it this way?" Write like a real human. No AI-sounding language. Follow all formatting instructions exactly.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.85,
-        max_tokens: 2000,
+        topic,
+        tone,
+        length: parseInt(length) || 1500,
+        template,
+        userProfile: userBackground,
+        inspirationPosts: inspirationContext ? [inspirationContext] : undefined,
+        includeHashtags,
+        includeEmojis,
+        language,
+        targetAudience,
+        keyMessage,
+        background: userBackground,
+        userId: user.id
       });
 
-      content = completion.choices[0].message.content;
-      console.log('✅ OpenAI post generation successful');
+      content = result.content;
+      console.log('✅ Post generation successful with model:', result.model);
       
       // Extract token usage for developers
-      if (isDeveloper && completion.usage) {
-        const inputTokens = completion.usage.prompt_tokens || 0;
-        const outputTokens = completion.usage.completion_tokens || 0;
-        const pricing = modelPricing[selectedModel] || modelPricing['gpt-4o-mini'];
-        const inputCost = (inputTokens / 1000000) * pricing.input;
-        const outputCost = (outputTokens / 1000000) * pricing.output;
+      if (isDeveloper && result.usage) {
         tokenUsage = {
-          inputTokens,
-          outputTokens,
-          totalTokens: inputTokens + outputTokens,
-          inputCost: `$${inputCost.toFixed(6)}`,
-          outputCost: `$${outputCost.toFixed(6)}`,
-          totalCost: `$${(inputCost + outputCost).toFixed(6)}`,
-          model: selectedModel,
-          modelName: pricing.name,
+          inputTokens: result.usage.promptTokens,
+          outputTokens: result.usage.completionTokens,
+          totalTokens: result.usage.totalTokens,
+          inputCost: `$${((result.usage.promptTokens / 1000000) * (result.cost * 0.7)).toFixed(6)}`,
+          outputCost: `$${((result.usage.completionTokens / 1000000) * (result.cost * 0.3)).toFixed(6)}`,
+          totalCost: `$${result.cost.toFixed(6)}`,
+          model: result.model,
+          modelName: result.provider,
         };
       }
       
-    } catch (openaiError: any) {
-      console.error('OpenAI API Error for post:', openaiError);
+    } catch (error: any) {
+      console.error('AI generation error:', error);
       
-      // Use fallback when OpenAI fails
-      console.log('OpenAI failed, using fallback post');
+      // Use fallback when AI service fails
+      console.log('AI service failed, using fallback post');
       content = `${topic}
 
 I've been thinking a lot about this topic lately, and wanted to share some insights.

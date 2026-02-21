@@ -591,6 +591,9 @@ model LinkedInProfileData {
   profileUrl      String?
   name            String?
   headline        String?
+  location        String?
+  connections     String?
+  profileViews    String?
   about           String?  @db.Text
   language        String?
   // Stored as JSON strings to handle arrays
@@ -600,12 +603,114 @@ model LinkedInProfileData {
   certifications  String   @default("[]") @db.Text
   projects        String   @default("[]") @db.Text
   skills          String   @default("[]") @db.Text
+  interests       String   @default("[]") @db.Text
   // Token optimization: store truncated versions for AI prompts
   postsTokenLimit Int      @default(3000)  // Max characters from posts to include in AI prompt
+  totalPostsCount Int      @default(0)     // Actual count of posts extracted from recent-activity page
   isSelected      Boolean  @default(true)  // Whether to use this data in AI generation
   lastScannedAt   DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([userId])
+}
+
+// AI Models available for LinkedIn content generation
+model AIModel {
+  id                    String   @id @default(cuid())
+  modelId               String   @unique  // OpenRouter/OpenAI model ID e.g. "openai/gpt-4o", "anthropic/claude-4.5-sonnet"
+  name                  String            // Display name e.g. "GPT-4o", "Claude 4.5 Sonnet"
+  provider              String            // "openai", "anthropic", "google", "meta", "mistral", "deepseek", "xai", "perplexity", etc.
+  apiSource             String   @default("openrouter")  // "openrouter" or "openai" (only for official OpenAI models)
+  
+  // Pricing (per 1M tokens in USD)
+  inputCostPer1M        Float    @default(0)
+  outputCostPer1M       Float    @default(0)
+  
+  // Token limits
+  maxContextTokens      Int      @default(4096)
+  maxOutputTokens       Int      @default(4096)
+  
+  // Capabilities
+  supportsSystemPrompt  Boolean  @default(true)
+  supportsVision        Boolean  @default(false)
+  supportsTools         Boolean  @default(false)
+  supportsStreaming     Boolean  @default(true)
+  
+  // Quality ratings (1-10 scale based on benchmarks)
+  reasoningScore        Int      @default(5)    // Complex reasoning, analysis
+  writingScore          Int      @default(5)    // Creative writing, content generation
+  codingScore           Int      @default(5)   // Code generation
+  speedScore            Int      @default(5)    // Response speed
+  
+  // Categories
+  category              String   @default("general")  // "premium", "standard", "budget", "free"
+  isReasoningModel      Boolean  @default(false)  // Has thinking/extended reasoning mode
+  isMultimodal          Boolean  @default(false)
+  
+  // Admin control
+  isEnabled             Boolean  @default(true)   // Admin can enable/disable for all users
+  isFeatured            Boolean  @default(false)  // Show in featured/recommended section
+  
+  // Metadata
+  description           String?  @db.Text
+  releaseDate           DateTime?
+  lastUpdated           DateTime @default(now())
+  createdAt             DateTime @default(now())
+  
+  @@index([provider])
+  @@index([category])
+  @@index([isEnabled])
+  @@index([isFeatured])
+}
+
+// User's AI model preferences for different content types
+model UserAIModelSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  
+  // Model selections for different content types
+  postModelId           String?  // Model for generating LinkedIn posts
+  commentModelId        String?  // Model for generating LinkedIn comments
+  topicModelId          String?  // Model for generating topic lines/ideas
+  
+  // Fallback model if selected model is disabled
+  fallbackModelId       String?  @default("openai/gpt-4o-mini")
+  
+  // Advanced settings per model (JSON)
+  postModelSettings     String   @default("{}") @db.Text   // temperature, max_tokens, etc.
+  commentModelSettings  String   @default("{}") @db.Text
+  topicModelSettings    String   @default("{}") @db.Text
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([postModelId])
+  @@index([commentModelId])
+}
+
+// Track AI model usage and costs per user
+model AIModelUsage {
+  id                String   @id @default(cuid())
+  userId            String
+  modelId           String
+  
+  // Usage stats
+  totalRequests     Int      @default(0)
+  totalInputTokens  Int      @default(0)
+  totalOutputTokens Int      @default(0)
+  totalCost         Float    @default(0)  // In USD
+  
+  // Period tracking
+  periodStart       DateTime @default(now())
+  periodEnd         DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, modelId, periodStart])
+  @@index([userId])
+  @@index([modelId])
+  @@index([periodStart])
 }

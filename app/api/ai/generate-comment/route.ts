@@ -2,37 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken, extractToken } from '@/lib/auth';
 import { limitService } from '@/lib/limit-service';
-import OpenAI from 'openai';
-import { OpenAIConfig, getModelForSettings, generateCommentPrompt } from '@/lib/openai-config';
+import { generateLinkedInComment, getUserModel } from '@/lib/ai-service';
+import { generateCommentPrompt } from '@/lib/openai-config';
 import { formatCommentForLinkedIn } from '@/lib/linkedin-formatter';
 
 // Developer emails that can see token usage and costs
 const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
-
-// Model pricing per 1M tokens (USD)
-const modelPricing: Record<string, { input: number; output: number; name: string }> = {
-  'o1': { input: 15.00, output: 60.00, name: 'o1 (Reasoning - Best)' },
-  'o1-mini': { input: 3.00, output: 12.00, name: 'o1-mini (Fast Reasoning)' },
-  'gpt-4o': { input: 2.50, output: 10.00, name: 'GPT-4o (Best Quality)' },
-  'gpt-4o-mini': { input: 0.15, output: 0.60, name: 'GPT-4o Mini (Fast & Cheap)' },
-  'gpt-4-turbo': { input: 10.00, output: 30.00, name: 'GPT-4 Turbo (Premium)' },
-  'gpt-3.5-turbo': { input: 0.50, output: 1.50, name: 'GPT-3.5 Turbo (Budget)' },
-};
-
-// Initialize OpenAI client with proper error handling
-let openai: OpenAI | null = null;
-try {
-  if (process.env.OPENAI_API_KEY) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY.trim(),
-    });
-    console.log('OpenAI client initialized for comment generation');
-  } else {
-    console.warn('OPENAI_API_KEY not found for comment generation');
-  }
-} catch (error) {
-  console.error('Failed to initialize OpenAI client for comments:', error);
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -99,28 +74,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if OpenAI API key is available
-    if (!openai || !process.env.OPENAI_API_KEY) {
-      console.log('Using fallback comment - OpenAI not available');
-      // Fallback: Generate mock comment when OpenAI key is not available
-      const mockComments = [
-        "Great insights! This really resonates with my experience in the field.",
-        "Thanks for sharing this perspective. I hadn't considered it from this angle before.",
-        "Excellent point! I've seen similar results in my own work.",
-        "This is valuable information. Looking forward to implementing some of these ideas.",
-        "Appreciate you sharing this. It's refreshing to see thought leadership in action."
-      ];
-      
-      const mockContent = mockComments[Math.floor(Math.random() * mockComments.length)];
-      
-      return NextResponse.json({
-        success: true,
-        content: mockContent,
-        fallback: true
-      });
-    }
-    
-    console.log('Calling OpenAI API for comment generation...');
+    // Get user's preferred model or use requested model
+    const selectedModel = requestedModel || await getUserModel(user.id, 'comment');
+    const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
+
+    console.log('Generating comment with model:', selectedModel);
     console.log('Parameters:', { tone, goal, commentLength, commentStyle, userExpertise, authorName });
     
     // Fetch global admin settings for AI generation
@@ -266,115 +224,45 @@ Post: ${postText}
       console.log(`📝 PROMPT: NORMAL MODE, length: ${prompt.length}, style examples: ${styleExamples.length}`);
     }
 
-    // Select model - default to gpt-4o for best quality
-    const selectedModel = requestedModel && modelPricing[requestedModel] ? requestedModel : 'gpt-4o';
-    const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
-
-    // Set max tokens based on comment length (tighter limits to enforce char counts)
-    const lengthSettings: Record<string, number> = {
-      Brief: 40,   // ~100 characters - very tight
-      Short: 120,  // ~300 characters
-      Mid: 250,    // ~600 characters
-      Long: 400    // ~900 characters
-    };
-    const styleTokenMultiplier: Record<string, number> = {
-      direct: 1.0,
-      structured: 1.9,
-      storyteller: 1.5,
-      challenger: 1.4,
-      supporter: 1.4,
-      expert: 1.4,
-      conversational: 1.2,
-    };
-    const baseTokens = lengthSettings[finalLength || 'Short'] || 120;
-    const maxTokens = useProfileStyle ? 300 : Math.ceil(baseTokens * (styleTokenMultiplier[finalStyle || 'direct'] || 1.0));
-    const charLimits: Record<string, number> = {
-      Brief: 100,
-      Short: 300,
-      Mid: 600,
-      Long: 900
-    };
-
+    // Generate content using unified AI service
     let content;
     let tokenUsage: any = null;
     try {
-      // Generate comment with OpenAI
-      const styleLabel: Record<string, string> = { direct: 'Direct & Concise (single paragraph)', structured: 'Structured (2-3 paragraphs)', storyteller: 'Storyteller (personal anecdote lead)', challenger: 'Challenger (different perspective)', supporter: 'Supporter (validate with evidence)', expert: 'Expert (data/experience refs)', conversational: 'Conversational (casual, colleague-like)' };
-      const goalLabel: Record<string, string> = { AddValue: 'Add Value', ShareExperience: 'Share Experience', AskQuestion: 'Ask Question', DifferentPerspective: 'Different Perspective', BuildRelationship: 'Build Relationship', SubtlePitch: 'Subtle Pitch' };
-      const toneLabel: Record<string, string> = { Professional: 'Professional', Friendly: 'Friendly', ThoughtProvoking: 'Thought Provoking', Supportive: 'Supportive', Contrarian: 'Contrarian', Humorous: 'Humorous' };
-      const lengthLabel: Record<string, string> = { Brief: 'Brief (max 100 chars)', Short: 'Short (max 300 chars)', Mid: 'Medium (max 600 chars)', Long: 'Long (max 900 chars)' };
-      // Explicit structural requirements per style (not just labels)
-      const styleFormatInstruction: Record<string, string> = {
-        direct: 'ONE single paragraph. No line breaks between sentences. Everything in one flowing block.',
-        structured: 'EXACTLY 2-3 separate paragraphs with a BLANK LINE between each one. Do NOT put all text in one paragraph. The output MUST look like:\n\nParagraph one text here.\n\nParagraph two text here.\n\nOptional paragraph three.',
-        storyteller: 'MUST open with a personal anecdote ("Last month I...", "A few years ago...", "I remember when..."). Then connect to the post.',
-        challenger: 'MUST respectfully challenge with a different perspective. Open with brief acknowledgment, then pivot with "However..." or "One thing I\'d push back on...".',
-        supporter: 'MUST validate their message with concrete evidence or specific personal experience that proves they\'re right.',
-        expert: 'MUST reference specific data, a metric, a study, or deep domain knowledge. Use precise industry vocabulary.',
-        conversational: 'Casual and warm, like talking to a colleague over coffee. Use contractions, natural transitions.',
-      };
-      const systemMsg = useProfileStyle && styleExamples.length > 0
-        ? `You are a LinkedIn comment ghostwriter. Your ONLY job: mimic the EXACT writing style from the provided examples. Match their tone, rhythm, vocabulary, structure, and personality precisely. Output ONLY the comment text. No labels, no quotes, no explanation.`
-        : `You are a LinkedIn comment ghostwriter. Follow ALL mandatory settings below EXACTLY:
-
-STYLE FORMAT (HIGHEST PRIORITY - structure your output exactly as described):
-${styleFormatInstruction[finalStyle || 'direct'] || styleFormatInstruction['direct']}
-
-GOAL: ${goalLabel[finalGoal || 'AddValue'] || finalGoal}
-TONE: ${toneLabel[finalTone || 'Professional'] || finalTone}
-LENGTH: ${lengthLabel[finalLength || 'Short'] || finalLength}
-
-CRITICAL RULES:
-- STYLE FORMAT is non-negotiable. Structured = blank lines between paragraphs. Single paragraph = no line breaks.
-- GOAL defines what the comment must achieve. If "Ask Question", end with a question.
-- TONE defines the voice. If "Humorous", write with wit. If "Professional", no casual language.
-- LENGTH is a hard cap. Do not exceed it.
-- NOTE: Any style voice examples in the instructions are for vocabulary/personality ONLY. The STYLE FORMAT above always governs structure.
-Output ONLY the comment text. No labels, no quotes, no preamble.`;
-
-      const completion = await openai.chat.completions.create({
+      const result = await generateLinkedInComment({
         model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: systemMsg,
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.82,
-        max_tokens: maxTokens,
+        postContent: postText,
+        goal: finalGoal || 'AddValue',
+        tone: finalTone || 'Professional',
+        length: finalLength || 'Short',
+        style: finalStyle || 'direct',
+        userProfile: userBackground,
+        userExpertise: finalExpertise,
+        userBackground: finalBackground,
+        userId: user.id
       });
 
-      content = completion.choices[0].message.content?.trim() || '';
-      console.log('✅ OpenAI comment generation successful');
+      content = result.content;
+      console.log('✅ Comment generation successful with model:', result.model);
       
       // Extract token usage for developers
-      if (isDeveloper && completion.usage) {
-        const inputTokens = completion.usage.prompt_tokens || 0;
-        const outputTokens = completion.usage.completion_tokens || 0;
-        const pricing = modelPricing[selectedModel] || modelPricing['gpt-4o-mini'];
-        const inputCost = (inputTokens / 1000000) * pricing.input;
-        const outputCost = (outputTokens / 1000000) * pricing.output;
+      if (isDeveloper && result.usage) {
         tokenUsage = {
-          inputTokens,
-          outputTokens,
-          totalTokens: inputTokens + outputTokens,
-          inputCost: `$${inputCost.toFixed(6)}`,
-          outputCost: `$${outputCost.toFixed(6)}`,
-          totalCost: `$${(inputCost + outputCost).toFixed(6)}`,
-          model: selectedModel,
-          modelName: pricing.name,
+          inputTokens: result.usage.promptTokens,
+          outputTokens: result.usage.completionTokens,
+          totalTokens: result.usage.totalTokens,
+          inputCost: `$${((result.usage.promptTokens / 1000000) * (result.cost * 0.7)).toFixed(6)}`,
+          outputCost: `$${((result.usage.completionTokens / 1000000) * (result.cost * 0.3)).toFixed(6)}`,
+          totalCost: `$${result.cost.toFixed(6)}`,
+          model: result.model,
+          modelName: result.provider,
         };
       }
       
-    } catch (openaiError: any) {
-      console.error('OpenAI API Error for comment:', openaiError);
+    } catch (error: any) {
+      console.error('AI generation error:', error);
       
-      // Use fallback when OpenAI fails
-      console.log('OpenAI failed, using fallback comment');
+      // Use fallback when AI service fails
+      console.log('AI service failed, using fallback comment');
       const mockComments = [
         "Great insights! This really resonates with my experience in the field.",
         "Thanks for sharing this perspective. I hadn't considered it from this angle before.",
@@ -411,6 +299,12 @@ Output ONLY the comment text. No labels, no quotes, no preamble.`;
     }
     
     // HARD enforce character limit - truncate if AI exceeded it
+    const charLimits: Record<string, number> = {
+      Brief: 100,
+      Short: 300,
+      Mid: 600,
+      Long: 900
+    };
     const hardLimit = charLimits[finalLength || 'Short'] || 300;
     if (!useProfileStyle && content.length > hardLimit) {
       console.log(`⚠️ Comment exceeded ${hardLimit} char limit (${content.length} chars), truncating...`);

@@ -1042,9 +1042,18 @@ async function pollCommandsDirectly() {
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
                         
-                        // Get payload from cmd (could be in payload field or metadata)
-                        const payload = typeof cmd.payload === 'string' ? JSON.parse(cmd.payload || '{}') : (cmd.payload || cmd.data || {});
+                        // Get payload from cmd - content/draftId are at root level from API
+                        // API returns { id, ...meta } so content/draftId/etc are directly on cmd
+                        const payload = cmd.data || {
+                            content: cmd.content,
+                            draftId: cmd.draftId,
+                            scheduledFor: cmd.scheduledFor,
+                            topic: cmd.topic,
+                            template: cmd.template,
+                            tone: cmd.tone
+                        };
                         console.log('📅 POLL-ALARM: Payload:', payload);
+                        console.log('📅 POLL-ALARM: Content length:', payload.content?.length || 0);
                         
                         if (payload.draftId) {
                             await fetch(`${apiUrl}/api/scheduled-posts`, {

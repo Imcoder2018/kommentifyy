@@ -282,8 +282,15 @@ async function pollCommandsDirectly() {
             // We send a message to ourselves - but in MV3 this doesn't work for service workers
             // So instead, process inline using the same logic
             for (const cmd of data.commands) {
-                if (globalThis._processingCommandIds.has(cmd.id)) continue;
-                if (globalThis._stopAllTasks) break;
+                if (globalThis._processingCommandIds.has(cmd.id)) {
+                    console.log(`⏭️ POLL-ALARM: Command ${cmd.id} (${cmd.command}) already processing, skipping`);
+                    continue;
+                }
+                if (globalThis._stopAllTasks) {
+                    console.log(`🛑 POLL-ALARM: Stop flag active, skipping command ${cmd.command}`);
+                    break;
+                }
+                console.log(`▶️ POLL-ALARM: Processing command ${cmd.id} (${cmd.command})`);
                 globalThis._processingCommandIds.add(cmd.id);
 
                 // Mark as in_progress
@@ -298,28 +305,56 @@ async function pollCommandsDirectly() {
 
                 // --- scrape_profile ---
                 if (cmd.command === 'scrape_profile' && cmd.data?.profileUrl) {
-                    console.log('🔍 POLL-ALARM: Executing scrape_profile for:', cmd.data.profileUrl);
+                    console.log('🔍 POLL-ALARM: Executing scrape_profile for:', cmd.data.profileUrl, 'postCount:', cmd.data.postCount || 10);
                     try {
                         const result = await scrapeProfilePostsImpl(cmd.data.profileUrl, cmd.data.postCount || 10);
                         const token = await getFreshToken();
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
                             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ commandId: cmd.id, status: result.success ? 'completed' : 'failed' })
+                            body: JSON.stringify({ commandId: cmd.id, status: 'completed', result })
                         });
-                        console.log('✅ POLL-ALARM: scrape_profile done:', result.success);
+                        console.log('✅ POLL-ALARM: scrape_profile done:', result.success, 'posts:', result.posts?.length || 0);
+                        // Notify user of success
+                        if (result.success && result.posts?.length > 0) {
+                            try {
+                                await chrome.notifications.create({
+                                    type: 'basic',
+                                    iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                    title: 'Kommentify - Profile Scraped',
+                                    message: `✅ Successfully scraped ${result.posts.length} posts from ${result.profileData?.name || 'profile'}`,
+                                    priority: 1
+                                });
+                            } catch (notifErr) {}
+                        }
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_profile failed:', e);
+                        const errorMsg = `Profile scraping failed - ${e.message || 'Unknown error'}`;
                         try { 
-                            const token = await getFreshToken();
-                            await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); 
+                            await fetch(`${apiUrl}/api/extension/command`, { 
+                                method: 'PUT', 
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message }) 
+                            }); 
                         } catch (x) {}
-                    } finally { globalThis._processingCommandIds.delete(cmd.id); }
+                        // Notify user of failure
+                        try {
+                            await chrome.notifications.create({
+                                type: 'basic',
+                                iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                title: 'Kommentify - Profile Scraping Failed',
+                                message: errorMsg,
+                                priority: 1
+                            });
+                        } catch (notifErr) {}
+                    } finally {
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
                 }
 
-                // --- scrape_feed_now (time-based) ---
-                else if (cmd.command === 'scrape_feed_now') {
-                    console.log('🔍 POLL-ALARM: Executing scrape_feed_now (time-based)...');
+                // --- scrape_feed_now ---
+                else if (cmd.command === 'scrape_feed_now' && cmd.data) {
+                    console.log('📊 POLL-ALARM: Executing scrape_feed_now...');
                     let scrapeTab = null;
                     let scrapeWindowId = null;
                     try {
@@ -549,8 +584,25 @@ async function pollCommandsDirectly() {
                         console.log(`✅ POLL-ALARM: scrape_comments done, saved ${result.count} comments`);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_comments failed:', e);
-                        if (commentTab) { try { await sendOverlay(commentTab.id, `❌ Kommentify: Comment scraping failed`, 'error'); } catch (x) {} }
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        const errorMsg = `❌ Kommentify: Comment scraping failed - ${e.message || 'Unknown error'}`;
+                        if (commentTab) { try { await sendOverlay(commentTab.id, errorMsg, 'error'); } catch (x) {} }
+                        try { 
+                            await fetch(`${apiUrl}/api/extension/command`, { 
+                                method: 'PUT', 
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message }) 
+                            }); 
+                        } catch (x) {}
+                        // Notify user of the failure
+                        try {
+                            await chrome.notifications.create({
+                                type: 'basic',
+                                iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                title: 'Kommentify - Comment Scraping Failed',
+                                message: errorMsg,
+                                priority: 1
+                            });
+                        } catch (notifErr) {}
                     } finally {
                         if (commentTab) { try { await chrome.tabs.remove(commentTab.id); } catch (e) {} globalThis._commandLinkedInTabs.delete(commentTab.id); }
                         globalThis._processingCommandIds.delete(cmd.id);
@@ -2105,55 +2157,27 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
         if (!urlMatch) return { success: false, error: 'Invalid LinkedIn profile URL' };
         const username = urlMatch[1];
 
-        // Open the main profile page to extract comprehensive data
-        const mainProfileUrl = `https://www.linkedin.com/in/${username}/`;
-        console.log('BACKGROUND: Opening profile page:', mainProfileUrl);
-        // Open in a new focused window so LinkedIn renders the full SDUI top card (name/headline)
-        const profileWindow = await chrome.windows.create({ url: mainProfileUrl, type: 'popup', focused: true, width: 1200, height: 800 });
+        // Open the recent-activity page directly to scrape posts
+        const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
+        console.log('BACKGROUND: Opening recent-activity page:', activityUrl);
+        // Open in a new focused window so LinkedIn renders the full SDUI
+        const profileWindow = await chrome.windows.create({ url: activityUrl, type: 'popup', focused: true, width: 1200, height: 800 });
         const profileTab = profileWindow.tabs[0];
         const profileWindowId = profileWindow.id;
         await waitForContentLoad(profileTab.id, 12000);
-        await scrollAndLoadContent(profileTab.id, 3);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await scrollAndLoadContent(profileTab.id, 5);
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         // Extract comprehensive profile data using the new scraper
-        const profileResult = await chrome.scripting.executeScript({
-            target: { tabId: profileTab.id },
-            func: profileScraper
-        });
-
-        const profileData = profileResult[0]?.result;
-        if (!profileData) {
-            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
-            return { success: false, error: 'Failed to extract profile data' };
-        }
-
-        console.log('BACKGROUND: Profile data extracted:', { name: profileData.name, headline: profileData.headline, skillsCount: profileData.skills.length, experienceCount: profileData.experience.length });
-
-        // Now extract posts from the activity page if posts are requested
+        // Extract posts directly from the activity page
         let scrapedPosts = [];
-        if (postCount > 0 && profileData.posts && profileData.posts.length > 0) {
-            // Use posts extracted directly from the profile page
-            scrapedPosts = profileData.posts.slice(0, postCount).map(postContent => ({
-                content: postContent.substring(0, 5000),
-                authorName: profileData.name || 'Unknown',
-                postUrl: profileUrl
-            }));
-            console.log(`BACKGROUND: Found ${profileData.posts.length} posts on profile, using ${scrapedPosts.length}`);
-            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
-        } else if (postCount > 0) {
-            // Fallback to activity page scraping if no posts found on main profile
-            console.log('BACKGROUND: No posts found on main profile, checking activity page...');
-            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
-            
-            const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
-            const activityTab = await chrome.tabs.create({ url: activityUrl, active: false });
-            await waitForContentLoad(activityTab.id, 12000);
-            await scrollAndLoadContent(activityTab.id, 3);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        let profileData = { name: 'Unknown', headline: '', skills: [], experience: [], posts: [] };
+        
+        if (postCount > 0) {
+            console.log('BACKGROUND: Extracting posts from activity page...');
 
             const extractResult = await chrome.scripting.executeScript({
-                target: { tabId: activityTab.id },
+                target: { tabId: profileTab.id },
                 func: (maxPosts) => {
                     const postUrns = [];
                     const postElements = document.querySelectorAll('[data-urn*="urn:li:activity:"], [data-id*="urn:li:activity:"]');
@@ -2167,13 +2191,19 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
                             if (!isRepost) postUrns.push({ activityId: activityMatch[1], urn });
                         }
                     }
-                    return postUrns;
+                    // Also try to extract profile name from page
+                    let profileName = 'Unknown';
+                    const nameEl = document.querySelector('.artdeco-entity-lockup__title, .feed-identity-module__actor-meta h2, h1');
+                    if (nameEl) profileName = nameEl.innerText?.trim() || 'Unknown';
+                    return { postUrns, profileName };
                 },
                 args: [postCount + 5]
             });
 
-            await chrome.tabs.remove(activityTab.id);
-            const postUrns = extractResult[0]?.result || [];
+            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
+            const extractData = extractResult[0]?.result || { postUrns: [], profileName: 'Unknown' };
+            const postUrns = extractData.postUrns || [];
+            profileData.name = extractData.profileName || 'Unknown';
             if (postUrns.length > 0) {
                 console.log(`BACKGROUND: Found ${postUrns.length} post URNs in activity, extracting content...`);
                 
@@ -2205,7 +2235,7 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
                         if (postData && postData.content && postData.content.length >= 50) {
                             const skipPatterns = [/^is now/i, /updated their profile/i, /shared this/i, /endorsed/i, /started following/i, /celebrated/i, /has a new profile photo/i, /reacted to this/i];
                             if (!skipPatterns.some(p => p.test(postData.content))) {
-                                scrapedPosts.push({ content: postData.content.substring(0, 5000), likes: postData.likes || 0, comments: postData.comments || 0, authorName: profileData.name || 'Unknown', postUrl });
+                                scrapedPosts.push({ content: postData.content.substring(0, 5000), likes: postData.likes || 0, comments: postData.comments || 0, authorName: profileData.name, postUrl });
                             }
                         }
                         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -2215,6 +2245,8 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
         } else {
             try { await chrome.windows.remove(profileWindowId); } catch(e) {}
         }
+        
+        const skippedCount = 0;
 
         console.log(`✅ BACKGROUND: Successfully extracted profile data and ${scrapedPosts.length} posts`);
 
@@ -2231,11 +2263,11 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
             const ingestData = await ingestResponse.json();
             if (ingestData.success) {
                 await chrome.storage.local.set({ lastInspirationResult: { success: true, authorName: profileData.name, postCount: ingestData.count, profileUrl, timestamp: Date.now() } });
-                return { success: true, posts: scrapedPosts, profileData, skippedCount, savedToBackend: true, savedCount: ingestData.count };
+                return { success: true, posts: scrapedPosts, profileData, savedToBackend: true, savedCount: ingestData.count };
             }
-            return { success: true, posts: scrapedPosts, profileData, skippedCount, savedToBackend: false, backendError: ingestData.error };
+            return { success: true, posts: scrapedPosts, profileData, savedToBackend: false, backendError: ingestData.error };
         } catch (apiError) {
-            return { success: true, posts: scrapedPosts, profileData, skippedCount, savedToBackend: false, backendError: apiError.message };
+            return { success: true, posts: scrapedPosts, profileData, savedToBackend: false, backendError: apiError.message };
         }
     } catch (error) {
         console.error('❌ BACKGROUND: Error scraping profile posts:', error);
@@ -2910,18 +2942,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 globalThis._commandLinkedInTabs.clear();
                 globalThis._processingCommandIds.clear();
                 
+                // Clear stop flag immediately so new tasks can execute
+                globalThis._stopAllTasks = false;
+                
                 // Cancel all pending commands via API
                 const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-                if (authToken) {
+                const token = await getFreshToken();
+                if (token) {
                     await fetch(`${apiUrl}/api/extension/command/stop-all`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                     });
                 }
-                
-                // Reset flag after longer delay so all running tasks have time to see the flag
-                setTimeout(() => { globalThis._stopAllTasks = false; }, 30000);
                 
                 console.log('🛑 BACKGROUND: All tasks stopped, closed', tabIds.length, 'tabs');
                 sendResponse({ success: true, closedTabs: tabIds.length });

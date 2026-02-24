@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
-// Generate 6-digit OTP
+// #36: Use crypto-safe random for OTP generation
 function generateOTP(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 999999).toString();
 }
 
 // Email sending function using GHL (GoHighLevel) API
@@ -13,7 +14,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
         try {
             // First, check if contact exists or create one
             let contactId = await getOrCreateGHLContact(to);
-            
+
             if (contactId) {
                 // Send email via GHL
                 const res = await fetch(`https://services.leadconnectorhq.com/conversations/messages`, {
@@ -31,7 +32,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
                         emailFrom: process.env.GHL_EMAIL_FROM || 'noreply@kommentify.com',
                     }),
                 });
-                
+
                 if (res.ok) {
                     console.log('GHL: Email sent successfully to', to);
                     return true;
@@ -44,7 +45,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
             console.error('GHL email error:', e);
         }
     }
-    
+
     // Option 2: Use Resend API as fallback
     if (process.env.RESEND_API_KEY) {
         try {
@@ -66,7 +67,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
             console.error('Resend email error:', e);
         }
     }
-    
+
     // Option 3: Use SendGrid API as fallback
     if (process.env.SENDGRID_API_KEY) {
         try {
@@ -88,7 +89,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
             console.error('SendGrid email error:', e);
         }
     }
-    
+
     // No email service configured - development mode
     return false;
 }
@@ -107,14 +108,14 @@ async function getOrCreateGHLContact(email: string): Promise<string | null> {
                 },
             }
         );
-        
+
         if (searchRes.ok) {
             const searchData = await searchRes.json();
             if (searchData.contacts && searchData.contacts.length > 0) {
                 return searchData.contacts[0].id;
             }
         }
-        
+
         // Create new contact if not found
         const createRes = await fetch('https://services.leadconnectorhq.com/contacts/', {
             method: 'POST',
@@ -131,12 +132,12 @@ async function getOrCreateGHLContact(email: string): Promise<string | null> {
                 tags: ['kommentify', 'email-verification'],
             }),
         });
-        
+
         if (createRes.ok) {
             const createData = await createRes.json();
             return createData.contact?.id || null;
         }
-        
+
         return null;
     } catch (e) {
         console.error('GHL contact error:', e);
@@ -163,24 +164,23 @@ export async function POST(request: Request) {
             where: { expiresAt: { lt: new Date() } }
         });
 
-        // Check rate limiting (max 5 OTPs per email per 10 minutes)
+        // #37: Check rate limiting BEFORE deleting old OTPs
         const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-        const recentAttempts = await prisma.oTPVerification.findMany({
+        const recentAttempts = await prisma.oTPVerification.count({
             where: {
                 email,
                 createdAt: { gte: tenMinutesAgo }
             }
         });
 
-        const totalAttempts = recentAttempts.reduce((sum: number, otp: any) => sum + otp.attempts, 0);
-        if (totalAttempts >= 5) {
-            return NextResponse.json({ 
-                success: false, 
-                error: 'Too many attempts. Please wait 10 minutes.' 
+        if (recentAttempts >= 5) {
+            return NextResponse.json({
+                success: false,
+                error: 'Too many attempts. Please wait 10 minutes.'
             }, { status: 429 });
         }
 
-        // Delete old OTPs for this email
+        // Delete old OTPs for this email AFTER rate limit check
         await prisma.oTPVerification.deleteMany({
             where: { email }
         });
@@ -228,7 +228,7 @@ export async function POST(request: Request) {
                 <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                 
                 <p style="color: #aaa; font-size: 11px; text-align: center;">
-                    © 2025 Kommentify. All rights reserved.<br>
+                    © ${new Date().getFullYear()} Kommentify. All rights reserved.<br>
                     AI-Powered LinkedIn Growth Suite
                 </p>
             </div>
@@ -236,24 +236,32 @@ export async function POST(request: Request) {
 
         // Try to send email
         const emailSent = await sendEmail(email, 'Your Kommentify Verification Code', emailHtml);
-        
+
         if (emailSent) {
             console.log(`OTP sent to ${email}`);
         } else {
+            // #38: In production, return an error if no email service is configured
+            if (process.env.NODE_ENV === 'production') {
+                console.error('No email service configured in production - OTP cannot be delivered');
+                return NextResponse.json({
+                    success: false,
+                    error: 'Email service is not configured. Please contact support.'
+                }, { status: 503 });
+            }
             // Development mode - log OTP to console
             console.log(`[DEV MODE] OTP for ${email}: ${otp}`);
         }
-        
-        return NextResponse.json({ 
-            success: true, 
-            message: 'Verification code sent to your email' 
+
+        return NextResponse.json({
+            success: true,
+            message: 'Verification code sent to your email'
         });
 
     } catch (error) {
         console.error('Send OTP error:', error);
-        return NextResponse.json({ 
-            success: false, 
-            error: 'Failed to send verification code' 
+        return NextResponse.json({
+            success: false,
+            error: 'Failed to send verification code'
         }, { status: 500 });
     }
 }

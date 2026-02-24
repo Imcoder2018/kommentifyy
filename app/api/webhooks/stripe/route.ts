@@ -127,7 +127,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     // Get plan from metadata first (more reliable)
     let plan = null;
     const planIdFromMetadata = session.metadata?.planId;
-    
+
     if (planIdFromMetadata) {
       plan = await prisma.plan.findUnique({
         where: { id: planIdFromMetadata }
@@ -139,7 +139,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       const stripe = getStripe();
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
       const stripePriceId = lineItems.data?.[0]?.price?.id;
-      
+
       if (stripePriceId) {
         plan = await prisma.plan.findFirst({ where: { stripePriceId } });
         if (!plan) {
@@ -189,7 +189,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       console.log(`✅ User ${user.email} upgraded to ${plan.name} plan`);
       console.log(`💰 Payment tracked: $${amountPaid} (Total: $${user.totalPaid})`);
     }
-    
+
     // Log referral info if this user was referred
     if (user.referredById) {
       console.log(`🎁 This is a referred user! Referrer ID: ${user.referredById}`);
@@ -223,7 +223,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     let plan = await prisma.plan.findFirst({
       where: { stripePriceId }
     });
-    
+
     if (!plan && stripePriceId) {
       plan = await prisma.plan.findFirst({
         where: { stripeYearlyPriceId: stripePriceId }
@@ -261,7 +261,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     let plan = await prisma.plan.findFirst({
       where: { stripePriceId }
     });
-    
+
     if (!plan && stripePriceId) {
       plan = await prisma.plan.findFirst({
         where: { stripeYearlyPriceId: stripePriceId }
@@ -316,18 +316,41 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
   }
 }
 
-// Handle successful payment
+// Handle successful payment (#41)
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('💰 Payment succeeded for invoice:', invoice.id);
-  // Payment tracking can be added here if needed
+
+  try {
+    const stripeCustomerId = invoice.customer as string;
+    const amountPaid = (invoice.amount_paid || 0) / 100; // Convert cents to dollars
+
+    if (!stripeCustomerId || amountPaid <= 0) return;
+
+    const user = await prisma.user.findFirst({
+      where: { stripeCustomerId }
+    });
+
+    if (user) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          hasPaid: true,
+          totalPaid: { increment: amountPaid }
+        }
+      });
+      console.log(`✅ Updated payment tracking for ${user.email}: +$${amountPaid}`);
+    }
+  } catch (error) {
+    console.error('Error handling payment succeeded:', error);
+  }
 }
 
 // Handle failed payment - downgrade to starter plan after trial if payment fails
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('⚠️ Payment failed for invoice:', invoice.id);
-  
+
   const stripeCustomerId = invoice.customer as string;
-  
+
   try {
     const user = await prisma.user.findFirst({
       where: { stripeCustomerId },
@@ -336,11 +359,11 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
     if (user) {
       console.log(`⚠️ Payment failed for user: ${user.email}`);
-      
+
       // Check if user is on trial and trial has ended
       const now = new Date();
       const trialEnded = user.trialEndsAt && new Date(user.trialEndsAt) < now;
-      
+
       // If trial ended or this is a recurring payment failure, downgrade to starter plan
       if (trialEnded || !user.hasPaid) {
         const freePlan = await prisma.plan.findFirst({
@@ -358,7 +381,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
           console.log(`✅ User ${user.email} downgraded to Starter plan due to payment failure`);
         }
       }
-      
+
       // TODO: Send payment failed email notification
     }
   } catch (error) {
@@ -369,10 +392,10 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 // Handle trial ending soon (3 days before trial ends)
 async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   console.log('⏰ Trial ending soon for subscription:', subscription.id);
-  
+
   const stripeCustomerId = subscription.customer as string;
   const trialEnd = subscription.trial_end;
-  
+
   try {
     const user = await prisma.user.findFirst({
       where: { stripeCustomerId }
@@ -381,7 +404,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
     if (user && trialEnd) {
       const trialEndDate = new Date(trialEnd * 1000);
       console.log(`⏰ Trial ending for ${user.email} on ${trialEndDate.toISOString()}`);
-      
+
       // Update user's trial end date
       await prisma.user.update({
         where: { id: user.id },
@@ -389,7 +412,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
           trialEndsAt: trialEndDate
         }
       });
-      
+
       // TODO: Send trial ending email notification
       console.log(`📧 Should send trial ending email to ${user.email}`);
     }

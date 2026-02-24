@@ -73,11 +73,11 @@ export function getModelForSettings(tone: string, length: string, useCheapModel:
  * Strictly enforces the user's selected Comment Style, Comment Goal, and Tone of Voice
  */
 export function generateCommentPrompt(
-    postText: string, 
-    tone: string, 
-    goal: string, 
+    postText: string,
+    tone: string,
+    goal: string,
     commentLength: string = 'Short',
-    userExpertise: string = '', 
+    userExpertise: string = '',
     userBackground: string = '',
     authorName: string = 'there',
     commentStyle: string = 'direct',
@@ -300,11 +300,11 @@ Output ONLY the comment text. No labels, no quotes, no explanation.`;
  * Generate prompt for post generation - Elite LinkedIn Content Strategy
  */
 export function generatePostPrompt(
-    topic: string, 
-    template: string, 
-    tone: string, 
-    length: string, 
-    includeHashtags: boolean, 
+    topic: string,
+    template: string,
+    tone: string,
+    length: string,
+    includeHashtags: boolean,
     includeEmojis: boolean,
     targetAudience: string = '',
     keyMessage: string = '',
@@ -382,10 +382,10 @@ POST STRUCTURE
 FORMATTING
 ══════════════════════════════════════════════════
 
-CHARACTER COUNT: ⚠️ CRITICAL - Your post MUST be between ${Math.max(100, parseInt(length) - 200)} and ${parseInt(length)} characters. This is a HARD requirement.
+CHARACTER COUNT: ⚠️ CRITICAL - Your post MUST be between ${Math.max(100, (parseInt(length) || 1200) - 200)} and ${parseInt(length) || 1200} characters. This is a HARD requirement.
 - If your post is too short, expand with more specific details and examples
 - If your post is too long, trim while keeping the core message
-- Target length: ${length} characters (approximately ${Math.round(parseInt(length) / 5)} words)
+- Target length: ${parseInt(length) || 1200} characters (approximately ${Math.round((parseInt(length) || 1200) / 5)} words)
 LINE BREAKS: One sentence per paragraph, blank line between each
 EMOJIS: ${includeEmojis ? 'Use 2-4 strategically placed emojis, never in hook' : 'NO emojis - zero allowed'}
 HASHTAGS: ${includeHashtags ? 'Add 3-5 relevant hashtags at the VERY END after a blank line' : 'NO hashtags'}
@@ -463,7 +463,7 @@ export function buildProfileContext(profileData: {
     // About section (token-limited)
     if (profileData.about && profileData.about.length > 0) {
         const aboutLimit = 500; // Limit about section to 500 chars
-        const truncatedAbout = profileData.about.length > aboutLimit 
+        const truncatedAbout = profileData.about.length > aboutLimit
             ? profileData.about.substring(0, aboutLimit) + '...'
             : profileData.about;
         context += `\nAbout: ${truncatedAbout}\n`;
@@ -491,7 +491,7 @@ export function buildProfileContext(profileData: {
     if (profileData.posts && profileData.posts.length > 0) {
         let postsContent = '';
         let currentChars = 0;
-        
+
         // Take posts in order (most recent first), stop when we hit the limit
         for (const post of profileData.posts) {
             if (currentChars + post.length > maxPostsChars) {
@@ -519,11 +519,11 @@ export function buildProfileContext(profileData: {
  * Generate post prompt with LinkedIn profile data integrated
  */
 export function generatePostPromptWithProfile(
-    topic: string, 
-    template: string, 
-    tone: string, 
-    length: string, 
-    includeHashtags: boolean, 
+    topic: string,
+    template: string,
+    tone: string,
+    length: string,
+    includeHashtags: boolean,
     includeEmojis: boolean,
     targetAudience: string = '',
     keyMessage: string = '',
@@ -556,11 +556,11 @@ export function generatePostPromptWithProfile(
 
         // Insert profile context before the structure section
         const insertPoint = basePrompt.indexOf('══════════════════════════════════════════════════\nPOST STRUCTURE');
-        
+
         if (insertPoint > -1) {
-            return basePrompt.substring(0, insertPoint) + 
-                   profileContext + 
-                   basePrompt.substring(insertPoint);
+            return basePrompt.substring(0, insertPoint) +
+                profileContext +
+                basePrompt.substring(insertPoint);
         }
     }
 

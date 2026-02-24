@@ -1,48 +1,54 @@
 import { hashPassword, comparePassword } from './auth';
 import { prisma } from '@/lib/prisma';
 
+// #21: User interface now matches Prisma schema field names (monthly* instead of daily*)
 export interface User {
   id: string;
   email: string;
-  name: string;
+  name: string | null;
   password: string;
-  createdAt: string;
+  createdAt: Date;
   plan: {
     id: string;
     name: string;
     price: number;
-    dailyComments: number;
-    dailyLikes: number;
-    dailyShares: number;
-    dailyFollows: number;
-    dailyConnections: number;
-    aiPostsPerDay: number;
-    aiCommentsPerDay: number;
+    monthlyComments: number;
+    monthlyLikes: number;
+    monthlyShares: number;
+    monthlyFollows: number;
+    monthlyConnections: number;
+    aiPostsPerMonth: number;
+    aiCommentsPerMonth: number;
+    aiTopicLinesPerMonth: number;
     allowAiPostGeneration: boolean;
     allowAiCommentGeneration: boolean;
+    allowAiTopicLines: boolean;
     allowPostScheduling: boolean;
     allowAutomation: boolean;
     allowAutomationScheduling: boolean;
     allowNetworking: boolean;
     allowNetworkScheduling: boolean;
     allowCsvExport: boolean;
+    allowImportProfiles: boolean;
+    monthlyImportCredits: number;
   } | null;
 }
 
+// #24: User without password — for API responses
+export type UserWithoutPassword = Omit<User, 'password'>;
+
 export class UserService {
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<UserWithoutPassword[]> {
     try {
-      console.log('Fetching all users from database...');
       const dbUsers = await prisma.user.findMany({
         include: { plan: true },
         orderBy: { createdAt: 'desc' },
       });
-      console.log(`📊 Found ${dbUsers.length} users in database`);
-      return dbUsers as unknown as User[];
+      // #24: Strip passwords before returning
+      return dbUsers.map(({ password, ...user }) => user) as unknown as UserWithoutPassword[];
     } catch (error) {
-      console.error('❌ Error fetching users:', error);
-      // Return empty array instead of fallback to avoid confusion
+      console.error('Error fetching users:', error);
       return [];
     }
   }
@@ -55,19 +61,20 @@ export class UserService {
       });
       return user as unknown as User;
     } catch (error) {
-      console.error('❌ Error finding user by email:', error);
+      console.error('Error finding user by email:', error);
       return null;
     }
   }
 
   async createUser(
-    email: string, 
-    password: string, 
-    name: string, 
+    email: string,
+    password: string,
+    name: string,
     options?: { referralCode?: string; referredById?: string | null }
   ): Promise<User> {
     const hashedPassword = await hashPassword(password);
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // #23: Replace deprecated substr() with substring()
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     try {
       // First, check if there's a trial plan available
@@ -80,16 +87,14 @@ export class UserService {
 
       if (trialPlan) {
         // Assign trial plan with expiry date
-        console.log(`✨ Assigning ${trialPlan.trialDurationDays}-day trial plan to new user`);
         trialEndsAt = new Date();
         trialEndsAt.setDate(trialEndsAt.getDate() + trialPlan.trialDurationDays);
-        
+
         planData = {
           connect: { id: trialPlan.id }
         };
       } else {
         // Fallback to Free plan if no trial plan exists
-        console.log('⚠️ No trial plan found, using Free plan');
         planData = {
           connectOrCreate: {
             where: { name: 'Free' },
@@ -134,11 +139,10 @@ export class UserService {
         } as any,
         include: { plan: true },
       });
-      
-      console.log(`✅ User created: ${dbUser.email} | Plan: ${dbUser.plan?.name} | Trial ends: ${trialEndsAt ? trialEndsAt.toISOString() : 'N/A'}`);
+
       return dbUser as unknown as User;
     } catch (error) {
-      console.error('❌ Database error during user creation:', error);
+      console.error('Database error during user creation:', error);
       throw new Error('Failed to create user in database: ' + (error as Error).message);
     }
   }

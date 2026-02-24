@@ -3,19 +3,16 @@
  * Uses LinkedIn OAuth2 with UGC Posts API
  */
 
-if (!process.env.LINKEDIN_CLIENT_ID) {
-  throw new Error('CRITICAL: LINKEDIN_CLIENT_ID environment variable is not set');
+// Lazy initialization — avoid top-level throws that crash the app at import time (#17)
+function getLinkedInConfig() {
+  const clientId = process.env.LINKEDIN_CLIENT_ID;
+  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+  const redirectUri = process.env.LINKEDIN_REDIRECT_URI;
+  if (!clientId) throw new Error('CRITICAL: LINKEDIN_CLIENT_ID environment variable is not set');
+  if (!clientSecret) throw new Error('CRITICAL: LINKEDIN_CLIENT_SECRET environment variable is not set');
+  if (!redirectUri) throw new Error('CRITICAL: LINKEDIN_REDIRECT_URI environment variable is not set');
+  return { clientId, clientSecret, redirectUri };
 }
-if (!process.env.LINKEDIN_CLIENT_SECRET) {
-  throw new Error('CRITICAL: LINKEDIN_CLIENT_SECRET environment variable is not set');
-}
-if (!process.env.LINKEDIN_REDIRECT_URI) {
-  throw new Error('CRITICAL: LINKEDIN_REDIRECT_URI environment variable is not set');
-}
-
-const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
-const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
-const LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI;
 
 export interface LinkedInTokenResponse {
   access_token: string;
@@ -35,10 +32,11 @@ export interface LinkedInProfile {
  * Generate LinkedIn OAuth authorization URL
  */
 export function getLinkedInAuthUrl(state: string): string {
+  const { clientId, redirectUri } = getLinkedInConfig();
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: LINKEDIN_CLIENT_ID,
-    redirect_uri: LINKEDIN_REDIRECT_URI,
+    client_id: clientId,
+    redirect_uri: redirectUri,
     state,
     scope: 'openid profile email w_member_social',
   });
@@ -55,9 +53,9 @@ export async function exchangeCodeForToken(code: string): Promise<LinkedInTokenR
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      client_id: LINKEDIN_CLIENT_ID,
-      client_secret: LINKEDIN_CLIENT_SECRET,
-      redirect_uri: LINKEDIN_REDIRECT_URI,
+      client_id: getLinkedInConfig().clientId,
+      client_secret: getLinkedInConfig().clientSecret,
+      redirect_uri: getLinkedInConfig().redirectUri,
     }),
   });
 
@@ -259,11 +257,21 @@ export async function postWithVideoToLinkedIn(
   const videoRes = await fetch(videoUrl);
   const videoBuffer = await videoRes.arrayBuffer();
 
+  // Detect content type from URL extension (#19)
+  const videoExtension = videoUrl.split('.').pop()?.toLowerCase().split('?')[0] || 'mp4';
+  const videoContentTypeMap: Record<string, string> = {
+    'mp4': 'video/mp4',
+    'webm': 'video/webm',
+    'mov': 'video/quicktime',
+    'avi': 'video/x-msvideo',
+  };
+  const videoContentType = videoContentTypeMap[videoExtension] || videoRes.headers.get('content-type') || 'video/mp4';
+
   const uploadRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'video/mp4',
+      'Content-Type': videoContentType,
     },
     body: Buffer.from(videoBuffer),
   });

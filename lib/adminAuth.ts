@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from './auth';
+import { verifyToken, extractToken } from './auth'; // #9: Import from auth.ts instead of duplicating
 
-/**
- * Extract token from Authorization header
- */
-export function extractToken(authHeader: string | null): string | null {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  return authHeader.substring(7);
-}
+// Re-export extractToken for backward compatibility
+export { extractToken };
 
 /**
  * Verify admin authentication
@@ -33,15 +26,21 @@ export function verifyAdminAuth(request: NextRequest) {
 
     return payload;
   } catch (error: any) {
-    console.error('Token verification detailed error:', error);
+    if (error.message === 'Insufficient permissions') {
+      throw error; // Re-throw permission errors as-is
+    }
     throw new Error(`Invalid or expired token: ${error.message}`);
   }
 }
 
+// #10: Proper handler type instead of generic Function
+type AdminRouteHandler = (request: NextRequest, ...args: any[]) => Promise<NextResponse>;
+
 /**
  * Middleware wrapper for admin-only routes
+ * #11: Returns 401 for auth failures, 403 for insufficient permissions
  */
-export function requireAdmin(handler: Function) {
+export function requireAdmin(handler: AdminRouteHandler) {
   return async (request: NextRequest, ...args: any[]) => {
     try {
       const admin = verifyAdminAuth(request);
@@ -53,12 +52,14 @@ export function requireAdmin(handler: Function) {
     } catch (error: any) {
       console.error('Admin auth error:', error.message);
 
+      // #11: Distinguish between 401 (no/invalid token) and 403 (insufficient permissions)
+      const isPermissionError = error.message === 'Insufficient permissions';
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized access'
+          error: isPermissionError ? 'Insufficient permissions' : 'Unauthorized access'
         },
-        { status: 403 }
+        { status: isPermissionError ? 403 : 401 }
       );
     }
   };

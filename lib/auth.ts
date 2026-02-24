@@ -1,15 +1,22 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('CRITICAL: JWT_SECRET environment variable is not set');
-}
-if (!process.env.JWT_REFRESH_SECRET) {
-  throw new Error('CRITICAL: JWT_REFRESH_SECRET environment variable is not set');
+// Lazy initialization — avoid top-level throws that crash the app at import time (#8)
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('CRITICAL: JWT_SECRET environment variable is not set');
+  }
+  return secret;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+function getJwtRefreshSecret(): string {
+  const secret = process.env.JWT_REFRESH_SECRET;
+  if (!secret) {
+    throw new Error('CRITICAL: JWT_REFRESH_SECRET environment variable is not set');
+  }
+  return secret;
+}
 
 export interface TokenPayload {
   userId: string;
@@ -18,19 +25,19 @@ export interface TokenPayload {
 }
 
 export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '90d' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }
 
 export function generateRefreshToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '30d' });
+  return jwt.sign(payload, getJwtRefreshSecret(), { expiresIn: '90d' });
 }
 
 export function verifyToken(token: string): TokenPayload {
-  return jwt.verify(token, JWT_SECRET) as TokenPayload;
+  return jwt.verify(token, getJwtSecret()) as TokenPayload;
 }
 
 export function verifyRefreshToken(token: string): TokenPayload {
-  return jwt.verify(token, JWT_REFRESH_SECRET) as TokenPayload;
+  return jwt.verify(token, getJwtRefreshSecret()) as TokenPayload;
 }
 
 export async function hashPassword(password: string): Promise<string> {

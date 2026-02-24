@@ -6,8 +6,8 @@ import { generateLinkedInComment, getUserModel, generateContent } from '@/lib/ai
 import { generateCommentPrompt } from '@/lib/openai-config';
 import { formatCommentForLinkedIn } from '@/lib/linkedin-formatter';
 
-// Developer emails that can see token usage and costs
-const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
+// #48: Developer emails configurable via env var instead of hardcoded
+const DEVELOPER_EMAILS = (process.env.DEVELOPER_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,13 +21,13 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    const { 
-      postText, 
-      tone, 
-      goal, 
+    const {
+      postText,
+      tone,
+      goal,
       commentLength,
       commentStyle,
-      userExpertise, 
+      userExpertise,
       userBackground,
       authorName,
       useProfileStyle: reqUseProfileStyle,
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Generating comment with model:', selectedModel);
     console.log('Parameters:', { tone, goal, commentLength, commentStyle, userExpertise, authorName });
-    
+
     // Fetch global admin settings for AI generation
     let adminProfileStyleMode = true;
     let adminCommentEmbeddingsCount = 5;
@@ -138,12 +138,12 @@ export async function POST(request: NextRequest) {
     } catch (settingsErr) {
       console.error('Error loading saved comment settings:', settingsErr);
     }
-    
+
     // Fetch user's LinkedIn profile data if useProfileData is enabled
     let userProfileContext = '';
     if (useProfileData) {
       try {
-        const linkedInProfile = await (prisma as any).linkedInProfile.findFirst({
+        const linkedInProfile = await (prisma as any).linkedInProfileData.findFirst({
           where: { userId: user.id },
           orderBy: { updatedAt: 'desc' },
         });
@@ -180,7 +180,7 @@ GUIDELINES:
         console.warn('Could not load LinkedIn profile for comment:', profileErr);
       }
     }
-    
+
     // Fetch comment style examples from selected profiles
     let styleExamples: string[] = [];
     let styleDebugInfo = { selectedProfiles: 0, topComments: 0, totalExamples: 0, useProfileStyle };
@@ -191,14 +191,14 @@ GUIDELINES:
       });
       styleDebugInfo.selectedProfiles = selectedProfiles.length;
       console.log(`🎨 STYLE: Found ${selectedProfiles.length} selected profiles, useProfileStyle=${useProfileStyle}`);
-      
+
       if (selectedProfiles.length > 0) {
         const profileIds = selectedProfiles.map((p: any) => p.id);
         const maxComments = useProfileStyle ? Math.max(20, adminCommentEmbeddingsCount * 2) : Math.max(10, adminCommentEmbeddingsCount);
-        
+
         // First try top-starred comments
         let comments = await (prisma as any).scrapedComment.findMany({
-          where: { 
+          where: {
             profileId: { in: profileIds },
             isTopComment: true,
           },
@@ -207,7 +207,7 @@ GUIDELINES:
           orderBy: { createdAt: 'desc' },
         });
         styleDebugInfo.topComments = comments.length;
-        
+
         // If not enough top comments, fill with recent ones
         if (comments.length < maxComments) {
           const existingTexts = new Set(comments.map((c: any) => c.commentText));
@@ -224,7 +224,7 @@ GUIDELINES:
             }
           }
         }
-        
+
         styleExamples = comments.map((c: any) => c.commentText).filter((t: string) => t.length > 10);
         styleDebugInfo.totalExamples = styleExamples.length;
         console.log(`🎨 STYLE: Using ${styleExamples.length} examples (max ${maxComments})`);
@@ -268,8 +268,8 @@ Post: ${postText}
     } else {
       // NORMAL MODE: Use goal/tone/style settings + optional style examples
       prompt = generateCommentPrompt(
-        postText, 
-        finalTone || 'Professional', 
+        postText,
+        finalTone || 'Professional',
         finalGoal || 'AddValue',
         finalLength || 'Short',
         finalExpertise || '',
@@ -306,7 +306,7 @@ Post: ${postText}
     let tokenUsage: any = null;
     let attempts = 0;
     const maxAttempts = 2;
-    
+
     while (attempts < maxAttempts) {
       attempts++;
       try {
@@ -323,7 +323,7 @@ Post: ${postText}
 
         content = result.content;
         console.log('✅ Comment generation attempt', attempts, 'with model:', result.model, 'output length:', content?.length || 0);
-        
+
         // If we got empty content, log and retry with fallback
         if (!content || content.trim().length === 0) {
           console.warn('⚠️ AI returned empty content on attempt', attempts);
@@ -336,14 +336,14 @@ Post: ${postText}
         } else {
           // Update usage only on successful AI generation
           await limitService.incrementUsage(user.id, 'aiComments');
-          
+
           // Extract token usage for developers (before break)
           if (isDeveloper && result.usage) {
             // Get model config for accurate pricing
             const modelConfig = await (await import('@/lib/ai-service')).getModelConfig(result.model);
             const inputCostPer1M = modelConfig?.inputCostPer1M || 0;
             const outputCostPer1M = modelConfig?.outputCostPer1M || 0;
-            
+
             tokenUsage = {
               inputTokens: result.usage.promptTokens,
               outputTokens: result.usage.completionTokens,
@@ -355,14 +355,14 @@ Post: ${postText}
               modelName: result.provider,
             };
           }
-          
+
           // Got valid content, break out of retry loop
           break;
         }
-        
+
       } catch (error: any) {
         console.error('AI generation error on attempt', attempts, ':', error.message);
-        
+
         if (attempts >= maxAttempts) {
           // Use fallback when AI service fails after all retries
           console.log('AI service failed after', attempts, 'attempts, using fallback comment');
@@ -377,7 +377,7 @@ Post: ${postText}
         }
       }
     }
-    
+
     // Final check - if still empty, use fallback
     if (!content || content.trim().length === 0) {
       console.warn('⚠️ AI still returned empty after retries, using fallback');
@@ -415,7 +415,7 @@ Post: ${postText}
         console.log(`🔧 POST-PROCESS: Split into ${paragraphs.length} paragraphs`);
       }
     }
-    
+
     // HARD enforce character limit - truncate if AI exceeded it
     const charLimits: Record<string, number> = {
       Brief: 100,
@@ -446,9 +446,9 @@ Post: ${postText}
       data: {
         userId: user.id,
         type: 'ai_comment_generated',
-        metadata: JSON.stringify({ 
-          tone, 
-          goal, 
+        metadata: JSON.stringify({
+          tone,
+          goal,
           userExpertise: userExpertise ? 'provided' : 'none',
           authorName: authorName ? 'provided' : 'none'
         }),

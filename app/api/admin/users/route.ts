@@ -17,7 +17,7 @@ async function handleGet(request: NextRequest) {
 
     // Apply search filter if provided
     if (search) {
-      allUsers = allUsers.filter(user => 
+      allUsers = allUsers.filter(user =>
         user.email.toLowerCase().includes(search.toLowerCase()) ||
         user.name?.toLowerCase().includes(search.toLowerCase())
       );
@@ -34,7 +34,6 @@ async function handleGet(request: NextRequest) {
 
     // Map users with their usage data
     const usersWithUsage = users.map((user) => {
-      const { password, ...userWithoutPassword } = user;
       const monthlyUsage = usageMap.get(user.id) || {
         comments: 0,
         likes: 0,
@@ -46,9 +45,9 @@ async function handleGet(request: NextRequest) {
         aiComments: 0,
         aiTopicLines: 0,
       };
-      
+
       return {
-        ...userWithoutPassword,
+        ...user,
         status: 'active',
         paymentStatus: user.plan?.name === 'Starter' ? 'starter' : 'paid',
         monthlyUsage,
@@ -67,7 +66,7 @@ async function handleGet(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('UserService error:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch users',

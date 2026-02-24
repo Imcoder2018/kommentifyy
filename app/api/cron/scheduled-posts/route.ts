@@ -15,19 +15,20 @@ export const dynamic = 'force-dynamic';
  * 4. Checks extension online status via heartbeat
  */
 
-if (!process.env.CRON_SECRET) {
-  throw new Error('CRITICAL: CRON_SECRET environment variable is not set');
+// Lazy cron secret check — avoid top-level throws (#51)
+function getCronSecret(): string {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) throw new Error('CRITICAL: CRON_SECRET environment variable is not set');
+  return secret;
 }
-
-// Cron secret for security
-const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
     const urlSecret = new URL(request.url).searchParams.get('secret');
-    
+
+    const CRON_SECRET = getCronSecret();
     if (authHeader !== `Bearer ${CRON_SECRET}` && urlSecret !== CRON_SECRET) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
       where: {
         status: 'scheduled',
         taskStatus: 'failed',
-        taskFailedAt: { 
+        taskFailedAt: {
           gte: new Date(now.getTime() - 30 * 60 * 1000) // Failed within last 30 mins
         },
         // Only retry if not too many attempts
@@ -146,7 +147,7 @@ export async function GET(request: NextRequest) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal-api-key'}`
+              'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || ''}`
             },
             body: JSON.stringify({
               command: 'post_scheduled_content',
@@ -180,7 +181,7 @@ export async function GET(request: NextRequest) {
             results.errors.push(`Failed to send post ${post.id}: ${commandData.error}`);
           }
         }
-        
+
         results.processed++;
       } catch (err: any) {
         results.failed++;
@@ -208,7 +209,7 @@ export async function GET(request: NextRequest) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal-api-key'}`
+            'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || ''}`
           },
           body: JSON.stringify({
             command: 'post_scheduled_content',

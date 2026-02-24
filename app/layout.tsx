@@ -60,9 +60,7 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
     creator: '@kommentify',
   },
-  verification: {
-    google: 'your-google-verification-code', // Replace with actual code
-  },
+  // #63: Google verification code removed — add actual code when available from Google Search Console
   alternates: {
     canonical: 'https://kommentify.com',
   },
@@ -80,24 +78,25 @@ export default function RootLayout({
         <head>
           {/* Google Analytics */}
           <script async src="https://www.googletagmanager.com/gtag/js?id=G-V19D160Y31"></script>
-          <script dangerouslySetInnerHTML={{ __html: `
+          <script dangerouslySetInnerHTML={{
+            __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'G-V19D160Y31');
           `}} />
-          
+
           <link rel="icon" href="/favicon.png" type="image/png" />
           <link rel="apple-touch-icon" href="/favicon.png" />
           <link rel="manifest" href="/manifest.json" />
-          
+
           {/* Meta Pixel Code */}
           <script dangerouslySetInnerHTML={{ __html: `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','1325317928900506');fbq('track','PageView');` }} />
           <noscript dangerouslySetInnerHTML={{ __html: `<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1325317928900506&ev=PageView&noscript=1" />` }} />
           <meta name="theme-color" content="#693fe9" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-          
+
           {/* Structured Data - Product Schema */}
           <script
             type="application/ld+json"
@@ -151,7 +150,7 @@ export default function RootLayout({
               }),
             }}
           />
-          
+
           {/* Structured Data - Organization Schema */}
           <script
             type="application/ld+json"
@@ -173,7 +172,7 @@ export default function RootLayout({
               }),
             }}
           />
-          
+
           <style>{`
             * {
               margin: 0;

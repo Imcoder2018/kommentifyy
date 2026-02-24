@@ -8,12 +8,41 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+// #29: Simple in-memory rate limiter for login attempts
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkLoginRateLimit(email: string): boolean {
+  const now = Date.now();
+  const key = email.toLowerCase();
+  const entry = loginAttempts.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= MAX_LOGIN_ATTEMPTS) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password } = loginSchema.parse(body);
 
-    console.log('Login attempt for:', email);
+    // #29: Rate limiting
+    if (!checkLoginRateLimit(email)) {
+      return NextResponse.json(
+        { success: false, error: 'Too many login attempts. Please try again in 15 minutes.' },
+        { status: 429 }
+      );
+    }
 
     // Validate user credentials
     const user = await userService.validateUser(email, password);
@@ -30,8 +59,6 @@ export async function POST(request: NextRequest) {
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
-
-    console.log('User logged in successfully:', email);
 
     return NextResponse.json({
       success: true,

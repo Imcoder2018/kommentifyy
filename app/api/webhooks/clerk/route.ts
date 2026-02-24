@@ -3,25 +3,12 @@ import { Webhook } from 'svix';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
 import { scheduleOnboardingSequence } from '@/lib/email-automation/scheduler';
+import { generateReferralCode } from '@/lib/referral-utils';
+import crypto from 'crypto';
 
-// Generate a unique referral code
-function generateReferralCode(userId: string): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code + userId.slice(-4).toUpperCase();
-}
-
-// Generate a random password for Clerk users (they won't use it, but needed for DB)
+// #45: Generate a crypto-safe random password for Clerk users
 function generateRandomPassword(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < 24; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
+  return crypto.randomBytes(32).toString('hex');
 }
 
 export async function POST(request: NextRequest) {
@@ -64,10 +51,10 @@ export async function POST(request: NextRequest) {
   try {
     if (eventType === 'user.created') {
       const { id: clerkUserId, email_addresses, first_name, last_name } = evt.data;
-      
+
       const primaryEmail = email_addresses?.find((e: any) => e.id === evt.data.primary_email_address_id);
       const email = primaryEmail?.email_address;
-      
+
       if (!email) {
         console.error('No email found for Clerk user:', clerkUserId);
         return NextResponse.json({ error: 'No email found' }, { status: 400 });
@@ -77,27 +64,27 @@ export async function POST(request: NextRequest) {
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({ where: { email } });
-      
+
       if (existingUser) {
         // Link existing user to Clerk
         await prisma.user.update({
           where: { email },
           data: {
             clerkUserId,
-            authProvider: existingUser.authProvider === 'legacy' ? 'legacy' : 'clerk',
+            authProvider: 'clerk', // #44: Always set to 'clerk' when linking to Clerk
           },
         });
         console.log(`Linked existing user ${email} to Clerk`);
       } else {
         // Create new user
-        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         const hashedPassword = await hashPassword(generateRandomPassword());
         const referralCode = generateReferralCode(userId);
 
         // Get trial plan
         const trialPlan = await prisma.plan.findFirst({ where: { isTrialPlan: true } });
         let trialEndsAt: Date | null = null;
-        
+
         if (trialPlan) {
           trialEndsAt = new Date();
           trialEndsAt.setDate(trialEndsAt.getDate() + trialPlan.trialDurationDays);
@@ -126,7 +113,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (eventType === 'user.updated') {
       const { id: clerkUserId, email_addresses, first_name, last_name } = evt.data;
-      
+
       const primaryEmail = email_addresses?.find((e: any) => e.id === evt.data.primary_email_address_id);
       const email = primaryEmail?.email_address;
       const name = [first_name, last_name].filter(Boolean).join(' ');
@@ -143,7 +130,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (eventType === 'user.deleted') {
       const { id: clerkUserId } = evt.data;
-      
+
       // We don't delete users, just unlink Clerk
       await prisma.user.updateMany({
         where: { clerkUserId },

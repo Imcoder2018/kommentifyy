@@ -4,6 +4,12 @@ import { userService } from '@/lib/user-service';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { scheduleOnboardingSequence } from '@/lib/email-automation/scheduler';
+import { generateReferralCode } from '@/lib/referral-utils';
+
+// #31: Simple in-memory rate limiter for registration
+const registerAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_REGISTER_ATTEMPTS = 3;
+const REGISTER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -12,27 +18,31 @@ const registerSchema = z.object({
   referralCode: z.string().optional(),
 });
 
-// Generate a unique referral code
-function generateReferralCode(userId: string): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code + userId.slice(-4).toUpperCase();
-}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, name, referralCode } = registerSchema.parse(body);
 
-    console.log('Registration attempt for:', email);
+    // #31: Rate limiting based on email
+    const now = Date.now();
+    const key = email.toLowerCase();
+    const entry = registerAttempts.get(key);
+    if (entry && now < entry.resetAt && entry.count >= MAX_REGISTER_ATTEMPTS) {
+      return NextResponse.json(
+        { success: false, error: 'Too many registration attempts. Please try again later.' },
+        { status: 429 }
+      );
+    }
+    if (!entry || now > entry.resetAt) {
+      registerAttempts.set(key, { count: 1, resetAt: now + REGISTER_WINDOW_MS });
+    } else {
+      entry.count++;
+    }
 
     // Check if user already exists
     const existingUser = await userService.findUserByEmail(email);
     if (existingUser) {
-      console.log('DEBUG: User already exists');
       return NextResponse.json(
         { success: false, error: 'User already exists' },
         { status: 400 }
@@ -53,16 +63,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create user with referral data in single transaction
-    console.log('DEBUG: Creating user with referral data...');
-    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const newUserReferralCode = generateReferralCode(tempId);
-    
+
     const user = await userService.createUser(email, password, name, {
       referralCode: newUserReferralCode,
       referredById: referrerId
     });
-    console.log('DEBUG: User created successfully with referral code');
 
     // Generate tokens
     const token = generateToken({ userId: user.id, email: user.email });
@@ -104,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: false, error: 'Registration failed. Please try again. Debug ID: ' + Date.now() },
+      { success: false, error: 'Registration failed. Please try again.' },
       { status: 500 }
     );
   }

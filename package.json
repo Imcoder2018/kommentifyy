@@ -1,7 +1,10 @@
 {
-  "name": "linkedin-automation-api",
+  "name": "kommentify",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

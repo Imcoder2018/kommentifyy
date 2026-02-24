@@ -33,10 +33,10 @@ export interface AIGenerationResult {
 
 // Determine if a model should use OpenAI API directly
 function isOpenAIModel(modelId: string): boolean {
-  return modelId.startsWith('gpt-') || 
-         modelId.startsWith('o1') || 
-         modelId.startsWith('o3') ||
-         modelId.startsWith('chatgpt');
+  return modelId.startsWith('gpt-') ||
+    modelId.startsWith('o1') ||
+    modelId.startsWith('o3') ||
+    modelId.startsWith('chatgpt');
 }
 
 // Calculate cost based on token usage
@@ -46,8 +46,8 @@ function calculateCost(
   inputCostPer1M: number,
   outputCostPer1M: number
 ): number {
-  return (inputTokens / 1_000_000) * inputCostPer1M + 
-         (outputTokens / 1_000_000) * outputCostPer1M;
+  return (inputTokens / 1_000_000) * inputCostPer1M +
+    (outputTokens / 1_000_000) * outputCostPer1M;
 }
 
 // Get model configuration from database
@@ -117,16 +117,16 @@ export async function getUserModel(userId: string, contentType: 'post' | 'commen
   }[contentType] as keyof typeof settings;
 
   const selectedModel = settings?.[modelField];
-  
+
   if (selectedModel) {
     // Verify model is still enabled, valid, and has correct format
     const model = await prisma.aIModel.findFirst({
       where: { modelId: selectedModel, isEnabled: true }
     });
-    
+
     // Check if model ID format is valid for OpenRouter
     const isValidFormat = isValidOpenRouterModel(selectedModel);
-    
+
     if (model && isValidFormat) {
       console.log(`✅ Using user-selected model: ${selectedModel} for ${contentType}`);
       return selectedModel;
@@ -139,28 +139,29 @@ export async function getUserModel(userId: string, contentType: 'post' | 'commen
     }
   }
 
-  // Fallback to default model - verify it exists and has valid format
-  const fallbackModel = settings?.fallbackModelId || 'anthropic/claude-sonnet-4.5';
+  // #12: Fallback model extracted to constant — change in one place if model is deprecated
+  const DEFAULT_FALLBACK_MODEL = 'anthropic/claude-sonnet-4.5';
+  const fallbackModel = settings?.fallbackModelId || DEFAULT_FALLBACK_MODEL;
   const fallbackExists = await prisma.aIModel.findFirst({
     where: { modelId: fallbackModel, isEnabled: true }
   });
-  
+
   if (fallbackExists && isValidOpenRouterModel(fallbackModel)) {
     console.log(`✅ Using fallback model: ${fallbackModel} for ${contentType}`);
     return fallbackModel;
   }
-  
+
   // Ultimate fallback - find any enabled model with valid format
   const anyModel = await prisma.aIModel.findFirst({
     where: { isEnabled: true },
     orderBy: { isFeatured: 'desc' }
   });
-  
+
   if (anyModel && isValidOpenRouterModel(anyModel.modelId)) {
     console.log(`✅ Using any available model: ${anyModel.modelId} for ${contentType}`);
     return anyModel.modelId;
   }
-  
+
   // Hard fallback to Claude Sonnet 4.5 (always valid via OpenRouter)
   console.log(`⚠️ No valid models in database, using hardcoded fallback: anthropic/claude-sonnet-4.5`);
   return 'anthropic/claude-sonnet-4.5';
@@ -214,17 +215,17 @@ export async function generateContent(params: {
   trackUsage?: boolean;
 }): Promise<AIGenerationResult> {
   let modelConfig = await getModelConfig(params.model);
-   
+
   // If model not found in database, try to find a fallback
   if (!modelConfig) {
     console.warn(`⚠️ Model ${params.model} not found in database, finding fallback...`);
-    
+
     // Find any enabled model
     const fallbackModel = await prisma.aIModel.findFirst({
       where: { isEnabled: true },
       orderBy: { isFeatured: 'desc' }
     });
-    
+
     if (fallbackModel) {
       console.log(`✅ Using fallback model: ${fallbackModel.modelId}`);
       modelConfig = {
@@ -258,7 +259,7 @@ export async function generateContent(params: {
   // Route to appropriate provider
   // Strip openai/ prefix if present for OpenAI API calls
   const actualModelId = params.model.startsWith('openai/') ? params.model.replace('openai/', '') : params.model;
-  
+
   if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
     const openai = getOpenAIService();
     result = await openai.generateContent({
@@ -325,7 +326,7 @@ export async function generateLinkedInPost(params: {
   userId?: string;
 }): Promise<AIGenerationResult> {
   const modelConfig = await getModelConfig(params.model);
-  
+
   if (!modelConfig) {
     throw new Error(`Model not found: ${params.model}`);
   }
@@ -374,7 +375,7 @@ export async function generateLinkedInComment(params: {
   userId?: string;
 }): Promise<AIGenerationResult> {
   const modelConfig = await getModelConfig(params.model);
-  
+
   if (!modelConfig) {
     throw new Error(`Model not found: ${params.model}`);
   }
@@ -420,7 +421,7 @@ export async function generateTopicIdeas(params: {
   userId?: string;
 }): Promise<{ topics: string[]; usage: any; model: string; provider: string; cost: number }> {
   const modelConfig = await getModelConfig(params.model);
-  
+
   if (!modelConfig) {
     throw new Error(`Model not found: ${params.model}`);
   }

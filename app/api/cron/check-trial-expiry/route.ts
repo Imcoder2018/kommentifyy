@@ -7,19 +7,19 @@ export async function GET(request: NextRequest) {
     // Verify cron secret to prevent unauthorized access
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    
+
     if (!cronSecret) {
       console.error('CRON_SECRET not configured');
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Cron endpoint not configured' 
+      return NextResponse.json({
+        success: false,
+        error: 'Cron endpoint not configured'
       }, { status: 503 });
     }
-    
+
     if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
+      return NextResponse.json({
+        success: false,
+        error: 'Unauthorized'
       }, { status: 401 });
     }
 
@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
 
     if (expiredTrials.length === 0) {
       console.log('✅ No expired trials found');
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: 'No expired trials found',
         downgradedCount: 0
       });
@@ -56,15 +56,15 @@ export async function GET(request: NextRequest) {
 
     if (!freePlan) {
       console.error('❌ Free plan not found in database');
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Starter plan not configured' 
+      return NextResponse.json({
+        success: false,
+        error: 'Starter plan not configured'
       }, { status: 500 });
     }
 
     // Downgrade all expired trials
     const updates = await Promise.all(
-      expiredTrials.map(user => 
+      expiredTrials.map(user =>
         prisma.user.update({
           where: { id: user.id },
           data: {
@@ -85,16 +85,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Downgraded ${updates.length} users from trial to starter plan`,
-      downgradedCount: updates.length,
-      users: updates.map(u => ({ email: u.email, id: u.id }))
+      downgradedCount: updates.length
     });
   } catch (error: any) {
     console.error('❌ Error checking trial expiry:', error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       error: error.message || 'Internal server error'
     }, { status: 500 });
   }

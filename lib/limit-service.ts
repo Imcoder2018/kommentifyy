@@ -73,8 +73,21 @@ export class LimitService {
             });
 
             // Sum up all usage for the month
+            // #25: Type-safe column mapping instead of dynamic property access
+            const typeToColumn: Record<LimitType, string> = {
+                comments: 'comments',
+                likes: 'likes',
+                shares: 'shares',
+                follows: 'follows',
+                connections: 'connections',
+                aiPosts: 'aiPosts',
+                aiComments: 'aiComments',
+                aiTopicLines: 'aiTopicLines',
+                importProfiles: 'importProfiles',
+            };
+            const column = typeToColumn[type];
             const usage = usageRecords.reduce((sum, record) => {
-                return sum + ((record as any)[type] || 0);
+                return sum + (Number((record as any)[column]) || 0);
             }, 0);
 
             return {
@@ -231,7 +244,7 @@ export class LimitService {
      */
     async getMonthlyUsageForUsers(userIds: string[]): Promise<Map<string, any>> {
         const usageMap = new Map<string, any>();
-        
+
         if (userIds.length === 0) {
             return usageMap;
         }

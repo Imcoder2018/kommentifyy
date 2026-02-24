@@ -6,18 +6,18 @@ import { verifyToken } from '@/lib/auth';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-if (!process.env.CRON_SECRET) {
-  throw new Error('CRITICAL: CRON_SECRET environment variable is not set');
+// Lazy cron secret check — avoid top-level throws (#55)
+function getCronSecret(): string {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) throw new Error('CRITICAL: CRON_SECRET environment variable is not set');
+  return secret;
 }
-
-// Secret key for cron authentication (set in Vercel environment)
-const CRON_SECRET = process.env.CRON_SECRET;
 
 // Trigger scheduled posts whose time has arrived
 async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
   try {
     const now = new Date();
-    
+
     // Find scheduled posts that are due and still pending
     const duePosts = await (prisma as any).postDraft.findMany({
       where: {
@@ -40,7 +40,7 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
     console.log(`📅 Found ${duePosts.length} scheduled posts due for posting`);
 
     let triggeredCount = 0;
-    
+
     for (const post of duePosts) {
       try {
         // Create command for extension using Activity model
@@ -70,7 +70,7 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
         // Update draft with task ID and mark as sent
         await (prisma as any).postDraft.update({
           where: { id: post.id },
-          data: { 
+          data: {
             taskId: activity.id,
             taskSentAt: new Date(),
             taskStatus: 'pending'
@@ -94,7 +94,7 @@ async function checkFailedScheduledPosts(): Promise<{ failedCount: number }> {
   try {
     // Find tasks that were sent more than 15 minutes ago but not completed
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-    
+
     const failedTasks = await (prisma as any).postDraft.updateMany({
       where: {
         taskStatus: 'in_progress',
@@ -227,7 +227,7 @@ async function checkExpiredTrials(): Promise<{ downgradedCount: number }> {
 
     // Downgrade all expired trials
     const updates = await Promise.all(
-      expiredTrials.map(user => 
+      expiredTrials.map(user =>
         prisma.user.update({
           where: { id: user.id },
           data: {
@@ -260,9 +260,10 @@ export async function GET(request: NextRequest) {
     // Verify cron secret for security
     const authHeader = request.headers.get('authorization');
     const urlSecret = request.nextUrl.searchParams.get('secret');
-    
+
+    const CRON_SECRET = getCronSecret();
     const providedSecret = authHeader?.replace('Bearer ', '') || urlSecret;
-    
+
     if (providedSecret !== CRON_SECRET) {
       console.warn('⚠️ Unauthorized cron attempt');
       return NextResponse.json(
@@ -272,7 +273,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('🕐 Starting cron job processing...');
-    
+
     // 1. Re-queue failed past-due posts (disconnect resilience — runs first so they get picked up below)
     const requeueResult = await requeueFailedPastDuePosts();
 
@@ -281,13 +282,13 @@ export async function GET(request: NextRequest) {
 
     // 3. Trigger scheduled posts whose time has arrived
     const triggerResult = await triggerScheduledPosts();
-    
+
     // 4. Check failed scheduled posts (runs every minute)
     const failedPostsResult = await checkFailedScheduledPosts();
-    
+
     // 5. Check expired trials (runs every 10 minutes)
     const trialResult = await checkExpiredTrials();
-    
+
     // 6. Process email queue
     const emailResult = await processEmailQueue(20);
 
@@ -314,9 +315,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Cron process-emails error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
@@ -328,7 +329,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify admin token or cron secret
     const authHeader = request.headers.get('authorization');
-    
+
     if (!authHeader) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -337,7 +338,9 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    
+
+    const CRON_SECRET = getCronSecret();
+
     // Check if it's cron secret or admin token
     if (token !== CRON_SECRET) {
       // Verify admin token using cryptographic verification
@@ -361,7 +364,7 @@ export async function POST(request: NextRequest) {
     const batchSize = body.batchSize || 20;
 
     console.log(`🕐 Manual email processing triggered (batch: ${batchSize})...`);
-    
+
     const result = await processEmailQueue(batchSize);
 
     return NextResponse.json({
@@ -374,9 +377,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Manual email processing error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

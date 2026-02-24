@@ -338,6 +338,12 @@ model PostDraft {
   taskCompletedAt DateTime?
   taskFailedAt    DateTime?
   taskFailureReason String? @db.Text
+  // Media attachment fields
+  mediaUrl        String?  @db.Text  // Vercel Blob URL for image/video
+  mediaType       String?  // 'image' or 'video'
+  // LinkedIn API posting (server-side, no extension)
+  linkedinPostId  String?  // LinkedIn post URN after API posting
+  postMethod      String   @default("extension")  // 'extension' or 'api'
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -398,6 +404,7 @@ model CommentSettings {
   id              String   @id @default(cuid())
   userId          String   @unique
   useProfileStyle Boolean  @default(false)
+  useProfileData  Boolean  @default(false)
   goal            String   @default("AddValue")
   tone            String   @default("Friendly")
   commentLength   String   @default("Short")
@@ -608,6 +615,8 @@ model LinkedInProfileData {
   projects        String   @default("[]") @db.Text
   skills          String   @default("[]") @db.Text
   interests       String   @default("[]") @db.Text
+  // Full page text captured from LinkedIn for re-scanning
+  fullPageText    String?  @db.Text
   // Token optimization: store truncated versions for AI prompts
   postsTokenLimit Int      @default(3000)  // Max characters from posts to include in AI prompt
   totalPostsCount Int      @default(0)     // Actual count of posts extracted from recent-activity page
@@ -679,7 +688,7 @@ model UserAIModelSettings {
   topicModelId          String?  // Model for generating topic lines/ideas
   
   // Fallback model if selected model is disabled
-  fallbackModelId       String?  @default("openai/gpt-4o-mini")
+  fallbackModelId       String?  @default("anthropic/claude-sonnet-4.5")
   
   // Advanced settings per model (JSON)
   postModelSettings     String   @default("{}") @db.Text   // temperature, max_tokens, etc.
@@ -717,6 +726,27 @@ model AIModelUsage {
   @@index([userId])
   @@index([modelId])
   @@index([periodStart])
+}
+
+// LinkedIn OAuth tokens for server-side posting (no extension needed)
+model LinkedInOAuth {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  linkedinId      String?  // LinkedIn member ID (URN)
+  accessToken     String   @db.Text
+  refreshToken    String?  @db.Text
+  tokenExpiresAt  DateTime?
+  scopes          String?  // Comma-separated scopes granted
+  displayName     String?
+  email           String?
+  profileUrl      String?
+  isActive        Boolean  @default(true)
+  lastUsedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
 }
 
 // Extension heartbeat - tracks extension online status

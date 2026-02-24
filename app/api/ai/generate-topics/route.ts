@@ -69,55 +69,132 @@ export async function POST(request: NextRequest) {
     if (profileData) {
       console.log('Generating topics from LinkedIn profile data...');
       
-      const keywords: string[] = [];
-      
-      // Extract keywords from profile data
-      if (profileData.headline) {
-        keywords.push(...profileData.headline.split(/[,;]/).map((w: string) => w.trim()).filter(Boolean));
-      }
-      if (profileData.skills && Array.isArray(profileData.skills)) {
-        keywords.push(...profileData.skills.slice(0, 5));
-      }
-      if (profileData.experience && Array.isArray(profileData.experience)) {
-        profileData.experience.slice(0, 3).forEach((exp: string) => {
-          const words = exp.split(/[,;]/).map((w: string) => w.trim()).filter(Boolean);
-          keywords.push(...words);
+      if (!openai || !process.env.OPENAI_API_KEY) {
+        console.log('Using fallback profile topics - OpenAI not available');
+        const keywords: string[] = [];
+        
+        // Extract keywords from profile data
+        if (profileData.headline) {
+          keywords.push(...profileData.headline.split(/[,;]/).map((w: string) => w.trim()).filter(Boolean));
+        }
+        if (profileData.skills && Array.isArray(profileData.skills)) {
+          keywords.push(...profileData.skills.slice(0, 5));
+        }
+        if (profileData.experience && Array.isArray(profileData.experience)) {
+          profileData.experience.slice(0, 3).forEach((exp: string) => {
+            const words = exp.split(/[,;]/).map((w: string) => w.trim()).filter(Boolean);
+            keywords.push(...words);
+          });
+        }
+
+        const topicTemplates = [
+          `How ${keywords[0] || 'professionals'} are changing the industry`,
+          `The future of ${keywords[0] || 'technology'} in 2025`,
+          `Lessons learned from ${keywords[0] || 'years'} of experience`,
+          `Why ${keywords[0] || 'this skill'} matters more than ever`,
+          `Common mistakes in ${keywords[0] || 'this field'} and how to avoid them`,
+          `The secret to success in ${keywords[0] || 'my industry'}`,
+          `What I wish I knew when starting in ${keywords[0] || 'this field'}`,
+          `5 insights about ${keywords[0] || 'modern business'}`,
+          `Why ${keywords[0] || 'this approach'} is underrated`,
+          `The truth about ${keywords[0] || 'success'} nobody tells you`,
+        ];
+
+        const genericTopics = [
+          "Building a personal brand on LinkedIn",
+          "How to stand out in your industry",
+          "Lessons from my career journey",
+          "The power of continuous learning",
+          "Networking tips that actually work",
+        ];
+
+        const allTopics = [...topicTemplates, ...genericTopics];
+        const shuffled = allTopics.sort(() => Math.random() - 0.5);
+        const uniqueTopics = [...new Set(shuffled)];
+        const suggestions = uniqueTopics.slice(0, count);
+
+        await limitService.incrementUsage(user.id, 'aiTopicLines');
+        
+        return NextResponse.json({
+          success: true,
+          topics: suggestions,
+          fromProfile: true
         });
       }
 
-      const topicTemplates = [
-        `How ${keywords[0] || 'professionals'} are changing the industry`,
-        `The future of ${keywords[0] || 'technology'} in 2025`,
-        `Lessons learned from ${keywords[0] || 'years'} of experience`,
-        `Why ${keywords[0] || 'this skill'} matters more than ever`,
-        `Common mistakes in ${keywords[0] || 'this field'} and how to avoid them`,
-        `The secret to success in ${keywords[0] || 'my industry'}`,
-        `What I wish I knew when starting in ${keywords[0] || 'this field'}`,
-        `5 insights about ${keywords[0] || 'modern business'}`,
-        `Why ${keywords[0] || 'this approach'} is underrated`,
-        `The truth about ${keywords[0] || 'success'} nobody tells you`,
-      ];
+      try {
+        const profileContext = `
+          Headline: ${profileData.headline || 'None'}
+          About: ${profileData.about || 'None'}
+          Skills: ${Array.isArray(profileData.skills) ? profileData.skills.slice(0, 10).join(', ') : 'None'}
+          Experience: ${Array.isArray(profileData.experience) ? profileData.experience.slice(0, 3).join(' | ') : 'None'}
+        `;
 
-      const genericTopics = [
-        "Building a personal brand on LinkedIn",
-        "How to stand out in your industry",
-        "Lessons from my career journey",
-        "The power of continuous learning",
-        "Networking tips that actually work",
-      ];
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a LinkedIn content expert. Generate engaging, specific topic lines that will make great LinkedIn posts based on the provided user profile data. Each topic line should be clear, actionable, and attention-grabbing.',
+            },
+            {
+              role: 'user',
+              content: `Generate ${count} compelling LinkedIn post topic lines based on this profile data:
+              
+${profileContext}
 
-      const allTopics = [...topicTemplates, ...genericTopics];
-      const shuffled = allTopics.sort(() => Math.random() - 0.5);
-      const uniqueTopics = [...new Set(shuffled)];
-      const suggestions = uniqueTopics.slice(0, count);
+Requirements:
+- Each topic line should be specific and actionable, tailored to the person's exact background
+- Make them attention-grabbing and valuable to their likely audience
+- Vary the angles (how-to, insights, mistakes, trends, personal stories, etc.)
+- Keep each line between 10-20 words
+- Return ONLY the topic lines, one per line, numbered 1-${count}
 
-      await limitService.incrementUsage(user.id, 'aiTopicLines');
-      
-      return NextResponse.json({
-        success: true,
-        topics: suggestions,
-        fromProfile: true
-      });
+Example format:
+1. [First topic line]
+2. [Second topic line]
+...
+${count}. [${count}th topic line]`,
+            },
+          ],
+          temperature: 0.8,
+          max_tokens: 500,
+        });
+
+        const topicsText = completion.choices[0]?.message?.content || '';
+        
+        // Parse the numbered list
+        let parsedTopics = topicsText
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => /^\d+\./.test(line)) // Only keep lines starting with a number
+          .map(line => line.replace(/^\d+\.\s*/, '').trim()) // Remove the number and dot
+          .filter(Boolean);
+
+        if (parsedTopics.length === 0) {
+            throw new Error("Failed to parse topics from OpenAI response");
+        }
+
+        await limitService.incrementUsage(user.id, 'aiTopicLines');
+        
+        return NextResponse.json({
+          success: true,
+          topics: parsedTopics.slice(0, count),
+          fromProfile: true
+        });
+
+      } catch (error) {
+        console.error("OpenAI Profile Topic Gen Error:", error);
+        // Fall back to old method if error
+        const genericTopics = [
+            "Building a personal brand on LinkedIn",
+            "How to stand out in your industry",
+            "Lessons from my career journey",
+            "The power of continuous learning",
+            "Networking tips that actually work",
+        ];
+        return NextResponse.json({ success: true, topics: genericTopics, fromProfile: true });
+      }
     }
 
     // Original topic-based generation

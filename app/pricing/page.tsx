@@ -218,7 +218,7 @@ export default function PricingPage() {
                                 <div style={{ marginBottom: '24px' }}>
                                     <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Scheduling', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
+                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Viral Posts Writer', 'Added Sources', 'Personalized Posts', 'Content Planner', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
                                             <span key={i} style={{ 
                                                 display: 'inline-flex', 
                                                 alignItems: 'center', 
@@ -315,7 +315,7 @@ export default function PricingPage() {
                                 <div style={{ marginBottom: '24px' }}>
                                     <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Scheduling', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
+                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Viral Posts Writer', 'Added Sources', 'Personalized Posts', 'Content Planner', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
                                             <span key={i} style={{ 
                                                 display: 'inline-flex', 
                                                 alignItems: 'center', 
@@ -408,7 +408,7 @@ export default function PricingPage() {
                                 <div style={{ marginBottom: '24px' }}>
                                     <div style={{ fontSize: '10px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Features</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Scheduling', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
+                                        {['Auto Like', 'Auto Comment', 'Auto Follow', 'AI Content', 'AI Topics', 'Viral Posts Writer', 'Added Sources', 'Personalized Posts', 'Content Planner', 'Auto Scheduling', 'Network Scheduling', 'Analytics', 'Import Profiles'].map((feature, i) => (
                                             <span key={i} style={{ 
                                                 display: 'inline-flex', 
                                                 alignItems: 'center', 
@@ -511,9 +511,6 @@ export default function PricingPage() {
                                 const isGrowth = index === Math.floor(lifetimeDeals.length / 2); // Middle tier
                                 const spotsLeft = plan.lifetimeSpotsRemaining ?? (plan.lifetimeMaxSpots - plan.lifetimeSoldSpots);
                                 
-                                // Determine LinkedIn Business months based on tier
-                                const linkedInMonths = isPro ? 12 : isGrowth ? 3 : 0;
-                                
                                 const features = [
                                     { text: `${formatNumber(plan.limits.aiCommentsPerMonth)} AI Comments/mo` },
                                     { text: `${formatNumber(plan.limits.aiPostsPerMonth)} AI Posts/mo` },
@@ -522,7 +519,11 @@ export default function PricingPage() {
                                     { text: `${formatNumber(plan.limits.monthlyFollows)} Auto Follows` },
                                     { text: `${formatNumber(plan.limits.monthlyConnections)} Connections` },
                                     plan.monthlyImportCredits > 0 ? { text: `${formatNumber(plan.monthlyImportCredits)} Imports` } : null,
-                                    linkedInMonths > 0 ? { text: `LinkedIn Business ${linkedInMonths} Months FREE`, highlight: true } : null,
+                                    { text: 'Viral Posts Writer' },
+                                    { text: 'Added Sources (AI Posts & Comments)' },
+                                    { text: 'Personalized Post Writer (Scan Profile)' },
+                                    { text: 'Content Planner (7/30 Days)' },
+                                    { text: 'Auto Scheduled Posts (Auto Pilot)' },
                                     { text: 'Lifetime Updates' },
                                     { text: 'Priority Support' },
                                 ].filter(Boolean) as { text: string; highlight?: boolean }[];
@@ -549,6 +550,24 @@ export default function PricingPage() {
                                         )}
                                         
                                         <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>{plan.name}</h3>
+                                        
+                                        {/* Gift for Agency LTD */}
+                                        {plan.name === 'Agency LTD' && (
+                                            <div style={{
+                                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                                color: 'white',
+                                                padding: '8px 16px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '700',
+                                                marginBottom: '12px',
+                                                textAlign: 'center',
+                                                boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
+                                            }}>
+                                                🎁 Gift: LinkedIn Business 12 Months FREE
+                                            </div>
+                                        )}
+                                        
                                         <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px' }}>One-time payment</p>
                                         
                                         <div style={{ marginBottom: '8px' }}>
@@ -613,6 +632,28 @@ export default function PricingPage() {
                     )}
                 </div>
             </section>
+
+            {/* LinkedIn Premium Bonus Note */}
+            {lifetimeDeals.length > 0 && (
+                <div style={{ padding: '0 60px', marginTop: '30px' }}>
+                    <div style={{
+                        maxWidth: '1200px',
+                        margin: '0 auto',
+                        background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%)',
+                        border: '1px solid rgba(16,185,129,0.3)',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ fontSize: '14px', color: '#10b981', fontWeight: '600', marginBottom: '8px' }}>
+                            🎁 LinkedIn Premium Bonus
+                        </div>
+                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6' }}>
+                            After you buy, connect with our support team through WhatsApp — they'll help you activate the LinkedIn Business plan on your account.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Section 3: FAQ */}
             <section className="section-padding" style={{ padding: '80px 60px', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.05)' }}>

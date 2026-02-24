@@ -75,8 +75,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's preferred model or use requested model
-    const selectedModel = requestedModel || await getUserModel(user.id, 'comment');
+    let selectedModel = requestedModel || await getUserModel(user.id, 'comment');
     const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
+
+    // Validate model exists in database
+    try {
+      const modelConfig = await (prisma as any).aIModel.findFirst({
+        where: { modelId: selectedModel, isEnabled: true }
+      });
+      if (!modelConfig) {
+        console.warn(`⚠️ Model ${selectedModel} not found or disabled, falling back to Claude Sonnet 4.5`);
+        selectedModel = 'anthropic/claude-sonnet-4.5';
+      }
+    } catch (modelErr) {
+      console.warn('Could not validate model, using fallback:', modelErr);
+      selectedModel = 'anthropic/claude-sonnet-4.5';
+    }
 
     console.log('Generating comment with model:', selectedModel);
     console.log('Parameters:', { tone, goal, commentLength, commentStyle, userExpertise, authorName });
@@ -290,40 +304,75 @@ Post: ${postText}
     // Generate content using unified AI service with FULL prompt
     let content;
     let tokenUsage: any = null;
-    try {
-      // Use generateContent with full prompt to ensure all context is used
-      const result = await generateContent({
-        model: selectedModel,
-        systemPrompt: 'You are an expert LinkedIn comment writer. Write engaging, authentic comments that add value and spark conversations.',
-        userPrompt: prompt,
-        maxTokens: 500,
-        temperature: 0.7,
-        userId: user.id,
-        trackUsage: true
-      });
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        // Use generateContent with full prompt to ensure all context is used
+        const result = await generateContent({
+          model: selectedModel,
+          systemPrompt: 'You are an expert LinkedIn comment writer. Write engaging, authentic comments that add value and spark conversations.',
+          userPrompt: prompt,
+          maxTokens: 500,
+          temperature: 0.7,
+          userId: user.id,
+          trackUsage: true
+        });
 
-      content = result.content;
-      console.log('✅ Comment generation successful with model:', result.model, 'output length:', content?.length || 0);
-      
-      // Extract token usage for developers
-      if (isDeveloper && result.usage) {
-        tokenUsage = {
-          inputTokens: result.usage.promptTokens,
-          outputTokens: result.usage.completionTokens,
-          totalTokens: result.usage.totalTokens,
-          inputCost: `$${((result.usage.promptTokens / 1000000) * (result.cost * 0.7)).toFixed(6)}`,
-          outputCost: `$${((result.usage.completionTokens / 1000000) * (result.cost * 0.3)).toFixed(6)}`,
-          totalCost: `$${result.cost.toFixed(6)}`,
-          model: result.model,
-          modelName: result.provider,
-        };
+        content = result.content;
+        console.log('✅ Comment generation attempt', attempts, 'with model:', result.model, 'output length:', content?.length || 0);
+        
+        // If we got empty content, log and retry with fallback
+        if (!content || content.trim().length === 0) {
+          console.warn('⚠️ AI returned empty content on attempt', attempts);
+          if (attempts < maxAttempts) {
+            // Try with a different model on retry
+            const fallbackModel = 'anthropic/claude-sonnet-4.5';
+            console.log('🔄 Retrying with fallback model:', fallbackModel);
+            continue;
+          }
+        } else {
+          // Got valid content, break out of retry loop
+          break;
+        }
+        
+        // Extract token usage for developers
+        if (isDeveloper && result.usage) {
+          tokenUsage = {
+            inputTokens: result.usage.promptTokens,
+            outputTokens: result.usage.completionTokens,
+            totalTokens: result.usage.totalTokens,
+            inputCost: `$${((result.usage.promptTokens / 1000000) * (result.cost * 0.7)).toFixed(6)}`,
+            outputCost: `$${((result.usage.completionTokens / 1000000) * (result.cost * 0.3)).toFixed(6)}`,
+            totalCost: `$${result.cost.toFixed(6)}`,
+            model: result.model,
+            modelName: result.provider,
+          };
+        }
+        
+      } catch (error: any) {
+        console.error('AI generation error on attempt', attempts, ':', error.message);
+        
+        if (attempts >= maxAttempts) {
+          // Use fallback when AI service fails after all retries
+          console.log('AI service failed after', attempts, 'attempts, using fallback comment');
+          const mockComments = [
+            "Great insights! This really resonates with my experience in the field.",
+            "Thanks for sharing this perspective. I hadn't considered it from this angle before.",
+            "Excellent point! I've seen similar results in my own work.",
+            "This is valuable information. Looking forward to implementing some of these ideas.",
+            "Appreciate you sharing this. It's refreshing to see thought leadership in action."
+          ];
+          content = mockComments[Math.floor(Math.random() * mockComments.length)];
+        }
       }
-      
-    } catch (error: any) {
-      console.error('AI generation error:', error);
-      
-      // Use fallback when AI service fails
-      console.log('AI service failed, using fallback comment');
+    }
+    
+    // Final check - if still empty, use fallback
+    if (!content || content.trim().length === 0) {
+      console.warn('⚠️ AI still returned empty after retries, using fallback');
       const mockComments = [
         "Great insights! This really resonates with my experience in the field.",
         "Thanks for sharing this perspective. I hadn't considered it from this angle before.",

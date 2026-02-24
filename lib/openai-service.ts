@@ -56,13 +56,19 @@ export class OpenAIService {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Validate model is an OpenAI model
-    if (!params.model.startsWith('gpt-') && !params.model.startsWith('o1') && !params.model.startsWith('o3')) {
+    // Strip openai/ prefix if present
+    let actualModel = params.model;
+    if (actualModel.startsWith('openai/')) {
+      actualModel = actualModel.replace('openai/', '');
+    }
+
+    // Validate model is an OpenAI model (after stripping prefix)
+    if (!actualModel.startsWith('gpt-') && !actualModel.startsWith('o1') && !actualModel.startsWith('o3') && !actualModel.startsWith('chatgpt')) {
       throw new Error(`Invalid OpenAI model: ${params.model}. This service only handles OpenAI models.`);
     }
 
     const response = await this.client.chat.completions.create({
-      model: params.model,
+      model: actualModel,
       messages: params.messages as any,
       max_tokens: params.maxTokens,
       temperature: params.temperature ?? 0.7,

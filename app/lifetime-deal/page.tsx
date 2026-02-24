@@ -354,6 +354,23 @@ export default function LifetimeDealPage() {
 
                                         <h3 className="plan-title" style={{ fontSize: '28px', fontWeight: '700', marginBottom: '10px' }}>{plan.name}</h3>
                                         
+                                        {/* Gift for Agency LTD */}
+                                        {plan.name === 'Agency LTD' && (
+                                            <div style={{
+                                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                                color: 'white',
+                                                padding: '8px 16px',
+                                                borderRadius: '12px',
+                                                fontSize: '12px',
+                                                fontWeight: '700',
+                                                marginBottom: '12px',
+                                                textAlign: 'center',
+                                                boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
+                                            }}>
+                                                🎁 Gift: LinkedIn Business 12 Months FREE
+                                            </div>
+                                        )}
+                                        
                                         <div style={{ marginBottom: '20px' }}>
                                             <span style={{ fontSize: '16px', textDecoration: 'line-through', opacity: 0.5, marginRight: '10px' }}>
                                                 ${plan.price === 69 ? '828' : plan.price === 149 ? '1788' : plan.price === 299 ? '3588' : (plan.price * 12).toFixed(0)}/year
@@ -429,6 +446,28 @@ export default function LifetimeDealPage() {
                     )}
                 </div>
             </section>
+
+            {/* LinkedIn Premium Bonus Note */}
+            {lifetimeDeals.length > 0 && (
+                <div style={{ padding: '0 60px', marginTop: '30px' }}>
+                    <div style={{
+                        maxWidth: '1200px',
+                        margin: '0 auto',
+                        background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%)',
+                        border: '1px solid rgba(16,185,129,0.3)',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ fontSize: '14px', color: '#10b981', fontWeight: '600', marginBottom: '8px' }}>
+                            🎁 LinkedIn Premium Bonus
+                        </div>
+                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6' }}>
+                            After you buy, connect with our support team through WhatsApp — they'll help you activate the LinkedIn Business plan on your account.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* What's Included Section */}
             <section className="section-padding" style={{ padding: '100px 60px', background: 'rgba(0,0,0,0.3)' }}>

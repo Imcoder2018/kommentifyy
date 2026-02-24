@@ -663,7 +663,7 @@ const AI_MODELS = [
   // ==================== BUDGET MODELS ====================
   // GLM Series (via OpenRouter)
   {
-    modelId: 'z.ai/glm-4.7',
+    modelId: 'z-ai/glm-4.7',
     name: 'GLM 4.7',
     provider: 'zhipu',
     apiSource: 'openrouter',
@@ -680,7 +680,7 @@ const AI_MODELS = [
     description: 'Enhanced programming, stable multi-step reasoning, great UI'
   },
   {
-    modelId: 'z.ai/glm-4-plus',
+    modelId: 'z-ai/glm-4-plus',
     name: 'GLM 4 Plus',
     provider: 'zhipu',
     apiSource: 'openrouter',
@@ -696,7 +696,7 @@ const AI_MODELS = [
     description: 'Chinese frontier model, strong multilingual'
   },
   {
-    modelId: 'z.ai/glm-4-flash',
+    modelId: 'z-ai/glm-4-flash',
     name: 'GLM 4 Flash',
     provider: 'zhipu',
     apiSource: 'openrouter',

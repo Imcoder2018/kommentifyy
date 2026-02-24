@@ -8,13 +8,14 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [lifetimeDeals, setLifetimeDeals] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
+      setHasToken(true);
       fetch('/api/auth/validate', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -40,13 +41,6 @@ export default function PlansPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const getDisplayPrice = (plan: any) => {
-    if (billingPeriod === 'yearly' && plan.yearlyPrice) {
-      return plan.yearlyPrice;
-    }
-    return plan.price;
-  };
-
   const handleCheckout = async (plan: any, isLifetime: boolean = false) => {
     if (plan.price === 0) return;
     
@@ -58,7 +52,7 @@ export default function PlansPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
-          billingPeriod: isLifetime ? 'lifetime' : billingPeriod,
+          billingPeriod: isLifetime ? 'lifetime' : 'monthly',
         }),
       });
       
@@ -154,7 +148,7 @@ export default function PlansPage() {
           </a>
           
           {/* Dashboard Button for logged-in users */}
-          {user && (
+          {(user || hasToken) && (
             <button
               onClick={() => router.push('/dashboard')}
               style={{
@@ -204,67 +198,9 @@ export default function PlansPage() {
           </p>
         </div>
 
-        {/* MONTHLY/YEARLY PLANS */}
+        {/* MONTHLY PLANS */}
         {true && (
           <>
-            {/* Billing Toggle */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '50px' }}>
-              <div style={{ 
-                display: 'flex', 
-                background: 'rgba(255,255,255,0.1)', 
-                borderRadius: '50px', 
-                padding: '6px',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255,255,255,0.1)'
-              }}>
-                <button
-                  onClick={() => setBillingPeriod('monthly')}
-                  style={{
-                    padding: '14px 32px',
-                    borderRadius: '44px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    background: billingPeriod === 'monthly' ? 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)' : 'transparent',
-                    color: 'white',
-                    transition: 'all 0.3s ease',
-                    boxShadow: billingPeriod === 'monthly' ? '0 4px 15px rgba(105,63,233,0.4)' : 'none'
-                  }}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBillingPeriod('yearly')}
-                  style={{
-                    padding: '14px 32px',
-                    borderRadius: '44px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '600',
-                    background: billingPeriod === 'yearly' ? 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)' : 'transparent',
-                    color: 'white',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: billingPeriod === 'yearly' ? '0 4px 15px rgba(105,63,233,0.4)' : 'none'
-                  }}
-                >
-                  Yearly
-                  <span style={{ 
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
-                    color: 'white', 
-                    padding: '4px 10px', 
-                    borderRadius: '20px', 
-                    fontSize: '11px',
-                    fontWeight: '700'
-                  }}>SAVE 20%</span>
-                </button>
-              </div>
-            </div>
-
             {/* Plans Grid */}
             <div style={{ 
               display: 'grid', 
@@ -275,7 +211,6 @@ export default function PlansPage() {
             }}>
               {plans.map((plan, index) => {
                 const isPopular = index === popularPlanIndex;
-                const displayPrice = getDisplayPrice(plan);
                 
                 return (
                   <div key={plan.id} style={{
@@ -328,10 +263,10 @@ export default function PlansPage() {
                     {/* Price */}
                     <div style={{ marginBottom: '8px' }}>
                       <span style={{ fontSize: '48px', fontWeight: '800', color: 'white' }}>
-                        ${displayPrice}
+                        ${plan.price}
                       </span>
                       <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.6)' }}>
-                        /{billingPeriod === 'yearly' ? 'year' : 'month'}
+                        /month
                       </span>
                     </div>
 
@@ -349,19 +284,6 @@ export default function PlansPage() {
                     }}>
                       🛡️ 30-Day Money-Back Guarantee
                     </div>
-
-                    {/* Yearly Savings */}
-                    {billingPeriod === 'yearly' && plan.yearlyPrice && (
-                      <div style={{ 
-                        fontSize: '14px', 
-                        color: '#10b981', 
-                        fontWeight: '600', 
-                        marginBottom: '20px',
-                        textAlign: 'center'
-                      }}>
-                        💰 Save ${((plan.price * 12) - plan.yearlyPrice).toFixed(0)} per year
-                      </div>
-                    )}
 
                     {/* Limits Section */}
                     <div style={{ marginBottom: '20px' }}>
@@ -420,6 +342,11 @@ export default function PlansPage() {
                           { name: 'AI Comments', included: plan.features?.autoComment },
                           { name: 'Auto Follow', included: plan.features?.autoFollow },
                           { name: 'AI Content', included: plan.features?.aiContent },
+                          { name: 'Viral Posts Writer', included: plan.features?.aiContent },
+                          { name: 'Added Sources (AI Posts & Comments)', included: plan.features?.aiContent },
+                          { name: 'Personalized Post Writer (Scan Profile)', included: plan.features?.aiContent },
+                          { name: 'Content Planner (7/30 Days)', included: plan.features?.scheduling },
+                          { name: 'Auto Scheduled Posts (Auto Pilot)', included: plan.features?.scheduling },
                           { name: 'Post Scheduling', included: plan.features?.scheduling },
                           { name: 'Advanced Analytics', included: plan.features?.analytics },
                         ].filter(f => f.included).map((feature, i) => (
@@ -540,6 +467,23 @@ export default function PlansPage() {
                     {plan.name}
                   </h2>
 
+                  {/* Gift for Agency LTD */}
+                  {plan.name === 'Agency LTD' && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      padding: '8px 16px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      marginBottom: '12px',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
+                    }}>
+                      🎁 Gift: LinkedIn Business 12 Months FREE
+                    </div>
+                  )}
+
                   <div style={{ marginBottom: '16px' }}>
                     <span className="plan-price" style={{ fontSize: '48px', fontWeight: '800', color: 'white' }}>
                       ${plan.price}
@@ -596,29 +540,6 @@ export default function PlansPage() {
                     </div>
                   </div>
 
-                  {/* LinkedIn Premium Bonus */}
-                  {(plan.name.toLowerCase().includes('pro') || plan.name.toLowerCase().includes('growth') || plan.name.toLowerCase().includes('grow') || plan.name.toLowerCase().includes('agency')) && (
-                    <div style={{ 
-                      marginBottom: '16px',
-                      padding: '12px 14px', 
-                      background: 'rgba(0, 119, 181, 0.15)', 
-                      border: '1px solid rgba(0, 119, 181, 0.4)', 
-                      borderRadius: '10px'
-                    }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '10px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#0077b5'
-                      }}>
-                        <span style={{ fontSize: '18px' }}>👑</span>
-                        <span>LinkedIn Business {plan.name.toLowerCase().includes('professional') || plan.name.toLowerCase().includes('pro') ? '3' : plan.name.toLowerCase().includes('agency') ? '12' : '0'} Months FREE</span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Lifetime Features */}
                   <div style={{ flex: 1, marginBottom: '24px' }}>
                     <div style={{ 
@@ -637,6 +558,11 @@ export default function PlansPage() {
                         { name: 'AI Comments', included: plan.features?.autoComment },
                         { name: 'Auto Follow', included: plan.features?.autoFollow },
                         { name: 'AI Content', included: plan.features?.aiContent },
+                        { name: 'Viral Posts Writer', included: plan.features?.aiContent },
+                        { name: 'Added Sources (AI Posts & Comments)', included: plan.features?.aiContent },
+                        { name: 'Personalized Post Writer (Scan Profile)', included: plan.features?.aiContent },
+                        { name: 'Content Planner (7/30 Days)', included: plan.features?.scheduling },
+                        { name: 'Auto Scheduled Posts (Auto Pilot)', included: plan.features?.scheduling },
                         { name: 'Post Scheduling', included: plan.features?.scheduling },
                         { name: 'Advanced Analytics', included: plan.features?.analytics },
                       ].filter(f => f.included).map((feature, i) => (
@@ -681,20 +607,25 @@ export default function PlansPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
 
-            {/* LinkedIn Premium Activation Note */}
-            <div style={{ 
-              maxWidth: '700px', 
-              margin: '40px auto 0', 
-              padding: '16px 24px', 
-              background: 'linear-gradient(135deg, rgba(0, 119, 181, 0.15), rgba(0, 119, 181, 0.05))', 
-              border: '1px solid rgba(0, 119, 181, 0.3)', 
-              borderRadius: '12px',
-              textAlign: 'center'
+        {/* LinkedIn Premium Bonus Note */}
+        {lifetimeDeals.length > 0 && (
+          <div style={{ marginTop: '30px', textAlign: 'center' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%)',
+              border: '1px solid rgba(16,185,129,0.3)',
+              borderRadius: '16px',
+              padding: '20px',
+              maxWidth: '800px',
+              margin: '0 auto'
             }}>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.6' }}>
-                <span style={{ fontSize: '16px', marginRight: '6px' }}>📱</span>
-                <strong style={{ color: '#0077b5' }}>LinkedIn Premium Bonus:</strong> After you buy, connect with our support team through WhatsApp — they&apos;ll help you activate the LinkedIn Business plan on your account.
+              <div style={{ fontSize: '14px', color: '#10b981', fontWeight: '600', marginBottom: '8px' }}>
+                🎁 LinkedIn Premium Bonus
+              </div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6' }}>
+                After you buy, connect with our support team through WhatsApp — they'll help you activate the LinkedIn Business plan on your account.
               </p>
             </div>
           </div>

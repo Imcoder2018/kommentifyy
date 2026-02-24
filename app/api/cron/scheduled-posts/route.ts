@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { postToLinkedIn, postWithImageToLinkedIn, postWithVideoToLinkedIn } from '@/lib/linkedin-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,59 +66,115 @@ export async function GET(request: NextRequest) {
 
     console.log(`🕐 [CRON] Found ${failedPosts.length} failed posts to retry`);
 
-    // 3. Process due posts
+    // 3. Process due posts — try LinkedIn API first, then extension fallback
     for (const post of duePosts) {
       try {
-        // Check if user's extension is online (heartbeat within last 2 minutes)
-        const heartbeat = await (prisma as any).extensionHeartbeat.findFirst({
-          where: {
-            userId: post.userId,
-            lastSeen: { gte: new Date(now.getTime() - 2 * 60 * 1000) }
-          },
-          orderBy: { lastSeen: 'desc' }
-        });
+        let posted = false;
 
-        if (!heartbeat) {
-          console.log(`⏳ [CRON] Extension offline for user ${post.userId}, skipping post ${post.id}`);
-          continue;
+        // Try LinkedIn API posting first (server-side, no extension needed)
+        if (post.postMethod === 'api' || !post.postMethod || post.postMethod === 'extension') {
+          const linkedInOAuth = await (prisma as any).linkedInOAuth.findFirst({
+            where: { userId: post.userId, isActive: true },
+          });
+
+          if (linkedInOAuth && linkedInOAuth.tokenExpiresAt && new Date(linkedInOAuth.tokenExpiresAt) > now) {
+            try {
+              let apiResult;
+              if (post.mediaUrl && post.mediaType === 'video') {
+                apiResult = await postWithVideoToLinkedIn(linkedInOAuth.accessToken, linkedInOAuth.linkedinId, post.content, post.mediaUrl);
+              } else if (post.mediaUrl && post.mediaType === 'image') {
+                apiResult = await postWithImageToLinkedIn(linkedInOAuth.accessToken, linkedInOAuth.linkedinId, post.content, post.mediaUrl);
+              } else {
+                apiResult = await postToLinkedIn(linkedInOAuth.accessToken, linkedInOAuth.linkedinId, post.content);
+              }
+
+              await (prisma as any).postDraft.update({
+                where: { id: post.id },
+                data: {
+                  status: 'posted',
+                  taskStatus: 'completed',
+                  taskCompletedAt: now,
+                  postedAt: now,
+                  linkedinPostId: apiResult?.id || null,
+                  postMethod: 'api',
+                },
+              });
+
+              // Update last used timestamp
+              await (prisma as any).linkedInOAuth.update({
+                where: { userId: post.userId },
+                data: { lastUsedAt: now },
+              });
+
+              posted = true;
+              results.sent++;
+              console.log(`✅ [CRON] Posted via LinkedIn API: ${post.id} for user ${post.userId}`);
+            } catch (apiErr: any) {
+              console.error(`⚠️ [CRON] LinkedIn API posting failed for ${post.id}:`, apiErr.message);
+              // If 401, mark token as expired
+              if (apiErr.message?.includes('401')) {
+                await (prisma as any).linkedInOAuth.update({
+                  where: { userId: post.userId },
+                  data: { isActive: false },
+                });
+              }
+              // Fall through to extension-based posting
+            }
+          }
         }
 
-        // Send task to extension via command API
-        const commandRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/extension/command`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal-api-key'}`
-          },
-          body: JSON.stringify({
-            command: 'post_scheduled_content',
-            targetUserId: post.userId,
-            data: {
-              draftId: post.id,
-              content: post.content,
-              scheduledFor: post.scheduledFor
-            }
-          })
-        });
-
-        const commandData = await commandRes.json();
-
-        if (commandData.success && commandData.commandId) {
-          // Update post with task info
-          await (prisma as any).postDraft.update({
-            where: { id: post.id },
-            data: {
-              taskId: commandData.commandId,
-              taskStatus: 'in_progress',
-              taskSentAt: now
-            }
+        // Fallback: Extension-based posting
+        if (!posted) {
+          const heartbeat = await (prisma as any).extensionHeartbeat.findFirst({
+            where: {
+              userId: post.userId,
+              lastSeen: { gte: new Date(now.getTime() - 2 * 60 * 1000) }
+            },
+            orderBy: { lastSeen: 'desc' }
           });
-          results.sent++;
-          console.log(`✅ [CRON] Sent scheduled post ${post.id} to extension, taskId: ${commandData.commandId}`);
-        } else {
-          results.failed++;
-          results.errors.push(`Failed to send post ${post.id}: ${commandData.error}`);
-          console.error(`❌ [CRON] Failed to send post ${post.id}:`, commandData.error);
+
+          if (!heartbeat) {
+            console.log(`⏳ [CRON] No API token & extension offline for user ${post.userId}, skipping post ${post.id}`);
+            continue;
+          }
+
+          const commandRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/extension/command`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.INTERNAL_API_KEY || 'internal-api-key'}`
+            },
+            body: JSON.stringify({
+              command: 'post_scheduled_content',
+              targetUserId: post.userId,
+              data: {
+                draftId: post.id,
+                content: post.content,
+                scheduledFor: post.scheduledFor,
+                mediaUrl: post.mediaUrl || null,
+                mediaType: post.mediaType || null,
+              }
+            })
+          });
+
+          const commandData = await commandRes.json();
+
+          if (commandData.success && commandData.commandId) {
+            await (prisma as any).postDraft.update({
+              where: { id: post.id },
+              data: {
+                taskId: commandData.commandId,
+                taskStatus: 'in_progress',
+                taskSentAt: now,
+                postMethod: 'extension',
+              }
+            });
+            results.sent++;
+            console.log(`✅ [CRON] Sent scheduled post ${post.id} to extension, taskId: ${commandData.commandId}`);
+          } else {
+            results.failed++;
+            results.errors.push(`Failed to send post ${post.id}: ${commandData.error}`);
+          }
         }
         
         results.processed++;

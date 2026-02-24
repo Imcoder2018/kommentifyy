@@ -27,7 +27,9 @@ function SignupContent() {
 
     useEffect(() => {
         if (isLoaded && isSignedIn) {
-            router.push('/plans');
+            // User already signed in - redirect to auth-callback to complete sync
+            // Don't redirect to /plans here as it conflicts with fallbackRedirectUrl
+            router.push('/auth-callback');
         }
     }, [isLoaded, isSignedIn, router]);
 

@@ -455,25 +455,47 @@ class PostScheduler {
                             check();
                         });
                         const _findStartBtn = () => {
+                            // Method 1: New LinkedIn UI - data-view-name attribute (most reliable)
+                            const s0 = document.querySelector('[data-view-name="share-sharebox-focus"]');
+                            if (s0) return s0;
+                            // Method 2: Look for any clickable element with "Start a post" text
+                            const clickables = document.querySelectorAll('button, [role="button"]');
+                            for (const el of clickables) {
+                                const txt = (el.textContent || '').toLowerCase();
+                                if (txt.includes('start a post')) return el;
+                            }
+                            // Method 3: aria-label based detection
+                            for (const el of clickables) {
+                                const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                                if (label.includes('start a post')) return el;
+                            }
+                            // Method 4: Legacy selectors (fallback)
                             const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
                             if (s1) return s1;
-                            for (const btn of document.querySelectorAll('button')) {
-                                if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
-                            }
                             return document.querySelector('.share-box-feed-entry__trigger');
                         };
                         const _findEditor = () => {
                             const dialog = document.querySelector('[role="dialog"]');
                             if (dialog) {
-                                const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
+                                // Method 1: New LinkedIn UI - .editor-content .ql-editor (most common)
+                                const e1 = dialog.querySelector('.editor-content .ql-editor[contenteditable="true"]');
                                 if (e1) return e1;
-                                const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+                                // Method 2: Direct .ql-editor
+                                const e2 = dialog.querySelector('.ql-editor[contenteditable="true"]');
                                 if (e2) return e2;
-                                const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
+                                // Method 3: Role-based detection
+                                const e3 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
                                 if (e3) return e3;
+                                // Method 4: Aria-multiline
+                                const e4 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
+                                if (e4) return e4;
                             }
-                            const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
-                            if (e4) return e4;
+                            // Fallback: Search entire document
+                            const e5 = document.querySelector('.editor-content .ql-editor[contenteditable="true"]');
+                            if (e5) return e5;
+                            const e6 = document.querySelector('.ql-editor[contenteditable="true"]');
+                            if (e6) return e6;
+                            // Method 5: Logic-based detection via placeholder text
                             for (const el of document.querySelectorAll('[contenteditable="true"]')) {
                                 const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
                                 if (ph.includes('want to talk about')) return el;
@@ -698,12 +720,23 @@ class PostScheduler {
                 const results = await chrome.scripting.executeScript({
                     target: { tabId },
                     func: () => {
-                        // Logic-based detection: try multiple strategies
+                        // Method 1: New LinkedIn UI - data-view-name attribute (most reliable)
+                        const s0 = document.querySelector('[data-view-name="share-sharebox-focus"]');
+                        if (s0) return { found: true, method: 'data-view-name' };
+                        // Method 2: Look for any clickable element with "Start a post" text
+                        const clickables = document.querySelectorAll('button, [role="button"]');
+                        for (const el of clickables) {
+                            const txt = (el.textContent || '').toLowerCase();
+                            if (txt.includes('start a post')) return { found: true, method: 'text-content' };
+                        }
+                        // Method 3: aria-label based detection
+                        for (const el of clickables) {
+                            const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                            if (label.includes('start a post')) return { found: true, method: 'aria-label' };
+                        }
+                        // Method 4: Legacy selectors (fallback)
                         const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
                         if (s1) return { found: true, method: 'share-box-top-bar' };
-                        for (const btn of document.querySelectorAll('button')) {
-                            if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return { found: true, method: 'aria-label' };
-                        }
                         const s2 = document.querySelector('.share-box-feed-entry__trigger');
                         if (s2) return { found: true, method: 'trigger' };
                         return { found: false };

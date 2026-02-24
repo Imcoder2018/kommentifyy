@@ -109,9 +109,12 @@ export default function AdminDashboard() {
 
   const fetchSettings = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      // const token = localStorage.getItem('adminToken');
       const response = await fetch('/api/admin/settings', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: 'GET',
+        // headers: {
+        //   'Authorization': `Bearer ${token}`
+        // }
       });
       const data = await response.json();
       if (data.success) {
@@ -125,11 +128,11 @@ export default function AdminDashboard() {
 
   const saveSettings = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      // const token = localStorage.getItem('adminToken');
       const response = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          // 'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ aiCommentsPerDollar })

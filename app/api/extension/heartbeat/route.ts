@@ -18,25 +18,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'token_expired', shouldReauth: true }, { status: 401 });
     }
 
-    // Find existing heartbeat record for this user
+    const now = new Date();
+
+    // Update ExtensionHeartbeat model (used by cron job to check if extension is online)
+    try {
+      await (prisma as any).extensionHeartbeat.upsert({
+        where: { userId: payload.userId },
+        update: { lastSeen: now, status: 'online' },
+        create: { userId: payload.userId, lastSeen: now, status: 'online' },
+      });
+    } catch (hbErr: any) {
+      console.error('ExtensionHeartbeat upsert error:', hbErr.message);
+    }
+
+    // Also update Activity model (used by dashboard to check connectivity)
     const existing = await prisma.activity.findFirst({
       where: { userId: payload.userId, type: 'extension_heartbeat' },
       orderBy: { timestamp: 'desc' },
     });
 
     if (existing) {
-      // Update the existing heartbeat timestamp (avoid creating thousands of records)
       await prisma.activity.update({
         where: { id: existing.id },
-        data: { timestamp: new Date(), metadata: { version: 'active', updatedAt: new Date().toISOString() } },
+        data: { timestamp: now, metadata: { version: 'active', updatedAt: now.toISOString() } },
       });
     } else {
-      // Create first heartbeat record
       await prisma.activity.create({
         data: {
           userId: payload.userId,
           type: 'extension_heartbeat',
-          timestamp: new Date(),
+          timestamp: now,
           metadata: { version: 'active' },
         },
       });

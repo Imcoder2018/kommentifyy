@@ -166,6 +166,18 @@ const IconZap = ({ size = 16, color = 'currentColor' }: { size?: number; color?:
     </svg>
 );
 
+const IconDatabase = ({ size = 16, color = 'currentColor' }: { size?: number; color?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>
+    </svg>
+);
+
+const IconUser = ({ size = 16, color = 'currentColor' }: { size?: number; color?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+);
+
 const IconBrain = ({ size = 16, color = 'currentColor' }: { size?: number; color?: string }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
@@ -633,7 +645,7 @@ function LandingPage() {
                     textDecoration: 'none',
                     transition: 'transform 0.2s ease'
                 }}>
-                    🔥 LIFETIME DEAL AVAILABLE — <span style={{ background: 'rgba(245, 158, 11, 0.3)', padding: '2px 10px', borderRadius: '4px', border: '1px solid rgba(245, 158, 11, 0.5)' }}>Pay Once, Use Forever</span> — Click Here
+                    🔥 LIFETIME DEAL AVAILABLE — <span style={{ background: 'rgba(245, 158, 11, 0.3)', padding: '2px 10px', borderRadius: '4px', border: '1px solid rgba(245, 158, 11, 0.5)' }}>Pay Once, Use Forever</span> — Use code <span style={{ background: 'rgba(34, 197, 94, 0.3)', padding: '2px 10px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.5)', fontWeight: '800' }}>Kommentify</span> for 30% OFF
                 </a>
             </div>
 
@@ -1761,11 +1773,6 @@ function LandingPage() {
                                 const isPopular = index === Math.floor(lifetimeDeals.length / 2) || lifetimeDeals.length === 1;
                                 const spotsLeft = plan.lifetimeSpotsRemaining ?? (plan.lifetimeMaxSpots ? plan.lifetimeMaxSpots - plan.lifetimeSoldSpots : 100);
                                 
-                                // Determine LinkedIn Business months based on tier position (sorted by price)
-                                const isHighestTier = index === lifetimeDeals.length - 1; // Last/most expensive = 12 months
-                                const isMiddleTier = index === Math.floor(lifetimeDeals.length / 2); // Middle = 3 months
-                                const linkedInMonths = isHighestTier ? 12 : isMiddleTier ? 3 : 0;
-                                
                                 const features = [
                                     { icon: <IconMessage size={14} color="#693fe9" />, text: `${plan.limits.aiCommentsPerMonth >= 100000 ? 'Unlimited' : formatNumber(plan.limits.aiCommentsPerMonth)} AI Comments/mo` },
                                     { icon: <IconEdit size={14} color="#8b5cf6" />, text: `${plan.limits.aiPostsPerMonth >= 100000 ? 'Unlimited' : formatNumber(plan.limits.aiPostsPerMonth)} AI Posts/mo` },
@@ -1774,7 +1781,11 @@ function LandingPage() {
                                     { icon: <IconUsers size={14} color="#3b82f6" />, text: `${plan.limits.monthlyFollows >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyFollows)} Auto Follows` },
                                     { icon: <IconHandshake size={14} color="#f59e0b" />, text: `${plan.limits.monthlyConnections >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyConnections)} Connections` },
                                     plan.monthlyImportCredits > 0 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: plan.monthlyImportCredits >= 100000 ? 'Unlimited Imports' : `${formatNumber(plan.monthlyImportCredits)} Imports` } : null,
-                                    linkedInMonths > 0 ? { icon: <IconCrown size={14} color="#0077b5" />, text: `LinkedIn Business ${linkedInMonths} Months FREE`, highlight: true } : null,
+                                    { icon: <IconRocket size={14} color="#22c55e" />, text: 'Viral Posts Writer' },
+                                    { icon: <IconDatabase size={14} color="#8b5cf6" />, text: 'Added Sources (AI Posts & Comments)' },
+                                    { icon: <IconUser size={14} color="#f59e0b" />, text: 'Personalized Post Writer (Scan Profile)' },
+                                    { icon: <IconCalendar size={14} color="#3b82f6" />, text: 'Content Planner (7/30 Days)' },
+                                    { icon: <IconClock size={14} color="#10b981" />, text: 'Auto Scheduled Posts (Auto Pilot)' },
                                     { icon: <IconRocket size={14} color="#22c55e" />, text: 'Lifetime Updates' },
                                     { icon: <IconShield size={14} color="#3b82f6" />, text: 'Priority Support' },
                                 ].filter(Boolean) as { icon: JSX.Element; text: string; highlight?: boolean }[];
@@ -1877,22 +1888,6 @@ function LandingPage() {
                             <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)' }}>We&apos;re preparing exclusive lifetime offers. Check back soon!</p>
                         </div>
                     )}
-
-                    {/* LinkedIn Premium Activation Note */}
-                    <div style={{ 
-                        maxWidth: '700px', 
-                        margin: '30px auto 0', 
-                        padding: '16px 24px', 
-                        background: 'linear-gradient(135deg, rgba(0, 119, 181, 0.15), rgba(0, 119, 181, 0.05))', 
-                        border: '1px solid rgba(0, 119, 181, 0.3)', 
-                        borderRadius: '12px',
-                        textAlign: 'center'
-                    }}>
-                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.6' }}>
-                            <IconBrandWhatsapp size={16} color="#25D366" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                            <strong style={{ color: '#0077b5' }}>LinkedIn Premium Bonus:</strong> After you buy, connect with our support team through WhatsApp — they&apos;ll help you activate the LinkedIn Business plan on your account.
-                        </p>
-                    </div>
 
                     {/* Trust Badges */}
                     <div className="trust-badges" style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '40px', flexWrap: 'wrap' }}>

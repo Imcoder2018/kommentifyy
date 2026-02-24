@@ -162,6 +162,12 @@ try {
 
 console.log("BACKGROUND: All modules loaded and ready");
 
+// Global helper to get fresh auth token
+async function getFreshToken() {
+    const storage = await chrome.storage.local.get(['authToken']);
+    return storage.authToken;
+}
+
 // --- COMMAND POLLING VIA ALARM (independent of content scripts) ---
 // This ensures commands from the website are picked up even if the dashboard tab is not open
 if (!globalThis._commandPollAlarmCreated) {
@@ -172,12 +178,6 @@ if (!globalThis._commandPollAlarmCreated) {
 
 // Standalone command polling function - called by alarm, no dependency on content scripts
 async function pollCommandsDirectly() {
-    // Helper to get fresh token
-    const getFreshToken = async () => {
-        const storage = await chrome.storage.local.get(['authToken']);
-        return storage.authToken;
-    };
-
     // Reuse the same lock as the message handler
     if (typeof globalThis._pollCommandsRunning === 'undefined') globalThis._pollCommandsRunning = false;
     if (typeof globalThis._pollLockTimestamp === 'undefined') globalThis._pollLockTimestamp = 0;
@@ -220,12 +220,46 @@ async function pollCommandsDirectly() {
             headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json' }
         });
         
-        // Handle 401 authentication errors
+        // Handle 401 authentication errors — attempt token refresh first
         if (response.status === 401) {
-            console.error('🔐 POLL-ALARM: Authentication token expired');
-            // Clear the expired token
+            console.warn('🔐 POLL-ALARM: Token expired (401), attempting refresh...');
+            try {
+                const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json' }
+                });
+                if (refreshRes.ok) {
+                    const refreshData = await refreshRes.json();
+                    if (refreshData.success && refreshData.token) {
+                        await chrome.storage.local.set({ authToken: refreshData.token });
+                        console.log('✅ POLL-ALARM: Token refreshed successfully, retrying command fetch...');
+                        // Retry the command fetch immediately with new token
+                        const retryResponse = await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'GET',
+                            headers: { 'Authorization': `Bearer ${refreshData.token}`, 'Content-Type': 'application/json' }
+                        });
+                        if (retryResponse.ok) {
+                            const retryData = await retryResponse.json();
+                            console.log(`📥 POLL-ALARM (retry): status=${retryResponse.status}, commands=${retryData.commands?.length || 0}, queueStatus=${retryData.queueStatus}`);
+                            if (retryData.success && retryData.commands && retryData.commands.length > 0) {
+                                // Process commands inline (will continue below via data variable)
+                                globalThis._pollCommandsRunning = false;
+                                // Re-call self to process with fresh token
+                                return pollCommandsDirectly();
+                            }
+                        }
+                        globalThis._pollCommandsRunning = false;
+                        return;
+                    }
+                } else {
+                    console.error('❌ POLL-ALARM: Refresh endpoint returned:', refreshRes.status);
+                }
+            } catch (refreshErr) {
+                console.error('❌ POLL-ALARM: Token refresh failed:', refreshErr);
+            }
+            // Refresh failed — clear token and notify user
+            console.error('🔐 POLL-ALARM: Token refresh failed, clearing auth');
             await chrome.storage.local.remove(['authToken']);
-            // Notify user to re-authenticate
             try {
                 await chrome.notifications.create({
                     type: 'basic',
@@ -240,6 +274,7 @@ async function pollCommandsDirectly() {
         }
         
         const data = await response.json();
+        console.log(`📋 POLL-ALARM: status=${response.status}, commands=${data.commands?.length || 0}, queueStatus=${data.queueStatus || 'unknown'}, pendingCount=${data.pendingCount ?? '?'}`);
 
         if (data.success && data.commands && data.commands.length > 0) {
             console.log(`📥 POLL-ALARM: Found ${data.commands.length} pending commands`);
@@ -448,6 +483,10 @@ async function pollCommandsDirectly() {
                 else if (cmd.command === 'scrape_comments' && cmd.data?.profileUrl) {
                     console.log('💬 POLL-ALARM: Executing scrape_comments for:', cmd.data.profileUrl);
                     let commentTab = null;
+                    // Helper to send live overlay status to the scrape tab
+                    const sendOverlay = async (tabId, message, type = 'info') => {
+                        try { await chrome.tabs.sendMessage(tabId, { action: 'updateNetworkingStatus', message, type }); } catch (e) {}
+                    };
                     try {
                         const profileUrl = cmd.data.profileUrl.replace(/\/+$/, '');
                         const urlMatch = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/);
@@ -462,8 +501,10 @@ async function pollCommandsDirectly() {
                             setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
                         });
                         await new Promise(r => setTimeout(r, 5000));
+                        await sendOverlay(tab.id, `🔍 Kommentify: Loading comments for ${targetProfileId}...`, 'info');
                         await scrollAndLoadContent(tab.id, 8);
                         await new Promise(r => setTimeout(r, 2000));
+                        await sendOverlay(tab.id, `📝 Kommentify: Extracting comments from ${targetProfileId}...`, 'info');
                         const scrapeResult = await chrome.scripting.executeScript({
                             target: { tabId: tab.id },
                             func: (targetId) => {
@@ -494,16 +535,21 @@ async function pollCommandsDirectly() {
                         const result = scrapeResult?.[0]?.result || { comments: [], count: 0 };
                         console.log(`POLL-ALARM: Scraped ${result.count} comments from ${targetProfileId}`);
                         if (result.comments.length > 0) {
+                            await sendOverlay(tab.id, `💾 Kommentify: Saving ${result.count} comments for ${targetProfileId}...`, 'info');
                             await fetch(`${apiUrl}/api/scraped-comments`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ profileUrl: cmd.data.profileUrl, profileId: targetProfileId, profileName: cmd.data.profileName || targetProfileId, comments: result.comments })
+                                body: JSON.stringify({ action: 'saveComments', profileUrl: cmd.data.profileUrl, profileIdSlug: targetProfileId, profileName: cmd.data.profileName || targetProfileId, comments: result.comments })
                             });
+                            await sendOverlay(tab.id, `✅ Kommentify: Saved ${result.count} comments from ${targetProfileId}!`, 'success');
+                        } else {
+                            await sendOverlay(tab.id, `⚠️ Kommentify: No comments found for ${targetProfileId}`, 'warning');
                         }
                         await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) });
                         console.log(`✅ POLL-ALARM: scrape_comments done, saved ${result.count} comments`);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_comments failed:', e);
+                        if (commentTab) { try { await sendOverlay(commentTab.id, `❌ Kommentify: Comment scraping failed`, 'error'); } catch (x) {} }
                         try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
                     } finally {
                         if (commentTab) { try { await chrome.tabs.remove(commentTab.id); } catch (e) {} globalThis._commandLinkedInTabs.delete(commentTab.id); }
@@ -562,7 +608,16 @@ async function pollCommandsDirectly() {
 
                         // Step 4: Inject posting script
                         const content = cmd.data.content;
-                        const imageDataUrl = cmd.data.imageDataUrl || null;
+                        // Image is sent via CustomEvent to bypass 4MB API limit
+                        // Check storage for pending post with image
+                        let imageDataUrl = null;
+                        if (cmd.data.hasImage) {
+                            const stored = await chrome.storage.local.get('pendingPostImage');
+                            imageDataUrl = stored.pendingPostImage || null;
+                            console.log('📝 POLL-ALARM: Retrieved image from storage:', !!imageDataUrl);
+                            // Clear it after retrieval
+                            await chrome.storage.local.remove('pendingPostImage');
+                        }
                         console.log('📝 POLL-ALARM: Injecting post script, hasImage:', !!imageDataUrl);
                         
                         // Load click delay from limits
@@ -580,39 +635,57 @@ async function pollCommandsDirectly() {
                                         check();
                                     });
                                     const _findStartBtn = () => {
+                                        // Method 1: New LinkedIn UI - data-view-name attribute (most reliable)
+                                        const s0 = document.querySelector('[data-view-name="share-sharebox-focus"]');
+                                        if (s0) return s0;
+                                        // Method 2: Look for any clickable element with "Start a post" text
+                                        const clickables = document.querySelectorAll('button, [role="button"]');
+                                        for (const el of clickables) {
+                                            const txt = (el.textContent || '').toLowerCase();
+                                            if (txt.includes('start a post')) return el;
+                                        }
+                                        // Method 3: aria-label based detection
+                                        for (const el of clickables) {
+                                            const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                                            if (label.includes('start a post')) return el;
+                                        }
+                                        // Method 4: Legacy selectors (fallback)
                                         const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
                                         if (s1) return s1;
-                                        for (const btn of document.querySelectorAll('button')) {
-                                            if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
-                                        }
                                         return document.querySelector('.share-box-feed-entry__trigger');
                                     };
                                     const _findEditor = () => {
+                                        const searchInRoot = (root) => {
+                                            const selectors = ['.editor-content .ql-editor[contenteditable="true"]', '.ql-editor[contenteditable="true"]', '[role="textbox"][contenteditable="true"]', '[contenteditable="true"][aria-multiline="true"]'];
+                                            for (const sel of selectors) { const el = root.querySelector(sel); if (el) return el; }
+                                            for (const el of root.querySelectorAll('[contenteditable="true"]')) {
+                                                const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                                if (ph.includes('want to talk about')) return el;
+                                            }
+                                            return null;
+                                        };
+                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        if (shadowHost && shadowHost.shadowRoot) {
+                                            console.log('LinkedIn Post Script: Searching in shadow DOM...');
+                                            const editor = searchInRoot(shadowHost.shadowRoot);
+                                            if (editor) { console.log('LinkedIn Post Script: Editor found in shadow DOM!'); return editor; }
+                                        }
                                         const dialog = document.querySelector('[role="dialog"]');
-                                        if (dialog) {
-                                            const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
-                                            if (e1) return e1;
-                                            const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
-                                            if (e2) return e2;
-                                            const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
-                                            if (e3) return e3;
-                                        }
-                                        const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
-                                        if (e4) return e4;
-                                        for (const el of document.querySelectorAll('[contenteditable="true"]')) {
-                                            const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
-                                            if (ph.includes('want to talk about')) return el;
-                                        }
-                                        return null;
+                                        if (dialog) { const editor = searchInRoot(dialog); if (editor) return editor; }
+                                        return searchInRoot(document);
                                     };
                                     const _findPostBtn = () => {
+                                        const searchForBtn = (root) => {
+                                            for (const btn of root.querySelectorAll('button')) {
+                                                const txt = (btn.textContent || '').trim().toLowerCase();
+                                                if (txt === 'post') return btn;
+                                            }
+                                            return null;
+                                        };
+                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        if (shadowHost && shadowHost.shadowRoot) { const btn = searchForBtn(shadowHost.shadowRoot); if (btn) return btn; }
                                         const dialog = document.querySelector('[role="dialog"]');
-                                        const scope = dialog || document;
-                                        for (const btn of scope.querySelectorAll('button')) {
-                                            const txt = (btn.textContent || '').trim().toLowerCase();
-                                            if (txt === 'post') return btn;
-                                        }
-                                        return null;
+                                        return searchForBtn(dialog || document);
                                     };
                                     try {
                                         console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
@@ -621,83 +694,153 @@ async function pollCommandsDirectly() {
                                             resolve({ success: false, error: 'Start post button not found' });
                                             return;
                                         }
-                                        startPostBtn.click();
-                                        console.log(`LinkedIn Post Script: Clicked start post, polling for editor (timeout ${clickDelayMs + 8000}ms)...`);
-                                        _poll(_findEditor, 500, clickDelayMs + 8000).then(async (editor) => {
-                                            try {
-                                                if (!editor) {
-                                                    resolve({ success: false, error: 'Editor not found after polling' });
-                                                    return;
-                                                }
-                                                console.log('LinkedIn Post Script: Editor found via logic-based detection');
-                                                editor.innerHTML = '';
-                                                editor.focus();
-                                                const lines = postContent.split('\n');
-                                                lines.forEach((line) => {
-                                                    if (line.trim() === '') {
-                                                        editor.appendChild(document.createElement('br'));
-                                                    } else {
-                                                        const p = document.createElement('p');
-                                                        p.textContent = line;
-                                                        editor.appendChild(p);
-                                                    }
-                                                });
-                                                editor.dispatchEvent(new Event('input', { bubbles: true }));
-                                                console.log('LinkedIn Post Script: Text inserted');
-
-                                                // Handle image attachment via clipboard paste
-                                                const pasteImage = async () => {
-                                                    if (!imgDataUrl) return false;
-                                                    try {
-                                                        console.log('LinkedIn Post Script: Pasting image via clipboard...');
-                                                        const byteString = atob(imgDataUrl.split(',')[1]);
-                                                        const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
-                                                        const ab = new ArrayBuffer(byteString.length);
-                                                        const ia = new Uint8Array(ab);
-                                                        for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
-                                                        const blob = new Blob([ab], { type: mimeString });
-                                                        const file = new File([blob], 'image.png', { type: mimeString });
-                                                        try {
-                                                            await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
-                                                        } catch (clipErr) {
-                                                            console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
-                                                        }
-                                                        editor.focus();
-                                                        const dt = new DataTransfer();
-                                                        dt.items.add(file);
-                                                        const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
-                                                        editor.dispatchEvent(pasteEvt);
-                                                        const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
-                                                        if (shareBox) {
-                                                            shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
-                                                        }
-                                                        await new Promise(r => setTimeout(r, 3000));
-                                                        return true;
-                                                    } catch (imgErr) {
-                                                        console.error('LinkedIn Post Script: Image paste error:', imgErr);
-                                                        return false;
-                                                    }
-                                                };
-
-                                                const imageAttached = await pasteImage();
-                                                console.log('LinkedIn Post Script: Image attached:', imageAttached);
-                                                const extraWait = imgDataUrl ? 4000 : 0;
-                                                console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
-                                                await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
-
-                                                const postButton = _findPostBtn();
-                                                if (postButton && !postButton.disabled) {
-                                                    postButton.click();
-                                                    console.log('LinkedIn Post Script: Post button clicked');
-                                                    resolve({ success: true, posted: true, imageAttached });
-                                                } else {
-                                                    console.log('LinkedIn Post Script: Post button not found or disabled');
-                                                    resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
-                                                }
-                                            } catch (innerErr) {
-                                                resolve({ success: false, error: 'Inner error: ' + innerErr.message });
-                                            }
+                                        console.log('LinkedIn Post Script: Start button found, clicking...', {
+                                            tagName: startPostBtn.tagName,
+                                            className: startPostBtn.className,
+                                            text: startPostBtn.textContent?.substring(0, 50)
                                         });
+                                        startPostBtn.click();
+                                        
+                                        // Wait a bit for modal to start appearing
+                                        setTimeout(() => {
+                                            // Check if modal appeared
+                                            const modal = document.querySelector('[role="dialog"]');
+                                            console.log('LinkedIn Post Script: Modal check after 1.5s:', modal ? 'FOUND ✓' : 'NOT FOUND ✗');
+                                            if (modal) {
+                                                console.log('LinkedIn Post Script: Modal details:', {
+                                                    className: modal.className,
+                                                    childCount: modal.children.length
+                                                });
+                                            }
+                                            
+                                            const pollTimeout = clickDelayMs + 20000; // Increased from 8s to 20s
+                                            console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
+                                            _poll(_findEditor, 500, pollTimeout).then(async (editor) => {
+                                                try {
+                                                    if (!editor) {
+                                                        resolve({ success: false, error: 'Editor not found after polling' });
+                                                        return;
+                                                    }
+                                                    console.log('LinkedIn Post Script: Editor found!', {
+                                                        tagName: editor.tagName,
+                                                        className: editor.className,
+                                                        contentEditable: editor.contentEditable,
+                                                        innerHTML: editor.innerHTML.substring(0, 100)
+                                                    });
+                                                    
+                                                    // Try multiple insertion methods
+                                                    let insertSuccess = false;
+                                                    
+                                                    // Method 1: Focus + execCommand (most reliable for contenteditable)
+                                                    try {
+                                                        editor.focus();
+                                                        editor.click();
+                                                        await new Promise(r => setTimeout(r, 500));
+                                                        
+                                                        // Clear existing content
+                                                        document.execCommand('selectAll', false, null);
+                                                        document.execCommand('delete', false, null);
+                                                        
+                                                        // Insert text
+                                                        document.execCommand('insertText', false, postContent);
+                                                        insertSuccess = true;
+                                                        console.log('LinkedIn Post Script: Text inserted via execCommand');
+                                                    } catch (e1) {
+                                                        console.log('LinkedIn Post Script: execCommand failed:', e1.message);
+                                                    }
+                                                    
+                                                    // Method 2: innerHTML manipulation (fallback)
+                                                    if (!insertSuccess) {
+                                                        try {
+                                                            editor.innerHTML = '';
+                                                            const lines = postContent.split('\n');
+                                                            lines.forEach((line, idx) => {
+                                                                if (line.trim() === '') {
+                                                                    editor.appendChild(document.createElement('br'));
+                                                                } else {
+                                                                    const p = document.createElement('p');
+                                                                    p.textContent = line;
+                                                                    editor.appendChild(p);
+                                                                }
+                                                            });
+                                                            insertSuccess = true;
+                                                            console.log('LinkedIn Post Script: Text inserted via innerHTML');
+                                                        } catch (e2) {
+                                                            console.log('LinkedIn Post Script: innerHTML failed:', e2.message);
+                                                        }
+                                                    }
+                                                    
+                                                    // Method 3: Direct textContent (last resort)
+                                                    if (!insertSuccess) {
+                                                        editor.textContent = postContent;
+                                                        console.log('LinkedIn Post Script: Text inserted via textContent');
+                                                    }
+                                                    
+                                                    // Trigger events
+                                                    editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                                                    editor.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+                                                    editor.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, cancelable: true }));
+                                                    
+                                                    console.log('LinkedIn Post Script: Content after insertion:', {
+                                                        textContent: editor.textContent.substring(0, 100),
+                                                        innerHTML: editor.innerHTML.substring(0, 200),
+                                                        innerText: editor.innerText ? editor.innerText.substring(0, 100) : 'N/A'
+                                                    });
+
+                                                    // Handle image attachment via clipboard paste
+                                                    const pasteImage = async () => {
+                                                        if (!imgDataUrl) return false;
+                                                        try {
+                                                            console.log('LinkedIn Post Script: Pasting image via clipboard...');
+                                                            const byteString = atob(imgDataUrl.split(',')[1]);
+                                                            const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                                            const ab = new ArrayBuffer(byteString.length);
+                                                            const ia = new Uint8Array(ab);
+                                                            for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
+                                                            const blob = new Blob([ab], { type: mimeString });
+                                                            const file = new File([blob], 'image.png', { type: mimeString });
+                                                            try {
+                                                                await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
+                                                            } catch (clipErr) {
+                                                                console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
+                                                            }
+                                                            editor.focus();
+                                                            const dt = new DataTransfer();
+                                                            dt.items.add(file);
+                                                            const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
+                                                            editor.dispatchEvent(pasteEvt);
+                                                            const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
+                                                            if (shareBox) {
+                                                                shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
+                                                            }
+                                                            await new Promise(r => setTimeout(r, 3000));
+                                                            return true;
+                                                        } catch (imgErr) {
+                                                            console.error('LinkedIn Post Script: Image paste error:', imgErr);
+                                                            return false;
+                                                        }
+                                                    };
+
+                                                    const imageAttached = await pasteImage();
+                                                    console.log('LinkedIn Post Script: Image attached:', imageAttached);
+                                                    const extraWait = imgDataUrl ? 4000 : 0;
+                                                    console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
+                                                    await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
+
+                                                    const postButton = _findPostBtn();
+                                                    if (postButton && !postButton.disabled) {
+                                                        postButton.click();
+                                                        console.log('LinkedIn Post Script: Post button clicked');
+                                                        resolve({ success: true, posted: true, imageAttached });
+                                                    } else {
+                                                        console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                        resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
+                                                    }
+                                                } catch (innerErr) {
+                                                    resolve({ success: false, error: 'Inner error: ' + innerErr.message });
+                                                }
+                                            });
+                                        }, 1500);
                                     } catch (outerErr) {
                                         resolve({ success: false, error: 'Outer error: ' + outerErr.message });
                                     }
@@ -1034,6 +1177,190 @@ async function pollCommandsDirectly() {
                     }
                 }
 
+                // --- AI_PROFILE_RECAPTURE command --- (Capture full profile text and restructure with AI)
+                else if (cmd.command === 'AI_PROFILE_RECAPTURE') {
+                    console.log('🤖 POLL-ALARM: Executing AI_PROFILE_RECAPTURE...');
+                    let recaptureTab = null;
+                    
+                    // Timeout wrapper - max 60 seconds
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('AI_PROFILE_RECAPTURE timeout after 60s')), 60000);
+                    });
+                    
+                    const executeRecapture = async () => {
+                        // Mark as in_progress
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+
+                        // Get the actual profile URL from command params or use current tab
+                        const profileUrl = cmd.params?.profileUrl || 'https://www.linkedin.com/in/me/';
+                        console.log('🤖 POLL-ALARM: Profile URL:', profileUrl);
+                        
+                        recaptureTab = await chrome.tabs.create({ url: profileUrl, active: true });
+                        console.log('🤖 POLL-ALARM: Opened LinkedIn profile tab for AI recapture:', recaptureTab.id);
+
+                        // Wait for page to load
+                        await new Promise((resolve) => {
+                            const checkComplete = (tabId, changeInfo) => {
+                                if (tabId === recaptureTab.id && changeInfo.status === 'complete') {
+                                    chrome.tabs.onUpdated.removeListener(checkComplete);
+                                    resolve();
+                                }
+                            };
+                            chrome.tabs.onUpdated.addListener(checkComplete);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
+                        });
+
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+
+                        // Auto-scroll to load all content
+                        console.log('🤖 POLL-ALARM: Auto-scrolling profile page...');
+                        await autoScrollProfilePage(recaptureTab.id);
+
+                        // Extract FULL text from the profile page
+                        console.log('🤖 POLL-ALARM: Extracting profile data...');
+                        
+                        // Inject "Processing" overlay
+                        await chrome.scripting.executeScript({
+                            target: { tabId: recaptureTab.id },
+                            func: () => {
+                                let overlay = document.getElementById('kommentify-profile-scan');
+                                if (!overlay) {
+                                    const style = document.createElement('style');
+                                    style.textContent = '@keyframes kPulse { 0% {transform:scale(0.95);opacity:0.8} 50% {transform:scale(1.05);opacity:1} 100% {transform:scale(0.95);opacity:0.8} }';
+                                    document.head.appendChild(style);
+                                    
+                                    overlay = document.createElement('div');
+                                    overlay.id = 'kommentify-profile-scan';
+                                    overlay.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:20px;border-radius:12px;font-family:-apple-system,system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,0.5);border:1px solid rgba(105,63,233,0.4);min-width:280px;';
+                                    document.body.appendChild(overlay);
+                                }
+                                overlay.innerHTML = `
+                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                                        <div style="width:12px;height:12px;background:#8b5cf6;border-radius:50%;animation:kPulse 1.5s infinite;"></div>
+                                        <strong style="font-size:15px;color:#a78bfa;margin:0;">Kommentify AI Scanner</strong>
+                                    </div>
+                                    <div style="font-size:13px;color:#cbd5e1;line-height:1.5;">
+                                        Extracting structured profile data...<br/>
+                                        <span style="color:#94a3b8;font-size:11px;margin-top:6px;display:block;">This tab will auto-close when complete.</span>
+                                    </div>
+                                `;
+                            }
+                        });
+
+                        // Capture full page text and send to backend for AI restructuring
+                        const fullTextResult = await chrome.scripting.executeScript({
+                            target: { tabId: recaptureTab.id },
+                            func: () => {
+                                // Get all text content from the page
+                                const allText = document.body.innerText;
+                                const profileUrl = window.location.href.split('?')[0];
+                                return { fullText: allText, profileUrl };
+                            }
+                        });
+
+                        const { fullText, profileUrl: scannedProfileUrl } = fullTextResult?.[0]?.result || {};
+                        console.log('🤖 POLL-ALARM: Full text length:', fullText?.length || 0);
+
+                        if (fullText && fullText.length > 100) {
+                            // Update overlay
+                            await chrome.scripting.executeScript({
+                                target: { tabId: recaptureTab.id },
+                                func: () => {
+                                    const overlay = document.getElementById('kommentify-profile-scan');
+                                    if (overlay) {
+                                        overlay.innerHTML = `
+                                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                                                <div style="width:12px;height:12px;background:#34d399;border-radius:50%;animation:kPulse 1.5s infinite;"></div>
+                                                <strong style="font-size:15px;color:#a78bfa;margin:0;">Kommentify AI Scanner</strong>
+                                            </div>
+                                            <div style="font-size:13px;color:#cbd5e1;line-height:1.5;">
+                                                AI is now structuring your profile data...<br/>
+                                                <span style="color:#94a3b8;font-size:11px;margin-top:6px;display:block;">This might take 10-20 seconds. Tab will auto-close when done.</span>
+                                            </div>
+                                        `;
+                                    }
+                                }
+                            });
+
+                            // Send to backend API for AI restructuring
+                            console.log('🤖 POLL-ALARM: Sending to backend for AI restructuring...');
+                            
+                            const token = await getFreshToken();
+                            const aiResponse = await fetch(`${apiUrl}/api/ai/restructure-profile`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    profileText: fullText.substring(0, 15000),
+                                    profileUrl: scannedProfileUrl
+                                })
+                            });
+
+                            const aiData = await aiResponse.json();
+                            console.log('🤖 POLL-ALARM: Backend AI response received');
+
+                            if (aiData.success && aiData.data) {
+                                const structuredData = aiData.data;
+                                structuredData.profileUrl = scannedProfileUrl;
+                                structuredData.lastScannedAt = new Date().toISOString();
+                                structuredData.totalPostsCount = structuredData.posts?.length || 0;
+                                // Store full page text for re-scanning missing data
+                                structuredData.fullPageText = fullText;
+
+                                // Save to database
+                                const saveResponse = await fetch(`${apiUrl}/api/linkedin-profile`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(structuredData)
+                                });
+                                const saveResult = await saveResponse.json();
+                                console.log('🤖 POLL-ALARM: Profile save result:', saveResult);
+                                
+                                // Mark command as completed
+                                const completionResponse = await fetch(`${apiUrl}/api/extension/command`, { 
+                                    method: 'PUT', 
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) 
+                                });
+                                const completionResult = await completionResponse.json();
+                                console.log('✅ POLL-ALARM: AI_PROFILE_RECAPTURE completed, result:', completionResult);
+                            } else {
+                                console.error('🤖 POLL-ALARM: AI restructuring failed:', aiData.error);
+                                // Mark as failed since AI couldn't restructure
+                                await fetch(`${apiUrl}/api/extension/command`, { 
+                                    method: 'PUT', 
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: 'AI restructuring failed: ' + (aiData.error || 'Unknown error') }) 
+                                });
+                            }
+                        } else {
+                            console.error('🤖 POLL-ALARM: No text extracted from profile page');
+                            // Mark as failed since we couldn't extract text
+                            await fetch(`${apiUrl}/api/extension/command`, { 
+                                method: 'PUT', 
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: 'No text extracted from profile page' }) 
+                            });
+                        }
+                        
+                        // Close the tab
+                        try { await chrome.tabs.remove(recaptureTab.id); } catch (e) {}
+                    };
+                    
+                    // Execute with timeout
+                    try {
+                        await Promise.race([executeRecapture(), timeoutPromise]);
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: AI_PROFILE_RECAPTURE timeout or error:', e);
+                        try { await chrome.tabs.remove(recaptureTab.id); } catch (tabError) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                    } finally {
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
+                }
+
                 // --- post_scheduled_content command ---
                 else if (cmd.command === 'post_scheduled_content') {
                     console.log('📅 POLL-ALARM: Executing post_scheduled_content...');
@@ -1055,7 +1382,27 @@ async function pollCommandsDirectly() {
                         console.log('📅 POLL-ALARM: Payload:', payload);
                         console.log('📅 POLL-ALARM: Content length:', payload.content?.length || 0);
                         
+                        // Verify the scheduled post still exists before executing
                         if (payload.draftId) {
+                            try {
+                                const verifyRes = await fetch(`${apiUrl}/api/scheduled-posts?draftId=${payload.draftId}`, {
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}` }
+                                });
+                                const verifyData = await verifyRes.json();
+                                if (!verifyData.success || !verifyData.scheduledPosts?.find(p => p.id === payload.draftId)) {
+                                    console.log('📅 POLL-ALARM: Scheduled post no longer exists, skipping execution');
+                                    await fetch(`${apiUrl}/api/extension/command`, { 
+                                        method: 'PUT', 
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
+                                        body: JSON.stringify({ commandId: cmd.id, status: 'cancelled' }) 
+                                    });
+                                    globalThis._processingCommandIds.delete(cmd.id);
+                                    continue;
+                                }
+                            } catch (verifyErr) {
+                                console.error('📅 POLL-ALARM: Failed to verify scheduled post:', verifyErr);
+                            }
+                            
                             await fetch(`${apiUrl}/api/scheduled-posts`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
@@ -1130,39 +1477,57 @@ async function pollCommandsDirectly() {
                                         check();
                                     });
                                     const _findStartBtn = () => {
+                                        // Method 1: New LinkedIn UI - data-view-name attribute (most reliable)
+                                        const s0 = document.querySelector('[data-view-name="share-sharebox-focus"]');
+                                        if (s0) return s0;
+                                        // Method 2: Look for any clickable element with "Start a post" text
+                                        const clickables = document.querySelectorAll('button, [role="button"]');
+                                        for (const el of clickables) {
+                                            const txt = (el.textContent || '').toLowerCase();
+                                            if (txt.includes('start a post')) return el;
+                                        }
+                                        // Method 3: aria-label based detection
+                                        for (const el of clickables) {
+                                            const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                                            if (label.includes('start a post')) return el;
+                                        }
+                                        // Method 4: Legacy selectors (fallback)
                                         const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
                                         if (s1) return s1;
-                                        for (const btn of document.querySelectorAll('button')) {
-                                            if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
-                                        }
                                         return document.querySelector('.share-box-feed-entry__trigger');
                                     };
                                     const _findEditor = () => {
+                                        const searchInRoot = (root) => {
+                                            const selectors = ['.editor-content .ql-editor[contenteditable="true"]', '.ql-editor[contenteditable="true"]', '[role="textbox"][contenteditable="true"]', '[contenteditable="true"][aria-multiline="true"]'];
+                                            for (const sel of selectors) { const el = root.querySelector(sel); if (el) return el; }
+                                            for (const el of root.querySelectorAll('[contenteditable="true"]')) {
+                                                const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                                if (ph.includes('want to talk about')) return el;
+                                            }
+                                            return null;
+                                        };
+                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        if (shadowHost && shadowHost.shadowRoot) {
+                                            console.log('LinkedIn Post Script: Searching in shadow DOM...');
+                                            const editor = searchInRoot(shadowHost.shadowRoot);
+                                            if (editor) { console.log('LinkedIn Post Script: Editor found in shadow DOM!'); return editor; }
+                                        }
                                         const dialog = document.querySelector('[role="dialog"]');
-                                        if (dialog) {
-                                            const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
-                                            if (e1) return e1;
-                                            const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
-                                            if (e2) return e2;
-                                            const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
-                                            if (e3) return e3;
-                                        }
-                                        const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
-                                        if (e4) return e4;
-                                        for (const el of document.querySelectorAll('[contenteditable="true"]')) {
-                                            const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
-                                            if (ph.includes('want to talk about')) return el;
-                                        }
-                                        return null;
+                                        if (dialog) { const editor = searchInRoot(dialog); if (editor) return editor; }
+                                        return searchInRoot(document);
                                     };
                                     const _findPostBtn = () => {
+                                        const searchForBtn = (root) => {
+                                            for (const btn of root.querySelectorAll('button')) {
+                                                const txt = (btn.textContent || '').trim().toLowerCase();
+                                                if (txt === 'post') return btn;
+                                            }
+                                            return null;
+                                        };
+                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        if (shadowHost && shadowHost.shadowRoot) { const btn = searchForBtn(shadowHost.shadowRoot); if (btn) return btn; }
                                         const dialog = document.querySelector('[role="dialog"]');
-                                        const scope = dialog || document;
-                                        for (const btn of scope.querySelectorAll('button')) {
-                                            const txt = (btn.textContent || '').trim().toLowerCase();
-                                            if (txt === 'post') return btn;
-                                        }
-                                        return null;
+                                        return searchForBtn(dialog || document);
                                     };
                                     try {
                                         console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
@@ -1172,82 +1537,86 @@ async function pollCommandsDirectly() {
                                             return;
                                         }
                                         startPostBtn.click();
-                                        console.log(`LinkedIn Post Script: Clicked start post, polling for editor (timeout ${clickDelayMs + 8000}ms)...`);
-                                        _poll(_findEditor, 500, clickDelayMs + 8000).then(async (editor) => {
-                                            try {
-                                                if (!editor) {
-                                                    resolve({ success: false, error: 'Editor not found after polling' });
-                                                    return;
-                                                }
-                                                console.log('LinkedIn Post Script: Editor found via logic-based detection');
-                                                editor.innerHTML = '';
-                                                editor.focus();
-                                                const lines = postContent.split('\n');
-                                                lines.forEach((line) => {
-                                                    if (line.trim() === '') {
-                                                        editor.appendChild(document.createElement('br'));
-                                                    } else {
-                                                        const p = document.createElement('p');
-                                                        p.textContent = line;
-                                                        editor.appendChild(p);
+                                        
+                                        setTimeout(() => {
+                                            const pollTimeout = clickDelayMs + 20000;
+                                            console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
+                                            _poll(_findEditor, 500, pollTimeout).then(async (editor) => {
+                                                try {
+                                                    if (!editor) {
+                                                        resolve({ success: false, error: 'Editor not found after polling' });
+                                                        return;
                                                     }
-                                                });
-                                                editor.dispatchEvent(new Event('input', { bubbles: true }));
-                                                console.log('LinkedIn Post Script: Text inserted');
+                                                    console.log('LinkedIn Post Script: Editor found via logic-based detection');
+                                                    editor.innerHTML = '';
+                                                    editor.focus();
+                                                    const lines = postContent.split('\n');
+                                                    lines.forEach((line) => {
+                                                        if (line.trim() === '') {
+                                                            editor.appendChild(document.createElement('br'));
+                                                        } else {
+                                                            const p = document.createElement('p');
+                                                            p.textContent = line;
+                                                            editor.appendChild(p);
+                                                        }
+                                                    });
+                                                    editor.dispatchEvent(new Event('input', { bubbles: true }));
+                                                    console.log('LinkedIn Post Script: Text inserted');
 
-                                                // Handle image attachment via clipboard paste
-                                                const pasteImage = async () => {
-                                                    if (!imgDataUrl) return false;
-                                                    try {
-                                                        console.log('LinkedIn Post Script: Pasting image via clipboard...');
-                                                        const byteString = atob(imgDataUrl.split(',')[1]);
-                                                        const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
-                                                        const ab = new ArrayBuffer(byteString.length);
-                                                        const ia = new Uint8Array(ab);
-                                                        for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
-                                                        const blob = new Blob([ab], { type: mimeString });
-                                                        const file = new File([blob], 'image.png', { type: mimeString });
+                                                    // Handle image attachment via clipboard paste
+                                                    const pasteImage = async () => {
+                                                        if (!imgDataUrl) return false;
                                                         try {
-                                                            await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
-                                                        } catch (clipErr) {
-                                                            console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
+                                                            console.log('LinkedIn Post Script: Pasting image via clipboard...');
+                                                            const byteString = atob(imgDataUrl.split(',')[1]);
+                                                            const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                                            const ab = new ArrayBuffer(byteString.length);
+                                                            const ia = new Uint8Array(ab);
+                                                            for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
+                                                            const blob = new Blob([ab], { type: mimeString });
+                                                            const file = new File([blob], 'image.png', { type: mimeString });
+                                                            try {
+                                                                await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
+                                                            } catch (clipErr) {
+                                                                console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
+                                                            }
+                                                            editor.focus();
+                                                            const dt = new DataTransfer();
+                                                            dt.items.add(file);
+                                                            const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
+                                                            editor.dispatchEvent(pasteEvt);
+                                                            const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
+                                                            if (shareBox) {
+                                                                shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
+                                                            }
+                                                            await new Promise(r => setTimeout(r, 3000));
+                                                            return true;
+                                                        } catch (imgErr) {
+                                                            console.error('LinkedIn Post Script: Image paste error:', imgErr);
+                                                            return false;
                                                         }
-                                                        editor.focus();
-                                                        const dt = new DataTransfer();
-                                                        dt.items.add(file);
-                                                        const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
-                                                        editor.dispatchEvent(pasteEvt);
-                                                        const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
-                                                        if (shareBox) {
-                                                            shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
-                                                        }
-                                                        await new Promise(r => setTimeout(r, 3000));
-                                                        return true;
-                                                    } catch (imgErr) {
-                                                        console.error('LinkedIn Post Script: Image paste error:', imgErr);
-                                                        return false;
+                                                    };
+
+                                                    const imageAttached = await pasteImage();
+                                                    console.log('LinkedIn Post Script: Image attached:', imageAttached);
+                                                    const extraWait = imgDataUrl ? 4000 : 0;
+                                                    console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
+                                                    await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
+
+                                                    const postButton = _findPostBtn();
+                                                    if (postButton && !postButton.disabled) {
+                                                        postButton.click();
+                                                        console.log('LinkedIn Post Script: Post button clicked');
+                                                        resolve({ success: true, posted: true, imageAttached });
+                                                    } else {
+                                                        console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                        resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
                                                     }
-                                                };
-
-                                                const imageAttached = await pasteImage();
-                                                console.log('LinkedIn Post Script: Image attached:', imageAttached);
-                                                const extraWait = imgDataUrl ? 4000 : 0;
-                                                console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
-                                                await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
-
-                                                const postButton = _findPostBtn();
-                                                if (postButton && !postButton.disabled) {
-                                                    postButton.click();
-                                                    console.log('LinkedIn Post Script: Post button clicked');
-                                                    resolve({ success: true, posted: true, imageAttached });
-                                                } else {
-                                                    console.log('LinkedIn Post Script: Post button not found or disabled');
-                                                    resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
+                                                } catch (innerErr) {
+                                                    resolve({ success: false, error: 'Inner error: ' + innerErr.message });
                                                 }
-                                            } catch (innerErr) {
-                                                resolve({ success: false, error: 'Inner error: ' + innerErr.message });
-                                            }
-                                        });
+                                            });
+                                        }, 1500);
                                     } catch (outerErr) {
                                         resolve({ success: false, error: 'Outer error: ' + outerErr.message });
                                     }
@@ -2582,7 +2951,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     console.log(`📥 BACKGROUND: Found ${data.commands.length} pending commands from website`);
                     
                     // Commands handled by alarm-based commandPoller — skip them here
-                    const alarmOnlyCommands = ['start_bulk_commenting', 'start_import_automation'];
+                    const alarmOnlyCommands = ['start_bulk_commenting', 'start_import_automation', 'AI_PROFILE_RECAPTURE'];
                     
                     for (const cmd of data.commands) {
                         // Skip commands that are handled by the alarm-based poller
@@ -2665,11 +3034,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                 check();
                                             });
                                             const _findStartBtn = () => {
+                                                // Method 1: New LinkedIn UI - data-view-name attribute (most reliable)
+                                                const s0 = document.querySelector('[data-view-name="share-sharebox-focus"]');
+                                                if (s0) return s0;
+                                                // Method 2: Look for any clickable element with "Start a post" text
+                                                const clickables = document.querySelectorAll('button, [role="button"]');
+                                                for (const el of clickables) {
+                                                    const txt = (el.textContent || '').toLowerCase();
+                                                    if (txt.includes('start a post')) return el;
+                                                }
+                                                // Method 3: aria-label based detection
+                                                for (const el of clickables) {
+                                                    const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                                                    if (label.includes('start a post')) return el;
+                                                }
+                                                // Method 4: Legacy selectors (fallback)
                                                 const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
                                                 if (s1) return s1;
-                                                for (const btn of document.querySelectorAll('button')) {
-                                                    if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
-                                                }
                                                 return document.querySelector('.share-box-feed-entry__trigger');
                                             };
                                             const _findEditor = () => {
@@ -3057,6 +3438,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         if (cmd.command === 'scrape_comments' && cmd.data?.profileUrl) {
                             console.log('💬 BACKGROUND: Executing scrape_comments command for:', cmd.data.profileUrl);
                             let commentTab = null;
+                            const sendOverlayLegacy = async (tabId, message, type = 'info') => {
+                                try { await chrome.tabs.sendMessage(tabId, { action: 'updateNetworkingStatus', message, type }); } catch (e) {}
+                            };
                             try {
                                 // Extract profile ID from URL
                                 const urlMatch = cmd.data.profileUrl.match(/\/in\/([^\/\?]+)/);
@@ -3081,6 +3465,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
                                 });
                                 await new Promise(resolve => setTimeout(resolve, 5000));
+                                await sendOverlayLegacy(tab.id, `🔍 Kommentify: Loading comments for ${targetProfileId}...`, 'info');
 
                                 // Scroll to load more comments (5 scrolls with 3s delay)
                                 const MAX_SCROLLS = cmd.data.maxScrolls || 5;
@@ -3097,6 +3482,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     await new Promise(resolve => setTimeout(resolve, 3000));
                                 }
                                 await new Promise(resolve => setTimeout(resolve, 2000));
+                                await sendOverlayLegacy(tab.id, `📝 Kommentify: Extracting comments from ${targetProfileId}...`, 'info');
 
                                 // Execute the comment extraction script
                                 const scrapeResult = await chrome.scripting.executeScript({
@@ -3176,6 +3562,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                                 // Save to backend API
                                 if (result.comments.length > 0) {
+                                    await sendOverlayLegacy(tab.id, `💾 Kommentify: Saving ${result.count} comments...`, 'info');
                                     const saveRes = await fetch(`${apiUrl}/api/scraped-comments`, {
                                         method: 'POST',
                                         headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
@@ -3189,6 +3576,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     });
                                     const saveData = await saveRes.json();
                                     console.log('💬 BACKGROUND: Comments saved:', saveData);
+                                    await sendOverlayLegacy(tab.id, `✅ Kommentify: Saved ${result.count} comments from ${targetProfileId}!`, 'success');
+                                } else {
+                                    await sendOverlayLegacy(tab.id, `⚠️ Kommentify: No comments found for ${targetProfileId}`, 'warning');
                                 }
 
                                 await fetch(`${apiUrl}/api/extension/command`, {
@@ -3199,6 +3589,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 console.log(`✅ BACKGROUND: scrape_comments done, saved ${result.count} comments for ${targetProfileId}`);
                             } catch (commentError) {
                                 console.error('❌ BACKGROUND: scrape_comments failed:', commentError);
+                                if (commentTab) { try { await sendOverlayLegacy(commentTab.id, `❌ Kommentify: Comment scraping failed`, 'error'); } catch (x) {} }
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
@@ -4031,11 +4422,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 check();
                             });
                             const _findStartBtn = () => {
+                                // Method 1: New LinkedIn UI - data-view-name attribute (most reliable)
+                                const s0 = document.querySelector('[data-view-name="share-sharebox-focus"]');
+                                if (s0) return s0;
+                                // Method 2: Look for any clickable element with "Start a post" text
+                                const clickables = document.querySelectorAll('button, [role="button"]');
+                                for (const el of clickables) {
+                                    const txt = (el.textContent || '').toLowerCase();
+                                    if (txt.includes('start a post')) return el;
+                                }
+                                // Method 3: aria-label based detection
+                                for (const el of clickables) {
+                                    const label = (el.getAttribute('aria-label') || '').toLowerCase();
+                                    if (label.includes('start a post')) return el;
+                                }
+                                // Method 4: Legacy selectors (fallback)
                                 const s1 = document.querySelector('div.share-box-feed-entry__top-bar button');
                                 if (s1) return s1;
-                                for (const btn of document.querySelectorAll('button')) {
-                                    if ((btn.getAttribute('aria-label') || '').toLowerCase().includes('start a post')) return btn;
-                                }
                                 return document.querySelector('.share-box-feed-entry__trigger');
                             };
                             const _findEditor = () => {

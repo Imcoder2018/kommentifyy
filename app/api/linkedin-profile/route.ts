@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       projects: JSON.parse(profileData.projects || '[]'),
       skills: JSON.parse(profileData.skills || '[]'),
       interests: JSON.parse(profileData.interests || '[]'),
+      fullPageText: profileData.fullPageText || null,
     };
 
     return NextResponse.json({ success: true, data: parsedData, hasScanned: true });
@@ -42,10 +43,24 @@ export async function POST(request: NextRequest) {
     const { 
       profileUrl, name, headline, location, connections, profileViews,
       about, language, posts, experience, education, certifications, 
-      projects, skills, interests, postsTokenLimit, totalPostsCount 
+      projects, skills, interests, postsTokenLimit, totalPostsCount, fullPageText
     } = body;
 
-    // Store arrays as JSON strings
+    // Helper to safely parse arrays
+    const safeParseArray = (val: any) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') {
+        try {
+          const parsed = JSON.parse(val);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    // Store arrays as JSON strings safely
     const profileData = await (prisma as any).linkedInProfileData.upsert({
       where: { userId: payload.userId },
       update: {
@@ -57,15 +72,16 @@ export async function POST(request: NextRequest) {
         profileViews,
         about,
         language,
-        posts: JSON.stringify(posts || []),
-        experience: JSON.stringify(experience || []),
-        education: JSON.stringify(education || []),
-        certifications: JSON.stringify(certifications || []),
-        projects: JSON.stringify(projects || []),
-        skills: JSON.stringify(skills || []),
-        interests: JSON.stringify(interests || []),
+        posts: JSON.stringify(safeParseArray(posts)),
+        experience: JSON.stringify(safeParseArray(experience)),
+        education: JSON.stringify(safeParseArray(education)),
+        certifications: JSON.stringify(safeParseArray(certifications)),
+        projects: JSON.stringify(safeParseArray(projects)),
+        skills: JSON.stringify(safeParseArray(skills)),
+        interests: JSON.stringify(safeParseArray(interests)),
         postsTokenLimit: postsTokenLimit || 3000,
-        totalPostsCount: totalPostsCount || (posts?.length || 0),
+        totalPostsCount: totalPostsCount || (Array.isArray(posts) ? posts.length : 0),
+        fullPageText,
         lastScannedAt: new Date(),
       },
       create: {
@@ -78,15 +94,16 @@ export async function POST(request: NextRequest) {
         profileViews,
         about,
         language,
-        posts: JSON.stringify(posts || []),
-        experience: JSON.stringify(experience || []),
-        education: JSON.stringify(education || []),
-        certifications: JSON.stringify(certifications || []),
-        projects: JSON.stringify(projects || []),
-        skills: JSON.stringify(skills || []),
-        interests: JSON.stringify(interests || []),
+        posts: JSON.stringify(safeParseArray(posts)),
+        experience: JSON.stringify(safeParseArray(experience)),
+        education: JSON.stringify(safeParseArray(education)),
+        certifications: JSON.stringify(safeParseArray(certifications)),
+        projects: JSON.stringify(safeParseArray(projects)),
+        skills: JSON.stringify(safeParseArray(skills)),
+        interests: JSON.stringify(safeParseArray(interests)),
         postsTokenLimit: postsTokenLimit || 3000,
-        totalPostsCount: totalPostsCount || (posts?.length || 0),
+        totalPostsCount: totalPostsCount || (Array.isArray(posts) ? posts.length : 0),
+        fullPageText,
         lastScannedAt: new Date(),
       },
     });
@@ -144,14 +161,28 @@ export async function PUT(request: NextRequest) {
     const payload = verifyToken(token);
 
     const body = await request.json();
-    const { isSelected, postsTokenLimit } = body;
+    const { isSelected, postsTokenLimit, name, headline, location, about, skills, experience, education, certifications, projects, posts: profilePosts } = body;
+
+    const updateData: any = {};
+    if (isSelected !== undefined) updateData.isSelected = isSelected;
+    if (postsTokenLimit !== undefined) updateData.postsTokenLimit = postsTokenLimit;
+    if (name !== undefined) updateData.name = name;
+    if (headline !== undefined) updateData.headline = headline;
+    if (location !== undefined) updateData.location = location;
+    if (about !== undefined) updateData.about = about;
+    if (skills !== undefined) updateData.skills = JSON.stringify(skills);
+    if (experience !== undefined) updateData.experience = JSON.stringify(experience);
+    if (education !== undefined) updateData.education = JSON.stringify(education);
+    if (certifications !== undefined) updateData.certifications = JSON.stringify(certifications);
+    if (projects !== undefined) updateData.projects = JSON.stringify(projects);
+    if (profilePosts !== undefined) {
+      updateData.posts = JSON.stringify(profilePosts);
+      updateData.totalPostsCount = profilePosts.length;
+    }
 
     const profileData = await (prisma as any).linkedInProfileData.update({
       where: { userId: payload.userId },
-      data: {
-        isSelected: isSelected,
-        postsTokenLimit: postsTokenLimit,
-      },
+      data: updateData,
     });
 
     return NextResponse.json({ success: true, data: profileData });

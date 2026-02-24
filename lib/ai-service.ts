@@ -142,7 +142,7 @@ export async function getUserModel(userId: string, contentType: 'post' | 'commen
   }
 
   // Fallback to default model - verify it exists and has valid format
-  const fallbackModel = settings?.fallbackModelId || 'openai/gpt-4o-mini';
+  const fallbackModel = settings?.fallbackModelId || 'anthropic/claude-sonnet-4.5';
   const fallbackExists = await prisma.aIModel.findFirst({
     where: { modelId: fallbackModel, isEnabled: true }
   });
@@ -163,9 +163,9 @@ export async function getUserModel(userId: string, contentType: 'post' | 'commen
     return anyModel.modelId;
   }
   
-  // Hard fallback to OpenAI (always valid)
-  console.log(`⚠️ No valid models in database, using hardcoded fallback: openai/gpt-4o-mini`);
-  return 'openai/gpt-4o-mini';
+  // Hard fallback to Claude Sonnet 4.5 (always valid via OpenRouter)
+  console.log(`⚠️ No valid models in database, using hardcoded fallback: anthropic/claude-sonnet-4.5`);
+  return 'anthropic/claude-sonnet-4.5';
 }
 
 // Track usage
@@ -240,28 +240,31 @@ export async function generateContent(params: {
       };
       params.model = fallbackModel.modelId; // Update model to fallback
     } else {
-      // Ultimate fallback to OpenAI GPT-4o-mini
-      console.log(`⚠️ No models in database, using hardcoded fallback: openai/gpt-4o-mini`);
+      // Ultimate fallback to Claude Sonnet 4.5
+      console.log(`⚠️ No models in database, using hardcoded fallback: anthropic/claude-sonnet-4.5`);
       modelConfig = {
-        modelId: 'openai/gpt-4o-mini',
-        provider: 'OpenAI',
-        apiSource: 'openai',
-        inputCostPer1M: 0.15,
-        outputCostPer1M: 0.60,
-        maxContextTokens: 128000,
-        maxOutputTokens: 16384
+        modelId: 'anthropic/claude-sonnet-4.5',
+        provider: 'Anthropic',
+        apiSource: 'openrouter',
+        inputCostPer1M: 3.00,
+        outputCostPer1M: 15.00,
+        maxContextTokens: 200000,
+        maxOutputTokens: 8192
       };
-      params.model = 'openai/gpt-4o-mini';
+      params.model = 'anthropic/claude-sonnet-4.5';
     }
   }
 
   let result: { content: string; usage: { promptTokens: number; completionTokens: number; totalTokens: number } };
 
   // Route to appropriate provider
+  // Strip openai/ prefix if present for OpenAI API calls
+  const actualModelId = params.model.startsWith('openai/') ? params.model.replace('openai/', '') : params.model;
+  
   if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
     const openai = getOpenAIService();
     result = await openai.generateContent({
-      model: params.model,
+      model: actualModelId,
       systemPrompt: params.systemPrompt,
       userPrompt: params.userPrompt,
       maxTokens: params.maxTokens || modelConfig.maxOutputTokens,

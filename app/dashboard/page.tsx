@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useClerk } from '@clerk/nextjs';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, getLanguageDir } from '@/lib/i18n';
+import { cleanLinkedInProfileUrl, cleanLinkedInProfileUrls } from '@/lib/linkedin-url-cleaner';
 
 interface ReferralData {
     referralCode: string;
@@ -64,9 +65,12 @@ function DashboardContent() {
     const { signOut } = useClerk();
 
     // Check if user is on a free plan (no AI access)
+    // Also treat expired trial users as free (trial plan with past trialEndsAt)
+    const isTrialExpired = user?.plan?.isTrialPlan && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
     const isFreePlan = user?.plan && (
         user.plan.isDefaultFreePlan ||
-        (user.plan.price === 0 && !user.plan.isLifetime && !user.plan.isTrialPlan)
+        (user.plan.price === 0 && !user.plan.isLifetime && !user.plan.isTrialPlan) ||
+        isTrialExpired
     );
 
     // Writer tab state
@@ -77,6 +81,7 @@ function DashboardContent() {
     const [writerHashtags, setWriterHashtags] = useState(false);
     const [writerEmojis, setWriterEmojis] = useState(true);
     const [writerLanguage, setWriterLanguage] = useState('');
+    const [writerAdvancedOpen, setWriterAdvancedOpen] = useState(true);
     const [writerTargetAudience, setWriterTargetAudience] = useState('');
     const [writerKeyMessage, setWriterKeyMessage] = useState('');
     const [writerBackground, setWriterBackground] = useState('');
@@ -86,11 +91,18 @@ function DashboardContent() {
     const [writerScheduleTime, setWriterScheduleTime] = useState('');
     const [writerDrafts, setWriterDrafts] = useState<any[]>([]);
     const [writerScheduledPosts, setWriterScheduledPosts] = useState<any[]>([]);
+    const [writerTokenUsage, setWriterTokenUsage] = useState<any>(null);
+    const [writerImageFile, setWriterImageFile] = useState<File | null>(null);
+    const [writerImageUrl, setWriterImageUrl] = useState<string>('');
+    const [writerMediaBlobUrl, setWriterMediaBlobUrl] = useState<string>('');
+    const [writerMediaType, setWriterMediaType] = useState<string>('');
+    const [writerUploading, setWriterUploading] = useState(false);
+    const [writerPreviewMode, setWriterPreviewMode] = useState<'off' | 'desktop' | 'mobile'>('off');
+    const [writerPreviewExpanded, setWriterPreviewExpanded] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [taskCounts, setTaskCounts] = useState({ pending: 0, in_progress: 0, completed: 0, failed: 0 });
     const [writerStatus, setWriterStatus] = useState('');
-    const [writerShowAdvanced, setWriterShowAdvanced] = useState(false);
     const [writerModel, setWriterModel] = useState<string>('gpt-4o');
-    const [writerTokenUsage, setWriterTokenUsage] = useState<any>(null);
     const [writerUseInspirationSources, setWriterUseInspirationSources] = useState(true);
     const [writerInspirationSourceNames, setWriterInspirationSourceNames] = useState<string[]>([]);
 
@@ -251,6 +263,8 @@ function DashboardContent() {
     const [inspirationLoading, setInspirationLoading] = useState(false);
     const [inspirationUseAll, setInspirationUseAll] = useState(true);
     const [inspirationSelected, setInspirationSelected] = useState<string[]>([]);
+    const [inspirationDeleteMode, setInspirationDeleteMode] = useState(false);
+    const [inspirationDeleteSelected, setInspirationDeleteSelected] = useState<string[]>([]);
     const [useProfileData, setUseProfileData] = useState(false);
     const [showInspirationPopup, setShowInspirationPopup] = useState(false);
     const [showSharedProfilesPopup, setShowSharedProfilesPopup] = useState(false);
@@ -275,6 +289,10 @@ function DashboardContent() {
     const [plannerTotal, setPlannerTotal] = useState(0);
     const [plannerStatusMsg, setPlannerStatusMsg] = useState('');
     const plannerAbortRef = useRef<boolean>(false);
+
+    // LinkedIn OAuth state
+    const [linkedInOAuth, setLinkedInOAuth] = useState<any>(null);
+    const [linkedInOAuthLoading, setLinkedInOAuthLoading] = useState(true);
 
     // Comment Style Sources state
     const [commentStyleProfiles, setCommentStyleProfiles] = useState<any[]>([]);
@@ -336,6 +354,10 @@ function DashboardContent() {
     const [linkedInGeneratingTopics, setLinkedInGeneratingTopics] = useState(false);
     const [showLinkedInDataModal, setShowLinkedInDataModal] = useState(false);
     const [selectedInspirationPosts, setSelectedInspirationPosts] = useState<string[]>([]);
+    const [showFullPageText, setShowFullPageText] = useState(false);
+    const [rescanningMissing, setRescanningMissing] = useState(false);
+    const [editingSection, setEditingSection] = useState<string | null>(null);
+    const [editValue, setEditValue] = useState<string>('');
 
     // Toggle inspiration post selection
     const toggleInspirationPost = (post: string) => {
@@ -377,53 +399,88 @@ function DashboardContent() {
             return;
         }
 
+        let isRedirecting = false;
+
         // Validate token and get user info
-        fetch('/api/auth/validate', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    setUser(data.user);
-                    // Check if user has paid plan
-                    const userPlan = data.user?.plan;
-                    const hasPaidPlan = userPlan && (
-                        (userPlan.price > 0 && !userPlan.isDefaultFreePlan) ||
-                        userPlan.isLifetime ||
-                        (userPlan.isTrialPlan && data.user?.trialEndsAt && new Date(data.user.trialEndsAt) > new Date())
-                    );
-                    // For free users: redirect to plans ONCE after login, then let them use dashboard
-                    if (!hasPaidPlan) {
-                        const redirectKey = 'kommentify_plans_redirect_done';
-                        if (!sessionStorage.getItem(redirectKey)) {
-                            sessionStorage.setItem(redirectKey, 'true');
-                            router.push('/plans');
-                            return;
-                        }
-                    }
-                    // Fetch usage data
-                    return fetch('/api/usage/daily', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                } else {
+        const validateAndLoad = async () => {
+            try {
+                const validateRes = await fetch('/api/auth/validate', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const validateData = await validateRes.json();
+
+                if (!validateData.success) {
+                    // Token invalid - clear and redirect to login
                     localStorage.removeItem('authToken');
+                    isRedirecting = true;
                     router.push('/login');
+                    return;
                 }
-            })
-            .then(res => res?.json())
-            .then(data => {
-                if (data?.success) {
-                    setUsage(data);
+
+                setUser(validateData.user);
+
+                // Check if user has paid plan
+                const userPlan = validateData.user?.plan;
+                const hasPaidPlan = userPlan && (
+                    (userPlan.price > 0 && !userPlan.isDefaultFreePlan) ||
+                    userPlan.isLifetime ||
+                    (userPlan.isTrialPlan && validateData.user?.trialEndsAt && new Date(validateData.user.trialEndsAt) > new Date())
+                );
+
+                // For free users: redirect to plans ONCE after login, then let them use dashboard
+                if (!hasPaidPlan) {
+                    const redirectKey = 'kommentify_plans_redirect_done';
+                    if (!sessionStorage.getItem(redirectKey)) {
+                        sessionStorage.setItem(redirectKey, 'true');
+                        isRedirecting = true;
+                        router.push('/plans');
+                        return;
+                    }
                 }
-            })
-            .catch(() => {
+
+                // Fetch usage data (non-blocking)
+                try {
+                    const usageRes = await fetch('/api/usage/daily', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const usageData = await usageRes.json();
+                    if (usageData?.success) {
+                        setUsage(usageData);
+                    }
+                } catch (usageErr) {
+                    console.error('Failed to fetch usage:', usageErr);
+                }
+            } catch (err) {
+                console.error('Dashboard auth error:', err);
+                // Only redirect to login on auth failure, not network errors
+                // Check if token is still valid by trying refresh
+                try {
+                    const refreshRes = await fetch('/api/auth/refresh', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                    const refreshData = await refreshRes.json();
+                    if (refreshData.success && refreshData.token) {
+                        localStorage.setItem('authToken', refreshData.token);
+                        // Retry validation with new token
+                        window.location.reload();
+                        return;
+                    }
+                } catch (refreshErr) {
+                    // Refresh also failed
+                }
+                localStorage.removeItem('authToken');
+                isRedirecting = true;
                 router.push('/login');
-            })
-            .finally(() => setLoading(false));
+            } finally {
+                if (!isRedirecting) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        validateAndLoad();
 
         // Fetch referral data
         fetch('/api/referrals', {
@@ -480,6 +537,9 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success && data.content) {
                 setWriterContent(data.content);
+                // Auto-save to localStorage for persistence
+                localStorage.setItem('savedWriterContent', data.content);
+                localStorage.setItem('savedWriterTopic', writerTopic);
                 setWriterStatus(`Post generated using ${data.model || writerModel}! Review and edit as needed.`);
                 // Capture token usage for developers
                 if (data.tokenUsage) {
@@ -544,19 +604,37 @@ function DashboardContent() {
         showToast('Sending post to extension...', 'info');
         setWriterStatus('Sending to extension...');
         try {
+            const cmdData: any = { content: writerContent };
+            
+            // For media, include blob URL and type
+            if (writerMediaBlobUrl) {
+                cmdData.mediaUrl = writerMediaBlobUrl;
+                cmdData.mediaType = writerMediaType;
+                cmdData.hasImage = writerMediaType === 'image';
+                cmdData.hasVideo = writerMediaType === 'video';
+            } else if (writerImageUrl) {
+                cmdData.hasImage = true;
+            }
+            
             window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', {
-                detail: { content: writerContent }
+                detail: { content: writerContent, hasImage: !!writerImageUrl, imageDataUrl: writerImageUrl, mediaUrl: writerMediaBlobUrl, mediaType: writerMediaType }
             }));
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ command: 'post_to_linkedin', data: { content: writerContent } }),
+                body: JSON.stringify({ command: 'post_to_linkedin', data: cmdData }),
             });
+            
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text.includes('413') || text.includes('Too Large') ? 'Image too large. Please use a smaller image.' : 'Server error');
+            }
+            
             const data = await res.json();
             if (data.success) {
                 setWriterStatus('Command sent! Extension will auto-open LinkedIn and post your content.');
                 showToast('Post sent to extension! It will auto-open LinkedIn.', 'success');
-                await saveToHistory('published_post', 'LinkedIn Post (Writer)', { content: writerContent, source: 'writer' });
+                await saveToHistory('published_post', 'LinkedIn Post (Writer)', { content: writerContent, source: 'writer', hasImage: !!writerImageUrl });
             } else {
                 setWriterStatus(data.error || 'Failed to send');
                 showToast(data.error || 'Failed to send', 'error');
@@ -576,7 +654,7 @@ function DashboardContent() {
             const res = await fetch('/api/post-drafts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor }),
+                body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor, mediaUrl: writerMediaBlobUrl || null, mediaType: writerMediaType || null }),
             });
             const data = await res.json();
             if (data.success) { 
@@ -713,7 +791,7 @@ function DashboardContent() {
     const scrapeInspirationProfiles = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) { setInspirationStatus('Not authenticated'); return; }
-        const urls = inspirationProfiles.split('\n').map(u => u.trim()).filter(u => u.includes('linkedin.com/in/'));
+        const urls = cleanLinkedInProfileUrls(inspirationProfiles);
         if (urls.length === 0) { setInspirationStatus('Please enter valid LinkedIn profile URLs (one per line)'); return; }
         setInspirationScraping(true);
         setInspirationStatus(`Scraping ${urls.length} profile(s)... Extension will open tabs.`);
@@ -797,10 +875,11 @@ function DashboardContent() {
         } catch {} finally { setCommentStyleLoading(false); }
     };
 
+    const commentScrapeIntervalRef = useRef<any>(null);
     const scrapeCommentStyle = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
-        const url = commentStyleUrl.trim();
+        const url = cleanLinkedInProfileUrl(commentStyleUrl);
         if (!url.includes('linkedin.com/in/')) { setCommentStyleStatus('Please enter a valid LinkedIn profile URL'); return; }
         setCommentStyleScraping(true);
         setCommentStyleStatus('Sending scrape command to extension...');
@@ -812,16 +891,53 @@ function DashboardContent() {
             });
             const data = await res.json();
             if (data.success) {
-                setCommentStyleStatus('Command sent! Extension will scrape comments from this profile.');
-                showToast('Comment scraping command sent to extension!', 'info');
+                setCommentStyleStatus('Scraping in progress... Extension is collecting comments.');
+                showToast('Comment scraping started!', 'info');
                 setCommentStyleUrl('');
-                setTimeout(() => loadCommentStyleProfiles(), 30000);
+                // Poll for command completion every 5 seconds
+                if (commentScrapeIntervalRef.current) clearInterval(commentScrapeIntervalRef.current);
+                const commandId = data.commandId;
+                let pollCount = 0;
+                commentScrapeIntervalRef.current = setInterval(async () => {
+                    pollCount++;
+                    try {
+                        const statusRes = await fetch('/api/extension/command/all', { headers: { 'Authorization': `Bearer ${token}` } });
+                        const statusData = await statusRes.json();
+                        const cmd = statusData.commands?.find((c: any) => c.id === commandId);
+                        if (cmd) {
+                            if (cmd.status === 'completed') {
+                                clearInterval(commentScrapeIntervalRef.current);
+                                commentScrapeIntervalRef.current = null;
+                                setCommentStyleScraping(false);
+                                setCommentStyleStatus('Scraping complete! Comments saved.');
+                                showToast('Comment scraping complete!', 'success');
+                                loadCommentStyleProfiles();
+                            } else if (cmd.status === 'failed' || cmd.status === 'cancelled') {
+                                clearInterval(commentScrapeIntervalRef.current);
+                                commentScrapeIntervalRef.current = null;
+                                setCommentStyleScraping(false);
+                                setCommentStyleStatus(`Scraping ${cmd.status}.`);
+                                showToast(`Comment scraping ${cmd.status}`, 'error');
+                            } else {
+                                setCommentStyleStatus(`Scraping in progress... (${pollCount * 5}s elapsed)`);
+                            }
+                        }
+                    } catch {}
+                    // Timeout after 3 minutes
+                    if (pollCount > 36) {
+                        clearInterval(commentScrapeIntervalRef.current);
+                        commentScrapeIntervalRef.current = null;
+                        setCommentStyleScraping(false);
+                        setCommentStyleStatus('Scraping timed out. Check extension logs.');
+                        loadCommentStyleProfiles(); // Try loading anyway
+                    }
+                }, 5000);
             } else {
+                setCommentStyleScraping(false);
                 setCommentStyleStatus(data.error || 'Failed to send command');
                 showToast(data.error || 'Failed', 'error');
             }
-        } catch (e: any) { setCommentStyleStatus('Error: ' + e.message); }
-        finally { setCommentStyleScraping(false); }
+        } catch (e: any) { setCommentStyleScraping(false); setCommentStyleStatus('Error: ' + e.message); }
     };
 
     const loadProfileComments = async (profileId: string) => {
@@ -955,6 +1071,14 @@ function DashboardContent() {
                     ...(data.data.interests || [])
                 ];
                 setSelectedInspirationPosts(allItems);
+
+                // Auto-fill Target Audience and Background if they are currently empty
+                if (!writerTargetAudience && data.data.skills && Array.isArray(data.data.skills) && data.data.skills.length > 0) {
+                    setWriterTargetAudience(`Professionals interested in ${data.data.skills.slice(0, 3).join(', ')}`);
+                }
+                if (!writerBackground && data.data.headline) {
+                    setWriterBackground(data.data.headline);
+                }
             }
         } catch {} finally { setLinkedInProfileLoading(false); }
     };
@@ -982,28 +1106,89 @@ function DashboardContent() {
         }
     };
 
-    const scanLinkedInProfile = async () => {
+    const scanLinkedInProfile = async (forceUseAI?: boolean) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
+        
+        // Check localStorage for user preference (default to AI)
+        const scanMethod = localStorage.getItem('profileScanMethod') || 'ai';
+        const useAI = forceUseAI !== undefined ? forceUseAI : scanMethod === 'ai';
+        
         setLinkedInProfileScanning(true);
-        setLinkedInProfileStatus('Scanning LinkedIn profile... Extension will open LinkedIn feed, find your profile, and extract data.');
+        setLinkedInProfileStatus(useAI 
+            ? 'Scanning LinkedIn profile with AI... Extension will capture and restructure your profile data.' 
+            : 'Scanning LinkedIn profile... Extension will open LinkedIn feed, find your profile, and extract data.');
         try {
             // Send command to extension to scan profile
+            const command = useAI ? 'AI_PROFILE_RECAPTURE' : 'scan_my_linkedin_profile';
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ command: 'scan_my_linkedin_profile' }),
+                body: JSON.stringify({ command }),
             });
             const data = await res.json();
             if (data.success) {
                 setLinkedInProfileStatus('Profile scan started! Check extension popup for progress. Data will appear here when complete.');
                 showToast('Profile scan started! Check extension popup.', 'info');
+                
+                // Track polling state with a flag to avoid stale closure issues
+                let isPollingActive = true;
+                let pollIntervalId: ReturnType<typeof setInterval> | null = null;
+                let timeoutId: ReturnType<typeof setTimeout> | null = null;
+                
+                // Poll for completion to update UI automatically
+                pollIntervalId = setInterval(async () => {
+                    try {
+                        const statusRes = await fetch('/api/extension/command/all', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const statusData = await statusRes.json();
+                        console.log('📊 Dashboard polling - commands:', statusData.commands?.length, 'looking for:', data.commandId);
+                        const cmd = statusData.commands?.find((c: any) => c.id === data.commandId);
+                        console.log('📊 Found command:', cmd?.command, 'status:', cmd?.status);
+                        
+                        if (cmd && isPollingActive) {
+                            if (cmd.status === 'completed') {
+                                isPollingActive = false;
+                                if (pollIntervalId) clearInterval(pollIntervalId);
+                                if (timeoutId) clearTimeout(timeoutId);
+                                setLinkedInProfileScanning(false);
+                                setLinkedInProfileStatus('Scan completed successfully!');
+                                showToast('Profile scan complete! Data loaded.', 'success');
+                                loadLinkedInProfile(); // Auto-load the new data
+                            } else if (cmd.status === 'failed' || cmd.status === 'cancelled') {
+                                isPollingActive = false;
+                                if (pollIntervalId) clearInterval(pollIntervalId);
+                                if (timeoutId) clearTimeout(timeoutId);
+                                setLinkedInProfileScanning(false);
+                                setLinkedInProfileStatus(`Scan ${cmd.status}`);
+                                showToast(`Profile scan ${cmd.status}`, 'error');
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore polling errors
+                    }
+                }, 2000);
+                
+                // Timeout polling after 2 minutes
+                timeoutId = setTimeout(() => {
+                    if (isPollingActive && pollIntervalId) {
+                        isPollingActive = false;
+                        clearInterval(pollIntervalId);
+                        setLinkedInProfileScanning(false);
+                        setLinkedInProfileStatus('Scan timed out waiting for response.');
+                        loadLinkedInProfile(); // Try loading anyway
+                    }
+                }, 120000);
+                
             } else {
+                setLinkedInProfileScanning(false);
                 setLinkedInProfileStatus(data.error || 'Failed to start scan');
             }
         } catch (e: any) {
+            setLinkedInProfileScanning(false);
             setLinkedInProfileStatus('Error: ' + e.message);
-        } finally { setLinkedInProfileScanning(false); }
+        }
     };
 
     const generateTopicSuggestions = async () => {
@@ -1356,13 +1541,32 @@ function DashboardContent() {
         return () => { clearInterval(taskInterval); clearInterval(heartbeatInterval); };
     }, []);
 
+    // Load LinkedIn OAuth status on mount
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (!token) { setLinkedInOAuthLoading(false); return; }
+        fetch('/api/auth/linkedin', { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(r => r.json())
+            .then(d => { if (d.success) setLinkedInOAuth(d); })
+            .catch(() => {})
+            .finally(() => setLinkedInOAuthLoading(false));
+    }, []);
+
+    // Load saved writer content from localStorage on mount
+    useEffect(() => {
+        const savedContent = localStorage.getItem('savedWriterContent');
+        const savedTopic = localStorage.getItem('savedWriterTopic');
+        if (savedContent) setWriterContent(savedContent);
+        if (savedTopic) setWriterTopic(savedTopic);
+    }, []);
+
     // Load tab-specific data on initial mount when auth completes (fixes ?tab=import reload)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (loading || !user) return;
         const tab = activeTab;
         if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
-        if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); fetchAIModels(); }
+        if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); loadLinkedInProfile(); fetchAIModels(); }
         if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tab === 'tasks') loadTasks();
@@ -1421,12 +1625,14 @@ function DashboardContent() {
         } catch {}
     };
     useEffect(() => {
-        return () => { if (feedScrapeIntervalRef.current) clearInterval(feedScrapeIntervalRef.current); };
+        return () => {
+            if (feedScrapeIntervalRef.current) clearInterval(feedScrapeIntervalRef.current);
+            if (commentScrapeIntervalRef.current) clearInterval(commentScrapeIntervalRef.current);
+        };
     }, []);
 
     const stopAllTasks = async () => {
         const token = localStorage.getItem('authToken');
-// ... (rest of the code remains the same)
         if (!token) return;
         try {
             // Tell extension to stop
@@ -1592,13 +1798,28 @@ function DashboardContent() {
         showToast('Sending post to extension...', 'info');
         try {
             const cmdData: any = { content };
-            if (imageDataUrl) cmdData.imageDataUrl = imageDataUrl;
-            window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { detail: cmdData }));
+            
+            // For images, send via CustomEvent to content script which can access chrome.storage
+            if (imageDataUrl) {
+                cmdData.hasImage = true;
+                window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { 
+                    detail: { content, hasImage: true, imageDataUrl } 
+                }));
+            } else {
+                window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { detail: cmdData }));
+            }
+
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ command: 'post_to_linkedin', data: cmdData }),
             });
+            
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text.includes('413') || text.includes('Too Large') ? 'Image too large. Please use a smaller image.' : 'Server error');
+            }
+            
             const data = await res.json();
             if (data.success) {
                 showToast('Post sent to extension! It will auto-open LinkedIn.', 'success');
@@ -1610,6 +1831,7 @@ function DashboardContent() {
                 setTrendingStatus(data.error || 'Failed');
             }
         } catch (e: any) {
+            console.error("Post error:", e);
             showToast('Error: ' + e.message, 'error');
             setTrendingStatus('Error: ' + e.message);
         } finally {
@@ -1631,7 +1853,7 @@ function DashboardContent() {
         // Update URL without full navigation so reload preserves tab
         window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
         if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
-        if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); fetchAIModels(); }
+        if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); loadLinkedInProfile(); fetchAIModels(); }
         if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
         if (tabId === 'tasks') loadTasks();
@@ -2376,6 +2598,37 @@ function DashboardContent() {
                         >
                             {miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', 'white', 12)} Get Extension
                         </button>
+                        {/* Profile Scan Button */}
+                        {extensionConnected && (
+                            <button
+                                onClick={linkedInProfile ? () => setShowLinkedInDataModal(true) : () => scanLinkedInProfile()}
+                                disabled={linkedInProfileScanning}
+                                style={{ 
+                                    padding: '4px 10px', 
+                                    background: linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)', 
+                                    border: linkedInProfile ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(245,158,11,0.4)', 
+                                    borderRadius: '6px', 
+                                    color: linkedInProfile ? '#34d399' : '#fbbf24', 
+                                    fontSize: '10px', 
+                                    fontWeight: '600',
+                                    cursor: linkedInProfileScanning ? 'wait' : 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}
+                                onMouseOver={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'; }}
+                            >
+                                {linkedInProfileScanning ? (
+                                    <>Scanning...</>
+                                ) : linkedInProfile ? (
+                                    <>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#34d399', 11)} View Data</>
+                                ) : (
+                                    <>{miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#fbbf24', 11)} Scan Profile</>
+                                )}
+                            </button>
+                        )}
                     </div>
                     {/* Theme Toggle */}
                     <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
@@ -2544,7 +2797,7 @@ function DashboardContent() {
                                     style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', 'white', 10)} Data</button>}
                                 {linkedInProfile && <button onClick={deleteLinkedInProfile}
                                     style={{ background: 'rgba(239,68,68,0.3)', border: 'none', borderRadius: '4px', padding: '4px 8px', color: '#fca5a5', fontSize: '13px', cursor: 'pointer', lineHeight: '1' }}>×</button>}
-                                <button onClick={linkedInProfile ? () => { loadLinkedInProfile(); } : scanLinkedInProfile} disabled={linkedInProfileScanning || linkedInProfileLoading}
+                                <button onClick={linkedInProfile ? () => { loadLinkedInProfile(); } : () => scanLinkedInProfile()} disabled={linkedInProfileScanning || linkedInProfileLoading}
                                     style={{ background: 'white', color: '#0077b5', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: (linkedInProfileScanning || linkedInProfileLoading) ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
                                     {linkedInProfileScanning ? '...' : linkedInProfile ? <span style={{ display: 'flex', alignItems: 'center' }}>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#0077b5', 12)}</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', '#0077b5', 11)} Scan Profile</span>}
                                 </button>
@@ -2565,10 +2818,37 @@ function DashboardContent() {
                                 <button onClick={() => setShowInspirationPopup(true)} style={{ background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', border: 'none', borderRadius: '5px', color: 'white', padding: '5px 10px', fontSize: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon('M12 5v14 M5 12h14', 'white', 10)} Scrape</button>
                             </div>
                         </div>
-                        {/* Select All / Deselect All */}
-                        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                        {/* Select All / Deselect All / Delete Mode */}
+                        <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
                             <button onClick={() => { setInspirationUseAll(true); setInspirationSelected([...inspirationSources.map((s: any) => s.name), ...sharedInspProfiles.map((p: any) => p.profileName)]); }} style={{ padding: '4px 8px', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '4px', color: '#34d399', fontSize: '10px', cursor: 'pointer' }}>Select All</button>
                             <button onClick={() => { setInspirationUseAll(false); setInspirationSelected([]); }} style={{ padding: '4px 8px', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '4px', color: '#f87171', fontSize: '10px', cursor: 'pointer' }}>Deselect All</button>
+                            {inspirationSources.length > 0 && (
+                                <button onClick={() => { 
+                                    if (inspirationDeleteMode) {
+                                        // Exit delete mode
+                                        setInspirationDeleteMode(false);
+                                        setInspirationDeleteSelected([]);
+                                    } else {
+                                        // Enter delete mode
+                                        setInspirationDeleteMode(true);
+                                        setInspirationDeleteSelected([]);
+                                    }
+                                }} style={{ padding: '4px 8px', background: inspirationDeleteMode ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)', border: inspirationDeleteMode ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: inspirationDeleteMode ? '#f87171' : 'rgba(255,255,255,0.6)', fontSize: '10px', cursor: 'pointer' }}>
+                                    {inspirationDeleteMode ? 'Cancel Delete' : 'Delete'}
+                                </button>
+                            )}
+                            {inspirationDeleteMode && inspirationDeleteSelected.length > 0 && (
+                                <button onClick={async () => {
+                                    for (const name of inspirationDeleteSelected) {
+                                        await deleteInspirationSource(name);
+                                    }
+                                    setInspirationDeleteMode(false);
+                                    setInspirationDeleteSelected([]);
+                                    showToast(`Deleted ${inspirationDeleteSelected.length} source(s)`, 'success');
+                                }} style={{ padding: '4px 8px', background: 'rgba(239,68,68,0.4)', border: '1px solid rgba(239,68,68,0.6)', borderRadius: '4px', color: '#fca5a5', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
+                                    Delete Selected ({inspirationDeleteSelected.length})
+                                </button>
+                            )}
                         </div>
                         {/* My Sources - clickable toggles */}
                         {inspirationSources.length > 0 && (
@@ -2577,16 +2857,23 @@ function DashboardContent() {
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                 {inspirationSources.map((src: any, i: number) => {
                                     const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
+                                    const isDeleteChecked = inspirationDeleteSelected.includes(src.name);
                                     return (
                                         <div key={`own-${i}`} onClick={() => {
-                                            if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
-                                            else if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== src.name));
-                                            else setInspirationSelected([...inspirationSelected, src.name]);
-                                        }} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: isChecked ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
-                                            <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#693fe9', width: '12px', height: '12px' }} />
-                                            <span style={{ color: isChecked ? '#a78bfa' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '500' }}>{src.name}</span>
+                                            if (inspirationDeleteMode) {
+                                                // In delete mode - toggle delete selection
+                                                if (isDeleteChecked) setInspirationDeleteSelected(inspirationDeleteSelected.filter((n: string) => n !== src.name));
+                                                else setInspirationDeleteSelected([...inspirationDeleteSelected, src.name]);
+                                            } else {
+                                                // Normal mode - toggle selection
+                                                if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
+                                                else if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== src.name));
+                                                else setInspirationSelected([...inspirationSelected, src.name]);
+                                            }
+                                        }} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: inspirationDeleteMode ? (isDeleteChecked ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.04)') : (isChecked ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.04)'), border: inspirationDeleteMode ? (isDeleteChecked ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)') : (isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.1)'), borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={inspirationDeleteMode ? isDeleteChecked : isChecked} readOnly style={{ accentColor: inspirationDeleteMode ? '#ef4444' : '#693fe9', width: '12px', height: '12px' }} />
+                                            <span style={{ color: inspirationDeleteMode ? (isDeleteChecked ? '#f87171' : 'rgba(255,255,255,0.6)') : (isChecked ? '#a78bfa' : 'rgba(255,255,255,0.6)'), fontSize: '11px', fontWeight: '500' }}>{src.name}</span>
                                             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{src.count}p</span>
-                                            <button onClick={(e) => { e.stopPropagation(); deleteInspirationSource(src.name); }} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '12px', padding: '0', marginLeft: '2px' }}>×</button>
                                         </div>
                                     );
                                 })}
@@ -2672,23 +2959,36 @@ function DashboardContent() {
                                         </button>
                                     )}
                                 </div>
-                                <div style={{ marginBottom: '10px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>{miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'rgba(255,255,255,0.7)', 12)} Topic/Idea</label>
-                                    <div style={{ display: 'flex', gap: '6px' }}>
-                                        <input type="text" value={writerTopic} onChange={e => setWriterTopic(e.target.value)} placeholder="What do you want to write about?"
-                                            style={{ flex: 1, padding: '9px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }} />
-                                        {linkedInProfile && <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
-                                            style={{ padding: '9px 14px', background: linkedInGeneratingTopics ? 'rgba(245,158,11,0.3)' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '11px', cursor: linkedInGeneratingTopics ? 'wait' : 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(245,158,11,0.3)' }}>
-                                            {linkedInGeneratingTopics ? '...' : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'white', 11)} Topics</span>}
-                                        </button>}
-                                    </div>
-                                    {linkedInTopicSuggestions.length > 0 && (
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
-                                            {linkedInTopicSuggestions.map((topic, idx) => (
-                                                <button key={idx} onClick={() => selectTopicSuggestion(topic)}
-                                                    style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '4px 8px', color: '#fbbf24', fontSize: '10px', cursor: 'pointer', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {topic}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'white', fontSize: '13px', fontWeight: '600' }}>
+                                            {miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', '#f59e0b', 14)} {linkedInTopicSuggestions.length > 0 ? `${linkedInTopicSuggestions.length} Topics/Ideas` : 'Topic/Idea'}
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            {linkedInProfile && (
+                                                <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
+                                                    style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '5px', color: '#fbbf24', fontSize: '10px', padding: '4px 8px', cursor: linkedInGeneratingTopics ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    {linkedInGeneratingTopics ? '...' : <>{miniIcon('M12 4v16m8-8H4', '#fbbf24', 10)} New Ideas</>}
                                                 </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <textarea value={writerTopic} onChange={e => setWriterTopic(e.target.value)}
+                                        placeholder="What do you want to write about? (e.g. 5 tips for remote work productivity)"
+                                        style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none', resize: 'vertical', minHeight: '80px', fontFamily: 'system-ui, sans-serif' }} />
+                                    
+                                    {/* Topic Suggestions List */}
+                                    {linkedInTopicSuggestions.length > 0 && (
+                                        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Click to use an AI-generated idea based on your profile:</div>
+                                            {linkedInTopicSuggestions.map((topic, i) => (
+                                                <div key={i} onClick={() => selectTopicSuggestion(topic)}
+                                                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '10px 12px', color: '#cbd5e1', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '8px', transition: 'all 0.2s', lineHeight: '1.4' }}
+                                                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                                                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
+                                                    <span style={{ color: '#a78bfa', marginTop: '2px' }}>{miniIcon('M12 4v16m8-8H4', '#a78bfa', 12)}</span>
+                                                    <span style={{ flex: 1 }}>{topic}</span>
+                                                </div>
                                             ))}
                                         </div>
                                     )}
@@ -2787,11 +3087,11 @@ function DashboardContent() {
                                 </div>
                                 {/* Advanced Settings */}
                                 <div style={{ marginBottom: '10px' }}>
-                                    <button onClick={() => setWriterShowAdvanced(!writerShowAdvanced)}
+                                    <button onClick={() => setWriterAdvancedOpen(!writerAdvancedOpen)}
                                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '7px 12px', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '11px', fontWeight: '600', width: '100%', textAlign: 'left' }}>
-                                        {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'rgba(255,255,255,0.6)', 11)} Advanced Settings {writerShowAdvanced ? '▲' : '▼'}
+                                        {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'rgba(255,255,255,0.6)', 11)} Advanced Settings {writerAdvancedOpen ? '▲' : '▼'}
                                     </button>
-                                    {writerShowAdvanced && (
+                                    {writerAdvancedOpen && (
                                         <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                             <input type="text" value={writerTargetAudience} onChange={e => setWriterTargetAudience(e.target.value)} placeholder="Target Audience (e.g., Startup founders)"
                                                 style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
@@ -2861,16 +3161,157 @@ function DashboardContent() {
                                         </div>
                                     </div>
                                 )}
-                                {/* Action Buttons — Row 1: Post to LinkedIn + Draft */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '8px', marginTop: '12px' }}>
-                                    <button onClick={sendToExtension} disabled={writerPosting}
-                                        style={{ padding: '11px 6px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 12px rgba(105,63,233,0.3)', opacity: writerPosting ? 0.7 : 1 }}>
-                                        {writerPosting ? '...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Post to LinkedIn</span>}
-                                    </button>
-                                    <button onClick={saveDraft}
-                                        style={{ padding: '11px 6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
-                                        {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', 'white', 12)} Draft
-                                    </button>
+                                {/* LinkedIn Post Preview */}
+                                {writerContent.trim() && (
+                                <div style={{ marginTop: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LinkedIn Preview</span>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            {(['desktop', 'mobile'] as const).map(mode => (
+                                                <button key={mode} onClick={() => { setWriterPreviewMode(writerPreviewMode === mode ? 'off' : mode); setWriterPreviewExpanded(false); }}
+                                                    style={{ padding: '3px 8px', background: writerPreviewMode === mode ? 'rgba(0,119,181,0.3)' : 'rgba(255,255,255,0.06)', border: writerPreviewMode === mode ? '1px solid rgba(0,119,181,0.5)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '4px', color: writerPreviewMode === mode ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
+                                                    {mode === 'desktop' ? '🖥 Desktop' : '📱 Mobile'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {writerPreviewMode !== 'off' && (() => {
+                                        const isMobile = writerPreviewMode === 'mobile';
+                                        const maxW = isMobile ? '375px' : '555px';
+                                        const TRUNCATE_LINES = isMobile ? 3 : 5;
+                                        const lines = writerContent.split('\n');
+                                        const truncated = lines.length > TRUNCATE_LINES && !writerPreviewExpanded;
+                                        const displayText = truncated ? lines.slice(0, TRUNCATE_LINES).join('\n') : writerContent;
+                                        const profileName = linkedInProfile?.name || user?.name || 'Your Name';
+                                        const profileHeadline = linkedInProfile?.headline || 'Your Headline';
+                                        return (
+                                        <div style={{ maxWidth: maxW, margin: '0 auto', background: '#1b1f23', borderRadius: '10px', border: '1px solid #38434f', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+                                            {/* Post header */}
+                                            <div style={{ padding: isMobile ? '10px 12px' : '12px 16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                                <div style={{ width: isMobile ? '36px' : '48px', height: isMobile ? '36px' : '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: isMobile ? '14px' : '18px', flexShrink: 0 }}>{(profileName?.[0] || 'U').toUpperCase()}</div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ color: 'white', fontWeight: '600', fontSize: isMobile ? '13px' : '14px', lineHeight: '1.3' }}>{profileName}</div>
+                                                    <div style={{ color: '#ffffffb3', fontSize: isMobile ? '11px' : '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profileHeadline}</div>
+                                                    <div style={{ color: '#ffffff80', fontSize: '11px', marginTop: '2px' }}>Just now · {miniIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', '#ffffff80', 10)}</div>
+                                                </div>
+                                            </div>
+                                            {/* Post text */}
+                                            <div style={{ padding: isMobile ? '0 12px 10px' : '0 16px 12px' }}>
+                                                <div style={{ color: '#ffffffe6', fontSize: isMobile ? '13px' : '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                    {displayText}
+                                                    {truncated && <span onClick={() => setWriterPreviewExpanded(true)} style={{ color: '#ffffff80', cursor: 'pointer' }}>... <span style={{ color: '#70b5f9' }}>see more</span></span>}
+                                                </div>
+                                                {writerPreviewExpanded && lines.length > TRUNCATE_LINES && (
+                                                    <span onClick={() => setWriterPreviewExpanded(false)} style={{ color: '#70b5f9', cursor: 'pointer', fontSize: '13px' }}>show less</span>
+                                                )}
+                                            </div>
+                                            {/* Image/video preview */}
+                                            {writerImageUrl && (
+                                                <div style={{ borderTop: '1px solid #38434f' }}>
+                                                    {writerMediaType === 'video' ? (
+                                                        <video src={writerImageUrl} controls style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#000' }} />
+                                                    ) : (
+                                                        <img src={writerImageUrl} alt="Post media" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }} />
+                                                    )}
+                                                </div>
+                                            )}
+                                            {/* Engagement bar */}
+                                            <div style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderTop: '1px solid #38434f' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ffffff80', fontSize: isMobile ? '11px' : '12px' }}>
+                                                    <span>👍 ❤️ 💡</span>
+                                                    <span>0 comments · 0 reposts</span>
+                                                </div>
+                                            </div>
+                                            {/* Action buttons */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-around', padding: '4px 0', borderTop: '1px solid #38434f' }}>
+                                                {['Like', 'Comment', 'Repost', 'Send'].map(action => (
+                                                    <div key={action} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '10px 8px', color: '#ffffff80', fontSize: isMobile ? '11px' : '12px', fontWeight: '600' }}>
+                                                        {action === 'Like' && '👍'}{action === 'Comment' && '💬'}{action === 'Repost' && '🔄'}{action === 'Send' && '✈️'} {action}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>);
+                                    })()}
+                                </div>
+                                )}
+
+                                {/* Media Upload & Action Buttons */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <input 
+                                            type="file" 
+                                            ref={fileInputRef} 
+                                            accept="image/jpeg,image/png,image/gif,image/webp,video/webm,video/mp4" 
+                                            style={{ display: 'none' }}
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                const isVideo = file.type.startsWith('video/');
+                                                setWriterImageFile(file);
+                                                setWriterMediaType(isVideo ? 'video' : 'image');
+                                                // Show local preview
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => setWriterImageUrl(ev.target?.result as string);
+                                                reader.readAsDataURL(file);
+                                                // Upload to Vercel Blob
+                                                setWriterUploading(true);
+                                                try {
+                                                    const token = localStorage.getItem('authToken');
+                                                    const formData = new FormData();
+                                                    formData.append('file', file);
+                                                    const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                                                    const data = await res.json();
+                                                    if (data.success) {
+                                                        setWriterMediaBlobUrl(data.url);
+                                                        showToast(`${isVideo ? 'Video' : 'Image'} uploaded!`, 'success');
+                                                    } else {
+                                                        showToast(data.error || 'Upload failed', 'error');
+                                                    }
+                                                } catch (err: any) { showToast('Upload failed: ' + err.message, 'error'); }
+                                                finally { setWriterUploading(false); }
+                                            }}
+                                        />
+                                        <button 
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={writerUploading}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: writerUploading ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: writerUploading ? 'wait' : 'pointer', transition: 'all 0.2s' }}
+                                            onMouseOver={e => { if (!writerUploading) e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                                            onMouseOut={e => { if (!writerUploading) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                                        >
+                                            {miniIcon('M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'rgba(255,255,255,0.7)', 14)} 
+                                            {writerUploading ? 'Uploading...' : writerImageFile ? 'Change Media' : 'Attach Image / Video'}
+                                        </button>
+                                        
+                                        {writerImageUrl && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                {writerMediaType === 'video' ? (
+                                                    <div style={{ width: '30px', height: '30px', background: 'rgba(59,130,246,0.2)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🎬</div>
+                                                ) : (
+                                                    <img src={writerImageUrl} alt="Attachment" style={{ width: '30px', height: '30px', objectFit: 'cover', borderRadius: '4px' }} />
+                                                )}
+                                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{writerImageFile?.name}</span>
+                                                {writerMediaBlobUrl && <span style={{ color: '#34d399', fontSize: '10px' }}>✓</span>}
+                                                <button 
+                                                    onClick={() => { setWriterImageFile(null); setWriterImageUrl(''); setWriterMediaBlobUrl(''); setWriterMediaType(''); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                                                    style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Action Buttons — Row 1: Post to LinkedIn + Draft */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '8px' }}>
+                                        <button onClick={sendToExtension} disabled={writerPosting}
+                                            style={{ padding: '11px 6px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting ? 'wait' : 'pointer', boxShadow: writerPosting ? 'none' : '0 4px 12px rgba(105,63,233,0.3)', opacity: writerPosting ? 0.7 : 1 }}>
+                                            {writerPosting ? '...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Post to LinkedIn</span>}
+                                        </button>
+                                        <button onClick={saveDraft}
+                                            style={{ padding: '11px 6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}>
+                                            {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8', 'white', 12)} Draft
+                                        </button>
+                                    </div>
                                 </div>
                                 {/* Row 2: Date + Time + Schedule button */}
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
@@ -3197,7 +3638,11 @@ function DashboardContent() {
                         {/* Selected day detail — show posts for today or any day with posts */}
                         {writerScheduledPosts.length > 0 && (
                             <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px' }}>
-                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase' }}>Upcoming Posts</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', textTransform: 'uppercase' }}>Upcoming Posts</div>
+                                    <button onClick={async () => { if (confirm('Delete ALL scheduled posts? This cannot be undone.')) { const token = localStorage.getItem('authToken'); const ids = writerScheduledPosts.map((p: any) => p.id); const res = await fetch('/api/post-drafts', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ ids }) }); const data = await res.json(); if (data.success) { loadScheduledPosts(); showToast(`Deleted ${data.deleted} scheduled posts`, 'success'); } else { showToast('Failed to delete posts', 'error'); } } }}
+                                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', padding: '3px 8px', color: '#ef4444', fontSize: '9px', cursor: 'pointer', fontWeight: '600' }}>Delete All</button>
+                                </div>
                                 <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     {writerScheduledPosts
                                         .sort((a: any, b: any) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
@@ -3298,13 +3743,27 @@ function DashboardContent() {
                                 </div>
                                 {csUseProfileStyle && (
                                     <div style={{ background: 'rgba(59,130,246,0.08)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.2)', marginBottom: '14px' }}>
-                                        <p style={{ color: '#60a5fa', fontSize: '12px', margin: 0, lineHeight: '1.4' }}>
+                                        <p style={{ color: '#60a5fa', fontSize: '12px', margin: '0 0 8px 0', lineHeight: '1.4' }}>
                                             <strong>Profile Style Active:</strong> AI analyzes up to 20 comments from selected profiles. Goal, Tone, Length & Style ignored.
                                         </p>
+                                        {commentStyleProfiles.length > 0 ? (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {commentStyleProfiles.filter((p: any) => p.isSelected).length === 0 && (
+                                                    <span style={{ color: '#fbbf24', fontSize: '11px' }}>⚠️ No profiles selected — select profiles below in "Comment Style Sources"</span>
+                                                )}
+                                                {commentStyleProfiles.filter((p: any) => p.isSelected).map((p: any) => (
+                                                    <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(59,130,246,0.15)', padding: '3px 8px', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.3)', fontSize: '10px', color: '#93c5fd' }}>
+                                                        {miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', '#60a5fa', 10)} {p.profileName || p.profileId} <span style={{ color: 'rgba(255,255,255,0.4)' }}>({p._count?.comments || p.commentCount || 0})</span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p style={{ color: '#fbbf24', fontSize: '11px', margin: 0 }}>⚠️ No comment style profiles yet. Add profiles below in "Comment Style Sources" section.</p>
+                                        )}
                                     </div>
                                 )}
                                 {/* Use Profile Data Toggle */}
-                                {linkedInProfile && (
+                                {linkedInProfile ? (
                                 <div style={{ background: csUseProfileData ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: `1px solid ${csUseProfileData ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
                                     onClick={() => { const newVal = !csUseProfileData; setCsUseProfileData(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: csUseProfileStyle, useProfileData: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { if (d.success) showToast('Settings auto-saved!', 'success'); }); }, 100); }}>
                                     <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: csUseProfileData ? 'linear-gradient(135deg, #10b981, #059669)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
@@ -3318,6 +3777,20 @@ function DashboardContent() {
                                             {csUseProfileData 
                                                 ? 'AI uses your LinkedIn profile to personalize comments.'
                                                 : 'Turn ON to include your profile headline, about, skills in AI prompts.'}
+                                        </div>
+                                    </div>
+                                </div>
+                                ) : (
+                                <div style={{ background: 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: 'rgba(255,255,255,0.1)', position: 'relative', flexShrink: 0, opacity: 0.5 }}>
+                                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: '2px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: '700', fontSize: '13px' }}>
+                                            {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'rgba(255,255,255,0.5)', 13)} Use My Profile Data
+                                        </div>
+                                        <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+                                            No LinkedIn profile scanned yet. Go to the <strong style={{ color: '#a78bfa', cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); handleTabChange('writer'); }}>Writer tab</strong> and click "Scan My Profile" first.
                                         </div>
                                     </div>
                                 </div>
@@ -4792,7 +5265,14 @@ function DashboardContent() {
                                     <span style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '700' }}>{importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0} detected</span>
                                 </div>
                             </div>
-                            <textarea value={importCfg.profileUrls} onChange={e => setImportCfg((p: any) => ({ ...p, profileUrls: e.target.value }))}
+                            <textarea value={importCfg.profileUrls} 
+                                onChange={e => setImportCfg((p: any) => ({ ...p, profileUrls: e.target.value }))}
+                                onBlur={e => {
+                                    const cleaned = cleanLinkedInProfileUrls(e.target.value).join('\n');
+                                    if (cleaned !== e.target.value) {
+                                        setImportCfg((p: any) => ({ ...p, profileUrls: cleaned }));
+                                    }
+                                }}
                                 placeholder="https://www.linkedin.com/in/john-doe/&#10;https://www.linkedin.com/in/jane-smith/" rows={4}
                                 style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical', fontFamily: 'monospace' }} />
                         </div>
@@ -5404,6 +5884,120 @@ function DashboardContent() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* LinkedIn API Connection Card */}
+                        <div style={{ 
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '30px',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#0077b5', 20)}
+                                LinkedIn API Connection
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px', marginTop: 0 }}>Connect your LinkedIn account to post directly via API — no extension needed. Scheduled posts will be published even when your laptop is off.</p>
+                            {linkedInOAuthLoading ? (
+                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Loading...</div>
+                            ) : linkedInOAuth?.connected ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 18px', background: 'rgba(16,185,129,0.1)', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                        <span style={{ color: '#34d399', fontSize: '18px' }}>✓</span>
+                                        <div>
+                                            <div style={{ color: '#34d399', fontWeight: '700', fontSize: '14px' }}>Connected as {linkedInOAuth.displayName}</div>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{linkedInOAuth.email || ''} {linkedInOAuth.tokenExpired ? '⚠️ Token expired — reconnect' : ''}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        {linkedInOAuth.tokenExpired && (
+                                            <button onClick={() => { fetch('/api/auth/linkedin', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } }).then(r => r.json()).then(d => { if (d.authUrl) window.location.href = d.authUrl; }); }}
+                                                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Reconnect LinkedIn</button>
+                                        )}
+                                        <button onClick={async () => { const token = localStorage.getItem('authToken'); await fetch('/api/auth/linkedin', { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); setLinkedInOAuth(null); showToast('LinkedIn disconnected', 'success'); }}
+                                            style={{ padding: '10px 20px', background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Disconnect</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button onClick={() => { const token = localStorage.getItem('authToken'); fetch('/api/auth/linkedin', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(d => { if (d.authUrl) window.location.href = d.authUrl; else showToast('Failed to get LinkedIn auth URL', 'error'); }); }}
+                                    style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,119,181,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', 'white', 16)} Connect LinkedIn Account
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Profile Scan Method Card */}
+                        <div style={{ 
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '30px',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#a78bfa', 20)}
+                                Profile Scan Method
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '20px', marginTop: 0 }}>Choose how your LinkedIn profile is scanned</p>
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                <button
+                                    onClick={() => {
+                                        localStorage.setItem('profileScanMethod', 'ai');
+                                        showToast('Profile scan method set to AI', 'success');
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '14px 20px',
+                                        background: (typeof window !== 'undefined' && localStorage.getItem('profileScanMethod') !== 'classic') 
+                                            ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
+                                            : 'rgba(255,255,255,0.05)',
+                                        border: (typeof window !== 'undefined' && localStorage.getItem('profileScanMethod') !== 'classic')
+                                            ? '2px solid rgba(105,63,233,0.6)' 
+                                            : '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '12px',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                >
+                                    {miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', '#a78bfa', 16)}
+                                    AI Scan (Recommended)
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        localStorage.setItem('profileScanMethod', 'classic');
+                                        showToast('Profile scan method set to Classic', 'success');
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '14px 20px',
+                                        background: (typeof window !== 'undefined' && localStorage.getItem('profileScanMethod') === 'classic')
+                                            ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
+                                            : 'rgba(255,255,255,0.05)',
+                                        border: (typeof window !== 'undefined' && localStorage.getItem('profileScanMethod') === 'classic')
+                                            ? '2px solid rgba(105,63,233,0.6)' 
+                                            : '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '12px',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                >
+                                    {miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', '#a78bfa', 16)}
+                                    Classic Scan
+                                </button>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginTop: '16px' }}>
+                                AI Scan: Captures full profile text and uses AI to restructure data (more accurate).<br/>
+                                Classic Scan: Uses pattern matching to extract data (faster but less accurate).
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>
@@ -5489,35 +6083,236 @@ function DashboardContent() {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <h3 style={{ margin: 0, fontSize: '18px' }}>LinkedIn Profile Data</h3>
-                            <button 
-                                onClick={() => setShowLinkedInDataModal(false)}
-                                style={{ 
-                                    background: 'none', 
-                                    border: 'none', 
-                                    color: 'white', 
-                                    fontSize: '24px', 
-                                    cursor: 'pointer',
-                                    padding: '0'
-                                }}
-                            >
-                                ×
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                {/* Rescan Missing Data Button */}
+                                <button 
+                                    onClick={async () => {
+                                        if (!linkedInProfile?.fullPageText) {
+                                            showToast('No stored text found. Scan your profile first.', 'error');
+                                            return;
+                                        }
+                                        
+                                        // Detect which sections are actually empty or have no data
+                                        const missingSections: string[] = [];
+                                        if (!linkedInProfile.experience || linkedInProfile.experience.length === 0) missingSections.push('experience');
+                                        if (!linkedInProfile.education || linkedInProfile.education.length === 0) missingSections.push('education');
+                                        if (!linkedInProfile.certifications || linkedInProfile.certifications.length === 0) missingSections.push('certifications');
+                                        if (!linkedInProfile.projects || linkedInProfile.projects.length === 0) missingSections.push('projects');
+                                        if (!linkedInProfile.posts || linkedInProfile.posts.length === 0) missingSections.push('posts');
+                                        if (!linkedInProfile.skills || linkedInProfile.skills.length === 0) missingSections.push('skills');
+                                        
+                                        if (missingSections.length === 0) {
+                                            showToast('No missing sections found. All data is already loaded!', 'info');
+                                            return;
+                                        }
+                                        
+                                        setRescanningMissing(true);
+                                        try {
+                                            const token = localStorage.getItem('authToken');
+                                            const res = await fetch('/api/linkedin-profile/rescan-missing', {
+                                                method: 'POST',
+                                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ missingSections })
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) {
+                                                showToast(data.message || `Re-scanned ${missingSections.length} missing section(s)!`, 'success');
+                                                loadLinkedInProfile();
+                                            } else {
+                                                showToast(data.error || 'Failed to rescan', 'error');
+                                            }
+                                        } catch (e: any) {
+                                            showToast('Error: ' + e.message, 'error');
+                                        } finally {
+                                            setRescanningMissing(false);
+                                        }
+                                    }}
+                                    disabled={rescanningMissing || linkedInProfileScanning}
+                                    style={{ 
+                                        padding: '6px 10px', 
+                                        background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+                                        border: 'none', 
+                                        borderRadius: '6px',
+                                        color: 'white', 
+                                        fontSize: '10px', 
+                                        fontWeight: '600',
+                                        cursor: rescanningMissing ? 'wait' : 'pointer',
+                                        opacity: rescanningMissing ? 0.7 : 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '3px'
+                                    }}
+                                >
+                                    {rescanningMissing ? 'Rescanning...' : '🔄 Rescan Missing'}
+                                </button>
+                                {/* View Full Text Button */}
+                                <button 
+                                    onClick={() => setShowFullPageText(!showFullPageText)}
+                                    style={{ 
+                                        padding: '6px 10px', 
+                                        background: 'rgba(59, 130, 246, 0.2)', 
+                                        border: '1px solid rgba(59, 130, 246, 0.4)', 
+                                        borderRadius: '6px',
+                                        color: '#60a5fa', 
+                                        fontSize: '10px', 
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '3px'
+                                    }}
+                                >
+                                    📄 {showFullPageText ? 'Hide' : 'View'} Full Text
+                                </button>
+                                {/* Recapture Button */}
+                                <button 
+                                    onClick={async () => {
+                                        setLinkedInProfileScanning(true);
+                                        try {
+                                            const token = localStorage.getItem('authToken');
+                                            const res = await fetch('/api/linkedin-profile/ai-recapture', {
+                                                method: 'POST',
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) {
+                                                showToast('AI recapture started! Extension will capture and restructure your profile data.', 'success');
+                                                loadLinkedInProfile();
+                                            } else {
+                                                showToast(data.error || 'Failed to start AI recapture', 'error');
+                                            }
+                                        } catch (e: any) {
+                                            showToast('Error: ' + e.message, 'error');
+                                        } finally {
+                                            setLinkedInProfileScanning(false);
+                                        }
+                                    }}
+                                    disabled={linkedInProfileScanning}
+                                    style={{ 
+                                        padding: '6px 12px', 
+                                        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
+                                        border: 'none', 
+                                        borderRadius: '6px',
+                                        color: 'white', 
+                                        fontSize: '11px', 
+                                        fontWeight: '600',
+                                        cursor: linkedInProfileScanning ? 'wait' : 'pointer',
+                                        opacity: linkedInProfileScanning ? 0.7 : 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}
+                                >
+                                    {linkedInProfileScanning ? 'Processing...' : <>{miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'white', 12)} Recapture</>}
+                                </button>
+                                <button 
+                                    onClick={() => setShowLinkedInDataModal(false)}
+                                    style={{ 
+                                        background: 'none', 
+                                        border: 'none', 
+                                        color: 'white', 
+                                        fontSize: '24px', 
+                                        cursor: 'pointer',
+                                        padding: '0'
+                                    }}
+                                >
+                                    ×
+                                </button>
+                            </div>
                         </div>
                         
+                        {/* Full Page Text Viewer */}
+                        {showFullPageText && linkedInProfile?.fullPageText && (
+                            <div style={{ 
+                                marginBottom: '16px', 
+                                padding: '12px', 
+                                background: 'rgba(0,0,0,0.3)', 
+                                borderRadius: '8px',
+                                border: '1px solid rgba(255,255,255,0.1)'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <span style={{ color: '#60a5fa', fontSize: '12px', fontWeight: '600' }}>Captured Full Page Text ({linkedInProfile.fullPageText.length} chars)</span>
+                                    <button 
+                                        onClick={() => navigator.clipboard.writeText(linkedInProfile.fullPageText)}
+                                        style={{ padding: '4px 8px', background: 'rgba(59, 130, 246, 0.2)', border: 'none', borderRadius: '4px', color: '#60a5fa', fontSize: '10px', cursor: 'pointer' }}
+                                    >Copy</button>
+                                </div>
+                                <div style={{ 
+                                    maxHeight: '300px', 
+                                    overflow: 'auto', 
+                                    fontSize: '11px', 
+                                    color: 'rgba(255,255,255,0.6)',
+                                    whiteSpace: 'pre-wrap',
+                                    fontFamily: 'monospace',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {linkedInProfile.fullPageText}
+                                </div>
+                            </div>
+                        )}
+                        
                         <div style={{ display: 'grid', gap: '16px' }}>
+                            {/* Editable Name */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Name:</strong>
-                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.name || 'N/A'}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Name:</strong>
+                                    {editingSection !== 'name' && (
+                                        <button onClick={() => { setEditingSection('name'); setEditValue(linkedInProfile.name || ''); }} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>Edit</button>
+                                    )}
+                                </div>
+                                {editingSection === 'name' ? (
+                                    <div style={{ marginTop: '4px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: editValue }) }); setLinkedInProfile({ ...linkedInProfile, name: editValue }); setEditingSection(null); showToast('Name updated!', 'success'); }} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Save</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.name || 'N/A'}</p>
+                                )}
                             </div>
                             
+                            {/* Editable Headline */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Headline:</strong>
-                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.headline || 'N/A'}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Headline:</strong>
+                                    {editingSection !== 'headline' && (
+                                        <button onClick={() => { setEditingSection('headline'); setEditValue(linkedInProfile.headline || ''); }} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>Edit</button>
+                                    )}
+                                </div>
+                                {editingSection === 'headline' ? (
+                                    <div style={{ marginTop: '4px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ headline: editValue }) }); setLinkedInProfile({ ...linkedInProfile, headline: editValue }); setEditingSection(null); showToast('Headline updated!', 'success'); }} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Save</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.headline || 'N/A'}</p>
+                                )}
                             </div>
                             
+                            {/* Editable Location */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Location:</strong>
-                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.location || 'N/A'}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Location:</strong>
+                                    {editingSection !== 'location' && (
+                                        <button onClick={() => { setEditingSection('location'); setEditValue(linkedInProfile.location || ''); }} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>Edit</button>
+                                    )}
+                                </div>
+                                {editingSection === 'location' ? (
+                                    <div style={{ marginTop: '4px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ location: editValue }) }); setLinkedInProfile({ ...linkedInProfile, location: editValue }); setEditingSection(null); showToast('Location updated!', 'success'); }} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Save</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.location || 'N/A'}</p>
+                                )}
                             </div>
                             
                             <div>
@@ -5530,13 +6325,42 @@ function DashboardContent() {
                                 <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)' }}>{linkedInProfile.profileViews || 'N/A'}</p>
                             </div>
                             
+                            {/* Editable About */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>About:</strong>
-                                <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)', whiteSpace: 'pre-wrap' }}>{linkedInProfile.about || 'N/A'}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>About:</strong>
+                                    {editingSection !== 'about' && (
+                                        <button onClick={() => { setEditingSection('about'); setEditValue(linkedInProfile.about || ''); }} style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#888', fontSize: '10px', cursor: 'pointer' }}>Edit</button>
+                                    )}
+                                </div>
+                                {editingSection === 'about' ? (
+                                    <div style={{ marginTop: '4px' }}>
+                                        <textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} rows={4} style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px', resize: 'vertical' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ about: editValue }) }); setLinkedInProfile({ ...linkedInProfile, about: editValue }); setEditingSection(null); showToast('About updated!', 'success'); }} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Save</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p style={{ margin: '4px 0', color: 'rgba(255,255,255,0.8)', whiteSpace: 'pre-wrap' }}>{linkedInProfile.about || 'N/A'}</p>
+                                )}
                             </div>
                             
+                            {/* Editable Skills */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Skills ({Array.isArray(linkedInProfile.skills) ? linkedInProfile.skills.length : 0}):</strong>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Skills ({Array.isArray(linkedInProfile.skills) ? linkedInProfile.skills.length : 0}):</strong>
+                                    <button onClick={() => { setEditingSection('skills'); setEditValue(''); }} style={{ padding: '2px 6px', background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: '4px', color: '#22c55e', fontSize: '10px', cursor: 'pointer' }}>+ Add</button>
+                                </div>
+                                {editingSection === 'skills' && (
+                                    <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="Add new skill (comma-separated for multiple)" style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { const newSkills = editValue.split(',').map(s => s.trim()).filter(Boolean); const updated = [...(linkedInProfile.skills || []), ...newSkills]; const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ skills: updated }) }); setLinkedInProfile({ ...linkedInProfile, skills: updated }); setEditingSection(null); showToast('Skills added!', 'success'); }} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Add</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
                                 <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
                                     {Array.isArray(linkedInProfile.skills) && linkedInProfile.skills.length > 0 ? 
                                         linkedInProfile.skills.map((skill: string, idx: number) => (
@@ -5544,12 +6368,11 @@ function DashboardContent() {
                                                 display: 'flex', alignItems: 'center', gap: '8px',
                                                 padding: '4px 8px', margin: '2px 0',
                                                 background: selectedInspirationPosts.includes(skill) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
-                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
-                                            }}
-                                            onClick={() => toggleInspirationPost(skill)}
-                                            >
+                                                borderRadius: '4px', fontSize: '12px'
+                                            }}>
                                                 <input type="checkbox" checked={selectedInspirationPosts.includes(skill)} onChange={() => toggleInspirationPost(skill)} style={{ accentColor: '#693fe9' }} />
-                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{skill}</span>
+                                                <span style={{ flex: 1, color: 'rgba(255,255,255,0.8)' }}>{skill}</span>
+                                                <button onClick={async () => { const updated = linkedInProfile.skills.filter((_: string, i: number) => i !== idx); const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ skills: updated }) }); setLinkedInProfile({ ...linkedInProfile, skills: updated }); }} style={{ padding: '2px 4px', background: 'rgba(239,68,68,0.2)', border: 'none', borderRadius: '3px', color: '#f87171', fontSize: '9px', cursor: 'pointer' }}>×</button>
                                             </div>
                                         )) : 
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No skills found</span>
@@ -5557,8 +6380,21 @@ function DashboardContent() {
                                 </div>
                             </div>
                             
+                            {/* Editable Experience */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Experience ({Array.isArray(linkedInProfile.experience) ? linkedInProfile.experience.length : 0}):</strong>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Experience ({Array.isArray(linkedInProfile.experience) ? linkedInProfile.experience.length : 0}):</strong>
+                                    <button onClick={() => { setEditingSection('experience'); setEditValue(''); }} style={{ padding: '2px 6px', background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: '4px', color: '#22c55e', fontSize: '10px', cursor: 'pointer' }}>+ Add</button>
+                                </div>
+                                {editingSection === 'experience' && (
+                                    <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="Company | Title | Date Range | Description" style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { if (editValue.trim()) { const updated = [...(linkedInProfile.experience || []), editValue.trim()]; const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ experience: updated }) }); setLinkedInProfile({ ...linkedInProfile, experience: updated }); setEditingSection(null); showToast('Experience added!', 'success'); }}} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Add</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
                                 <div style={{ maxHeight: '200px', overflow: 'auto', margin: '4px 0' }}>
                                     {Array.isArray(linkedInProfile.experience) && linkedInProfile.experience.length > 0 ? 
                                         linkedInProfile.experience.map((exp: string, idx: number) => (
@@ -5566,15 +6402,14 @@ function DashboardContent() {
                                                 padding: '8px', margin: '4px 0',
                                                 background: selectedInspirationPosts.includes(exp) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
                                                 border: selectedInspirationPosts.includes(exp) ? '1px solid rgba(105, 63, 233, 0.5)' : '1px solid transparent',
-                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
-                                            }}
-                                            onClick={() => toggleInspirationPost(exp)}
-                                            >
+                                                borderRadius: '4px', fontSize: '12px'
+                                            }}>
                                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                                     <input type="checkbox" checked={selectedInspirationPosts.includes(exp)} onChange={() => toggleInspirationPost(exp)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
                                                     <div style={{ flex: 1, color: 'rgba(255,255,255,0.8)' }}>
                                                         {exp.length > 200 ? exp.substring(0, 200) + '...' : exp}
                                                     </div>
+                                                    <button onClick={async () => { const updated = linkedInProfile.experience.filter((_: string, i: number) => i !== idx); const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ experience: updated }) }); setLinkedInProfile({ ...linkedInProfile, experience: updated }); }} style={{ padding: '2px 4px', background: 'rgba(239,68,68,0.2)', border: 'none', borderRadius: '3px', color: '#f87171', fontSize: '9px', cursor: 'pointer' }}>×</button>
                                                 </div>
                                             </div>
                                         )) : 
@@ -5583,8 +6418,21 @@ function DashboardContent() {
                                 </div>
                             </div>
                             
+                            {/* Editable Education */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Education ({Array.isArray(linkedInProfile.education) ? linkedInProfile.education.length : 0}):</strong>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Education ({Array.isArray(linkedInProfile.education) ? linkedInProfile.education.length : 0}):</strong>
+                                    <button onClick={() => { setEditingSection('education'); setEditValue(''); }} style={{ padding: '2px 6px', background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: '4px', color: '#22c55e', fontSize: '10px', cursor: 'pointer' }}>+ Add</button>
+                                </div>
+                                {editingSection === 'education' && (
+                                    <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="School | Degree | Years" style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { if (editValue.trim()) { const updated = [...(linkedInProfile.education || []), editValue.trim()]; const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ education: updated }) }); setLinkedInProfile({ ...linkedInProfile, education: updated }); setEditingSection(null); showToast('Education added!', 'success'); }}} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Add</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
                                 <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
                                     {Array.isArray(linkedInProfile.education) && linkedInProfile.education.length > 0 ? 
                                         linkedInProfile.education.map((edu: string, idx: number) => (
@@ -5592,12 +6440,11 @@ function DashboardContent() {
                                                 display: 'flex', alignItems: 'flex-start', gap: '8px',
                                                 padding: '6px 8px', margin: '2px 0',
                                                 background: selectedInspirationPosts.includes(edu) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
-                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
-                                            }}
-                                            onClick={() => toggleInspirationPost(edu)}
-                                            >
+                                                borderRadius: '4px', fontSize: '12px'
+                                            }}>
                                                 <input type="checkbox" checked={selectedInspirationPosts.includes(edu)} onChange={() => toggleInspirationPost(edu)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
-                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{edu}</span>
+                                                <span style={{ flex: 1, color: 'rgba(255,255,255,0.8)' }}>{edu}</span>
+                                                <button onClick={async () => { const updated = linkedInProfile.education.filter((_: string, i: number) => i !== idx); const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ education: updated }) }); setLinkedInProfile({ ...linkedInProfile, education: updated }); }} style={{ padding: '2px 4px', background: 'rgba(239,68,68,0.2)', border: 'none', borderRadius: '3px', color: '#f87171', fontSize: '9px', cursor: 'pointer' }}>×</button>
                                             </div>
                                         )) : 
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No education found</span>
@@ -5605,8 +6452,21 @@ function DashboardContent() {
                                 </div>
                             </div>
                             
+                            {/* Editable Certifications */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Certifications ({Array.isArray(linkedInProfile.certifications) ? linkedInProfile.certifications.length : 0}):</strong>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Certifications ({Array.isArray(linkedInProfile.certifications) ? linkedInProfile.certifications.length : 0}):</strong>
+                                    <button onClick={() => { setEditingSection('certifications'); setEditValue(''); }} style={{ padding: '2px 6px', background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: '4px', color: '#22c55e', fontSize: '10px', cursor: 'pointer' }}>+ Add</button>
+                                </div>
+                                {editingSection === 'certifications' && (
+                                    <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="Certificate | Issuing Org | Date" style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { if (editValue.trim()) { const updated = [...(linkedInProfile.certifications || []), editValue.trim()]; const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ certifications: updated }) }); setLinkedInProfile({ ...linkedInProfile, certifications: updated }); setEditingSection(null); showToast('Certification added!', 'success'); }}} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Add</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
                                 <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
                                     {Array.isArray(linkedInProfile.certifications) && linkedInProfile.certifications.length > 0 ? 
                                         linkedInProfile.certifications.map((cert: string, idx: number) => (
@@ -5614,12 +6474,11 @@ function DashboardContent() {
                                                 display: 'flex', alignItems: 'flex-start', gap: '8px',
                                                 padding: '6px 8px', margin: '2px 0',
                                                 background: selectedInspirationPosts.includes(cert) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
-                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
-                                            }}
-                                            onClick={() => toggleInspirationPost(cert)}
-                                            >
+                                                borderRadius: '4px', fontSize: '12px'
+                                            }}>
                                                 <input type="checkbox" checked={selectedInspirationPosts.includes(cert)} onChange={() => toggleInspirationPost(cert)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
-                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{cert}</span>
+                                                <span style={{ flex: 1, color: 'rgba(255,255,255,0.8)' }}>{cert}</span>
+                                                <button onClick={async () => { const updated = linkedInProfile.certifications.filter((_: string, i: number) => i !== idx); const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ certifications: updated }) }); setLinkedInProfile({ ...linkedInProfile, certifications: updated }); }} style={{ padding: '2px 4px', background: 'rgba(239,68,68,0.2)', border: 'none', borderRadius: '3px', color: '#f87171', fontSize: '9px', cursor: 'pointer' }}>×</button>
                                             </div>
                                         )) : 
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No certifications found</span>
@@ -5627,8 +6486,21 @@ function DashboardContent() {
                                 </div>
                             </div>
                             
+                            {/* Editable Projects */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Projects ({Array.isArray(linkedInProfile.projects) ? linkedInProfile.projects.length : 0}):</strong>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Projects ({Array.isArray(linkedInProfile.projects) ? linkedInProfile.projects.length : 0}):</strong>
+                                    <button onClick={() => { setEditingSection('projects'); setEditValue(''); }} style={{ padding: '2px 6px', background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: '4px', color: '#22c55e', fontSize: '10px', cursor: 'pointer' }}>+ Add</button>
+                                </div>
+                                {editingSection === 'projects' && (
+                                    <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                        <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="Project Name | Description | Technologies" style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { if (editValue.trim()) { const updated = [...(linkedInProfile.projects || []), editValue.trim()]; const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ projects: updated }) }); setLinkedInProfile({ ...linkedInProfile, projects: updated }); setEditingSection(null); showToast('Project added!', 'success'); }}} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Add</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
                                 <div style={{ maxHeight: '150px', overflow: 'auto', margin: '4px 0' }}>
                                     {Array.isArray(linkedInProfile.projects) && linkedInProfile.projects.length > 0 ? 
                                         linkedInProfile.projects.map((proj: string, idx: number) => (
@@ -5636,12 +6508,11 @@ function DashboardContent() {
                                                 display: 'flex', alignItems: 'flex-start', gap: '8px',
                                                 padding: '6px 8px', margin: '2px 0',
                                                 background: selectedInspirationPosts.includes(proj) ? 'rgba(105, 63, 233, 0.2)' : 'rgba(255,255,255,0.05)',
-                                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
-                                            }}
-                                            onClick={() => toggleInspirationPost(proj)}
-                                            >
+                                                borderRadius: '4px', fontSize: '12px'
+                                            }}>
                                                 <input type="checkbox" checked={selectedInspirationPosts.includes(proj)} onChange={() => toggleInspirationPost(proj)} style={{ marginTop: '2px', accentColor: '#693fe9' }} />
-                                                <span style={{ color: 'rgba(255,255,255,0.8)' }}>{proj}</span>
+                                                <span style={{ flex: 1, color: 'rgba(255,255,255,0.8)' }}>{proj}</span>
+                                                <button onClick={async () => { const updated = linkedInProfile.projects.filter((_: string, i: number) => i !== idx); const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ projects: updated }) }); setLinkedInProfile({ ...linkedInProfile, projects: updated }); }} style={{ padding: '2px 4px', background: 'rgba(239,68,68,0.2)', border: 'none', borderRadius: '3px', color: '#f87171', fontSize: '9px', cursor: 'pointer' }}>×</button>
                                             </div>
                                         )) : 
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>No projects found</span>
@@ -5649,8 +6520,21 @@ function DashboardContent() {
                                 </div>
                             </div>
                             
+                            {/* Editable Posts */}
                             <div>
-                                <strong style={{ color: '#0077b5' }}>Posts ({linkedInProfile.totalPostsCount || (Array.isArray(linkedInProfile.posts) ? linkedInProfile.posts.length : 0)}):</strong>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong style={{ color: '#0077b5' }}>Posts ({linkedInProfile.totalPostsCount || (Array.isArray(linkedInProfile.posts) ? linkedInProfile.posts.length : 0)}):</strong>
+                                    <button onClick={() => { setEditingSection('posts'); setEditValue(''); }} style={{ padding: '2px 6px', background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: '4px', color: '#22c55e', fontSize: '10px', cursor: 'pointer' }}>+ Add Custom</button>
+                                </div>
+                                {editingSection === 'posts' && (
+                                    <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                        <textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} rows={3} placeholder="Add custom post content..." style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '12px', resize: 'vertical' }} />
+                                        <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+                                            <button onClick={async () => { if (editValue.trim()) { const updated = [...(linkedInProfile.posts || []), editValue.trim()]; const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: updated }) }); setLinkedInProfile({ ...linkedInProfile, posts: updated, totalPostsCount: updated.length }); setEditingSection(null); showToast('Post added!', 'success'); }}} style={{ padding: '4px 8px', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Add</button>
+                                            <button onClick={() => setEditingSection(null)} style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '10px', cursor: 'pointer' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
                                 <div style={{ maxHeight: '300px', overflow: 'auto', margin: '4px 0' }}>
                                     {Array.isArray(linkedInProfile.posts) && linkedInProfile.posts.length > 0 ? 
                                         linkedInProfile.posts.map((post: string, idx: number) => (
@@ -5661,12 +6545,8 @@ function DashboardContent() {
                                                 border: selectedInspirationPosts.includes(post) ? '1px solid rgba(105, 63, 233, 0.5)' : '1px solid transparent',
                                                 borderRadius: '4px',
                                                 fontSize: '12px',
-                                                whiteSpace: 'pre-wrap',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => toggleInspirationPost(post)}
-                                            title="Click to select/deselect for AI inspiration"
-                                            >
+                                                whiteSpace: 'pre-wrap'
+                                            }}>
                                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                                     <input 
                                                         type="checkbox" 
@@ -5677,6 +6557,7 @@ function DashboardContent() {
                                                     <div style={{ flex: 1 }}>
                                                         {post.length > 300 ? post.substring(0, 300) + '...' : post}
                                                     </div>
+                                                    <button onClick={async () => { const updated = linkedInProfile.posts.filter((_: string, i: number) => i !== idx); const token = localStorage.getItem('authToken'); await fetch('/api/linkedin-profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: updated }) }); setLinkedInProfile({ ...linkedInProfile, posts: updated, totalPostsCount: updated.length }); }} style={{ padding: '2px 4px', background: 'rgba(239,68,68,0.2)', border: 'none', borderRadius: '3px', color: '#f87171', fontSize: '9px', cursor: 'pointer' }}>×</button>
                                                 </div>
                                             </div>
                                         )) : 
@@ -5686,7 +6567,7 @@ function DashboardContent() {
                                 {selectedInspirationPosts.length > 0 && (
                                     <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(105, 63, 233, 0.1)', borderRadius: '4px' }}>
                                         <span style={{ color: '#a78bfa', fontSize: '11px' }}>
-                                            {selectedInspirationPosts.length} post(s) selected for AI inspiration
+                                            {selectedInspirationPosts.length} selected for AI inspiration
                                         </span>
                                     </div>
                                 )}

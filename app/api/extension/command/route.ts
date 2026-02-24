@@ -4,6 +4,7 @@ import { verifyToken, extractToken } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // 60 seconds
 
 // Helper to handle JWT errors gracefully
 function handleAuthError(error: any) {
@@ -172,6 +173,11 @@ export async function GET(request: NextRequest) {
     const pendingCommands = parsed.filter((c: any) => c.status === 'pending' || c.status === 'queued');
     const nextCommand = pendingCommands.length > 0 ? [pendingCommands[0]] : [];
 
+    // Debug logging
+    if (parsed.length > 0) {
+      console.log('📋 GET commands: total=', parsed.length, 'pending=', pendingCommands.length, 'statuses=', parsed.map((c: any) => `${c.command}:${c.status}`).join(','));
+    }
+
     return NextResponse.json({
       success: true,
       commands: nextCommand,
@@ -204,19 +210,24 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!activity) {
+      console.error('Command not found:', commandId, 'userId:', payload.userId);
       return NextResponse.json({ success: false, error: 'Command not found' }, { status: 404 });
     }
 
     const meta = typeof activity.metadata === 'string' ? JSON.parse(activity.metadata as string) : activity.metadata;
+    const previousStatus = meta.status;
     meta.status = status || 'completed';
     if (data) meta.data = data;
     if (status === 'completed' || status === 'failed' || status === 'cancelled') meta.completedAt = new Date().toISOString();
+
+    console.log('📝 Updating command:', commandId, 'from', previousStatus, 'to', meta.status);
 
     await prisma.activity.update({
       where: { id: commandId },
       data: { metadata: JSON.stringify(meta) },
     });
 
+    console.log('✅ Command updated successfully:', commandId);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Update extension command error:', error);

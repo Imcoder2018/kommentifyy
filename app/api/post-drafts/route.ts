@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
     const payload = verifyToken(token);
 
-    const { content, topic, template, tone, scheduledFor } = await request.json();
+    const { content, topic, template, tone, scheduledFor, mediaUrl, mediaType } = await request.json();
 
     if (!content) {
       return NextResponse.json({ success: false, error: 'Content is required' }, { status: 400 });
@@ -55,6 +55,8 @@ export async function POST(request: NextRequest) {
         tone: tone || null,
         status: scheduledFor ? 'scheduled' : 'draft',
         scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+        mediaUrl: mediaUrl || null,
+        mediaType: mediaType || null,
       },
     });
 
@@ -76,7 +78,9 @@ export async function POST(request: NextRequest) {
           template: template || '',
           tone: tone || '',
           scheduledFor: scheduledTime.toISOString(),
-          draftId: draft.id
+          draftId: draft.id,
+          mediaUrl: mediaUrl || null,
+          mediaType: mediaType || null,
         };
 
         const activity = await prisma.activity.create({
@@ -152,7 +156,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - Delete a post draft
+// DELETE - Delete a post draft or multiple drafts
 export async function DELETE(request: NextRequest) {
   try {
     const token = extractToken(request.headers.get('authorization'));
@@ -161,18 +165,29 @@ export async function DELETE(request: NextRequest) {
     }
     const payload = verifyToken(token);
 
-    const { id } = await request.json();
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Draft ID required' }, { status: 400 });
+    const body = await request.json();
+    const { id, ids } = body;
+    
+    // Support both single ID and batch deletion
+    const idsToDelete = ids || (id ? [id] : []);
+    
+    if (idsToDelete.length === 0) {
+      return NextResponse.json({ success: false, error: 'Draft ID(s) required' }, { status: 400 });
     }
 
-    const existing = await (prisma as any).postDraft.findFirst({ where: { id, userId: payload.userId } });
-    if (!existing) {
-      return NextResponse.json({ success: false, error: 'Draft not found' }, { status: 404 });
+    // Verify ownership of all drafts before deletion
+    const existing = await (prisma as any).postDraft.findMany({ 
+      where: { id: { in: idsToDelete }, userId: payload.userId },
+      select: { id: true }
+    });
+    
+    if (existing.length !== idsToDelete.length) {
+      return NextResponse.json({ success: false, error: 'Some drafts not found or not owned by user' }, { status: 404 });
     }
 
-    await (prisma as any).postDraft.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+    // Batch delete
+    await (prisma as any).postDraft.deleteMany({ where: { id: { in: idsToDelete } } });
+    return NextResponse.json({ success: true, deleted: idsToDelete.length });
   } catch (error: any) {
     console.error('Delete post draft error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

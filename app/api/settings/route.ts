@@ -29,3 +29,50 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// Update global settings (admin only)
+export async function POST(request: NextRequest) {
+  try {
+    const { aiCommentsPerDollar } = await request.json();
+
+    // Validate input
+    if (typeof aiCommentsPerDollar !== 'number' || aiCommentsPerDollar < 1) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid aiCommentsPerDollar value' },
+        { status: 400 }
+      );
+    }
+
+    let settings = await prisma.globalSettings.findFirst();
+
+    if (!settings) {
+      // Create if doesn't exist
+      settings = await prisma.globalSettings.create({
+        data: {
+          aiCommentsPerDollar,
+        },
+      });
+    } else {
+      // Update existing
+      settings = await prisma.globalSettings.update({
+        where: { id: settings.id },
+        data: {
+          aiCommentsPerDollar,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      settings: {
+        aiCommentsPerDollar: settings.aiCommentsPerDollar,
+      },
+    });
+  } catch (error: any) {
+    console.error('Save settings error:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

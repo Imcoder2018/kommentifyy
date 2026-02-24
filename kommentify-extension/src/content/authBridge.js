@@ -14,9 +14,20 @@
 
     // Dashboard: Listen for post-to-linkedin events from the website
     if (isDashboard) {
-        // When website dispatches a post event, immediately tell background to poll commands
+        // When website dispatches a post event, store image if present and tell background to poll commands
         window.addEventListener('kommentify-post-to-linkedin', async (event) => {
-            console.log('[AUTH BRIDGE] Received post-to-linkedin command from dashboard');
+            console.log('[AUTH BRIDGE] Received post-to-linkedin command from dashboard', event.detail);
+            
+            // If image data is included in the event, store it in chrome.storage
+            if (event.detail?.imageDataUrl) {
+                try {
+                    await chrome.storage.local.set({ pendingPostImage: event.detail.imageDataUrl });
+                    console.log('[AUTH BRIDGE] ✅ Image stored in chrome.storage, size:', event.detail.imageDataUrl.length, 'chars');
+                } catch (storageError) {
+                    console.error('[AUTH BRIDGE] Failed to store image:', storageError);
+                }
+            }
+            
             // Small delay to let the API save the command first
             setTimeout(() => {
                 try {

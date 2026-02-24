@@ -664,7 +664,7 @@ async function pollCommandsDirectly() {
                                             }
                                             return null;
                                         };
-                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        const shadowHost = document.querySelector('#interop-outlet') || document.querySelector('[data-testid="interop-shadowdom"]');
                                         if (shadowHost && shadowHost.shadowRoot) {
                                             console.log('LinkedIn Post Script: Searching in shadow DOM...');
                                             const editor = searchInRoot(shadowHost.shadowRoot);
@@ -676,13 +676,15 @@ async function pollCommandsDirectly() {
                                     };
                                     const _findPostBtn = () => {
                                         const searchForBtn = (root) => {
-                                            for (const btn of root.querySelectorAll('button')) {
-                                                const txt = (btn.textContent || '').trim().toLowerCase();
-                                                if (txt === 'post') return btn;
-                                            }
-                                            return null;
+                                            const allButtons = Array.from(root.querySelectorAll('button'));
+                                            return allButtons.find(b => {
+                                                const isPrimary = b.classList.contains('share-actions__primary-action');
+                                                const hasText = b.innerText && b.innerText.trim() === 'Post';
+                                                const isEnabled = !b.disabled && b.getAttribute('aria-disabled') !== 'true';
+                                                return (isPrimary || hasText) && isEnabled;
+                                            });
                                         };
-                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        const shadowHost = document.querySelector('#interop-outlet') || document.querySelector('[data-testid="interop-shadowdom"]');
                                         if (shadowHost && shadowHost.shadowRoot) { const btn = searchForBtn(shadowHost.shadowRoot); if (btn) return btn; }
                                         const dialog = document.querySelector('[role="dialog"]');
                                         return searchForBtn(dialog || document);
@@ -701,11 +703,11 @@ async function pollCommandsDirectly() {
                                         });
                                         startPostBtn.click();
                                         
-                                        // Wait a bit for modal to start appearing
+                                        // Wait longer for modal to appear and render (increased from 1.5s to 2s)
                                         setTimeout(() => {
                                             // Check if modal appeared
                                             const modal = document.querySelector('[role="dialog"]');
-                                            console.log('LinkedIn Post Script: Modal check after 1.5s:', modal ? 'FOUND ✓' : 'NOT FOUND ✗');
+                                            console.log('LinkedIn Post Script: Modal check after 2s:', modal ? 'FOUND ✓' : 'NOT FOUND ✗');
                                             if (modal) {
                                                 console.log('LinkedIn Post Script: Modal details:', {
                                                     className: modal.className,
@@ -713,7 +715,7 @@ async function pollCommandsDirectly() {
                                                 });
                                             }
                                             
-                                            const pollTimeout = clickDelayMs + 20000; // Increased from 8s to 20s
+                                            const pollTimeout = clickDelayMs + 25000; // Increased to 25s for slower connections
                                             console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
                                             _poll(_findEditor, 500, pollTimeout).then(async (editor) => {
                                                 try {
@@ -823,17 +825,27 @@ async function pollCommandsDirectly() {
 
                                                     const imageAttached = await pasteImage();
                                                     console.log('LinkedIn Post Script: Image attached:', imageAttached);
-                                                    const extraWait = imgDataUrl ? 4000 : 0;
+                                                    const extraWait = imgDataUrl ? 4000 : 2000;
                                                     console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
                                                     await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
 
-                                                    const postButton = _findPostBtn();
-                                                    if (postButton && !postButton.disabled) {
+                                                    let postButton = null;
+                                                    for (let i = 0; i < 10; i++) {
+                                                        postButton = _findPostBtn();
+                                                        if (postButton) {
+                                                            console.log(`LinkedIn Post Script: Post button found active on attempt ${i+1}`);
+                                                            break;
+                                                        }
+                                                        console.log(`LinkedIn Post Script: Attempt ${i+1}: Waiting for Post button...`);
+                                                        await new Promise(r => setTimeout(r, 1000));
+                                                    }
+                                                    
+                                                    if (postButton) {
                                                         postButton.click();
                                                         console.log('LinkedIn Post Script: Post button clicked');
                                                         resolve({ success: true, posted: true, imageAttached });
                                                     } else {
-                                                        console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                        console.log('LinkedIn Post Script: Post button not found or disabled after polling');
                                                         resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
                                                     }
                                                 } catch (innerErr) {
@@ -1506,7 +1518,7 @@ async function pollCommandsDirectly() {
                                             }
                                             return null;
                                         };
-                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        const shadowHost = document.querySelector('#interop-outlet') || document.querySelector('[data-testid="interop-shadowdom"]');
                                         if (shadowHost && shadowHost.shadowRoot) {
                                             console.log('LinkedIn Post Script: Searching in shadow DOM...');
                                             const editor = searchInRoot(shadowHost.shadowRoot);
@@ -1518,13 +1530,15 @@ async function pollCommandsDirectly() {
                                     };
                                     const _findPostBtn = () => {
                                         const searchForBtn = (root) => {
-                                            for (const btn of root.querySelectorAll('button')) {
-                                                const txt = (btn.textContent || '').trim().toLowerCase();
-                                                if (txt === 'post') return btn;
-                                            }
-                                            return null;
+                                            const allButtons = Array.from(root.querySelectorAll('button'));
+                                            return allButtons.find(b => {
+                                                const isPrimary = b.classList.contains('share-actions__primary-action');
+                                                const hasText = b.innerText && b.innerText.trim() === 'Post';
+                                                const isEnabled = !b.disabled && b.getAttribute('aria-disabled') !== 'true';
+                                                return (isPrimary || hasText) && isEnabled;
+                                            });
                                         };
-                                        const shadowHost = document.querySelector('#interop-outlet');
+                                        const shadowHost = document.querySelector('#interop-outlet') || document.querySelector('[data-testid="interop-shadowdom"]');
                                         if (shadowHost && shadowHost.shadowRoot) { const btn = searchForBtn(shadowHost.shadowRoot); if (btn) return btn; }
                                         const dialog = document.querySelector('[role="dialog"]');
                                         return searchForBtn(dialog || document);
@@ -1599,17 +1613,27 @@ async function pollCommandsDirectly() {
 
                                                     const imageAttached = await pasteImage();
                                                     console.log('LinkedIn Post Script: Image attached:', imageAttached);
-                                                    const extraWait = imgDataUrl ? 4000 : 0;
+                                                    const extraWait = imgDataUrl ? 4000 : 2000;
                                                     console.log(`LinkedIn Post Script: Waiting ${(submitDelayMs + extraWait)}ms before clicking Post...`);
                                                     await new Promise(r => setTimeout(r, submitDelayMs + extraWait));
 
-                                                    const postButton = _findPostBtn();
-                                                    if (postButton && !postButton.disabled) {
+                                                    let postButton = null;
+                                                    for (let i = 0; i < 10; i++) {
+                                                        postButton = _findPostBtn();
+                                                        if (postButton) {
+                                                            console.log(`LinkedIn Post Script: Post button found active on attempt ${i+1}`);
+                                                            break;
+                                                        }
+                                                        console.log(`LinkedIn Post Script: Attempt ${i+1}: Waiting for Post button...`);
+                                                        await new Promise(r => setTimeout(r, 1000));
+                                                    }
+                                                    
+                                                    if (postButton) {
                                                         postButton.click();
                                                         console.log('LinkedIn Post Script: Post button clicked');
                                                         resolve({ success: true, posted: true, imageAttached });
                                                     } else {
-                                                        console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                        console.log('LinkedIn Post Script: Post button not found or disabled after polling');
                                                         resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
                                                     }
                                                 } catch (innerErr) {
@@ -3054,31 +3078,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                 return document.querySelector('.share-box-feed-entry__trigger');
                                             };
                                             const _findEditor = () => {
+                                                const searchInRoot = (root) => {
+                                                    const selectors = ['.editor-content .ql-editor[contenteditable="true"]', '.ql-editor[contenteditable="true"]', '[role="textbox"][contenteditable="true"]', '[contenteditable="true"][aria-multiline="true"]'];
+                                                    for (const sel of selectors) { const el = root.querySelector(sel); if (el) return el; }
+                                                    for (const el of root.querySelectorAll('[contenteditable="true"]')) {
+                                                        const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
+                                                        if (ph.includes('want to talk about')) return el;
+                                                    }
+                                                    return null;
+                                                };
+                                                const shadowHost = document.querySelector('#interop-outlet');
+                                                if (shadowHost && shadowHost.shadowRoot) {
+                                                    console.log('LinkedIn Post Script: Searching in shadow DOM...');
+                                                    const editor = searchInRoot(shadowHost.shadowRoot);
+                                                    if (editor) { console.log('LinkedIn Post Script: Editor found in shadow DOM!'); return editor; }
+                                                }
                                                 const dialog = document.querySelector('[role="dialog"]');
-                                                if (dialog) {
-                                                    const e1 = dialog.querySelector('[role="textbox"][contenteditable="true"]');
-                                                    if (e1) return e1;
-                                                    const e2 = dialog.querySelector('[contenteditable="true"][aria-multiline="true"]');
-                                                    if (e2) return e2;
-                                                    const e3 = dialog.querySelector('.ql-editor[contenteditable="true"]');
-                                                    if (e3) return e3;
-                                                }
-                                                const e4 = document.querySelector('.ql-editor[contenteditable="true"]');
-                                                if (e4) return e4;
-                                                for (const el of document.querySelectorAll('[contenteditable="true"]')) {
-                                                    const ph = (el.getAttribute('data-placeholder') || el.getAttribute('aria-placeholder') || '').toLowerCase();
-                                                    if (ph.includes('want to talk about')) return el;
-                                                }
-                                                return null;
+                                                if (dialog) { const editor = searchInRoot(dialog); if (editor) return editor; }
+                                                return searchInRoot(document);
                                             };
                                             const _findPostBtn = () => {
+                                                const searchForBtn = (root) => {
+                                                    for (const btn of root.querySelectorAll('button')) {
+                                                        const txt = (btn.textContent || '').trim().toLowerCase();
+                                                        if (txt === 'post') return btn;
+                                                    }
+                                                    return null;
+                                                };
+                                                const shadowHost = document.querySelector('#interop-outlet');
+                                                if (shadowHost && shadowHost.shadowRoot) { const btn = searchForBtn(shadowHost.shadowRoot); if (btn) return btn; }
                                                 const dialog = document.querySelector('[role="dialog"]');
-                                                const scope = dialog || document;
-                                                for (const btn of scope.querySelectorAll('button')) {
-                                                    const txt = (btn.textContent || '').trim().toLowerCase();
-                                                    if (txt === 'post') return btn;
-                                                }
-                                                return null;
+                                                return searchForBtn(dialog || document);
                                             };
                                             try {
                                             console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
@@ -3087,9 +3117,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                 resolve({ success: false, error: 'Start post button not found' });
                                                 return;
                                             }
+                                            console.log('LinkedIn Post Script: Start button found, clicking...', {
+                                                tagName: startPostBtn.tagName,
+                                                className: startPostBtn.className,
+                                                text: startPostBtn.textContent?.substring(0, 50)
+                                            });
                                             startPostBtn.click();
-                                            console.log('LinkedIn Post Script: Clicked start post, polling for editor (timeout 11s)...');
-                                            _poll(_findEditor, 500, 11000).then(async (editor) => {
+                                            
+                                            setTimeout(() => {
+                                                const modal = document.querySelector('[role="dialog"]');
+                                                console.log('LinkedIn Post Script: Modal check after 1.5s:', modal ? 'FOUND ✓' : 'NOT FOUND ✗');
+                                                if (modal) {
+                                                    console.log('LinkedIn Post Script: Modal details:', {
+                                                        className: modal.className,
+                                                        childCount: modal.children.length
+                                                    });
+                                                }
+                                                
+                                                const pollTimeout = 20000; // 20 seconds
+                                                console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
+                                                _poll(_findEditor, 500, pollTimeout).then(async (editor) => {
                                                 try {
                                                 if (!editor) {
                                                     resolve({ success: false, error: 'Editor not found after polling' });
@@ -3163,6 +3210,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                     resolve({ success: false, error: 'Inner error: ' + innerErr.message });
                                                 }
                                             });
+                                            }, 1500);
                                             } catch (outerErr) {
                                                 resolve({ success: false, error: 'Outer error: ' + outerErr.message });
                                             }

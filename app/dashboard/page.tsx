@@ -99,6 +99,7 @@ function DashboardContent() {
     const [writerUploading, setWriterUploading] = useState(false);
     const [writerPreviewMode, setWriterPreviewMode] = useState<'off' | 'desktop' | 'mobile'>('off');
     const [writerPreviewExpanded, setWriterPreviewExpanded] = useState(false);
+    const [writerUseLinkedInAPI, setWriterUseLinkedInAPI] = useState(true); // Default to LinkedIn API
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [taskCounts, setTaskCounts] = useState({ pending: 0, in_progress: 0, completed: 0, failed: 0 });
     const [writerStatus, setWriterStatus] = useState('');
@@ -601,6 +602,43 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token || !writerContent.trim()) { setWriterStatus('No content to post'); return; }
         setWriterPosting(true);
+        
+        // Check if using LinkedIn API
+        if (writerUseLinkedInAPI) {
+            showToast('Posting via LinkedIn API...', 'info');
+            setWriterStatus('Posting via LinkedIn API...');
+            try {
+                const res = await fetch('/api/linkedin/post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ 
+                        content: writerContent, 
+                        mediaUrl: writerMediaBlobUrl || null,
+                        mediaType: writerMediaType || null
+                    }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setWriterStatus('✅ Posted to LinkedIn via API!');
+                    showToast('Posted to LinkedIn successfully!', 'success');
+                    await saveToHistory('published_post', 'LinkedIn Post (API)', { content: writerContent, source: 'writer_api', postId: data.postId });
+                    setWriterContent('');
+                    setWriterImageFile(null);
+                    setWriterImageUrl('');
+                    setWriterMediaBlobUrl('');
+                    setWriterMediaType('');
+                } else {
+                    setWriterStatus(data.error || 'Failed to post via API');
+                    showToast(data.error || 'Failed to post via API', 'error');
+                }
+            } catch (e: any) {
+                setWriterStatus('Error: ' + e.message);
+                showToast('Error: ' + e.message, 'error');
+            } finally { setWriterPosting(false); }
+            return;
+        }
+        
+        // Use extension method
         showToast('Sending post to extension...', 'info');
         setWriterStatus('Sending to extension...');
         try {
@@ -3111,6 +3149,43 @@ function DashboardContent() {
                         {/* Right Column: Content Editor */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                {/* LinkedIn API Toggle */}
+                                <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'rgba(0,119,181,0.1)', borderRadius: '10px', border: '1px solid rgba(0,119,181,0.25)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ color: '#60a5fa', fontSize: '13px', fontWeight: '700', marginBottom: '3px' }}>Publishing Method</div>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>
+                                                {writerUseLinkedInAPI ? 'Using LinkedIn API (instant, works offline)' : 'Using Extension (requires browser)'}
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => setWriterUseLinkedInAPI(!writerUseLinkedInAPI)}
+                                            style={{ 
+                                                position: 'relative',
+                                                width: '52px',
+                                                height: '28px',
+                                                borderRadius: '14px',
+                                                background: writerUseLinkedInAPI ? 'linear-gradient(135deg, #0077b5, #00a0dc)' : 'rgba(255,255,255,0.15)',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s ease',
+                                                flexShrink: 0
+                                            }}
+                                        >
+                                            <div style={{ 
+                                                position: 'absolute',
+                                                top: '3px',
+                                                left: writerUseLinkedInAPI ? '26px' : '3px',
+                                                width: '22px',
+                                                height: '22px',
+                                                borderRadius: '50%',
+                                                background: 'white',
+                                                transition: 'all 0.3s ease',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                            }}></div>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                     <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                                         {miniIcon('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', 'white', 14)} Post Content
@@ -5892,11 +5967,32 @@ function DashboardContent() {
                             borderRadius: '20px',
                             border: '1px solid rgba(255,255,255,0.1)'
                         }}>
-                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#0077b5', 20)}
-                                LinkedIn API Connection
-                            </h3>
-                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px', marginTop: 0 }}>Connect your LinkedIn account to post directly via API — no extension needed. Scheduled posts will be published even when your laptop is off.</p>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '10px' }}>
+                                <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#0077b5', 20)}
+                                    LinkedIn API Connection
+                                </h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {extensionConnected ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(16,185,129,0.15)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
+                                            <span style={{ color: '#34d399', fontSize: '12px', fontWeight: '600' }}>Extension Online</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(239,68,68,0.15)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }}></span>
+                                                <span style={{ color: '#f87171', fontSize: '12px', fontWeight: '600' }}>Extension Offline</span>
+                                            </div>
+                                            <button onClick={async () => { const token = localStorage.getItem('authToken'); await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'ping' }) }); showToast('Retry sent', 'info'); }}
+                                                style={{ padding: '6px 12px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '8px', color: '#c4b5fd', fontWeight: '600', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Retry</button>
+                                            <button onClick={() => window.open('https://kommentify.com/extension', '_blank')}
+                                                style={{ padding: '6px 12px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Get Extension</button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '16px', marginTop: '6px' }}>Connect your LinkedIn account to post directly via API — no extension needed. Scheduled posts will be published even when your laptop is off.</p>
                             {linkedInOAuthLoading ? (
                                 <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Loading...</div>
                             ) : linkedInOAuth?.connected ? (

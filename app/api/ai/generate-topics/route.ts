@@ -228,8 +228,6 @@ ${count}. [${count}th topic line]`,
     }
     
     console.log('Calling OpenAI API for topic generation...');
-    console.log('OpenAI API Key present:', !!process.env.OPENAI_API_KEY);
-    console.log('OpenAI API Key prefix:', process.env.OPENAI_API_KEY?.substring(0, 7));
     
     let completion;
     try {

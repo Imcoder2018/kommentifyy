@@ -60,7 +60,12 @@ export class UserService {
     }
   }
 
-  async createUser(email: string, password: string, name: string): Promise<User> {
+  async createUser(
+    email: string, 
+    password: string, 
+    name: string, 
+    options?: { referralCode?: string; referredById?: string | null }
+  ): Promise<User> {
     const hashedPassword = await hashPassword(password);
     const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -123,7 +128,9 @@ export class UserService {
           name,
           password: hashedPassword,
           trialEndsAt,
-          plan: planData
+          plan: planData,
+          referralCode: options?.referralCode,
+          referredById: options?.referredById
         } as any,
         include: { plan: true },
       });

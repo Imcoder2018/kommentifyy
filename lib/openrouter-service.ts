@@ -107,9 +107,9 @@ export class OpenRouterService {
     ];
     const isValid = validPatterns.some(p => p.test(modelId));
     if (!isValid) {
-      console.warn(`⚠️ Model ID ${modelId} may not be valid - letting OpenRouter handle it`);
+      console.warn(`⚠️ Model ID ${modelId} does not match known provider patterns`);
     }
-    return true; // Always return true to let OpenRouter return actual error
+    return isValid;
   }
 
   async chat(request: OpenRouterRequest): Promise<OpenRouterResponse> {

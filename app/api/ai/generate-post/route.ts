@@ -86,6 +86,13 @@ export async function POST(request: NextRequest) {
     let inspirationContext = '';
     if (useInspirationSources && vectorIndex) {
       try {
+        // Validate userId format to prevent injection (should be cuid format)
+        const userIdPattern = /^[a-z0-9_-]+$/i;
+        if (!userIdPattern.test(payload.userId)) {
+          console.error('Invalid userId format detected');
+          throw new Error('Invalid user ID');
+        }
+        
         let filter = `userId = '${payload.userId}'`;
         const queryResponse = await vectorIndex.query({
           data: topic,
@@ -263,14 +270,22 @@ PERSONALIZATION GUIDELINES:
       content = result.content;
       console.log('✅ Post generation successful with model:', result.model, 'output length:', content?.length || 0);
       
+      // Update usage only on successful AI generation
+      await limitService.incrementUsage(user.id, 'aiPosts');
+      
       // Extract token usage for developers
       if (isDeveloper && result.usage) {
+        // Get model config for accurate pricing
+        const modelConfig = await (await import('@/lib/ai-service')).getModelConfig(result.model);
+        const inputCostPer1M = modelConfig?.inputCostPer1M || 0;
+        const outputCostPer1M = modelConfig?.outputCostPer1M || 0;
+        
         tokenUsage = {
           inputTokens: result.usage.promptTokens,
           outputTokens: result.usage.completionTokens,
           totalTokens: result.usage.totalTokens,
-          inputCost: `$${((result.usage.promptTokens / 1000000) * (result.cost * 0.7)).toFixed(6)}`,
-          outputCost: `$${((result.usage.completionTokens / 1000000) * (result.cost * 0.3)).toFixed(6)}`,
+          inputCost: `$${((result.usage.promptTokens / 1_000_000) * inputCostPer1M).toFixed(6)}`,
+          outputCost: `$${((result.usage.completionTokens / 1_000_000) * outputCostPer1M).toFixed(6)}`,
           totalCost: `$${result.cost.toFixed(6)}`,
           model: result.model,
           modelName: result.provider,
@@ -300,9 +315,6 @@ ${includeHashtags ? `#${topic.replace(/\s+/g, '')} #ProfessionalDevelopment #Inn
     // Format content for LinkedIn (fix hashtags, clean up markdown)
     content = formatForLinkedIn(content || '');
     console.log('Content formatted for LinkedIn');
-
-    // Update usage
-    await limitService.incrementUsage(user.id, 'aiPosts');
 
     // Log activity
     await prisma.activity.create({

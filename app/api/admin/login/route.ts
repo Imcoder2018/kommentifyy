@@ -15,35 +15,8 @@ export async function POST(request: NextRequest) {
 
     console.log('Admin login attempt for:', email);
 
-    // Fallback admin credentials for production
-    const FALLBACK_ADMIN_EMAIL = 'admin@linkedin-automation.com';
-    const FALLBACK_ADMIN_PASSWORD = 'Admin@123456';
-
-    // Check if this is the fallback admin
-    if (email === FALLBACK_ADMIN_EMAIL && password === FALLBACK_ADMIN_PASSWORD) {
-      console.log('Using fallback admin credentials');
-      
-      // Generate admin token with role
-      const token = generateToken({ 
-        userId: 'fallback-admin-id', 
-        email: FALLBACK_ADMIN_EMAIL,
-        role: 'admin' 
-      });
-
-      return NextResponse.json({
-        success: true,
-        admin: {
-          id: 'fallback-admin-id',
-          email: FALLBACK_ADMIN_EMAIL,
-          name: 'Admin User',
-          role: 'admin',
-        },
-        token,
-      });
-    }
-
     try {
-      // Try to find admin user in database
+      // Find admin user in database
       const admin = await prisma.admin.findUnique({
         where: { email },
       });

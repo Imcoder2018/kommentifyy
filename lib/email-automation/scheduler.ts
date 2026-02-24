@@ -445,10 +445,29 @@ export async function sendSpecialCampaign(
       ? LIFETIME_DEAL_EMAIL 
       : FEATURE_ANNOUNCEMENT_EMAIL;
 
-    // Get eligible users (basic filter - can be expanded)
-    const users = await prisma.user.findMany({
+    // Get eligible users and filter unsubscribed separately (no direct relation)
+    const allUsers = await prisma.user.findMany({
+      where: userFilter || {},
+      select: {
+        id: true,
+        email: true,
+        name: true
+      }
+    });
+
+    // Filter out unsubscribed users in single query
+    const unsubscribedUserIds = await prisma.userEmailState.findMany({
+      where: { unsubscribed: true },
+      select: { userId: true }
+    }).then(states => states.map(s => s.userId));
+
+    const users = allUsers.filter(u => !unsubscribedUserIds.includes(u.id));
+
+    // Revert to simpler approach with proper filter
+    const finalUsers = await prisma.user.findMany({
       where: {
-        // Add filters based on userFilter
+        ...(userFilter || {}),
+        id: { notIn: unsubscribedUserIds }
       },
       select: {
         id: true,
@@ -457,16 +476,7 @@ export async function sendSpecialCampaign(
       }
     });
 
-    // Check which users haven't unsubscribed
-    const eligibleUsers = [];
-    for (const user of users) {
-      const state = await prisma.userEmailState.findUnique({
-        where: { userId: user.id }
-      });
-      if (!state?.unsubscribed) {
-        eligibleUsers.push(user);
-      }
-    }
+    const eligibleUsers = users;
 
     // Schedule campaign emails
     const now = new Date();

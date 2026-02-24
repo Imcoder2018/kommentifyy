@@ -66,50 +66,13 @@ async function handleGet(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.log('UserService error, using fallback users:', error);
+    console.error('UserService error:', error);
     
-    // Fallback users data when everything fails
-    const fallbackUsers = [
-      {
-        id: 'user-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        status: 'active',
-        createdAt: '2024-01-15T10:30:00.000Z',
-        plan: { id: 'plan-2', name: 'Pro', price: 29.99 },
-        paymentStatus: 'paid'
-      },
-      {
-        id: 'user-2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        status: 'active',
-        createdAt: '2024-02-20T15:45:00.000Z',
-        plan: { id: 'plan-1', name: 'Starter', price: 0 },
-        paymentStatus: 'starter'
-      },
-      {
-        id: 'user-3',
-        name: 'Bob Johnson',
-        email: 'bob@example.com',
-        status: 'inactive',
-        createdAt: '2024-03-10T09:15:00.000Z',
-        plan: { id: 'plan-3', name: 'Enterprise', price: 99.99 },
-        paymentStatus: 'pending'
-      }
-    ];
-
     return NextResponse.json({
-      success: true,
-      users: fallbackUsers,
-      fallback: true,
-      pagination: {
-        page: 1,
-        limit: fallbackUsers.length,
-        total: fallbackUsers.length,
-        totalPages: 1,
-      },
-    });
+      success: false,
+      error: 'Failed to fetch users',
+      message: 'Database connection error'
+    }, { status: 503 });
   }
 }
 

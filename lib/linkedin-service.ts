@@ -3,9 +3,19 @@
  * Uses LinkedIn OAuth2 with UGC Posts API
  */
 
-const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID || '77zsxsh3ub3j4g';
-const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || '';
-const LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI || 'https://kommentify.com/api/auth/linkedin/callback';
+if (!process.env.LINKEDIN_CLIENT_ID) {
+  throw new Error('CRITICAL: LINKEDIN_CLIENT_ID environment variable is not set');
+}
+if (!process.env.LINKEDIN_CLIENT_SECRET) {
+  throw new Error('CRITICAL: LINKEDIN_CLIENT_SECRET environment variable is not set');
+}
+if (!process.env.LINKEDIN_REDIRECT_URI) {
+  throw new Error('CRITICAL: LINKEDIN_REDIRECT_URI environment variable is not set');
+}
+
+const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
+const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
+const LINKEDIN_REDIRECT_URI = process.env.LINKEDIN_REDIRECT_URI;
 
 export interface LinkedInTokenResponse {
   access_token: string;
@@ -157,7 +167,7 @@ export async function postWithImageToLinkedIn(
   const imageBuffer = await imageRes.arrayBuffer();
   const contentType = imageRes.headers.get('content-type') || 'image/jpeg';
 
-  await fetch(uploadUrl, {
+  const uploadRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -165,6 +175,10 @@ export async function postWithImageToLinkedIn(
     },
     body: Buffer.from(imageBuffer),
   });
+
+  if (!uploadRes.ok) {
+    throw new Error(`LinkedIn image upload failed (${uploadRes.status}): ${await uploadRes.text()}`);
+  }
 
   // Step 3: Create post with image
   const postBody = {
@@ -245,7 +259,7 @@ export async function postWithVideoToLinkedIn(
   const videoRes = await fetch(videoUrl);
   const videoBuffer = await videoRes.arrayBuffer();
 
-  await fetch(uploadUrl, {
+  const uploadRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -253,6 +267,10 @@ export async function postWithVideoToLinkedIn(
     },
     body: Buffer.from(videoBuffer),
   });
+
+  if (!uploadRes.ok) {
+    throw new Error(`LinkedIn video upload failed (${uploadRes.status}): ${await uploadRes.text()}`);
+  }
 
   // Step 3: Create post with video
   const postBody = {

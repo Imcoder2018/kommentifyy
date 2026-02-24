@@ -763,3 +763,16 @@ model ExtensionHeartbeat {
   @@index([userId])
   @@index([lastSeen])
 }
+
+// OTP verification codes - serverless-safe storage
+model OTPVerification {
+  id         String   @id @default(cuid())
+  email      String
+  otp        String
+  attempts   Int      @default(1)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  
+  @@index([email])
+  @@index([expiresAt])
+}

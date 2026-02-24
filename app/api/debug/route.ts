@@ -1,10 +1,35 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@supabase/supabase-js';
+import { verifyToken, extractToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Require admin authentication
+  try {
+    const token = extractToken(request.headers.get('authorization'));
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - No token provided' },
+        { status: 401 }
+      );
+    }
+
+    const payload = verifyToken(token);
+    if (payload.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized - Invalid token' },
+      { status: 401 }
+    );
+  }
+
   const results: any = {
     prisma_tcp: { status: 'pending' },
     supabase_rest: { status: 'pending' }

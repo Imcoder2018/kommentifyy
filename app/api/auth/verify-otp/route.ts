@@ -1,15 +1,5 @@
 import { NextResponse } from 'next/server';
-
-// Shared OTP store - import from send-otp or use global
-// In production, use Redis or database
-declare global {
-    var otpStore: Map<string, { otp: string; expires: number; attempts: number }>;
-}
-
-// Initialize global store if not exists
-if (!global.otpStore) {
-    global.otpStore = new Map();
-}
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
     try {
@@ -22,8 +12,16 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // Get stored OTP
-        const storedData = global.otpStore.get(email);
+        // Clean up expired OTPs first
+        await prisma.oTPVerification.deleteMany({
+            where: { expiresAt: { lt: new Date() } }
+        });
+
+        // Get stored OTP from database
+        const storedData = await prisma.oTPVerification.findFirst({
+            where: { email },
+            orderBy: { createdAt: 'desc' }
+        });
 
         if (!storedData) {
             return NextResponse.json({ 
@@ -33,8 +31,10 @@ export async function POST(request: Request) {
         }
 
         // Check if expired
-        if (storedData.expires < Date.now()) {
-            global.otpStore.delete(email);
+        if (storedData.expiresAt < new Date()) {
+            await prisma.oTPVerification.delete({
+                where: { id: storedData.id }
+            });
             return NextResponse.json({ 
                 success: false, 
                 error: 'Verification code has expired. Please request a new one.' 
@@ -49,8 +49,10 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // OTP is valid - remove it from store
-        global.otpStore.delete(email);
+        // OTP is valid - remove it from database
+        await prisma.oTPVerification.delete({
+            where: { id: storedData.id }
+        });
 
         return NextResponse.json({ 
             success: true, 

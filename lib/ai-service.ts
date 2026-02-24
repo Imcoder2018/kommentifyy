@@ -7,9 +7,7 @@
 
 import { getOpenAIService } from './openai-service';
 import { getOpenRouterService } from './openrouter-service';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from './prisma';
 
 export interface AIModelConfig {
   modelId: string;

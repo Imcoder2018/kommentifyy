@@ -1,14 +1,5 @@
 import { NextResponse } from 'next/server';
-
-// Shared OTP store using global
-declare global {
-    var otpStore: Map<string, { otp: string; expires: number; attempts: number }>;
-}
-
-// Initialize global store if not exists
-if (!global.otpStore) {
-    global.otpStore = new Map();
-}
+import { prisma } from '@/lib/prisma';
 
 // Generate 6-digit OTP
 function generateOTP(): string {
@@ -167,24 +158,45 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: 'Invalid email format' }, { status: 400 });
         }
 
+        // Clean up expired OTPs first
+        await prisma.oTPVerification.deleteMany({
+            where: { expiresAt: { lt: new Date() } }
+        });
+
         // Check rate limiting (max 5 OTPs per email per 10 minutes)
-        const existing = global.otpStore.get(email);
-        if (existing && existing.attempts >= 5 && existing.expires > Date.now() - 10 * 60 * 1000) {
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const recentAttempts = await prisma.oTPVerification.findMany({
+            where: {
+                email,
+                createdAt: { gte: tenMinutesAgo }
+            }
+        });
+
+        const totalAttempts = recentAttempts.reduce((sum: number, otp: any) => sum + otp.attempts, 0);
+        if (totalAttempts >= 5) {
             return NextResponse.json({ 
                 success: false, 
                 error: 'Too many attempts. Please wait 10 minutes.' 
             }, { status: 429 });
         }
 
+        // Delete old OTPs for this email
+        await prisma.oTPVerification.deleteMany({
+            where: { email }
+        });
+
         // Generate new OTP
         const otp = generateOTP();
-        const expires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
-        // Store OTP
-        global.otpStore.set(email, { 
-            otp, 
-            expires, 
-            attempts: (existing?.attempts || 0) + 1 
+        // Store OTP in database
+        await prisma.oTPVerification.create({
+            data: {
+                email,
+                otp,
+                expiresAt,
+                attempts: 1
+            }
         });
 
         // Email HTML template

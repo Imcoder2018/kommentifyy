@@ -15,8 +15,12 @@ export const dynamic = 'force-dynamic';
  * 4. Checks extension online status via heartbeat
  */
 
+if (!process.env.CRON_SECRET) {
+  throw new Error('CRITICAL: CRON_SECRET environment variable is not set');
+}
+
 // Cron secret for security
-const CRON_SECRET = process.env.CRON_SECRET || 'kommentify-cron-secret-2024';
+const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processEmailQueue, scheduleExpiredTrialSequence } from '@/lib/email-automation/scheduler';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
+if (!process.env.CRON_SECRET) {
+  throw new Error('CRITICAL: CRON_SECRET environment variable is not set');
+}
+
 // Secret key for cron authentication (set in Vercel environment)
-const CRON_SECRET = process.env.CRON_SECRET || 'kommentify-cron-secret-2024';
+const CRON_SECRET = process.env.CRON_SECRET;
 
 // Trigger scheduled posts whose time has arrived
 async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
@@ -335,10 +340,10 @@ export async function POST(request: NextRequest) {
     
     // Check if it's cron secret or admin token
     if (token !== CRON_SECRET) {
-      // Verify admin token
+      // Verify admin token using cryptographic verification
       try {
-        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-        if (!payload.isAdmin && payload.role !== 'admin') {
+        const payload = verifyToken(token);
+        if (payload.role !== 'admin') {
           return NextResponse.json(
             { success: false, error: 'Admin access required' },
             { status: 403 }

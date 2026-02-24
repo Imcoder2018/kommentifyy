@@ -28,26 +28,8 @@ export async function POST(request: NextRequest) {
     const { email, password, name, referralCode } = registerSchema.parse(body);
 
     console.log('Registration attempt for:', email);
-    console.log('Referral code provided:', referralCode || 'None');
-    console.log('Running with Schema Fix v3 (linkedin_automation) - Debug Mode');
-
-    // Log environment status (masked)
-    const dbUrl = process.env.DATABASE_URL;
-    console.log('DEBUG: DATABASE_URL exists:', !!dbUrl);
-    if (dbUrl) {
-      console.log('DEBUG: DATABASE_URL schema:', dbUrl.includes('schema=linkedin_automation') ? 'Correct (linkedin_automation)' : 'INCORRECT/MISSING SCHEMA');
-      // Log host safely
-      const parts = dbUrl.split('@');
-      if (parts.length > 1) {
-        const hostParts = parts[1].split(':');
-        console.log('DEBUG: DATABASE_URL host:', hostParts[0]);
-      }
-    } else {
-      console.error('CRITICAL: DATABASE_URL is missing!');
-    }
 
     // Check if user already exists
-    console.log('DEBUG: Checking if user exists...');
     const existingUser = await userService.findUserByEmail(email);
     if (existingUser) {
       console.log('DEBUG: User already exists');
@@ -57,15 +39,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create user
-    console.log('DEBUG: Creating user...');
-    const user = await userService.createUser(email, password, name);
-    console.log('DEBUG: User created successfully');
-
-    // Generate unique referral code for the new user
-    const newUserReferralCode = generateReferralCode(user.id);
-    
-    // Handle referral - link to referrer if valid code provided
+    // Handle referral - find referrer if valid code provided
     let referrerId: string | null = null;
     if (referralCode) {
       const referrer = await prisma.user.findUnique({
@@ -73,20 +47,22 @@ export async function POST(request: NextRequest) {
       });
       if (referrer) {
         referrerId = referrer.id;
-        console.log(`User referred by: ${referrer.email}`);
+        console.log(`User will be referred by: ${referrer.email}`);
       } else {
         console.log('Invalid referral code provided:', referralCode);
       }
     }
 
-    // Update user with referral code and referrer
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        referralCode: newUserReferralCode,
-        referredById: referrerId
-      }
+    // Create user with referral data in single transaction
+    console.log('DEBUG: Creating user with referral data...');
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newUserReferralCode = generateReferralCode(tempId);
+    
+    const user = await userService.createUser(email, password, name, {
+      referralCode: newUserReferralCode,
+      referredById: referrerId
     });
+    console.log('DEBUG: User created successfully with referral code');
 
     // Generate tokens
     const token = generateToken({ userId: user.id, email: user.email });

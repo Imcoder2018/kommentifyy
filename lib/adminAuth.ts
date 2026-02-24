@@ -51,29 +51,12 @@ export function requireAdmin(handler: Function) {
 
       return await handler(request, ...args);
     } catch (error: any) {
-      console.log('Admin auth error:', error.message);
-
-      // For fallback admin, check if token exists and is valid format
-      const authHeader = request.headers.get('authorization');
-      const token = extractToken(authHeader);
-
-      if (token) {
-        try {
-          const payload = verifyToken(token);
-          if (payload.userId === 'fallback-admin-id' && payload.role === 'admin') {
-            // Allow fallback admin
-            (request as any).admin = payload;
-            return await handler(request, ...args);
-          }
-        } catch (tokenError) {
-          console.log('Token verification failed:', tokenError);
-        }
-      }
+      console.error('Admin auth error:', error.message);
 
       return NextResponse.json(
         {
           success: false,
-          error: error.message || 'Unauthorized access'
+          error: 'Unauthorized access'
         },
         { status: 403 }
       );

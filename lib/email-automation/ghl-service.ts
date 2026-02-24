@@ -214,13 +214,13 @@ export async function sendDirectEmail(
   body: string
 ): Promise<boolean> {
   if (!GHL_API_KEY || !GHL_LOCATION_ID) {
-    console.warn('GHL API not configured');
-    // For development/testing, just log the email
+    console.warn('GHL API not configured - email cannot be sent');
+    // For development/testing, log the email but return false so queue can retry when provider is configured
     console.log('📧 [DEV] Would send email:');
     console.log(`   To: ${toEmail}`);
     console.log(`   Subject: ${subject}`);
     console.log(`   Body preview: ${body.substring(0, 100)}...`);
-    return true; // Return true for dev testing
+    return false; // Return false to indicate email not actually sent
   }
 
   try {

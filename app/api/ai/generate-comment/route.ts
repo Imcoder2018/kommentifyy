@@ -329,27 +329,35 @@ Post: ${postText}
           console.warn('⚠️ AI returned empty content on attempt', attempts);
           if (attempts < maxAttempts) {
             // Try with a different model on retry
-            const fallbackModel = 'anthropic/claude-sonnet-4.5';
-            console.log('🔄 Retrying with fallback model:', fallbackModel);
+            selectedModel = 'anthropic/claude-sonnet-4.5';
+            console.log('🔄 Retrying with fallback model:', selectedModel);
             continue;
           }
         } else {
+          // Update usage only on successful AI generation
+          await limitService.incrementUsage(user.id, 'aiComments');
+          
+          // Extract token usage for developers (before break)
+          if (isDeveloper && result.usage) {
+            // Get model config for accurate pricing
+            const modelConfig = await (await import('@/lib/ai-service')).getModelConfig(result.model);
+            const inputCostPer1M = modelConfig?.inputCostPer1M || 0;
+            const outputCostPer1M = modelConfig?.outputCostPer1M || 0;
+            
+            tokenUsage = {
+              inputTokens: result.usage.promptTokens,
+              outputTokens: result.usage.completionTokens,
+              totalTokens: result.usage.totalTokens,
+              inputCost: `$${((result.usage.promptTokens / 1_000_000) * inputCostPer1M).toFixed(6)}`,
+              outputCost: `$${((result.usage.completionTokens / 1_000_000) * outputCostPer1M).toFixed(6)}`,
+              totalCost: `$${result.cost.toFixed(6)}`,
+              model: result.model,
+              modelName: result.provider,
+            };
+          }
+          
           // Got valid content, break out of retry loop
           break;
-        }
-        
-        // Extract token usage for developers
-        if (isDeveloper && result.usage) {
-          tokenUsage = {
-            inputTokens: result.usage.promptTokens,
-            outputTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
-            inputCost: `$${((result.usage.promptTokens / 1000000) * (result.cost * 0.7)).toFixed(6)}`,
-            outputCost: `$${((result.usage.completionTokens / 1000000) * (result.cost * 0.3)).toFixed(6)}`,
-            totalCost: `$${result.cost.toFixed(6)}`,
-            model: result.model,
-            modelName: result.provider,
-          };
         }
         
       } catch (error: any) {
@@ -431,8 +439,7 @@ Post: ${postText}
     }
     console.log(`Comment formatted for LinkedIn (${content.length} chars, limit: ${hardLimit})`);
 
-    // Update usage
-    await limitService.incrementUsage(user.id, 'aiComments');
+    // Note: Usage already incremented on successful AI generation above
 
     // Log activity
     await prisma.activity.create({

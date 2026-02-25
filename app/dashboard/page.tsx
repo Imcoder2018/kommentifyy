@@ -359,6 +359,9 @@ function DashboardContent() {
     const [rescanningMissing, setRescanningMissing] = useState(false);
     const [editingSection, setEditingSection] = useState<string | null>(null);
     const [editValue, setEditValue] = useState<string>('');
+    const [viewingProfilePosts, setViewingProfilePosts] = useState<string | null>(null);
+    const [profilePostsData, setProfilePostsData] = useState<any[]>([]);
+    const [profilePostsLoading, setProfilePostsLoading] = useState(false);
 
     // Toggle inspiration post selection
     const toggleInspirationPost = (post: string) => {
@@ -367,6 +370,27 @@ function DashboardContent() {
                 ? prev.filter(p => p !== post)
                 : [...prev, post]
         );
+    };
+
+    // Load individual posts from a profile
+    const loadProfilePosts = async (profileName: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setProfilePostsLoading(true);
+        setViewingProfilePosts(profileName);
+        try {
+            const res = await fetch(`/api/vector/posts?sourceName=${encodeURIComponent(profileName)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setProfilePostsData(data.posts || []);
+            }
+        } catch (e) {
+            console.error('Failed to load profile posts:', e);
+        } finally {
+            setProfilePostsLoading(false);
+        }
     };
 
     // Analytics tab state
@@ -1601,6 +1625,26 @@ function DashboardContent() {
         if (savedTopic) setWriterTopic(savedTopic);
     }, []);
 
+    // Auto-fill expertise and background from LinkedIn profile data for both Writer and Comments tabs
+    useEffect(() => {
+        if (!linkedInProfile) return;
+        
+        // Auto-fill writer background if empty
+        if (!writerBackground && linkedInProfile.headline) {
+            setWriterBackground(linkedInProfile.headline);
+        }
+        
+        // Auto-fill comment settings expertise and background if empty
+        if (!csExpertise && linkedInProfile.headline) {
+            const expertise = linkedInProfile.headline.split('|')[0]?.trim() || linkedInProfile.headline.substring(0, 50);
+            setCsExpertise(expertise);
+        }
+        if (!csBackground && linkedInProfile.about) {
+            const background = linkedInProfile.about.substring(0, 100);
+            setCsBackground(background);
+        }
+    }, [linkedInProfile]);
+
     // Load tab-specific data on initial mount when auth completes (fixes ?tab=import reload)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
@@ -1962,9 +2006,9 @@ function DashboardContent() {
     // Navigation items with grouped sections
     const navItems = [
         { id: 'overview', label: t('nav.overview'), icon: svgIcon('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10'), section: 'dashboard' },
-        // Posts section
-        { id: 'trending-posts', label: t('nav.viralPostsWriter'), icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z'), section: 'posts' },
+        // Posts section - Rearranged with Personalized first
         { id: 'writer', label: t('nav.personalizedPostWriter'), icon: svgIcon('M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'), section: 'posts' },
+        { id: 'trending-posts', label: t('nav.viralPostsWriter'), icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z'), section: 'posts', badge: 'BETA' },
         // Comments section
         { id: 'commenter', label: t('nav.autoCommenter'), icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'), section: 'comments' },
         { id: 'comments', label: t('nav.commentsSettings'), icon: svgIcon('M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'), section: 'comments' },
@@ -2392,9 +2436,18 @@ function DashboardContent() {
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'posts').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px', position: 'relative' }}>
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
-                            {!sidebarCollapsed && item.label}
+                            {!sidebarCollapsed && (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                    {item.label}
+                                    {(item as any).badge && (
+                                        <span style={{ padding: '2px 6px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: '4px', fontSize: '8px', fontWeight: '800', color: 'white', letterSpacing: '0.5px' }}>
+                                            {(item as any).badge}
+                                        </span>
+                                    )}
+                                </span>
+                            )}
                         </button>
                     ))}
 
@@ -2638,6 +2691,48 @@ function DashboardContent() {
                                 onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)'; }}
                             >
                                 {miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', 'white', 12)} Get Extension
+                            </button>
+                            {/* LinkedIn Connect Button */}
+                            <button
+                                onClick={() => {
+                                    if (linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired) {
+                                        showToast('LinkedIn already connected!', 'success');
+                                    } else {
+                                        const token = localStorage.getItem('authToken');
+                                        fetch('/api/auth/linkedin', { headers: { 'Authorization': `Bearer ${token}` } })
+                                            .then(r => r.json())
+                                            .then(d => {
+                                                if (d.authUrl) window.location.href = d.authUrl;
+                                                else showToast('Failed to get LinkedIn auth URL', 'error');
+                                            });
+                                    }
+                                }}
+                                style={{
+                                    padding: '4px 10px',
+                                    background: linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)',
+                                    border: linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(0,119,181,0.4)',
+                                    borderRadius: '6px',
+                                    color: linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? '#34d399' : '#0ea5e9',
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}
+                                onMouseOver={e => {
+                                    e.currentTarget.style.background = linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? 'rgba(16,185,129,0.25)' : 'rgba(0,119,181,0.25)';
+                                }}
+                                onMouseOut={e => {
+                                    e.currentTarget.style.background = linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)';
+                                }}
+                            >
+                                {linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? (
+                                    <>{miniIcon('M9 12l2 2 4-4', '#34d399', 11)} LinkedIn Connected</>
+                                ) : (
+                                    <>{miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#0ea5e9', 11)} Connect LinkedIn</>
+                                )}
                             </button>
                             {/* Profile Scan Button */}
                             {extensionConnected && (
@@ -2900,21 +2995,26 @@ function DashboardContent() {
                                             const isChecked = inspirationUseAll || inspirationSelected.includes(src.name);
                                             const isDeleteChecked = inspirationDeleteSelected.includes(src.name);
                                             return (
-                                                <div key={`own-${i}`} onClick={() => {
-                                                    if (inspirationDeleteMode) {
-                                                        // In delete mode - toggle delete selection
-                                                        if (isDeleteChecked) setInspirationDeleteSelected(inspirationDeleteSelected.filter((n: string) => n !== src.name));
-                                                        else setInspirationDeleteSelected([...inspirationDeleteSelected, src.name]);
-                                                    } else {
-                                                        // Normal mode - toggle selection
-                                                        if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
-                                                        else if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== src.name));
-                                                        else setInspirationSelected([...inspirationSelected, src.name]);
-                                                    }
-                                                }} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: inspirationDeleteMode ? (isDeleteChecked ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.04)') : (isChecked ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.04)'), border: inspirationDeleteMode ? (isDeleteChecked ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)') : (isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.1)'), borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
-                                                    <input type="checkbox" checked={inspirationDeleteMode ? isDeleteChecked : isChecked} readOnly style={{ accentColor: inspirationDeleteMode ? '#ef4444' : '#693fe9', width: '12px', height: '12px' }} />
-                                                    <span style={{ color: inspirationDeleteMode ? (isDeleteChecked ? '#f87171' : 'rgba(255,255,255,0.6)') : (isChecked ? '#a78bfa' : 'rgba(255,255,255,0.6)'), fontSize: '11px', fontWeight: '500' }}>{src.name}</span>
-                                                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{src.count}p</span>
+                                                <div key={`own-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: inspirationDeleteMode ? (isDeleteChecked ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.04)') : (isChecked ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.04)'), border: inspirationDeleteMode ? (isDeleteChecked ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)') : (isChecked ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.1)'), borderRadius: '6px', padding: '4px 8px' }}>
+                                                    <div onClick={() => {
+                                                        if (inspirationDeleteMode) {
+                                                            // In delete mode - toggle delete selection
+                                                            if (isDeleteChecked) setInspirationDeleteSelected(inspirationDeleteSelected.filter((n: string) => n !== src.name));
+                                                            else setInspirationDeleteSelected([...inspirationDeleteSelected, src.name]);
+                                                        } else {
+                                                            // Normal mode - toggle selection
+                                                            if (inspirationUseAll) { setInspirationUseAll(false); setInspirationSelected([src.name]); }
+                                                            else if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== src.name));
+                                                            else setInspirationSelected([...inspirationSelected, src.name]);
+                                                        }
+                                                    }} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', flex: 1 }}>
+                                                        <input type="checkbox" checked={inspirationDeleteMode ? isDeleteChecked : isChecked} readOnly style={{ accentColor: inspirationDeleteMode ? '#ef4444' : '#693fe9', width: '12px', height: '12px' }} />
+                                                        <span style={{ color: inspirationDeleteMode ? (isDeleteChecked ? '#f87171' : 'rgba(255,255,255,0.6)') : (isChecked ? '#a78bfa' : 'rgba(255,255,255,0.6)'), fontSize: '11px', fontWeight: '500' }}>{src.name}</span>
+                                                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{src.count}p</span>
+                                                    </div>
+                                                    <button onClick={(e) => { e.stopPropagation(); loadProfilePosts(src.name); }} style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#60a5fa', fontSize: '9px', cursor: 'pointer', fontWeight: '600' }}>
+                                                        {miniIcon('M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', '#60a5fa', 9)}
+                                                    </button>
                                                 </div>
                                             );
                                         })}
@@ -2929,13 +3029,18 @@ function DashboardContent() {
                                         {sharedInspProfiles.map((p: any, i: number) => {
                                             const isChecked = inspirationSelected.includes(p.profileName);
                                             return (
-                                                <div key={`shared-${i}`} onClick={() => {
-                                                    if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== p.profileName));
-                                                    else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
-                                                }} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: isChecked ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(245,158,11,0.35)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
-                                                    <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '12px', height: '12px' }} />
-                                                    <span style={{ color: isChecked ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '500' }}>{p.profileName}</span>
-                                                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{p.postCount}p</span>
+                                                <div key={`shared-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: isChecked ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(245,158,11,0.35)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 8px' }}>
+                                                    <div onClick={() => {
+                                                        if (isChecked) setInspirationSelected(inspirationSelected.filter((n: string) => n !== p.profileName));
+                                                        else { setInspirationUseAll(false); setInspirationSelected([...inspirationSelected, p.profileName]); }
+                                                    }} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', flex: 1 }}>
+                                                        <input type="checkbox" checked={isChecked} readOnly style={{ accentColor: '#f59e0b', width: '12px', height: '12px' }} />
+                                                        <span style={{ color: isChecked ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '500' }}>{p.profileName}</span>
+                                                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{p.postCount}p</span>
+                                                    </div>
+                                                    <button onClick={(e) => { e.stopPropagation(); loadProfilePosts(p.profileName); }} style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '2px 6px', color: '#fbbf24', fontSize: '9px', cursor: 'pointer', fontWeight: '600' }}>
+                                                        {miniIcon('M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', '#fbbf24', 9)}
+                                                    </button>
                                                 </div>
                                             );
                                         })}
@@ -2970,6 +3075,52 @@ function DashboardContent() {
                                     </div>
                                     {inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 12px', background: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '8px', color: inspirationStatus.includes('Error') || inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{inspirationStatus}</div>}
                                     <button onClick={() => setShowInspirationPopup(false)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer' }}>Done</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* View Profile Posts Popup Modal */}
+                        {viewingProfilePosts && (
+                            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => { setViewingProfilePosts(null); setProfilePostsData([]); }}>
+                                <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '800px', width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>{viewingProfilePosts} - Posts</h3>
+                                        <button onClick={() => { setViewingProfilePosts(null); setProfilePostsData([]); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+                                    </div>
+                                    {profilePostsLoading ? (
+                                        <div style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '40px 0' }}>Loading posts...</div>
+                                    ) : profilePostsData.length === 0 ? (
+                                        <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px 0' }}>No posts found for this profile.</div>
+                                    ) : (
+                                        <>
+                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                                                <button onClick={() => setSelectedInspirationPosts(profilePostsData.map((_: any, i: number) => `${viewingProfilePosts}-${i}`))} style={{ padding: '6px 12px', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '6px', color: '#34d399', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>Select All</button>
+                                                <button onClick={() => setSelectedInspirationPosts([])} style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '6px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>Deselect All</button>
+                                            </div>
+                                            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                {profilePostsData.map((post: any, idx: number) => {
+                                                    const postId = `${viewingProfilePosts}-${idx}`;
+                                                    const isSelected = selectedInspirationPosts.includes(postId);
+                                                    return (
+                                                        <div key={idx} onClick={() => toggleInspirationPost(postId)} style={{ background: isSelected ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.05)', border: isSelected ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '14px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                                <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: '#693fe9', width: '16px', height: '16px', marginTop: '2px', flexShrink: 0 }} />
+                                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                                    <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.6', maxHeight: '120px', overflowY: 'auto', marginBottom: '8px' }}>
+                                                                        {post.content || post.text || 'No content'}
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', gap: '12px', fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>
+                                                                        {post.engagement && <span>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 9)} {post.engagement.likes || 0}</span>}
+                                                                        {post.engagement && <span>{miniIcon('M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', '#8b5cf6', 9)} {post.engagement.comments || 0}</span>}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -3701,9 +3852,10 @@ function DashboardContent() {
                                                 const col = statusColors[p.taskStatus || 'pending'] || '#f59e0b';
                                                 return (
                                                     <div key={pi} title={`${p.taskStatus || 'pending'} — ${(p.content || '').substring(0, 80)}...`}
-                                                        style={{ fontSize: '9px', color: col, background: `${col}15`, borderLeft: `2px solid ${col}`, padding: '1px 4px', borderRadius: '2px', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                                                        style={{ fontSize: '9px', color: col, background: `${col}15`, borderLeft: `2px solid ${col}`, padding: '1px 4px', borderRadius: '2px', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
                                                         onClick={() => { setWriterContent(p.content || ''); setWriterTopic(p.topic || ''); }}>
-                                                        {new Date(p.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {p.topic ? p.topic.substring(0, 12) : p.content?.substring(0, 12)}
+                                                        {p.mediaUrl && (p.mediaType === 'video' ? miniIcon('M23 7l-7 5 7 5V7z M16 5H3a2 2 0 00-2 2v10a2 2 0 002 2h13a2 2 0 002-2V7a2 2 0 00-2-2z', col, 8) : miniIcon('M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5-5 5 5 M12 5v12', col, 8))}
+                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{new Date(p.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {p.topic ? p.topic.substring(0, 10) : p.content?.substring(0, 10)}</span>
                                                     </div>
                                                 );
                                             })}
@@ -3732,6 +3884,11 @@ function DashboardContent() {
                                                 return (
                                                     <div key={idx} onClick={() => { setWriterContent(post.content || ''); setWriterTopic(post.topic || ''); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', borderLeft: `3px solid ${col}`, cursor: 'pointer' }}>
                                                         <span style={{ background: col, color: 'white', padding: '1px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '600', textTransform: 'uppercase', flexShrink: 0 }}>{post.taskStatus || 'pending'}</span>
+                                                        {post.mediaUrl && (
+                                                            <span style={{ flexShrink: 0 }}>
+                                                                {post.mediaType === 'video' ? miniIcon('M23 7l-7 5 7 5V7z M16 5H3a2 2 0 00-2 2v10a2 2 0 002 2h13a2 2 0 002-2V7a2 2 0 00-2-2z', '#60a5fa', 12) : miniIcon('M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5-5 5 5 M12 5v12', '#10b981', 12)}
+                                                            </span>
+                                                        )}
                                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', flexShrink: 0, minWidth: '100px' }}>{scheduledDate.toLocaleDateString()} {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.topic || post.content?.substring(0, 60)}</span>
                                                         <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
@@ -3880,9 +4037,9 @@ function DashboardContent() {
                                             <div>
                                                 <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comment Goal</label>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                                    {[{ v: 'AddValue', l: 'Add Value', e: '+' }, { v: 'ShareExperience', l: 'Experience', e: '~' }, { v: 'AskQuestion', l: 'Question', e: '?' }, { v: 'DifferentPerspective', l: 'Perspective', e: '*' }, { v: 'BuildRelationship', l: 'Relationship', e: '&' }, { v: 'SubtlePitch', l: 'Subtle Pitch', e: '!' }].map(o => (
+                                                    {[{ v: 'AddValue', l: 'Add Value', icon: 'M12 5v14 M5 12h14' }, { v: 'ShareExperience', l: 'Experience', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }, { v: 'AskQuestion', l: 'Question', icon: 'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01' }, { v: 'DifferentPerspective', l: 'Perspective', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' }, { v: 'BuildRelationship', l: 'Relationship', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75' }, { v: 'SubtlePitch', l: 'Subtle Pitch', icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 11l-3-3m0 0l-3 3m3-3v6' }].map(o => (
                                                         <button key={o.v} onClick={() => setCsGoal(o.v)} style={{ padding: '6px 10px', background: csGoal === o.v ? 'linear-gradient(135deg,rgba(105,63,233,0.4),rgba(139,92,246,0.3))' : 'rgba(255,255,255,0.05)', border: csGoal === o.v ? '1px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: csGoal === o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: csGoal === o.v ? '700' : '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <span>{o.e}</span><span>{o.l}</span>
+                                                            {miniIcon(o.icon, csGoal === o.v ? 'white' : 'rgba(255,255,255,0.6)', 12)}<span>{o.l}</span>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -3890,9 +4047,9 @@ function DashboardContent() {
                                             <div>
                                                 <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tone of Voice</label>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                                                    {[{ v: 'Professional', l: 'Professional', e: 'P' }, { v: 'Friendly', l: 'Friendly', e: 'F' }, { v: 'ThoughtProvoking', l: 'Thought Provoking', e: 'T' }, { v: 'Supportive', l: 'Supportive', e: 'S' }, { v: 'Contrarian', l: 'Contrarian', e: 'C' }, { v: 'Humorous', l: 'Humorous', e: 'H' }].map(o => (
+                                                    {[{ v: 'Professional', l: 'Professional', icon: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12' }, { v: 'Friendly', l: 'Friendly', icon: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z' }, { v: 'ThoughtProvoking', l: 'Thought Provoking', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' }, { v: 'Supportive', l: 'Supportive', icon: 'M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3' }, { v: 'Contrarian', l: 'Contrarian', icon: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01' }, { v: 'Humorous', l: 'Humorous', icon: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M8 14s1.5 2 4 2 4-2 4-2 M9 9h.01 M15 9h.01' }].map(o => (
                                                         <button key={o.v} onClick={() => setCsTone(o.v)} style={{ padding: '6px 10px', background: csTone === o.v ? 'linear-gradient(135deg,rgba(59,130,246,0.4),rgba(37,99,235,0.3))' : 'rgba(255,255,255,0.05)', border: csTone === o.v ? '1px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: csTone === o.v ? 'white' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: csTone === o.v ? '700' : '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <span>{o.e}</span><span>{o.l}</span>
+                                                            {miniIcon(o.icon, csTone === o.v ? 'white' : 'rgba(255,255,255,0.6)', 12)}<span>{o.l}</span>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -3914,9 +4071,9 @@ function DashboardContent() {
                                             <div>
                                                 <label style={{ display: 'block', color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Style</label>
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '5px' }}>
-                                                    {[{ v: 'direct', l: 'Direct', d: 'Single paragraph', e: 'D' }, { v: 'structured', l: 'Structured', d: '2-3 paragraphs', e: 'S' }, { v: 'storyteller', l: 'Storyteller', d: 'Personal anecdote', e: 'N' }, { v: 'challenger', l: 'Challenger', d: 'Different view', e: 'C' }, { v: 'supporter', l: 'Supporter', d: 'Validate', e: 'V' }, { v: 'expert', l: 'Expert', d: 'Data refs', e: 'E' }, { v: 'conversational', l: 'Casual', d: 'Colleague-like', e: 'L' }].map(o => (
+                                                    {[{ v: 'direct', l: 'Direct', d: 'Single paragraph', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }, { v: 'structured', l: 'Structured', d: '2-3 paragraphs', icon: 'M4 7h16 M4 12h16 M4 17h10' }, { v: 'storyteller', l: 'Storyteller', d: 'Personal anecdote', icon: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' }, { v: 'challenger', l: 'Challenger', d: 'Different view', icon: 'M18 20V10 M12 20V4 M6 20v-6' }, { v: 'supporter', l: 'Supporter', d: 'Validate', icon: 'M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3' }, { v: 'expert', l: 'Expert', d: 'Data refs', icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z' }, { v: 'conversational', l: 'Casual', d: 'Colleague-like', icon: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z' }].map(o => (
                                                         <button key={o.v} onClick={() => setCsStyle(o.v)} style={{ padding: '7px 8px', background: csStyle === o.v ? 'linear-gradient(135deg,rgba(245,158,11,0.3),rgba(217,119,6,0.2))' : 'rgba(255,255,255,0.05)', border: csStyle === o.v ? '1px solid rgba(245,158,11,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: csStyle === o.v ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: csStyle === o.v ? '700' : '500', cursor: 'pointer', textAlign: 'left' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ fontSize: '12px' }}>{o.e}</span><span>{o.l}</span></div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{miniIcon(o.icon, csStyle === o.v ? '#fbbf24' : 'rgba(255,255,255,0.6)', 12)}<span>{o.l}</span></div>
                                                             <div style={{ fontSize: '9px', opacity: 0.55 }}>{o.d}</div>
                                                         </button>
                                                     ))}
@@ -3930,7 +4087,7 @@ function DashboardContent() {
                                             <select value={csModel} onChange={e => handleCommentModelChange(e.target.value)}
                                                 style={{ width: '100%', maxWidth: '350px', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }}>
                                                 {MODEL_OPTIONS.map(m => (
-                                                    <option key={m.id} value={m.id} style={{ background: '#1a1a3e' }}>{m.name} ({m.inputCost} in / {m.outputCost} out)</option>
+                                                    <option key={m.id} value={m.id} style={{ background: '#1a1a3e' }}>{m.name}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -4061,22 +4218,42 @@ function DashboardContent() {
                                                                 <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{commentStyleComments.length} comments · {commentStyleComments.filter((c: any) => c.isTopComment).length} marked as top</span>
                                                             </div>
                                                             {commentStyleComments.map((comment: any) => (
-                                                                <div key={comment.id} style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                                                                        <div style={{ flex: 1 }}>
-                                                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '4px' }}>
-                                                                                {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct comment' : `Reply: ${comment.context.substring(0, 80)}...`}
+                                                                <div key={comment.id} style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '10px', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                                            {/* Comment Type Badge */}
+                                                                            <div style={{ display: 'inline-block', background: comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.15)' : 'rgba(139,92,246,0.15)', padding: '4px 10px', borderRadius: '6px', marginBottom: '8px', border: `1px solid ${comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.3)' : 'rgba(139,92,246,0.3)'}` }}>
+                                                                                <span style={{ color: comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#a78bfa', fontSize: '10px', fontWeight: '700' }}>
+                                                                                    {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct comment' : 'Reply'}
+                                                                                </span>
                                                                             </div>
-                                                                            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginBottom: '6px', fontStyle: 'italic' }}>
-                                                                                On: {(comment.postText || '').substring(0, 100)}...
+                                                                            {/* Reply To (if applicable) */}
+                                                                            {comment.context !== 'DIRECT COMMENT ON POST' && (
+                                                                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                                                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>REPLY TO:</div>
+                                                                                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', lineHeight: '1.5', maxHeight: '120px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                                                        {comment.context.replace('REPLY TO [', '').replace(/]:.*/, '')} said: {comment.context.match(/]: "(.*)"$/)?.[1] || 'N/A'}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                            {/* Post Text */}
+                                                                            <div style={{ background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>POST:</div>
+                                                                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', lineHeight: '1.5', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px', fontStyle: 'italic' }}>
+                                                                                    {comment.postText || 'N/A'}
+                                                                                </div>
                                                                             </div>
-                                                                            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.5', maxHeight: '80px', overflowY: 'auto', paddingRight: '4px' }}>
-                                                                                {comment.commentText}
+                                                                            {/* Comment Text */}
+                                                                            <div style={{ background: 'rgba(105,63,233,0.08)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(105,63,233,0.2)' }}>
+                                                                                <div style={{ color: '#a78bfa', fontSize: '10px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase' }}>COMMENT:</div>
+                                                                                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.6', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', whiteSpace: 'pre-wrap' }}>
+                                                                                    {comment.commentText}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                         <button onClick={() => toggleCommentTop(comment.id)}
                                                                             title={comment.isTopComment ? 'Remove from top comments' : 'Mark as top comment for AI training'}
-                                                                            style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '8px', padding: '4px 10px', fontSize: '14px', cursor: 'pointer', flexShrink: 0, color: comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.5)' }}>
+                                                                            style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '8px', padding: '6px 12px', fontSize: '14px', cursor: 'pointer', flexShrink: 0, color: comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.5)', transition: 'all 0.2s' }}>
                                                                             {comment.isTopComment ? miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14) : miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', 'rgba(255,255,255,0.3)', 14)}
                                                                         </button>
                                                                     </div>
@@ -4097,6 +4274,95 @@ function DashboardContent() {
                                     <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: 0 }}>
                                         <strong style={{ color: '#60a5fa' }}>Training Active:</strong> AI uses {commentStyleProfiles.filter((p: any) => p.isSelected).length} profile(s) with starred comments to match commenting style.
                                     </p>
+                                </div>
+                            )}
+
+                            {/* Kommentify Shared Profiles */}
+                            {sharedCommentProfiles.length > 0 && (
+                                <div style={{ marginTop: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                        <h4 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 14)} 
+                                            Kommentify Shared ({sharedCommentProfiles.length})
+                                        </h4>
+                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Curated by Kommentify team</span>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                                        {sharedCommentProfiles.map((profile: any) => (
+                                            <div key={profile.id} onClick={() => {
+                                                setCommentStyleExpanded(commentStyleExpanded === profile.id ? null : profile.id);
+                                                if (commentStyleExpanded !== profile.id) loadProfileComments(profile.id);
+                                            }}
+                                                style={{ 
+                                                    background: 'linear-gradient(135deg, rgba(105,63,233,0.1) 0%, rgba(139,92,246,0.05) 100%)', 
+                                                    padding: '14px 12px', 
+                                                    borderRadius: '12px', 
+                                                    border: '1px solid rgba(105,63,233,0.25)', 
+                                                    cursor: 'pointer', 
+                                                    transition: 'all 0.2s',
+                                                    textAlign: 'center'
+                                                }}
+                                                onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(105,63,233,0.2) 0%, rgba(139,92,246,0.1) 100%)'; e.currentTarget.style.borderColor = 'rgba(105,63,233,0.4)'; }}
+                                                onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(105,63,233,0.1) 0%, rgba(139,92,246,0.05) 100%)'; e.currentTarget.style.borderColor = 'rgba(105,63,233,0.25)'; }}
+                                            >
+                                                <div style={{ color: 'white', fontWeight: '700', fontSize: '13px', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {profile.profileName || profile.profileId}
+                                                </div>
+                                                <div style={{ color: '#a78bfa', fontSize: '16px', fontWeight: '800', marginBottom: '2px' }}>
+                                                    {profile._count?.comments || profile.commentCount || 0}
+                                                </div>
+                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>comments</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Expanded shared profile comments */}
+                                    {commentStyleExpanded && sharedCommentProfiles.find((p: any) => p.id === commentStyleExpanded) && (
+                                        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(105,63,233,0.2)', marginTop: '12px', maxHeight: '500px', overflowY: 'auto' }}>
+                                            {commentStyleCommentsLoading ? (
+                                                <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading comments...</div>
+                                            ) : commentStyleComments.length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>No comments found.</div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <h5 style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '700', margin: 0 }}>
+                                                            {sharedCommentProfiles.find((p: any) => p.id === commentStyleExpanded)?.profileName} - Comments
+                                                        </h5>
+                                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{commentStyleComments.length} total</span>
+                                                    </div>
+                                                    {commentStyleComments.map((comment: any) => (
+                                                        <div key={comment.id} style={{ background: 'rgba(255,255,255,0.04)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                                            <div style={{ display: 'inline-block', background: comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.15)' : 'rgba(139,92,246,0.15)', padding: '4px 10px', borderRadius: '6px', marginBottom: '8px', border: `1px solid ${comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.3)' : 'rgba(139,92,246,0.3)'}` }}>
+                                                                <span style={{ color: comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#a78bfa', fontSize: '10px', fontWeight: '700' }}>
+                                                                    {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct comment' : 'Reply'}
+                                                                </span>
+                                                            </div>
+                                                            {comment.context !== 'DIRECT COMMENT ON POST' && (
+                                                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>REPLY TO:</div>
+                                                                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', lineHeight: '1.5', maxHeight: '120px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                                        {comment.context.replace('REPLY TO [', '').replace(/]:.*/, '')} said: {comment.context.match(/]: "(.*)"$/)?.[1] || 'N/A'}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div style={{ background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>POST:</div>
+                                                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', lineHeight: '1.5', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px', fontStyle: 'italic' }}>
+                                                                    {comment.postText || 'N/A'}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ background: 'rgba(105,63,233,0.08)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(105,63,233,0.2)' }}>
+                                                                <div style={{ color: '#a78bfa', fontSize: '10px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase' }}>COMMENT:</div>
+                                                                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.6', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', whiteSpace: 'pre-wrap' }}>
+                                                                    {comment.commentText}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -5133,15 +5399,15 @@ function DashboardContent() {
                                 const counts: Record<string, number> = {};
                                 liveActivityLogs.forEach((l: any) => { counts[l.action] = (counts[l.action] || 0) + 1; });
                                 return [
-                                    { action: 'start', label: 'Started', icon: '>', color: '#3b82f6' },
-                                    { action: 'like', label: 'Likes', icon: 'L', color: '#f59e0b' },
-                                    { action: 'comment', label: 'Comments', icon: 'C', color: '#10b981' },
-                                    { action: 'connect', label: 'Connects', icon: 'K', color: '#8b5cf6' },
-                                    { action: 'delay', label: 'Delays', icon: 'D', color: '#6b7280' },
-                                    { action: 'error', label: 'Errors', icon: '!', color: '#ef4444' },
+                                    { action: 'start', label: 'Started', icon: 'M5 12l5 5L20 7', color: '#3b82f6' },
+                                    { action: 'like', label: 'Likes', icon: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', color: '#f59e0b' },
+                                    { action: 'comment', label: 'Comments', icon: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', color: '#10b981' },
+                                    { action: 'connect', label: 'Connects', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75', color: '#8b5cf6' },
+                                    { action: 'delay', label: 'Delays', icon: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2', color: '#6b7280' },
+                                    { action: 'error', label: 'Errors', icon: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01', color: '#ef4444' },
                                 ].map(s => (
                                     <div key={s.action} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '14px', marginBottom: '2px' }}>{s.icon}</div>
+                                        <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center' }}>{miniIcon(s.icon, s.color, 14)}</div>
                                         <div style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{counts[s.action] || 0}</div>
                                         <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>{s.label}</div>
                                     </div>
@@ -5170,10 +5436,22 @@ function DashboardContent() {
                                     </div>
                                 ) : (
                                     liveActivityLogs.map((log: any, idx: number) => {
-                                        const icons: any = { like: 'L', comment: 'C', share: 'S', follow: 'F', connect: 'K', post: 'P', delay: 'D', start: '>', stop: 'X', error: '!', info: 'i' };
+                                        const icons: any = { 
+                                            like: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', 
+                                            comment: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', 
+                                            share: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8 M16 6l-4-4-4 4 M12 2v13', 
+                                            follow: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 11l-3-3m0 0l-3 3m3-3v6', 
+                                            connect: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75', 
+                                            post: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', 
+                                            delay: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2', 
+                                            start: 'M5 12l5 5L20 7', 
+                                            stop: 'M18 6L6 18 M6 6l12 12', 
+                                            error: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01', 
+                                            info: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01' 
+                                        };
                                         const levelColors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
                                         const taskColors: any = { automation: '#3b82f6', import: '#8b5cf6', networking: '#f59e0b', post_writer: '#10b981', trending: '#ec4899' };
-                                        const icon = icons[log.action] || 'i';
+                                        const iconPath = icons[log.action] || icons.info;
                                         const color = levelColors[log.level] || levelColors.info;
                                         const taskColor = taskColors[log.taskType] || 'rgba(255,255,255,0.4)';
                                         const dt = new Date(log.createdAt);
@@ -5185,7 +5463,7 @@ function DashboardContent() {
                                             <div key={log.id} style={{ display: 'flex', gap: '8px', padding: '6px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: isNew ? 'rgba(139,92,246,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', alignItems: 'flex-start' }}>
                                                 <span style={{ color: 'rgba(255,255,255,0.2)', minWidth: '38px', fontSize: '9px', paddingTop: '2px' }}>{dateStr}</span>
                                                 <span style={{ color: 'rgba(255,255,255,0.3)', minWidth: '55px', fontSize: '10px' }}>{time}</span>
-                                                <span style={{ fontSize: '12px', minWidth: '18px' }}>{icon}</span>
+                                                <span style={{ minWidth: '18px', display: 'flex', alignItems: 'center' }}>{miniIcon(iconPath, color, 12)}</span>
                                                 <span style={{ color: taskColor, fontSize: '9px', minWidth: '65px', fontWeight: '600', textTransform: 'uppercase', paddingTop: '2px' }}>{log.taskType}</span>
                                                 <span style={{ color, flex: 1, wordBreak: 'break-word' }}>{log.message}</span>
                                                 {isNew && <span style={{ background: 'rgba(139,92,246,0.3)', color: '#a78bfa', fontSize: '8px', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0 }}>NEW</span>}
@@ -5489,23 +5767,31 @@ function DashboardContent() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>History</h4>
                                     <div style={{ display: 'flex', gap: '12px' }}>
-                                        {[
-                                            { label: 'Profiles', val: importCfg.profileUrls ? importCfg.profileUrls.split('\n').filter((u: string) => u.trim().includes('linkedin.com/in/')).length : 0, color: '#a78bfa' },
-                                            { label: 'Connects', val: 0, color: '#34d399' },
-                                            { label: 'Posts', val: 0, color: '#60a5fa' },
-                                            { label: 'Comments', val: 0, color: '#fbbf24' },
-                                            { label: 'Rate', val: '0%', color: '#f472b6' },
-                                        ].map(s => (
-                                            <div key={s.label} style={{ textAlign: 'center' }}>
-                                                <div style={{ fontSize: '14px', fontWeight: '800', color: s.color }}>{s.val}</div>
-                                                <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.45)' }}>{s.label}</div>
-                                            </div>
-                                        ))}
+                                        {(() => {
+                                            const importHist = analyticsData?.importHistory || [];
+                                            const totalProfiles = importHist.length;
+                                            const totalConnects = importHist.filter((h: any) => h.connected).length;
+                                            const totalLikes = importHist.reduce((sum: number, h: any) => sum + (h.liked || 0), 0);
+                                            const totalComments = importHist.reduce((sum: number, h: any) => sum + (h.commented || 0), 0);
+                                            const successRate = totalProfiles > 0 ? Math.round((totalConnects / totalProfiles) * 100) : 0;
+                                            return [
+                                                { label: 'Profiles', val: totalProfiles, color: '#a78bfa' },
+                                                { label: 'Connects', val: totalConnects, color: '#34d399' },
+                                                { label: 'Likes', val: totalLikes, color: '#60a5fa' },
+                                                { label: 'Comments', val: totalComments, color: '#fbbf24' },
+                                                { label: 'Rate', val: `${successRate}%`, color: '#f472b6' },
+                                            ].map(s => (
+                                                <div key={s.label} style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '14px', fontWeight: '800', color: s.color }}>{s.val}</div>
+                                                    <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.45)' }}>{s.label}</div>
+                                                </div>
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
-                                <div style={{ overflowX: 'auto' }}>
+                                <div style={{ overflowX: 'auto', maxHeight: '300px', overflowY: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                                        <thead>
+                                        <thead style={{ position: 'sticky', top: 0, background: '#1a1a3e', zIndex: 1 }}>
                                             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                                                 {['Date', 'Profile', 'Connect', 'Likes', 'Comments', 'Status'].map(h => (
                                                     <th key={h} style={{ padding: '5px 4px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
@@ -5513,7 +5799,24 @@ function DashboardContent() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr><td colSpan={6} style={{ padding: '10px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>No actions yet. Launch to see history.</td></tr>
+                                            {(analyticsData?.importHistory || []).length === 0 ? (
+                                                <tr><td colSpan={6} style={{ padding: '10px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>No actions yet. Launch to see history.</td></tr>
+                                            ) : (
+                                                (analyticsData?.importHistory || []).slice(0, 50).map((entry: any, idx: number) => (
+                                                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        <td style={{ padding: '6px 4px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>{new Date(entry.timestamp).toLocaleDateString()}</td>
+                                                        <td style={{ padding: '6px 4px', color: 'white', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.profileName || 'Unknown'}</td>
+                                                        <td style={{ padding: '6px 4px', textAlign: 'center' }}>{entry.connected ? <span style={{ color: '#34d399' }}>✓</span> : <span style={{ color: 'rgba(255,255,255,0.2)' }}>-</span>}</td>
+                                                        <td style={{ padding: '6px 4px', textAlign: 'center', color: '#60a5fa' }}>{entry.liked || 0}</td>
+                                                        <td style={{ padding: '6px 4px', textAlign: 'center', color: '#fbbf24' }}>{entry.commented || 0}</td>
+                                                        <td style={{ padding: '6px 4px' }}>
+                                                            <span style={{ padding: '2px 6px', background: entry.status === 'completed' ? 'rgba(16,185,129,0.15)' : entry.status === 'failed' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', border: `1px solid ${entry.status === 'completed' ? 'rgba(16,185,129,0.3)' : entry.status === 'failed' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`, borderRadius: '4px', color: entry.status === 'completed' ? '#34d399' : entry.status === 'failed' ? '#f87171' : '#fbbf24', fontSize: '9px', fontWeight: '600' }}>
+                                                                {entry.status || 'pending'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -5766,24 +6069,25 @@ function DashboardContent() {
                     }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                             {[
-                                { icon: 'L', label: 'Likes', used: usage?.usage?.likes || 0, limit: usage?.limits?.likes || 0 },
-                                { icon: 'S', label: 'Shares', used: usage?.usage?.shares || 0, limit: usage?.limits?.shares || 0 },
-                                { icon: 'F', label: 'Follows', used: usage?.usage?.follows || 0, limit: usage?.limits?.follows || 0 },
-                                { icon: 'K', label: 'Connections', used: usage?.usage?.connections || 0, limit: usage?.limits?.connections || 0 },
-                                { icon: 'AI', label: 'AI Posts', used: usage?.usage?.aiPosts || 0, limit: usage?.limits?.aiPosts || 0 },
+                                { icon: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', label: 'Likes', used: usage?.usage?.likes || 0, limit: usage?.limits?.likes || 0, color: '#f59e0b' },
+                                { icon: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8 M16 6l-4-4-4 4 M12 2v13', label: 'Shares', used: usage?.usage?.shares || 0, limit: usage?.limits?.shares || 0, color: '#3b82f6' },
+                                { icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 11l-3-3m0 0l-3 3m3-3v6', label: 'Follows', used: usage?.usage?.follows || 0, limit: usage?.limits?.follows || 0, color: '#10b981' },
+                                { icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75', label: 'Connections', used: usage?.usage?.connections || 0, limit: usage?.limits?.connections || 0, color: '#8b5cf6' },
+                                { icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', label: 'AI Posts', used: usage?.usage?.aiPosts || 0, limit: usage?.limits?.aiPosts || 0, color: '#a78bfa' },
                                 {
-                                    icon: 'AC',
+                                    icon: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
                                     label: 'AI Comments',
                                     used: usage?.usage?.aiComments || 0,
                                     limit: (usage?.limits?.aiComments || 0) + (usage?.usage?.bonusAiComments || 0),
-                                    isTotalAvailable: true
+                                    isTotalAvailable: true,
+                                    color: '#ec4899'
                                 },
-                                { icon: 'T', label: 'AI Topics', used: usage?.usage?.aiTopicLines || 0, limit: usage?.limits?.aiTopicLines || 0 },
+                                { icon: 'M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', label: 'AI Topics', used: usage?.usage?.aiTopicLines || 0, limit: usage?.limits?.aiTopicLines || 0, color: '#fbbf24' },
                             ].map((item, i) => {
                                 const pct = item.limit > 0 ? (item.used / item.limit) * 100 : 0;
                                 return (
                                     <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                        <div style={{ fontSize: '24px', marginBottom: '12px' }}>{item.icon}</div>
+                                        <div style={{ marginBottom: '12px' }}>{miniIcon(item.icon, item.color, 24)}</div>
                                         <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>{item.label}</div>
                                         <div style={{ fontSize: '24px', fontWeight: '700', color: 'white', marginBottom: '12px' }}>{item.used} / {item.limit}</div>
                                         <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>

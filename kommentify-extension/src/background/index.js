@@ -7,10 +7,10 @@ const MAX_LOG_BUFFER = 500;
 
 // Override console.log to capture logs
 const originalConsoleLog = console.log;
-console.log = function(...args) {
+console.log = function (...args) {
     // Call original console.log
     originalConsoleLog.apply(console, args);
-    
+
     // Capture log message
     const message = args.map(arg => {
         if (typeof arg === 'object') {
@@ -22,13 +22,13 @@ console.log = function(...args) {
         }
         return String(arg);
     }).join(' ');
-    
+
     // Add to buffer
     consoleLogBuffer.unshift({
         timestamp: new Date().toISOString(),
         message: message
     });
-    
+
     // Keep buffer size limited
     if (consoleLogBuffer.length > MAX_LOG_BUFFER) {
         consoleLogBuffer.pop();
@@ -37,15 +37,15 @@ console.log = function(...args) {
 
 // Override console.error to capture errors
 const originalConsoleError = console.error;
-console.error = function(...args) {
+console.error = function (...args) {
     originalConsoleError.apply(console, args);
-    
+
     const message = '❌ ERROR: ' + args.map(arg => String(arg)).join(' ');
     consoleLogBuffer.unshift({
         timestamp: new Date().toISOString(),
         message: message
     });
-    
+
     if (consoleLogBuffer.length > MAX_LOG_BUFFER) {
         consoleLogBuffer.pop();
     }
@@ -53,15 +53,15 @@ console.error = function(...args) {
 
 // Override console.warn to capture warnings
 const originalConsoleWarn = console.warn;
-console.warn = function(...args) {
+console.warn = function (...args) {
     originalConsoleWarn.apply(console, args);
-    
+
     const message = '⚠️ WARNING: ' + args.map(arg => String(arg)).join(' ');
     consoleLogBuffer.unshift({
         timestamp: new Date().toISOString(),
         message: message
     });
-    
+
     if (consoleLogBuffer.length > MAX_LOG_BUFFER) {
         consoleLogBuffer.pop();
     }
@@ -164,9 +164,84 @@ console.log("BACKGROUND: All modules loaded and ready");
 
 // Global helper to get fresh auth token
 async function getFreshToken() {
-    const storage = await chrome.storage.local.get(['authToken']);
-    return storage.authToken;
+    const storage = await chrome.storage.local.get(['authToken', 'refreshToken', 'apiBaseUrl']);
+    const authToken = storage.authToken;
+    if (!authToken) return null;
+
+    // Decode the JWT to check expiry (without verification — we just need the exp claim)
+    try {
+        const parts = authToken.split('.');
+        if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            const expiresAt = (payload.exp || 0) * 1000;
+            const now = Date.now();
+            const oneHour = 60 * 60 * 1000;
+
+            // If token has more than 1 hour of life left, it's fine
+            if (expiresAt - now > oneHour) {
+                return authToken;
+            }
+
+            // Token is expiring soon or already expired — try to refresh
+            console.log('🔐 getFreshToken: Token expiring/expired, refreshing...');
+            const apiUrl = (storage.apiBaseUrl && !storage.apiBaseUrl.includes('backend-buxx') && !storage.apiBaseUrl.includes('backend-api-orcin') && !storage.apiBaseUrl.includes('backend-4poj'))
+                ? storage.apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
+
+            // Prefer using the refresh token (90-day expiry) if available
+            const refreshToken = storage.refreshToken;
+            let refreshRes;
+            if (refreshToken) {
+                try {
+                    refreshRes = await fetch(`${apiUrl}/api/auth/refresh-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken })
+                    });
+                } catch (e) {
+                    console.warn('🔐 getFreshToken: Refresh-token endpoint call failed:', e.message);
+                }
+            }
+
+            // Fallback: use the expired access token via /api/auth/refresh (accepts expired tokens <7 days)
+            if (!refreshRes || !refreshRes.ok) {
+                try {
+                    refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+                    });
+                } catch (e) {
+                    console.warn('🔐 getFreshToken: Legacy refresh endpoint call failed:', e.message);
+                }
+            }
+
+            if (refreshRes && refreshRes.ok) {
+                const data = await refreshRes.json();
+                if (data.success && data.token) {
+                    const updates = { authToken: data.token };
+                    if (data.refreshToken) updates.refreshToken = data.refreshToken;
+                    await chrome.storage.local.set(updates);
+                    console.log('✅ getFreshToken: Token refreshed successfully');
+                    return data.token;
+                }
+            }
+
+            // Refresh failed — if token is still technically valid (just about to expire), return it anyway
+            if (expiresAt > now) {
+                console.warn('⚠️ getFreshToken: Refresh failed but token is still valid, using current token');
+                return authToken;
+            }
+
+            // Token is truly expired and refresh failed
+            console.error('❌ getFreshToken: Token expired and refresh failed');
+            return null;
+        }
+    } catch (decodeErr) {
+        console.warn('⚠️ getFreshToken: Could not decode token, returning as-is:', decodeErr.message);
+    }
+
+    return authToken;
 }
+
 
 // --- COMMAND POLLING VIA ALARM (independent of content scripts) ---
 // This ensures commands from the website are picked up even if the dashboard tab is not open
@@ -199,7 +274,7 @@ async function pollCommandsDirectly() {
     try {
         const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
         const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-        
+
         // authToken now fetched via getFreshToken()
         if (!(await getFreshToken())) { globalThis._pollCommandsRunning = false; return; }
 
@@ -219,19 +294,37 @@ async function pollCommandsDirectly() {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json' }
         });
-        
+
         // Handle 401 authentication errors — attempt token refresh first
         if (response.status === 401) {
             console.warn('🔐 POLL-ALARM: Token expired (401), attempting refresh...');
             try {
-                const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json' }
-                });
+                // Try using the proper refresh token first
+                const { refreshToken: storedRefreshToken } = await chrome.storage.local.get('refreshToken');
+                let refreshRes;
+
+                if (storedRefreshToken) {
+                    refreshRes = await fetch(`${apiUrl}/api/auth/refresh-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken: storedRefreshToken })
+                    });
+                }
+
+                // Fallback: legacy method with expired access token in header
+                if (!refreshRes || !refreshRes.ok) {
+                    refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json' }
+                    });
+                }
+
                 if (refreshRes.ok) {
                     const refreshData = await refreshRes.json();
                     if (refreshData.success && refreshData.token) {
-                        await chrome.storage.local.set({ authToken: refreshData.token });
+                        const updates = { authToken: refreshData.token };
+                        if (refreshData.refreshToken) updates.refreshToken = refreshData.refreshToken;
+                        await chrome.storage.local.set(updates);
                         console.log('✅ POLL-ALARM: Token refreshed successfully, retrying command fetch...');
                         // Retry the command fetch immediately with new token
                         const retryResponse = await fetch(`${apiUrl}/api/extension/command`, {
@@ -272,7 +365,7 @@ async function pollCommandsDirectly() {
             globalThis._pollCommandsRunning = false;
             return;
         }
-        
+
         const data = await response.json();
         console.log(`📋 POLL-ALARM: status=${response.status}, commands=${data.commands?.length || 0}, queueStatus=${data.queueStatus || 'unknown'}, pendingCount=${data.pendingCount ?? '?'}`);
 
@@ -301,7 +394,7 @@ async function pollCommandsDirectly() {
                         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
                     });
-                } catch (e) {}
+                } catch (e) { }
 
                 // --- scrape_profile ---
                 if (cmd.command === 'scrape_profile' && cmd.data?.profileUrl) {
@@ -325,18 +418,18 @@ async function pollCommandsDirectly() {
                                     message: `✅ Successfully scraped ${result.posts.length} posts from ${result.profileData?.name || 'profile'}`,
                                     priority: 1
                                 });
-                            } catch (notifErr) {}
+                            } catch (notifErr) { }
                         }
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_profile failed:', e);
                         const errorMsg = `Profile scraping failed - ${e.message || 'Unknown error'}`;
-                        try { 
-                            await fetch(`${apiUrl}/api/extension/command`, { 
-                                method: 'PUT', 
-                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
-                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message }) 
-                            }); 
-                        } catch (x) {}
+                        try {
+                            await fetch(`${apiUrl}/api/extension/command`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message })
+                            });
+                        } catch (x) { }
                         // Notify user of failure
                         try {
                             await chrome.notifications.create({
@@ -346,7 +439,7 @@ async function pollCommandsDirectly() {
                                 message: errorMsg,
                                 priority: 1
                             });
-                        } catch (notifErr) {}
+                        } catch (notifErr) { }
                     } finally {
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
@@ -400,7 +493,7 @@ async function pollCommandsDirectly() {
                                     console.log('POLL-ALARM: Scrape cancelled by user');
                                     break;
                                 }
-                            } catch (e) {}
+                            } catch (e) { }
                             await scrollAndLoadContent(scrapeTab.id, 1);
                             scrollCount++;
                             // Inject/update on-page status overlay
@@ -506,9 +599,9 @@ async function pollCommandsDirectly() {
                         console.log(`✅ POLL-ALARM: scrape_feed_now done, saved ${scrapedPosts.length} posts`);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_feed_now failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (e.message || 'unknown error') } }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (e.message || 'unknown error') } }) }); } catch (x) { }
                     } finally {
-                        if (scrapeWindowId) { try { await chrome.windows.remove(scrapeWindowId); } catch (e) {} }
+                        if (scrapeWindowId) { try { await chrome.windows.remove(scrapeWindowId); } catch (e) { } }
                         if (scrapeTab) { globalThis._commandLinkedInTabs.delete(scrapeTab.id); }
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
@@ -520,7 +613,7 @@ async function pollCommandsDirectly() {
                     let commentTab = null;
                     // Helper to send live overlay status to the scrape tab
                     const sendOverlay = async (tabId, message, type = 'info') => {
-                        try { await chrome.tabs.sendMessage(tabId, { action: 'updateNetworkingStatus', message, type }); } catch (e) {}
+                        try { await chrome.tabs.sendMessage(tabId, { action: 'updateNetworkingStatus', message, type }); } catch (e) { }
                     };
                     try {
                         const profileUrl = cmd.data.profileUrl.replace(/\/+$/, '');
@@ -585,14 +678,14 @@ async function pollCommandsDirectly() {
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scrape_comments failed:', e);
                         const errorMsg = `❌ Kommentify: Comment scraping failed - ${e.message || 'Unknown error'}`;
-                        if (commentTab) { try { await sendOverlay(commentTab.id, errorMsg, 'error'); } catch (x) {} }
-                        try { 
-                            await fetch(`${apiUrl}/api/extension/command`, { 
-                                method: 'PUT', 
-                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
-                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message }) 
-                            }); 
-                        } catch (x) {}
+                        if (commentTab) { try { await sendOverlay(commentTab.id, errorMsg, 'error'); } catch (x) { } }
+                        try {
+                            await fetch(`${apiUrl}/api/extension/command`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message })
+                            });
+                        } catch (x) { }
                         // Notify user of the failure
                         try {
                             await chrome.notifications.create({
@@ -602,9 +695,9 @@ async function pollCommandsDirectly() {
                                 message: errorMsg,
                                 priority: 1
                             });
-                        } catch (notifErr) {}
+                        } catch (notifErr) { }
                     } finally {
-                        if (commentTab) { try { await chrome.tabs.remove(commentTab.id); } catch (e) {} globalThis._commandLinkedInTabs.delete(commentTab.id); }
+                        if (commentTab) { try { await chrome.tabs.remove(commentTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(commentTab.id); }
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
@@ -618,7 +711,7 @@ async function pollCommandsDirectly() {
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                             ll.start('post_writer', `✍️ Posting to LinkedIn...`);
-                        } catch (e) {}
+                        } catch (e) { }
 
                         // Step 1: Open LinkedIn feed tab
                         console.log('📝 POLL-ALARM: Opening LinkedIn tab...');
@@ -642,7 +735,7 @@ async function pollCommandsDirectly() {
 
                         if (globalThis._stopAllTasks) {
                             console.log('🛑 POLL-ALARM: Stop flag set, aborting post_to_linkedin');
-                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) { }
                             globalThis._commandLinkedInTabs.delete(postTab.id);
                             globalThis._processingCommandIds.delete(cmd.id);
                             continue;
@@ -651,11 +744,11 @@ async function pollCommandsDirectly() {
                         // Step 3: Apply page load delay from Limits tab
                         const { delaySettings: pwDelays } = await chrome.storage.local.get('delaySettings');
                         const pageLoadWait = ((pwDelays && pwDelays.postWriterPageLoadDelay) || 5) * 1000;
-                        console.log(`📝 POLL-ALARM: Page loaded, waiting ${pageLoadWait/1000}s for render...`);
+                        console.log(`📝 POLL-ALARM: Page loaded, waiting ${pageLoadWait / 1000}s for render...`);
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
-                            ll.delay('post_writer', Math.round(pageLoadWait/1000), 'page load delay');
-                        } catch (e) {}
+                            ll.delay('post_writer', Math.round(pageLoadWait / 1000), 'page load delay');
+                        } catch (e) { }
                         await new Promise(resolve => setTimeout(resolve, pageLoadWait));
 
                         // Step 4: Inject posting script
@@ -671,12 +764,12 @@ async function pollCommandsDirectly() {
                             await chrome.storage.local.remove('pendingPostImage');
                         }
                         console.log('📝 POLL-ALARM: Injecting post script, hasImage:', !!imageDataUrl);
-                        
+
                         // Load click delay from limits
                         const clickDelay = ((pwDelays && pwDelays.postWriterClickDelay) || 3) * 1000;
                         const typingDelay = ((pwDelays && pwDelays.postWriterTypingDelay) || 3) * 1000;
                         const submitDelay = ((pwDelays && pwDelays.postWriterSubmitDelay) || 2) * 1000;
-                        
+
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: postTab.id },
                             func: (postContent, imgDataUrl, clickDelayMs, typingDelayMs, submitDelayMs) => {
@@ -754,7 +847,7 @@ async function pollCommandsDirectly() {
                                             text: startPostBtn.textContent?.substring(0, 50)
                                         });
                                         startPostBtn.click();
-                                        
+
                                         // Wait longer for modal to appear and render (increased from 1.5s to 2s)
                                         setTimeout(() => {
                                             // Check if modal appeared
@@ -766,7 +859,7 @@ async function pollCommandsDirectly() {
                                                     childCount: modal.children.length
                                                 });
                                             }
-                                            
+
                                             const pollTimeout = clickDelayMs + 25000; // Increased to 25s for slower connections
                                             console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
                                             _poll(_findEditor, 500, pollTimeout).then(async (editor) => {
@@ -781,20 +874,20 @@ async function pollCommandsDirectly() {
                                                         contentEditable: editor.contentEditable,
                                                         innerHTML: editor.innerHTML.substring(0, 100)
                                                     });
-                                                    
+
                                                     // Try multiple insertion methods
                                                     let insertSuccess = false;
-                                                    
+
                                                     // Method 1: Focus + execCommand (most reliable for contenteditable)
                                                     try {
                                                         editor.focus();
                                                         editor.click();
                                                         await new Promise(r => setTimeout(r, 500));
-                                                        
+
                                                         // Clear existing content
                                                         document.execCommand('selectAll', false, null);
                                                         document.execCommand('delete', false, null);
-                                                        
+
                                                         // Insert text
                                                         document.execCommand('insertText', false, postContent);
                                                         insertSuccess = true;
@@ -802,7 +895,7 @@ async function pollCommandsDirectly() {
                                                     } catch (e1) {
                                                         console.log('LinkedIn Post Script: execCommand failed:', e1.message);
                                                     }
-                                                    
+
                                                     // Method 2: innerHTML manipulation (fallback)
                                                     if (!insertSuccess) {
                                                         try {
@@ -823,18 +916,18 @@ async function pollCommandsDirectly() {
                                                             console.log('LinkedIn Post Script: innerHTML failed:', e2.message);
                                                         }
                                                     }
-                                                    
+
                                                     // Method 3: Direct textContent (last resort)
                                                     if (!insertSuccess) {
                                                         editor.textContent = postContent;
                                                         console.log('LinkedIn Post Script: Text inserted via textContent');
                                                     }
-                                                    
+
                                                     // Trigger events
                                                     editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
                                                     editor.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
                                                     editor.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, cancelable: true }));
-                                                    
+
                                                     console.log('LinkedIn Post Script: Content after insertion:', {
                                                         textContent: editor.textContent.substring(0, 100),
                                                         innerHTML: editor.innerHTML.substring(0, 200),
@@ -885,13 +978,13 @@ async function pollCommandsDirectly() {
                                                     for (let i = 0; i < 10; i++) {
                                                         postButton = _findPostBtn();
                                                         if (postButton) {
-                                                            console.log(`LinkedIn Post Script: Post button found active on attempt ${i+1}`);
+                                                            console.log(`LinkedIn Post Script: Post button found active on attempt ${i + 1}`);
                                                             break;
                                                         }
-                                                        console.log(`LinkedIn Post Script: Attempt ${i+1}: Waiting for Post button...`);
+                                                        console.log(`LinkedIn Post Script: Attempt ${i + 1}: Waiting for Post button...`);
                                                         await new Promise(r => setTimeout(r, 1000));
                                                     }
-                                                    
+
                                                     if (postButton) {
                                                         postButton.click();
                                                         console.log('LinkedIn Post Script: Post button clicked');
@@ -933,17 +1026,17 @@ async function pollCommandsDirectly() {
                             if (scriptResult?.posted) ll.post('post_writer', `✅ Post published to LinkedIn${scriptResult?.imageAttached ? ' (with image)' : ''}`);
                             else if (scriptResult?.success) ll.info('post_writer', `⚠️ Content inserted but needs manual post click`);
                             else ll.error('post_writer', `❌ Post failed: ${scriptResult?.error || 'Unknown error'}`);
-                        } catch (e) {}
+                        } catch (e) { }
                     } catch (postError) {
                         console.error('❌ POLL-ALARM: post_to_linkedin failed:', postError);
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                             ll.error('post_writer', `❌ Post failed: ${postError.message}`);
-                        } catch (e) {}
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        } catch (e) { }
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) { }
                     } finally {
                         if (postTab) {
-                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) { }
                             globalThis._commandLinkedInTabs.delete(postTab.id);
                         }
                         globalThis._processingCommandIds.delete(cmd.id);
@@ -1005,14 +1098,14 @@ async function pollCommandsDirectly() {
                         };
 
                         console.log('💬 POLL-ALARM: Starting bulk processing with config:', JSON.stringify(config).substring(0, 200));
-                        
+
                         // Mark as in_progress on server (NOT completed — processing is async)
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
                             headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
                         });
-                        
+
                         // Fire-and-forget: update status when processing finishes
                         executeBulkProcessing(config).then(async (result) => {
                             const finalStatus = (result && result.success) ? 'completed' : 'failed';
@@ -1033,14 +1126,14 @@ async function pollCommandsDirectly() {
                                     headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                 });
-                            } catch (x) {}
+                            } catch (x) { }
                             globalThis._processingCommandIds.delete(cmd.id);
                         });
-                        
+
                         console.log('✅ POLL-ALARM: start_bulk_commenting launched (in_progress)');
                     } catch (e) {
                         console.error('❌ POLL-ALARM: start_bulk_commenting failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) { }
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
@@ -1114,7 +1207,7 @@ async function pollCommandsDirectly() {
                                         headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                     });
-                                } catch (x) {}
+                                } catch (x) { }
                                 globalThis._processingCommandIds.delete(cmd.id);
                             });
                         } else {
@@ -1130,7 +1223,7 @@ async function pollCommandsDirectly() {
                         console.log('✅ POLL-ALARM: start_import_automation launched (in_progress)');
                     } catch (e) {
                         console.error('❌ POLL-ALARM: start_import_automation failed:', e);
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) { }
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
@@ -1208,9 +1301,9 @@ async function pollCommandsDirectly() {
                             // Get profile URL from the tab
                             const profileUrl = (await chrome.tabs.get(tab.id)).url.split('?')[0];
                             scanData.data.totalPostsCount = scanData.data.posts?.length || 0;
-                            
+
                             console.log(`🔗 POLL-ALARM: Total posts extracted: ${scanData.data.totalPostsCount}`);
-                            
+
                             // Save to database
                             const saveData = { ...scanData.data, profileUrl };
                             await fetch(`${apiUrl}/api/linkedin-profile`, {
@@ -1219,7 +1312,7 @@ async function pollCommandsDirectly() {
                                 body: JSON.stringify(saveData)
                             });
                             console.log('🔗 POLL-ALARM: Profile data saved to database');
-                            
+
                             // Keep the LinkedIn tab open after successful scan
                             console.log('🔗 POLL-ALARM: LinkedIn tab kept open for user');
                         } else {
@@ -1234,8 +1327,8 @@ async function pollCommandsDirectly() {
                     } catch (e) {
                         console.error('❌ POLL-ALARM: scan_my_linkedin_profile failed:', e);
                         // Close the LinkedIn tab on error
-                        try { await chrome.tabs.remove(tab.id); } catch (tabError) {}
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await chrome.tabs.remove(tab.id); } catch (tabError) { }
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) { }
                     } finally {
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
@@ -1245,12 +1338,12 @@ async function pollCommandsDirectly() {
                 else if (cmd.command === 'AI_PROFILE_RECAPTURE') {
                     console.log('🤖 POLL-ALARM: Executing AI_PROFILE_RECAPTURE...');
                     let recaptureTab = null;
-                    
+
                     // Timeout wrapper - max 60 seconds
                     const timeoutPromise = new Promise((_, reject) => {
                         setTimeout(() => reject(new Error('AI_PROFILE_RECAPTURE timeout after 60s')), 60000);
                     });
-                    
+
                     const executeRecapture = async () => {
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
@@ -1258,7 +1351,7 @@ async function pollCommandsDirectly() {
                         // Get the actual profile URL from command params or use current tab
                         const profileUrl = cmd.params?.profileUrl || 'https://www.linkedin.com/in/me/';
                         console.log('🤖 POLL-ALARM: Profile URL:', profileUrl);
-                        
+
                         recaptureTab = await chrome.tabs.create({ url: profileUrl, active: true });
                         console.log('🤖 POLL-ALARM: Opened LinkedIn profile tab for AI recapture:', recaptureTab.id);
 
@@ -1282,7 +1375,7 @@ async function pollCommandsDirectly() {
 
                         // Extract FULL text from the profile page
                         console.log('🤖 POLL-ALARM: Extracting profile data...');
-                        
+
                         // Inject "Processing" overlay
                         await chrome.scripting.executeScript({
                             target: { tabId: recaptureTab.id },
@@ -1292,7 +1385,7 @@ async function pollCommandsDirectly() {
                                     const style = document.createElement('style');
                                     style.textContent = '@keyframes kPulse { 0% {transform:scale(0.95);opacity:0.8} 50% {transform:scale(1.05);opacity:1} 100% {transform:scale(0.95);opacity:0.8} }';
                                     document.head.appendChild(style);
-                                    
+
                                     overlay = document.createElement('div');
                                     overlay.id = 'kommentify-profile-scan';
                                     overlay.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:20px;border-radius:12px;font-family:-apple-system,system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,0.5);border:1px solid rgba(105,63,233,0.4);min-width:280px;';
@@ -1348,7 +1441,7 @@ async function pollCommandsDirectly() {
 
                             // Send to backend API for AI restructuring
                             console.log('🤖 POLL-ALARM: Sending to backend for AI restructuring...');
-                            
+
                             const token = await getFreshToken();
                             const aiResponse = await fetch(`${apiUrl}/api/ai/restructure-profile`, {
                                 method: 'POST',
@@ -1381,45 +1474,45 @@ async function pollCommandsDirectly() {
                                 });
                                 const saveResult = await saveResponse.json();
                                 console.log('🤖 POLL-ALARM: Profile save result:', saveResult);
-                                
+
                                 // Mark command as completed
-                                const completionResponse = await fetch(`${apiUrl}/api/extension/command`, { 
-                                    method: 'PUT', 
-                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
-                                    body: JSON.stringify({ commandId: cmd.id, status: 'completed' }) 
+                                const completionResponse = await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'completed' })
                                 });
                                 const completionResult = await completionResponse.json();
                                 console.log('✅ POLL-ALARM: AI_PROFILE_RECAPTURE completed, result:', completionResult);
                             } else {
                                 console.error('🤖 POLL-ALARM: AI restructuring failed:', aiData.error);
                                 // Mark as failed since AI couldn't restructure
-                                await fetch(`${apiUrl}/api/extension/command`, { 
-                                    method: 'PUT', 
-                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
-                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: 'AI restructuring failed: ' + (aiData.error || 'Unknown error') }) 
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: 'AI restructuring failed: ' + (aiData.error || 'Unknown error') })
                                 });
                             }
                         } else {
                             console.error('🤖 POLL-ALARM: No text extracted from profile page');
                             // Mark as failed since we couldn't extract text
-                            await fetch(`${apiUrl}/api/extension/command`, { 
-                                method: 'PUT', 
-                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
-                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: 'No text extracted from profile page' }) 
+                            await fetch(`${apiUrl}/api/extension/command`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: 'No text extracted from profile page' })
                             });
                         }
-                        
+
                         // Close the tab
-                        try { await chrome.tabs.remove(recaptureTab.id); } catch (e) {}
+                        try { await chrome.tabs.remove(recaptureTab.id); } catch (e) { }
                     };
-                    
+
                     // Execute with timeout
                     try {
                         await Promise.race([executeRecapture(), timeoutPromise]);
                     } catch (e) {
                         console.error('❌ POLL-ALARM: AI_PROFILE_RECAPTURE timeout or error:', e);
-                        try { await chrome.tabs.remove(recaptureTab.id); } catch (tabError) {}
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        try { await chrome.tabs.remove(recaptureTab.id); } catch (tabError) { }
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) { }
                     } finally {
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
@@ -1432,7 +1525,7 @@ async function pollCommandsDirectly() {
                     try {
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
-                        
+
                         // Get payload from cmd - content/draftId are at root level from API
                         // API returns { id, ...meta } so content/draftId/etc are directly on cmd
                         const payload = cmd.data || {
@@ -1445,7 +1538,7 @@ async function pollCommandsDirectly() {
                         };
                         console.log('📅 POLL-ALARM: Payload:', payload);
                         console.log('📅 POLL-ALARM: Content length:', payload.content?.length || 0);
-                        
+
                         // Verify the scheduled post still exists before executing
                         if (payload.draftId) {
                             try {
@@ -1455,10 +1548,10 @@ async function pollCommandsDirectly() {
                                 const verifyData = await verifyRes.json();
                                 if (!verifyData.success || !verifyData.scheduledPosts?.find(p => p.id === payload.draftId)) {
                                     console.log('📅 POLL-ALARM: Scheduled post no longer exists, skipping execution');
-                                    await fetch(`${apiUrl}/api/extension/command`, { 
-                                        method: 'PUT', 
-                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, 
-                                        body: JSON.stringify({ commandId: cmd.id, status: 'cancelled' }) 
+                                    await fetch(`${apiUrl}/api/extension/command`, {
+                                        method: 'PUT',
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ commandId: cmd.id, status: 'cancelled' })
                                     });
                                     globalThis._processingCommandIds.delete(cmd.id);
                                     continue;
@@ -1466,13 +1559,13 @@ async function pollCommandsDirectly() {
                             } catch (verifyErr) {
                                 console.error('📅 POLL-ALARM: Failed to verify scheduled post:', verifyErr);
                             }
-                            
+
                             await fetch(`${apiUrl}/api/scheduled-posts`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    taskId: cmd.id, 
-                                    status: 'in_progress' 
+                                body: JSON.stringify({
+                                    taskId: cmd.id,
+                                    status: 'in_progress'
                                 })
                             });
                         }
@@ -1481,7 +1574,7 @@ async function pollCommandsDirectly() {
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                             ll.start('post_writer', `✍️ Posting scheduled content to LinkedIn...`);
-                        } catch (e) {}
+                        } catch (e) { }
 
                         // Step 1: Open LinkedIn feed tab
                         console.log('📅 POLL-ALARM: Opening LinkedIn tab...');
@@ -1505,7 +1598,7 @@ async function pollCommandsDirectly() {
 
                         if (globalThis._stopAllTasks) {
                             console.log('🛑 POLL-ALARM: Stop flag set, aborting post_scheduled_content');
-                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) { }
                             globalThis._commandLinkedInTabs.delete(postTab.id);
                             globalThis._processingCommandIds.delete(cmd.id);
                             continue;
@@ -1514,23 +1607,23 @@ async function pollCommandsDirectly() {
                         // Step 3: Apply page load delay from Limits tab
                         const { delaySettings: pwDelays } = await chrome.storage.local.get('delaySettings');
                         const pageLoadWait = ((pwDelays && pwDelays.postWriterPageLoadDelay) || 5) * 1000;
-                        console.log(`📅 POLL-ALARM: Page loaded, waiting ${pageLoadWait/1000}s for render...`);
+                        console.log(`📅 POLL-ALARM: Page loaded, waiting ${pageLoadWait / 1000}s for render...`);
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
-                            ll.delay('post_writer', Math.round(pageLoadWait/1000), 'page load delay');
-                        } catch (e) {}
+                            ll.delay('post_writer', Math.round(pageLoadWait / 1000), 'page load delay');
+                        } catch (e) { }
                         await new Promise(resolve => setTimeout(resolve, pageLoadWait));
 
                         // Step 4: Inject posting script (same as post_to_linkedin)
                         const content = payload.content || '';
                         const imageDataUrl = payload.imageDataUrl || null;
                         console.log('📅 POLL-ALARM: Injecting post script, content length:', content.length, 'hasImage:', !!imageDataUrl);
-                        
+
                         // Load click delay from limits
                         const clickDelay = ((pwDelays && pwDelays.postWriterClickDelay) || 3) * 1000;
                         const typingDelay = ((pwDelays && pwDelays.postWriterTypingDelay) || 3) * 1000;
                         const submitDelay = ((pwDelays && pwDelays.postWriterSubmitDelay) || 2) * 1000;
-                        
+
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: postTab.id },
                             func: (postContent, imgDataUrl, clickDelayMs, typingDelayMs, submitDelayMs) => {
@@ -1603,7 +1696,7 @@ async function pollCommandsDirectly() {
                                             return;
                                         }
                                         startPostBtn.click();
-                                        
+
                                         setTimeout(() => {
                                             const pollTimeout = clickDelayMs + 20000;
                                             console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
@@ -1673,13 +1766,13 @@ async function pollCommandsDirectly() {
                                                     for (let i = 0; i < 10; i++) {
                                                         postButton = _findPostBtn();
                                                         if (postButton) {
-                                                            console.log(`LinkedIn Post Script: Post button found active on attempt ${i+1}`);
+                                                            console.log(`LinkedIn Post Script: Post button found active on attempt ${i + 1}`);
                                                             break;
                                                         }
-                                                        console.log(`LinkedIn Post Script: Attempt ${i+1}: Waiting for Post button...`);
+                                                        console.log(`LinkedIn Post Script: Attempt ${i + 1}: Waiting for Post button...`);
                                                         await new Promise(r => setTimeout(r, 1000));
                                                     }
-                                                    
+
                                                     if (postButton) {
                                                         postButton.click();
                                                         console.log('LinkedIn Post Script: Post button clicked');
@@ -1710,42 +1803,42 @@ async function pollCommandsDirectly() {
 
                         // Mark as completed
                         const finalStatus = scriptResult?.posted ? 'completed' : (scriptResult?.success ? 'completed_manual' : 'failed');
-                        
+
                         if (payload.draftId) {
                             await fetch(`${apiUrl}/api/scheduled-posts`, {
                                 method: 'POST',
                                 headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    taskId: cmd.id, 
+                                body: JSON.stringify({
+                                    taskId: cmd.id,
                                     status: finalStatus === 'completed' ? 'completed' : 'failed',
                                     failureReason: scriptResult?.error || null
                                 })
                             });
                         }
-                        
+
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
                             headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ commandId: cmd.id, status: finalStatus })
                         });
                         console.log(`✅ POLL-ALARM: post_scheduled_content ${finalStatus}`);
-                        
+
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                             if (scriptResult?.posted) ll.post('post_writer', `✅ Scheduled post published to LinkedIn`);
                             else if (scriptResult?.success) ll.info('post_writer', `⚠️ Content inserted but needs manual post click`);
                             else ll.error('post_writer', `❌ Scheduled post failed: ${scriptResult?.error || 'Unknown error'}`);
-                        } catch (e) {}
+                        } catch (e) { }
                     } catch (e) {
                         console.error('❌ POLL-ALARM: post_scheduled_content failed:', e);
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                             ll.error('post_writer', `❌ Scheduled post failed: ${e.message}`);
-                        } catch (logErr) {}
-                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                        } catch (logErr) { }
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) { }
                     } finally {
                         if (postTab) {
-                            try { await chrome.tabs.remove(postTab.id); } catch (e) {}
+                            try { await chrome.tabs.remove(postTab.id); } catch (e) { }
                             globalThis._commandLinkedInTabs.delete(postTab.id);
                         }
                         globalThis._processingCommandIds.delete(cmd.id);
@@ -1768,11 +1861,11 @@ async function pollCommandsDirectly() {
 async function autoScrollProfilePage(tabId) {
     try {
         console.log('🔗 SCROLL: Starting auto-scroll...');
-        
+
         const maxScrollAttempts = 10;
         let lastHeight = 0;
         let noChangeCount = 0;
-        
+
         for (let i = 0; i < maxScrollAttempts; i++) {
             // Get current scroll height
             const heightResult = await chrome.scripting.executeScript({
@@ -1780,7 +1873,7 @@ async function autoScrollProfilePage(tabId) {
                 func: () => document.body.scrollHeight
             });
             const currentHeight = heightResult?.[0]?.result || 0;
-            
+
             // Scroll down
             await chrome.scripting.executeScript({
                 target: { tabId: tabId },
@@ -1791,19 +1884,19 @@ async function autoScrollProfilePage(tabId) {
                     });
                 }
             });
-            
+
             // Wait for content to load
             await new Promise(resolve => setTimeout(resolve, 2000));
-            
+
             // Check if new content loaded
             const newHeightResult = await chrome.scripting.executeScript({
                 target: { tabId: tabId },
                 func: () => document.body.scrollHeight
             });
             const newHeight = newHeightResult?.[0]?.result || 0;
-            
-            console.log(`🔗 SCROLL: Attempt ${i+1}, height: ${currentHeight} -> ${newHeight}`);
-            
+
+            console.log(`🔗 SCROLL: Attempt ${i + 1}, height: ${currentHeight} -> ${newHeight}`);
+
             if (newHeight === lastHeight) {
                 noChangeCount++;
                 if (noChangeCount >= 2) {
@@ -1815,13 +1908,13 @@ async function autoScrollProfilePage(tabId) {
             }
             lastHeight = newHeight;
         }
-        
+
         // Scroll back to top
         await chrome.scripting.executeScript({
             target: { tabId: tabId },
             func: () => window.scrollTo(0, 0)
         });
-        
+
         console.log('🔗 SCROLL: Auto-scroll complete');
     } catch (error) {
         console.error('🔗 SCROLL: Error during auto-scroll:', error);
@@ -1853,27 +1946,27 @@ async function scanLinkedInProfileInTab(tabId) {
 
             // ========== STEP 1: TRY SELECTOR-BASED POSTS EXTRACTION ==========
             console.log("🚀 Step 1: Trying selector-based posts extraction...");
-            
+
             const postEls = document.querySelectorAll('[data-view-name="feed-commentary"], .update-components-text');
             const selectorPosts = [];
-            
+
             postEls.forEach(el => {
                 const clone = el.cloneNode(true);
                 // Destroy the "… more" button before reading text
                 clone.querySelectorAll('button, .see-more').forEach(b => b.remove());
-                
+
                 let txt = clean(clone.textContent);
-                
+
                 // Filter out empty, short, or junk strings
                 if (txt && !txt.startsWith("http") && txt !== "# | # | #" && txt.length > 20 && !txt.startsWith("#")) {
                     selectorPosts.push(txt);
                 }
             });
-            
+
             // Remove exact duplicates
             const uniqueSelectorPosts = [...new Set(selectorPosts)];
             console.log(`🚀 Selector-based posts found: ${uniqueSelectorPosts.length}`);
-            
+
             if (uniqueSelectorPosts.length > 0) {
                 data.posts = uniqueSelectorPosts;
                 console.log("🚀 Using selector-based posts (successful)");
@@ -1883,7 +1976,7 @@ async function scanLinkedInProfileInTab(tabId) {
 
             // ========== STEP 2: TEXT-BASED PROFILE EXTRACTION ==========
             console.log("🚀 Step 2: Text-based profile extraction...");
-            
+
             // Get raw text from the entire page
             const rawText = document.body.innerText || "";
 
@@ -1917,11 +2010,11 @@ async function scanLinkedInProfileInTab(tabId) {
             });
 
             lines = lines.map(l => clean(l));
-            lines = lines.filter((l, i, a) => i === 0 || l !== a[i-1]);
+            lines = lines.filter((l, i, a) => i === 0 || l !== a[i - 1]);
 
             const sectionHeaders = [
-                "About", "Activity", "Experience", "Education", 
-                "Licenses & certifications", "Projects", "Skills", 
+                "About", "Activity", "Experience", "Education",
+                "Licenses & certifications", "Projects", "Skills",
                 "Recommendations", "Interests"
             ];
 
@@ -1931,7 +2024,7 @@ async function scanLinkedInProfileInTab(tabId) {
                 if (lines[topSkillsIdx + 1]) {
                     data.skills.push(...lines[topSkillsIdx + 1].split(/[•·]/).map(s => clean(s)).filter(Boolean));
                 }
-                lines.splice(topSkillsIdx, 2); 
+                lines.splice(topSkillsIdx, 2);
             }
 
             // --- EXTRACT TOP CARD ---
@@ -1946,7 +2039,7 @@ async function scanLinkedInProfileInTab(tabId) {
             if (viewIdx !== -1) data.profileViews = topLines[viewIdx];
 
             const cleanTop = topLines.filter(l => !l.toLowerCase().includes("connections") && !l.toLowerCase().includes("profile views") && !l.toLowerCase().includes("search appearances") && !l.toLowerCase().includes("post impressions") && !l.includes("Past 7 days"));
-            
+
             if (cleanTop.length > 0) data.name = cleanTop[0];
             if (cleanTop.length > 1) data.headline = cleanTop[1];
             if (cleanTop.length > 2) data.location = cleanTop[2];
@@ -1976,7 +2069,7 @@ async function scanLinkedInProfileInTab(tabId) {
                 const actLines = getSectionLines("Activity");
                 let currentPost = [];
                 const timeRegex = /^\d+[dwmoqy]\s*•/i;
-                
+
                 actLines.forEach(l => {
                     if (timeRegex.test(l)) {
                         if (currentPost.length > 0 && currentPost.join(" ").length > 20) {
@@ -1996,15 +2089,15 @@ async function scanLinkedInProfileInTab(tabId) {
                 let items = [];
                 let current = [];
                 const dateRegex = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{4}|\b\d{4}\s*[–-]\s*(?:Present|\d{4})\b/i;
-                
+
                 for (let i = 0; i < linesArray.length; i++) {
                     let l = linesArray[i];
-                    
+
                     if (l.includes("skills") && l.includes("+")) continue;
                     if (l.startsWith("Issued ")) continue;
-                    
+
                     let hasDate = current.some(x => dateRegex.test(x));
-                    let nextLinesHaveDate = linesArray.slice(i, i+3).some(x => dateRegex.test(x));
+                    let nextLinesHaveDate = linesArray.slice(i, i + 3).some(x => dateRegex.test(x));
 
                     if (hasDate && l.length < 60 && nextLinesHaveDate && !dateRegex.test(l) && !l.startsWith("•") && !l.startsWith("-")) {
                         items.push(current.join(" | "));
@@ -2038,8 +2131,8 @@ async function scanLinkedInProfileInTab(tabId) {
             });
 
             // --- FINAL CLEANUP ---
-            for(let key in data) {
-                if(Array.isArray(data[key])) {
+            for (let key in data) {
+                if (Array.isArray(data[key])) {
                     data[key] = [...new Set(data[key].map(clean).filter(Boolean))];
                 }
             }
@@ -2060,7 +2153,7 @@ async function scanLinkedInProfileInTab(tabId) {
 async function waitForContentLoad(tabId, maxWaitTime = 10000) {
     const startTime = Date.now();
     const checkInterval = 500; // Check every 500ms
-    
+
     while (Date.now() - startTime < maxWaitTime) {
         try {
             const results = await chrome.scripting.executeScript({
@@ -2069,10 +2162,10 @@ async function waitForContentLoad(tabId, maxWaitTime = 10000) {
                     // Check if page has basic LinkedIn structure
                     const hasMainContent = document.querySelector('main') || document.querySelector('.scaffold-layout__main');
                     const hasPosts = document.querySelectorAll('[data-id^="urn:li:activity:"]').length > 0;
-                    const hasLoading = document.querySelector('.scaffold-layout__show-more') || 
-                                     document.querySelector('.feed-skeleton') ||
-                                     document.querySelector('[data-test-id="loading"]');
-                    
+                    const hasLoading = document.querySelector('.scaffold-layout__show-more') ||
+                        document.querySelector('.feed-skeleton') ||
+                        document.querySelector('[data-test-id="loading"]');
+
                     return {
                         hasMainContent: !!hasMainContent,
                         hasPosts,
@@ -2081,26 +2174,26 @@ async function waitForContentLoad(tabId, maxWaitTime = 10000) {
                     };
                 }
             });
-            
+
             const state = results[0]?.result;
             if (state?.ready) {
                 console.log('BACKGROUND: Page content loaded successfully');
                 return true;
             }
-            
+
             if (state?.hasPosts) {
                 console.log('BACKGROUND: Posts found, proceeding with scrape');
                 return true;
             }
-            
+
             console.log(`BACKGROUND: Waiting for content... hasMain: ${state?.hasMainContent}, hasPosts: ${state?.hasPosts}, hasLoading: ${state?.hasLoading}`);
         } catch (error) {
             console.warn('BACKGROUND: Error checking content load:', error);
         }
-        
+
         await new Promise(resolve => setTimeout(resolve, checkInterval));
     }
-    
+
     console.log('BACKGROUND: Content load timeout, proceeding anyway');
     return false;
 }
@@ -2110,7 +2203,7 @@ async function scrollAndLoadContent(tabId, maxAttempts = 3) {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
             console.log(`BACKGROUND: Scroll attempt ${attempt}/${maxAttempts}`);
-            
+
             await chrome.scripting.executeScript({
                 target: { tabId },
                 func: () => {
@@ -2121,10 +2214,10 @@ async function scrollAndLoadContent(tabId, maxAttempts = 3) {
                     });
                 }
             });
-            
+
             // Wait for content to load after scroll
             await new Promise(resolve => setTimeout(resolve, 2000));
-            
+
             // Check if new posts loaded
             const results = await chrome.scripting.executeScript({
                 target: { tabId },
@@ -2136,10 +2229,10 @@ async function scrollAndLoadContent(tabId, maxAttempts = 3) {
                     };
                 }
             });
-            
+
             const state = results[0]?.result;
             console.log(`BACKGROUND: After scroll ${attempt}: ${state?.postCount} posts found`);
-            
+
         } catch (error) {
             console.warn(`BACKGROUND: Scroll attempt ${attempt} failed:`, error);
         }
@@ -2172,7 +2265,7 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
         // Extract posts directly from the activity page
         let scrapedPosts = [];
         let profileData = { name: 'Unknown', headline: '', skills: [], experience: [], posts: [] };
-        
+
         if (postCount > 0) {
             console.log('BACKGROUND: Extracting posts from activity page...');
 
@@ -2200,13 +2293,13 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
                 args: [postCount + 5]
             });
 
-            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
+            try { await chrome.windows.remove(profileWindowId); } catch (e) { }
             const extractData = extractResult[0]?.result || { postUrns: [], profileName: 'Unknown' };
             const postUrns = extractData.postUrns || [];
             profileData.name = extractData.profileName || 'Unknown';
             if (postUrns.length > 0) {
                 console.log(`BACKGROUND: Found ${postUrns.length} post URNs in activity, extracting content...`);
-                
+
                 for (let i = 0; i < Math.min(postUrns.length, postCount); i++) {
                     const { activityId } = postUrns[i];
                     const postUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`;
@@ -2217,7 +2310,7 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
                             target: { tabId: postTab.id },
                             func: () => {
                                 let content = '';
-                                for (const sel of ['.feed-shared-update-v2__description .update-components-text','.update-components-text','.feed-shared-text','.feed-shared-inline-show-more-text','article .break-words']) {
+                                for (const sel of ['.feed-shared-update-v2__description .update-components-text', '.update-components-text', '.feed-shared-text', '.feed-shared-inline-show-more-text', 'article .break-words']) {
                                     const el = document.querySelector(sel);
                                     if (el) { content = el.innerText || el.textContent || ''; if (content.length > 50) break; }
                                 }
@@ -2243,9 +2336,9 @@ async function scrapeProfilePostsImpl(profileUrl, postCount) {
                 }
             }
         } else {
-            try { await chrome.windows.remove(profileWindowId); } catch(e) {}
+            try { await chrome.windows.remove(profileWindowId); } catch (e) { }
         }
-        
+
         const skippedCount = 0;
 
         console.log(`✅ BACKGROUND: Successfully extracted profile data and ${scrapedPosts.length} posts`);
@@ -2284,7 +2377,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: true, message: "Service worker is active" });
         return true;
     }
-    
+
     // Check for extension updates
     if (request.action === "checkForUpdates") {
         (async () => {
@@ -2299,15 +2392,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Get stored update info
     if (request.action === "getStoredUpdateInfo") {
         (async () => {
             try {
                 const updateInfo = await versionChecker.getStoredUpdateInfo();
                 const { lastVersionCheck, currentExtensionVersion } = await chrome.storage.local.get(['lastVersionCheck', 'currentExtensionVersion']);
-                sendResponse({ 
-                    success: true, 
+                sendResponse({
+                    success: true,
                     updateInfo,
                     lastCheck: lastVersionCheck,
                     currentVersion: currentExtensionVersion || chrome.runtime.getManifest().version
@@ -2319,7 +2412,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Open download page
     if (request.action === "openDownloadPage") {
         (async () => {
@@ -2333,7 +2426,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Clear stored update info (after user updates)
     if (request.action === "clearUpdateInfo") {
         (async () => {
@@ -2347,7 +2440,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Force sync analytics to backend
     if (request.action === "syncAnalytics") {
         (async () => {
@@ -2362,7 +2455,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Get processing state - check if any automation is currently running
     if (request.action === "getProcessingState") {
         (async () => {
@@ -2370,27 +2463,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 // Check bulk processing state
                 const bulkState = await chrome.storage.local.get(['bulkProcessingActive', 'bulkProcessingType']);
                 if (bulkState.bulkProcessingActive) {
-                    sendResponse({ 
-                        isProcessing: true, 
-                        processingType: bulkState.bulkProcessingType || 'bulk_processing' 
+                    sendResponse({
+                        isProcessing: true,
+                        processingType: bulkState.bulkProcessingType || 'bulk_processing'
                     });
                     return;
                 }
-                
+
                 // Check people search state
                 const peopleState = await chrome.storage.local.get(['peopleSearchActive']);
                 if (peopleState.peopleSearchActive) {
                     sendResponse({ isProcessing: true, processingType: 'people_search' });
                     return;
                 }
-                
+
                 // Check import automation state
                 const importState = await chrome.storage.local.get(['importAutomationActive']);
                 if (importState.importAutomationActive) {
                     sendResponse({ isProcessing: true, processingType: 'import' });
                     return;
                 }
-                
+
                 // No processing active
                 sendResponse({ isProcessing: false, processingType: null });
             } catch (error) {
@@ -2411,19 +2504,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log('BACKGROUND: Author:', request.authorName);
                 console.log('BACKGROUND: Post text length:', request.postText?.length || 0);
                 console.log('BACKGROUND: bridgeRequestId:', _bridgeRequestId, 'senderTabId:', _senderTabId);
-                
+
                 // Check if AI comment feature is allowed in plan
                 const canUseAiComment = await featureChecker.checkFeature('autoComment');
                 if (!canUseAiComment) {
                     console.error("❌ BACKGROUND: AI comment feature not allowed in current plan");
-                    const errResp = { 
-                        success: false, 
+                    const errResp = {
+                        success: false,
                         error: 'AI comment generation is not available in your plan. Please upgrade!',
                         requiresUpgrade: true
                     };
                     sendResponse(errResp);
                     if (_senderTabId && _bridgeRequestId) {
-                        try { chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: errResp }); } catch(e) {}
+                        try { chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: errResp }); } catch (e) { }
                     }
                     return;
                 }
@@ -2448,7 +2541,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const finalTone = request.tone || storedSettings.tone || 'Friendly';
                 const finalLength = request.length || storedSettings.commentLength || 'Short';
                 const finalStyle = request.style || storedSettings.commentStyle || 'direct';
-                
+
                 console.log('⚙️ BACKGROUND: Using comment settings:', { goal: finalGoal, tone: finalTone, length: finalLength, style: finalStyle });
 
                 // Use the same backend API as automation
@@ -2484,7 +2577,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (data.debug) {
                     console.log('🎨 BACKGROUND: Style debug info:', JSON.stringify(data.debug));
                 }
-                
+
                 // Track AI comment generation
                 if (data.content) {
                     try {
@@ -2493,7 +2586,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         console.warn('BACKGROUND: Failed to track AI comment:', statError);
                     }
                 }
-                
+
                 const successResp = { success: true, comment: data.content };
                 sendResponse(successResp);
                 // FALLBACK: Also send via chrome.tabs.sendMessage (MV3 sendResponse can be unreliable)
@@ -2501,14 +2594,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     try {
                         chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: successResp });
                         console.log('📨 BACKGROUND: Sent fallback tabs.sendMessage to tab', _senderTabId);
-                    } catch(e) { console.warn('BACKGROUND: Fallback tabs.sendMessage failed:', e); }
+                    } catch (e) { console.warn('BACKGROUND: Fallback tabs.sendMessage failed:', e); }
                 }
             } catch (error) {
                 console.error('❌ BACKGROUND: Error generating AI comment:', error);
                 const errResp = { success: false, error: error.message };
                 sendResponse(errResp);
                 if (_senderTabId && _bridgeRequestId) {
-                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: errResp }); } catch(e) {}
+                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: errResp }); } catch (e) { }
                 }
             }
         })();
@@ -2522,10 +2615,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log('✨ BACKGROUND: Scraping profile posts for inspiration (post-by-post method)...');
                 console.log('BACKGROUND: Profile URL:', request.profileUrl);
                 console.log('BACKGROUND: Post count:', request.postCount);
-                
+
                 const profileUrl = request.profileUrl;
                 const postCount = request.postCount || 10;
-                
+
                 // Extract username from URL
                 const urlMatch = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/);
                 if (!urlMatch) {
@@ -2533,26 +2626,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     return;
                 }
                 const username = urlMatch[1];
-                
+
                 // STEP 1: Open the profile's activity page to get post URLs
                 const activityUrl = `https://www.linkedin.com/in/${username}/recent-activity/all/`;
                 console.log('BACKGROUND: Opening activity page:', activityUrl);
-                
+
                 const activityTab = await chrome.tabs.create({ url: activityUrl, active: false });
-                
+
                 // Wait for page to load
                 await waitForContentLoad(activityTab.id, 12000);
-                
+
                 // Scroll to load more posts
                 await scrollAndLoadContent(activityTab.id, 3);
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                
+
                 // STEP 2: Extract post URNs and author name from activity page
                 const extractResult = await chrome.scripting.executeScript({
                     target: { tabId: activityTab.id },
                     func: (maxPosts) => {
                         const postUrns = [];
-                        
+
                         // Get author name from page
                         let authorName = 'Unknown Author';
                         const authorSelectors = [
@@ -2561,7 +2654,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             'h1.text-heading-xlarge',
                             '.profile-top-card-person-list__name'
                         ];
-                        
+
                         for (const selector of authorSelectors) {
                             const element = document.querySelector(selector);
                             if (element) {
@@ -2569,28 +2662,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 break;
                             }
                         }
-                        
+
                         // Find all post elements with URNs
                         const postElements = document.querySelectorAll('[data-urn*="urn:li:activity:"], [data-id*="urn:li:activity:"]');
                         console.log(`Found ${postElements.length} posts with URNs`);
-                        
+
                         for (const post of postElements) {
                             if (postUrns.length >= maxPosts) break;
-                            
+
                             // Get the URN from data-urn or data-id
                             let urn = post.getAttribute('data-urn') || post.getAttribute('data-id');
-                            
+
                             // Skip non-activity URNs
                             if (!urn || !urn.includes('urn:li:activity:')) continue;
-                            
+
                             // Extract the activity ID
                             const activityMatch = urn.match(/urn:li:activity:(\d+)/);
                             if (activityMatch) {
                                 const activityId = activityMatch[1];
                                 // Check if this looks like original content (not a repost/share)
-                                const isRepost = post.querySelector('.feed-shared-reshared-content') || 
-                                               post.querySelector('.update-components-mini-update-v2');
-                                
+                                const isRepost = post.querySelector('.feed-shared-reshared-content') ||
+                                    post.querySelector('.update-components-mini-update-v2');
+
                                 if (!isRepost) {
                                     postUrns.push({
                                         activityId,
@@ -2600,53 +2693,53 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 }
                             }
                         }
-                        
+
                         console.log(`Extracted ${postUrns.length} post URNs`);
                         return { postUrns, authorName };
                     },
                     args: [postCount + 5] // Get a few extra in case some fail
                 });
-                
+
                 // Close activity tab
                 await chrome.tabs.remove(activityTab.id);
-                
+
                 const { postUrns, authorName } = extractResult[0]?.result || { postUrns: [], authorName: 'Unknown' };
-                
+
                 if (postUrns.length === 0) {
                     console.log('BACKGROUND: No post URNs found on activity page');
-                    sendResponse({ 
-                        success: false, 
+                    sendResponse({
+                        success: false,
                         error: 'Could not find posts on this profile. The profile may have no recent posts or they may be private.'
                     });
                     return;
                 }
-                
+
                 console.log(`BACKGROUND: Found ${postUrns.length} post URNs, now opening each post...`);
-                
+
                 // STEP 3: Open each post individually to get full content
                 const scrapedPosts = [];
                 let skippedCount = 0;
-                
+
                 for (let i = 0; i < Math.min(postUrns.length, postCount); i++) {
                     const { activityId } = postUrns[i];
                     const postUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}/`;
-                    
+
                     console.log(`BACKGROUND: Opening post ${i + 1}/${Math.min(postUrns.length, postCount)}: ${postUrl}`);
-                    
+
                     try {
                         // Open the individual post page
                         const postTab = await chrome.tabs.create({ url: postUrl, active: false });
-                        
+
                         // Wait for post page to load
                         await new Promise(resolve => setTimeout(resolve, 4000));
-                        
+
                         // Scrape the full post content
                         const postResult = await chrome.scripting.executeScript({
                             target: { tabId: postTab.id },
                             func: () => {
                                 // Get full post content from individual post page
                                 let content = '';
-                                
+
                                 // Try multiple selectors for post text
                                 const textSelectors = [
                                     '.feed-shared-update-v2__description .update-components-text',
@@ -2655,7 +2748,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     '.feed-shared-inline-show-more-text',
                                     'article .break-words'
                                 ];
-                                
+
                                 for (const selector of textSelectors) {
                                     const element = document.querySelector(selector);
                                     if (element) {
@@ -2663,7 +2756,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                         if (content.length > 50) break;
                                     }
                                 }
-                                
+
                                 // Clean up content
                                 content = content
                                     .replace(/\s+/g, ' ')
@@ -2671,31 +2764,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     .replace(/See more$/i, '')
                                     .replace(/See translation$/i, '')
                                     .trim();
-                                
+
                                 // Get engagement metrics
                                 let likes = 0, comments = 0;
-                                
+
                                 const likesEl = document.querySelector('.social-details-social-counts__reactions-count');
                                 if (likesEl) {
                                     const match = likesEl.textContent?.match(/(\d+(?:,\d+)*)/);
                                     if (match) likes = parseInt(match[1].replace(/,/g, ''));
                                 }
-                                
+
                                 const commentsBtn = document.querySelector('button[aria-label*="comment"]');
                                 if (commentsBtn) {
                                     const match = commentsBtn.getAttribute('aria-label')?.match(/(\d+)/);
                                     if (match) comments = parseInt(match[1]);
                                 }
-                                
+
                                 return { content, likes, comments };
                             }
                         });
-                        
+
                         // Close the post tab
                         await chrome.tabs.remove(postTab.id);
-                        
+
                         const postData = postResult[0]?.result;
-                        
+
                         if (postData && postData.content && postData.content.length >= 50) {
                             // Skip system messages
                             const skipPatterns = [
@@ -2703,7 +2796,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 /endorsed/i, /started following/i, /celebrated/i,
                                 /has a new profile photo/i, /reacted to this/i
                             ];
-                            
+
                             if (!skipPatterns.some(p => p.test(postData.content))) {
                                 scrapedPosts.push({
                                     content: postData.content.substring(0, 5000),
@@ -2721,40 +2814,40 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             skippedCount++;
                             console.log(`BACKGROUND: Post ${i + 1} had insufficient content`);
                         }
-                        
+
                         // Small delay between posts to avoid rate limiting
                         await new Promise(resolve => setTimeout(resolve, 1500));
-                        
+
                     } catch (postError) {
                         console.warn(`BACKGROUND: Failed to scrape post ${i + 1}:`, postError.message);
                         skippedCount++;
                     }
                 }
-                
+
                 if (scrapedPosts.length === 0) {
                     console.log('BACKGROUND: No posts successfully scraped');
-                    sendResponse({ 
-                        success: false, 
+                    sendResponse({
+                        success: false,
                         error: `Could not extract content from posts. Tried ${postUrns.length} posts, skipped ${skippedCount}.`
                     });
                     return;
                 }
-                
+
                 console.log(`✅ BACKGROUND: Successfully scraped ${scrapedPosts.length} posts from ${authorName}`);
-                
+
                 // STEP 4: Save directly to backend API (don't rely on popup staying open)
                 try {
                     const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                     const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-                    
+
                     if (!(await getFreshToken())) {
                         console.error('BACKGROUND: No auth token, cannot save to backend');
                         sendResponse({ success: false, error: 'Not authenticated. Please log in first.' });
                         return;
                     }
-                    
+
                     console.log(`📤 BACKGROUND: Sending ${scrapedPosts.length} posts to vector DB...`);
-                    
+
                     const ingestResponse = await fetch(`${apiUrl}/api/vector/ingest`, {
                         method: 'POST',
                         headers: {
@@ -2769,10 +2862,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             }
                         })
                     });
-                    
+
                     const ingestData = await ingestResponse.json();
                     console.log('📤 BACKGROUND: Ingest response:', ingestData);
-                    
+
                     if (ingestData.success) {
                         // Store success in chrome.storage so UI can detect it
                         await chrome.storage.local.set({
@@ -2784,9 +2877,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 timestamp: Date.now()
                             }
                         });
-                        
-                        sendResponse({ 
-                            success: true, 
+
+                        sendResponse({
+                            success: true,
                             posts: scrapedPosts,
                             authorName,
                             skippedCount,
@@ -2795,8 +2888,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         });
                     } else {
                         console.error('BACKGROUND: Ingest failed:', ingestData.error);
-                        sendResponse({ 
-                            success: true, 
+                        sendResponse({
+                            success: true,
                             posts: scrapedPosts,
                             authorName,
                             skippedCount,
@@ -2806,8 +2899,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
                 } catch (apiError) {
                     console.error('BACKGROUND: API call failed:', apiError);
-                    sendResponse({ 
-                        success: true, 
+                    sendResponse({
+                        success: true,
                         posts: scrapedPosts,
                         authorName,
                         skippedCount,
@@ -2815,7 +2908,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         backendError: apiError.message
                     });
                 }
-                
+
             } catch (error) {
                 console.error('❌ BACKGROUND: Error scraping profile posts:', error);
                 sendResponse({ success: false, error: error.message });
@@ -2831,20 +2924,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log('💾 BACKGROUND: Saving scraped posts to database...');
                 const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-                
+
                 if (!(await getFreshToken())) {
                     sendResponse({ success: false, error: 'Not authenticated' });
                     return;
                 }
-                
+
                 const posts = request.posts || [];
                 if (posts.length === 0) {
                     sendResponse({ success: false, error: 'No posts to save' });
                     return;
                 }
-                
+
                 console.log(`📤 BACKGROUND: Saving ${posts.length} posts to scraped-posts API...`);
-                
+
                 const response = await fetch(`${apiUrl}/api/scraped-posts`, {
                     method: 'POST',
                     headers: {
@@ -2853,7 +2946,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     },
                     body: JSON.stringify({ posts })
                 });
-                
+
                 const data = await response.json();
                 console.log('💾 BACKGROUND: Save response:', data);
                 sendResponse(data);
@@ -2906,18 +2999,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 console.log('🛑 BACKGROUND: Stopping all tasks...');
                 globalThis._stopAllTasks = true;
-                
+
                 // Stop all running automation modules immediately
-                try { importAutomation.stop(); } catch (e) {}
-                try { await stopBulkProcessing(); } catch (e) {}
-                try { await peopleSearchAutomation.stopProcessing(); } catch (e) {}
-                
+                try { importAutomation.stop(); } catch (e) { }
+                try { await stopBulkProcessing(); } catch (e) { }
+                try { await peopleSearchAutomation.stopProcessing(); } catch (e) { }
+
                 // Log the stop event
                 try {
                     const { liveLog } = await import('../shared/services/liveActivityLogger.js');
                     liveLog.stop('automation', '🛑 All tasks stopped by user');
-                } catch (e) {}
-                
+                } catch (e) { }
+
                 // Close scraper window/tab if it exists (registered by enhancedScraper)
                 if (globalThis._scrapingWindowId) {
                     try {
@@ -2933,7 +3026,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     } catch (e) { /* tab may already be closed */ }
                     globalThis._scrapingTabId = null;
                 }
-                
+
                 // Close all LinkedIn tabs opened by commands
                 const tabIds = [...globalThis._commandLinkedInTabs];
                 for (const tabId of tabIds) {
@@ -2941,10 +3034,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
                 globalThis._commandLinkedInTabs.clear();
                 globalThis._processingCommandIds.clear();
-                
+
                 // Clear stop flag immediately so new tasks can execute
                 globalThis._stopAllTasks = false;
-                
+
                 // Cancel all pending commands via API
                 const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
@@ -2955,7 +3048,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                     });
                 }
-                
+
                 console.log('🛑 BACKGROUND: All tasks stopped, closed', tabIds.length, 'tabs');
                 sendResponse({ success: true, closedTabs: tabIds.length });
             } catch (error) {
@@ -2987,13 +3080,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-                
+
                 if (!(await getFreshToken())) {
                     globalThis._pollCommandsRunning = false;
                     sendResponse({ success: false, commands: [] });
                     return;
                 }
-                
+
                 const response = await fetch(`${apiUrl}/api/extension/command`, {
                     method: 'GET',
                     headers: {
@@ -3001,15 +3094,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         'Content-Type': 'application/json'
                     }
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success && data.commands && data.commands.length > 0) {
                     console.log(`📥 BACKGROUND: Found ${data.commands.length} pending commands from website`);
-                    
+
                     // Commands handled by alarm-based commandPoller — skip them here
                     const alarmOnlyCommands = ['start_bulk_commenting', 'start_import_automation', 'AI_PROFILE_RECAPTURE'];
-                    
+
                     for (const cmd of data.commands) {
                         // Skip commands that are handled by the alarm-based poller
                         if (alarmOnlyCommands.includes(cmd.command)) {
@@ -3026,10 +3119,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             console.log('🛑 BACKGROUND: Stop flag set, skipping remaining commands');
                             break;
                         }
-                        
+
                         // Mark as processing locally
                         globalThis._processingCommandIds.add(cmd.id);
-                        
+
                         // Mark as in_progress on server immediately
                         try {
                             await fetch(`${apiUrl}/api/extension/command`, {
@@ -3044,9 +3137,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             try {
                                 const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                                 ll.start('post_writer', `✍️ Posting to LinkedIn...`);
-                            } catch (e) {}
+                            } catch (e) { }
                             let postTab = null;
-                            
+
                             try {
                                 // Step 1: Open a new LinkedIn tab
                                 console.log('BACKGROUND: Opening LinkedIn tab for website command...');
@@ -3074,7 +3167,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 // Load post writer delay settings from Limits tab
                                 const { delaySettings: pwDelays } = await chrome.storage.local.get('delaySettings');
                                 const pageLoadWait = ((pwDelays && pwDelays.postWriterPageLoadDelay) || 5) * 1000;
-                                console.log(`BACKGROUND: LinkedIn tab loaded, waiting ${pageLoadWait/1000}s for render (from Limits)...`);
+                                console.log(`BACKGROUND: LinkedIn tab loaded, waiting ${pageLoadWait / 1000}s for render (from Limits)...`);
                                 await new Promise(resolve => setTimeout(resolve, pageLoadWait));
 
                                 // Step 3: Inject posting script into the LinkedIn tab
@@ -3144,106 +3237,106 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                 return searchForBtn(dialog || document);
                                             };
                                             try {
-                                            console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
-                                            const startPostBtn = _findStartBtn();
-                                            if (!startPostBtn) {
-                                                resolve({ success: false, error: 'Start post button not found' });
-                                                return;
-                                            }
-                                            console.log('LinkedIn Post Script: Start button found, clicking...', {
-                                                tagName: startPostBtn.tagName,
-                                                className: startPostBtn.className,
-                                                text: startPostBtn.textContent?.substring(0, 50)
-                                            });
-                                            startPostBtn.click();
-                                            
-                                            setTimeout(() => {
-                                                const modal = document.querySelector('[role="dialog"]');
-                                                console.log('LinkedIn Post Script: Modal check after 1.5s:', modal ? 'FOUND ✓' : 'NOT FOUND ✗');
-                                                if (modal) {
-                                                    console.log('LinkedIn Post Script: Modal details:', {
-                                                        className: modal.className,
-                                                        childCount: modal.children.length
-                                                    });
-                                                }
-                                                
-                                                const pollTimeout = 20000; // 20 seconds
-                                                console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
-                                                _poll(_findEditor, 500, pollTimeout).then(async (editor) => {
-                                                try {
-                                                if (!editor) {
-                                                    resolve({ success: false, error: 'Editor not found after polling' });
+                                                console.log('LinkedIn Post Script: Starting...', { hasImage: !!imgDataUrl });
+                                                const startPostBtn = _findStartBtn();
+                                                if (!startPostBtn) {
+                                                    resolve({ success: false, error: 'Start post button not found' });
                                                     return;
                                                 }
-                                                console.log('LinkedIn Post Script: Editor found via logic-based detection');
-                                                editor.innerHTML = '';
-                                                editor.focus();
-                                                const lines = postContent.split('\n');
-                                                lines.forEach((line) => {
-                                                    if (line.trim() === '') {
-                                                        editor.appendChild(document.createElement('br'));
-                                                    } else {
-                                                        const p = document.createElement('p');
-                                                        p.textContent = line;
-                                                        editor.appendChild(p);
-                                                    }
+                                                console.log('LinkedIn Post Script: Start button found, clicking...', {
+                                                    tagName: startPostBtn.tagName,
+                                                    className: startPostBtn.className,
+                                                    text: startPostBtn.textContent?.substring(0, 50)
                                                 });
-                                                editor.dispatchEvent(new Event('input', { bubbles: true }));
-                                                console.log('LinkedIn Post Script: Text inserted');
+                                                startPostBtn.click();
 
-                                                // Handle image attachment via clipboard paste
-                                                const pasteImage = async () => {
-                                                    if (!imgDataUrl) return false;
-                                                    try {
-                                                        console.log('LinkedIn Post Script: Pasting image via clipboard...');
-                                                        const byteString = atob(imgDataUrl.split(',')[1]);
-                                                        const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
-                                                        const ab = new ArrayBuffer(byteString.length);
-                                                        const ia = new Uint8Array(ab);
-                                                        for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
-                                                        const blob = new Blob([ab], { type: mimeString });
-                                                        const file = new File([blob], 'image.png', { type: mimeString });
-                                                        try {
-                                                            await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
-                                                        } catch (clipErr) {
-                                                            console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
-                                                        }
-                                                        editor.focus();
-                                                        const dt = new DataTransfer();
-                                                        dt.items.add(file);
-                                                        const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
-                                                        editor.dispatchEvent(pasteEvt);
-                                                        const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
-                                                        if (shareBox) {
-                                                            shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
-                                                        }
-                                                        await new Promise(r => setTimeout(r, 3000));
-                                                        return true;
-                                                    } catch (imgErr) {
-                                                        console.error('LinkedIn Post Script: Image paste error:', imgErr);
-                                                        return false;
+                                                setTimeout(() => {
+                                                    const modal = document.querySelector('[role="dialog"]');
+                                                    console.log('LinkedIn Post Script: Modal check after 1.5s:', modal ? 'FOUND ✓' : 'NOT FOUND ✗');
+                                                    if (modal) {
+                                                        console.log('LinkedIn Post Script: Modal details:', {
+                                                            className: modal.className,
+                                                            childCount: modal.children.length
+                                                        });
                                                     }
-                                                };
 
-                                                const imageAttached = await pasteImage();
-                                                console.log('LinkedIn Post Script: Image attached:', imageAttached);
-                                                const extraWait = imgDataUrl ? 4000 : 0;
-                                                await new Promise(r => setTimeout(r, 3000 + extraWait));
-                                                
-                                                const postButton = _findPostBtn();
-                                                if (postButton && !postButton.disabled) {
-                                                    postButton.click();
-                                                    console.log('LinkedIn Post Script: Post button clicked');
-                                                    resolve({ success: true, posted: true, imageAttached });
-                                                } else {
-                                                    console.log('LinkedIn Post Script: Post button not found or disabled');
-                                                    resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
-                                                }
-                                                } catch (innerErr) {
-                                                    resolve({ success: false, error: 'Inner error: ' + innerErr.message });
-                                                }
-                                            });
-                                            }, 1500);
+                                                    const pollTimeout = 20000; // 20 seconds
+                                                    console.log(`LinkedIn Post Script: Polling for editor (timeout ${pollTimeout}ms)...`);
+                                                    _poll(_findEditor, 500, pollTimeout).then(async (editor) => {
+                                                        try {
+                                                            if (!editor) {
+                                                                resolve({ success: false, error: 'Editor not found after polling' });
+                                                                return;
+                                                            }
+                                                            console.log('LinkedIn Post Script: Editor found via logic-based detection');
+                                                            editor.innerHTML = '';
+                                                            editor.focus();
+                                                            const lines = postContent.split('\n');
+                                                            lines.forEach((line) => {
+                                                                if (line.trim() === '') {
+                                                                    editor.appendChild(document.createElement('br'));
+                                                                } else {
+                                                                    const p = document.createElement('p');
+                                                                    p.textContent = line;
+                                                                    editor.appendChild(p);
+                                                                }
+                                                            });
+                                                            editor.dispatchEvent(new Event('input', { bubbles: true }));
+                                                            console.log('LinkedIn Post Script: Text inserted');
+
+                                                            // Handle image attachment via clipboard paste
+                                                            const pasteImage = async () => {
+                                                                if (!imgDataUrl) return false;
+                                                                try {
+                                                                    console.log('LinkedIn Post Script: Pasting image via clipboard...');
+                                                                    const byteString = atob(imgDataUrl.split(',')[1]);
+                                                                    const mimeString = imgDataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                                                    const ab = new ArrayBuffer(byteString.length);
+                                                                    const ia = new Uint8Array(ab);
+                                                                    for (let j = 0; j < byteString.length; j++) ia[j] = byteString.charCodeAt(j);
+                                                                    const blob = new Blob([ab], { type: mimeString });
+                                                                    const file = new File([blob], 'image.png', { type: mimeString });
+                                                                    try {
+                                                                        await navigator.clipboard.write([new ClipboardItem({ [mimeString]: blob })]);
+                                                                    } catch (clipErr) {
+                                                                        console.log('LinkedIn Post Script: Clipboard write failed:', clipErr.message);
+                                                                    }
+                                                                    editor.focus();
+                                                                    const dt = new DataTransfer();
+                                                                    dt.items.add(file);
+                                                                    const pasteEvt = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
+                                                                    editor.dispatchEvent(pasteEvt);
+                                                                    const shareBox = document.querySelector('.share-box--is-open') || document.querySelector('.share-creation-state') || document.querySelector('[role="dialog"]');
+                                                                    if (shareBox) {
+                                                                        shareBox.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
+                                                                    }
+                                                                    await new Promise(r => setTimeout(r, 3000));
+                                                                    return true;
+                                                                } catch (imgErr) {
+                                                                    console.error('LinkedIn Post Script: Image paste error:', imgErr);
+                                                                    return false;
+                                                                }
+                                                            };
+
+                                                            const imageAttached = await pasteImage();
+                                                            console.log('LinkedIn Post Script: Image attached:', imageAttached);
+                                                            const extraWait = imgDataUrl ? 4000 : 0;
+                                                            await new Promise(r => setTimeout(r, 3000 + extraWait));
+
+                                                            const postButton = _findPostBtn();
+                                                            if (postButton && !postButton.disabled) {
+                                                                postButton.click();
+                                                                console.log('LinkedIn Post Script: Post button clicked');
+                                                                resolve({ success: true, posted: true, imageAttached });
+                                                            } else {
+                                                                console.log('LinkedIn Post Script: Post button not found or disabled');
+                                                                resolve({ success: true, posted: false, message: 'Content inserted, click Post manually', imageAttached });
+                                                            }
+                                                        } catch (innerErr) {
+                                                            resolve({ success: false, error: 'Inner error: ' + innerErr.message });
+                                                        }
+                                                    });
+                                                }, 1500);
                                             } catch (outerErr) {
                                                 resolve({ success: false, error: 'Outer error: ' + outerErr.message });
                                             }
@@ -3254,11 +3347,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                                 const scriptResult = result?.[0]?.result;
                                 console.log('BACKGROUND: Website command script result:', scriptResult);
-                                
+
                                 // Wait a moment for LinkedIn to process the post before closing tab
                                 console.log('BACKGROUND: Waiting 5s before closing tab...');
                                 await new Promise(resolve => setTimeout(resolve, 5000));
-                                
+
                                 // Mark command as completed
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
@@ -3270,7 +3363,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     try {
                                         const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                                         ll.post('post_writer', `✅ Post published to LinkedIn${scriptResult?.imageAttached ? ' (with image)' : ''}`);
-                                    } catch (e) {}
+                                    } catch (e) { }
                                 } catch (fetchErr) {
                                     console.error('BACKGROUND: Failed to update command status:', fetchErr.message);
                                 }
@@ -3279,14 +3372,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 try {
                                     const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                                     ll.error('post_writer', `❌ Post failed: ${postError.message}`);
-                                } catch (e) {}
+                                } catch (e) { }
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
                                         headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                     });
-                                } catch (e) {}
+                                } catch (e) { }
                             } finally {
                                 // Always close tab and clean up
                                 if (postTab) {
@@ -3376,7 +3469,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                             console.log('BACKGROUND: Scrape cancelled by user');
                                             break;
                                         }
-                                    } catch (e) {}
+                                    } catch (e) { }
                                     await scrollAndLoadContent(scrapeTab.id, 1);
                                     scrollCount++;
                                     // Inject/update on-page status overlay
@@ -3506,10 +3599,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                         headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { ...cmd.data, message: 'Scraping failed: ' + (feedError.message || 'unknown error') } })
                                     });
-                                } catch (e) {}
+                                } catch (e) { }
                             } finally {
                                 // Always close window and clean up
-                                if (scrapeWindowId) { try { await chrome.windows.remove(scrapeWindowId); } catch (e) {} }
+                                if (scrapeWindowId) { try { await chrome.windows.remove(scrapeWindowId); } catch (e) { } }
                                 if (scrapeTab) { globalThis._commandLinkedInTabs.delete(scrapeTab.id); }
                                 globalThis._processingCommandIds.delete(cmd.id);
                             }
@@ -3520,7 +3613,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             console.log('💬 BACKGROUND: Executing scrape_comments command for:', cmd.data.profileUrl);
                             let commentTab = null;
                             const sendOverlayLegacy = async (tabId, message, type = 'info') => {
-                                try { await chrome.tabs.sendMessage(tabId, { action: 'updateNetworkingStatus', message, type }); } catch (e) {}
+                                try { await chrome.tabs.sendMessage(tabId, { action: 'updateNetworkingStatus', message, type }); } catch (e) { }
                             };
                             try {
                                 // Extract profile ID from URL
@@ -3670,14 +3763,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 console.log(`✅ BACKGROUND: scrape_comments done, saved ${result.count} comments for ${targetProfileId}`);
                             } catch (commentError) {
                                 console.error('❌ BACKGROUND: scrape_comments failed:', commentError);
-                                if (commentTab) { try { await sendOverlayLegacy(commentTab.id, `❌ Kommentify: Comment scraping failed`, 'error'); } catch (x) {} }
+                                if (commentTab) { try { await sendOverlayLegacy(commentTab.id, `❌ Kommentify: Comment scraping failed`, 'error'); } catch (x) { } }
                                 try {
                                     await fetch(`${apiUrl}/api/extension/command`, {
                                         method: 'PUT',
                                         headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ commandId: cmd.id, status: 'failed' })
                                     });
-                                } catch (e) {}
+                                } catch (e) { }
                             } finally {
                                 if (commentTab) {
                                     await safeTabClose(commentTab.id, 'scrape comments tab');
@@ -3763,7 +3856,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                         body: JSON.stringify(saveData)
                                     });
                                     console.log('🔗 BACKGROUND: Profile data saved to database');
-                                    
+
                                     // Keep the LinkedIn tab open after successful scan
                                     console.log('🔗 BACKGROUND: LinkedIn tab kept open for user');
                                 } else {
@@ -3778,15 +3871,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             } catch (e) {
                                 console.error('❌ BACKGROUND: scan_my_linkedin_profile failed:', e);
                                 // Close the LinkedIn tab on error
-                                try { await chrome.tabs.remove(scanTab.id); } catch (tabError) {}
-                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) {}
+                                try { await chrome.tabs.remove(scanTab.id); } catch (tabError) { }
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed' }) }); } catch (x) { }
                             } finally {
                                 globalThis._processingCommandIds.delete(cmd.id);
                             }
                         }
                     }
                 }
-                
+
                 sendResponse({ success: true, commands: data.commands || [] });
             } catch (error) {
                 console.error('BACKGROUND: Error polling website commands:', error);
@@ -3804,12 +3897,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
-                
+
                 if (!(await getFreshToken())) {
                     sendResponse({ success: false, error: 'Not authenticated' });
                     return;
                 }
-                
+
                 const response = await fetch(`${apiUrl}/api/feed-schedules`, {
                     method: 'GET',
                     headers: {
@@ -3817,7 +3910,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         'Content-Type': 'application/json'
                     }
                 });
-                
+
                 const data = await response.json();
                 sendResponse(data);
             } catch (error) {
@@ -3849,7 +3942,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const token = await getFreshToken();
                 let apiUrl = storage.apiBaseUrl;
                 if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) apiUrl = API_CONFIG.BASE_URL;
-                
+
                 if (token) {
                     try {
                         const res = await fetch(`${apiUrl}/api/comment-settings`, {
@@ -3873,7 +3966,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             sendResponse(serverSettings);
                             // FALLBACK: Also send via chrome.tabs.sendMessage
                             if (_senderTabId && _bridgeRequestId) {
-                                try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: serverSettings }); } catch(e) {}
+                                try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: serverSettings }); } catch (e) { }
                             }
                             return;
                         }
@@ -3881,20 +3974,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         console.warn('BACKGROUND: Could not fetch server settings, using local:', fetchErr.message);
                     }
                 }
-                
+
                 // Fallback to local storage
                 const result = await chrome.storage.local.get('commentSettings');
                 const settings = result.commentSettings || defaults;
                 console.log('BACKGROUND: Returning local comment settings:', settings);
                 sendResponse(settings);
                 if (_senderTabId && _bridgeRequestId) {
-                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: settings }); } catch(e) {}
+                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: settings }); } catch (e) { }
                 }
             } catch (error) {
                 console.error('BACKGROUND: Error getting comment settings:', error);
                 sendResponse(defaults);
                 if (_senderTabId && _bridgeRequestId) {
-                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: defaults }); } catch(e) {}
+                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'COMMENT_SETTINGS_RESULT', _bridgeRequestId, data: defaults }); } catch (e) { }
                 }
             }
         })();
@@ -3907,17 +4000,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 const actionType = request.actionType;
                 const result = await chrome.storage.local.get(['dailyLimits', 'dailyCounts']);
-                
+
                 const dailyLimits = result.dailyLimits || {
                     comments: 30,
                     likes: 60,
                     shares: 15,
                     follows: 30
                 };
-                
+
                 const today = new Date().toISOString().split('T')[0];
                 let dailyCounts = result.dailyCounts || {};
-                
+
                 // Reset counts if it's a new day
                 if (dailyCounts.date !== today) {
                     dailyCounts = {
@@ -3929,20 +4022,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     };
                     await chrome.storage.local.set({ dailyCounts });
                 }
-                
+
                 const keyMap = {
                     'comment': 'comments',
                     'like': 'likes',
                     'share': 'shares',
                     'follow': 'follows'
                 };
-                
+
                 const key = keyMap[actionType] || actionType;
                 const current = dailyCounts[key] || 0;
                 const limit = dailyLimits[key] || Infinity;
                 const remaining = Math.max(0, limit - current);
                 const allowed = current < limit;
-                
+
                 console.log('BACKGROUND: Daily limit check:', { actionType, current, limit, allowed });
                 sendResponse({ allowed, current, limit, remaining });
             } catch (error) {
@@ -3959,10 +4052,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
                 const actionType = request.actionType;
                 const result = await chrome.storage.local.get(['dailyCounts']);
-                
+
                 const today = new Date().toISOString().split('T')[0];
                 let dailyCounts = result.dailyCounts || {};
-                
+
                 // Reset counts if it's a new day
                 if (dailyCounts.date !== today) {
                     dailyCounts = {
@@ -3973,19 +4066,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         follows: 0
                     };
                 }
-                
+
                 const keyMap = {
                     'comment': 'comments',
                     'like': 'likes',
                     'share': 'shares',
                     'follow': 'follows'
                 };
-                
+
                 const key = keyMap[actionType] || actionType;
                 dailyCounts[key] = (dailyCounts[key] || 0) + 1;
-                
+
                 await chrome.storage.local.set({ dailyCounts });
-                
+
                 console.log('BACKGROUND: Incremented daily count:', { actionType, newCount: dailyCounts[key] });
                 sendResponse({ success: true, newCount: dailyCounts[key] });
             } catch (error) {
@@ -4045,11 +4138,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 const data = await response.json();
                 console.log('BACKGROUND: Keywords generated:', data.keywords?.length || 0);
-                
-                sendResponse({ 
-                    success: true, 
+
+                sendResponse({
+                    success: true,
                     keywords: data.keywords || [],
-                    rawContent: data.rawContent 
+                    rawContent: data.rawContent
                 });
             } catch (error) {
                 console.error('BACKGROUND: Error generating keywords:', error);
@@ -4094,8 +4187,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     const canUseAutomation = await featureChecker.checkFeature('autoLike');
                     if (!canUseAutomation) {
                         console.error("❌ BACKGROUND: General Automation feature not allowed in current plan");
-                        sendResponse({ 
-                            success: false, 
+                        sendResponse({
+                            success: false,
                             error: 'General Automation requires a paid plan. Please upgrade!',
                             requiresUpgrade: true,
                             feature: 'autoLike'
@@ -4217,22 +4310,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         (async () => {
             try {
                 console.log('BACKGROUND: Starting people search automation');
-                
+
                 // CHECK FEATURE PERMISSION
                 const canUseNetworking = await featureChecker.checkFeature('autoFollow');
                 if (!canUseNetworking) {
                     console.error("❌ BACKGROUND: Networking feature not allowed in current plan");
-                    sendResponse({ 
-                        success: false, 
+                    sendResponse({
+                        success: false,
                         error: 'Networking Features require a paid plan. Please upgrade!',
                         requiresUpgrade: true,
                         feature: 'autoFollow'
                     });
                     return;
                 }
-                
+
                 const { keyword, quota, options, message, source, searchUrl } = request;
-                
+
                 console.log('BACKGROUND: People search source:', source || 'keyword');
                 console.log('BACKGROUND: Search URL:', searchUrl || 'N/A');
                 console.log('BACKGROUND: Keyword:', keyword || 'N/A');
@@ -4263,20 +4356,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         (async () => {
             try {
                 console.log('BACKGROUND: Generating topic lines with backend API');
-                
+
                 // CHECK FEATURE PERMISSION
                 const canUseAiTopicLines = await featureChecker.checkFeature('aiTopicLines');
                 if (!canUseAiTopicLines) {
                     console.error("❌ BACKGROUND: AI Topic Lines feature not allowed in current plan");
-                    sendResponse({ 
-                        success: false, 
+                    sendResponse({
+                        success: false,
                         error: 'AI Topic Lines generation is not available in your plan. Please upgrade!',
                         requiresUpgrade: true,
                         feature: 'aiTopicLines'
                     });
                     return;
                 }
-                
+
                 const { topic } = request;
 
                 // Get auth token and API URL
@@ -4318,7 +4411,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
 
                 console.log('BACKGROUND: Generated topic lines from backend:', data.topics);
-                
+
                 // Track AI topic lines generation
                 if (data.topics && data.topics.length > 0) {
                     try {
@@ -4327,7 +4420,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         console.warn('BACKGROUND: Failed to track AI topic lines:', statError);
                     }
                 }
-                
+
                 sendResponse({ success: true, topics: data.topics });
 
             } catch (error) {
@@ -4347,8 +4440,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const canUseAiContent = await featureChecker.checkFeature('aiContent');
                 if (!canUseAiContent) {
                     console.error("❌ BACKGROUND: AI content feature not allowed in current plan");
-                    sendResponse({ 
-                        success: false, 
+                    sendResponse({
+                        success: false,
                         error: 'AI content generation is not available in your plan. Please upgrade to create posts with AI!',
                         requiresUpgrade: true,
                         feature: 'aiContent'
@@ -4410,7 +4503,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
 
                 console.log('BACKGROUND: Generated post from backend');
-                
+
                 // Track AI post generation
                 if (data.content) {
                     try {
@@ -4419,7 +4512,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         console.warn('BACKGROUND: Failed to track AI post:', statError);
                     }
                 }
-                
+
                 sendResponse({ success: true, content: data.content });
 
             } catch (error) {
@@ -4480,7 +4573,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         resolve();
                     }, 30000);
                 });
-                
+
                 console.log('BACKGROUND: Tab loaded, waiting 5s for page to render...');
                 await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -4597,12 +4690,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     },
                     args: [content]
                 });
-                
+
                 const scriptResult = result?.[0]?.result;
                 console.log('BACKGROUND: Script result:', scriptResult);
 
-                sendResponse({ 
-                    success: scriptResult?.success || false, 
+                sendResponse({
+                    success: scriptResult?.success || false,
                     tabId: tab.id,
                     posted: scriptResult?.posted || false,
                     message: scriptResult?.message
@@ -4914,8 +5007,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const canUseAiComment = await featureChecker.checkFeature('autoComment');
                 if (!canUseAiComment) {
                     console.error("❌ BACKGROUND: AI comment feature not allowed in current plan");
-                    sendResponse({ 
-                        success: false, 
+                    sendResponse({
+                        success: false,
                         error: 'AI comment generation is not available in your plan. Please upgrade to use AI-powered comments.',
                         requiresUpgrade: true,
                         feature: 'autoComment'
@@ -4924,8 +5017,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
 
                 // Extract all parameters from request (sent by content script or automation)
-                const { 
-                    postText, 
+                const {
+                    postText,
                     authorName,
                     goal,
                     tone,
@@ -4933,7 +5026,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     userExpertise,
                     userBackground
                 } = request;
-                
+
                 // Log scraped data from content script
                 console.log('📥 BACKGROUND: Received scraped data from page:');
                 console.log('   📝 Post text:', postText ? `${postText.substring(0, 100)}...` : 'MISSING');
@@ -4961,7 +5054,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const finalStyle = storedSettings.commentStyle || 'direct';
                 const finalExpertise = userExpertise !== undefined ? userExpertise : (storedSettings.userExpertise || '');
                 const finalBackground = userBackground !== undefined ? userBackground : (storedSettings.userBackground || '');
-                
+
                 console.log('⚙️ BACKGROUND: Using comment settings:', {
                     goal: finalGoal,
                     tone: finalTone,
@@ -5009,7 +5102,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
 
                 console.log("✅ BACKGROUND: Generated comment from backend:", data.content);
-                
+
                 // Track AI comment generation
                 if (data.content) {
                     try {
@@ -5018,7 +5111,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         console.warn('BACKGROUND: Failed to track AI comment:', statError);
                     }
                 }
-                
+
                 sendResponse({ success: true, comment: data.content });
 
             } catch (error) {
@@ -5094,7 +5187,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     sendResponse({ success: false, error: 'Import Profiles Auto Engagement requires a paid plan. Please upgrade!' });
                     return;
                 }
-                
+
                 console.log('BACKGROUND: Starting import connection requests');
                 const { profiles, options } = request;
                 const result = await importAutomation.processConnectionRequests(profiles, options);
@@ -5119,7 +5212,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     sendResponse({ success: false, error: 'Import Profiles Auto Engagement requires a paid plan. Please upgrade!' });
                     return;
                 }
-                
+
                 console.log('BACKGROUND: Starting import post engagement');
                 const { profiles, options } = request;
                 const result = await importAutomation.processPostEngagement(profiles, options);
@@ -5150,7 +5243,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     sendResponse({ success: false, error: 'Import Profiles Auto Engagement requires a paid plan. Please upgrade!' });
                     return;
                 }
-                
+
                 console.log('BACKGROUND: Starting import combined automation');
                 const { profiles, options } = request;
                 const result = await importAutomation.processCombinedAutomation(profiles, options);
@@ -5169,7 +5262,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse(result);
         return true;
     }
-    
+
     // Post Scheduler - Post missed posts manually
     if (request.action === "postMissedPosts") {
         (async () => {
@@ -5186,7 +5279,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Post Scheduler - Reschedule missed posts
     if (request.action === "rescheduleMissedPosts") {
         (async () => {
@@ -5203,7 +5296,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Post Scheduler - Get scheduler logs for debugging
     if (request.action === "getSchedulerLogs") {
         (async () => {
@@ -5216,7 +5309,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
-    
+
     // Handle authComplete from authBridge - authentication was successful
     if (request.action === "authComplete") {
         (async () => {
@@ -5267,14 +5360,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name.startsWith('peopleSearch_')) {
         await peopleSearchScheduler.handleAlarm(alarm.name);
     }
-    
+
     // Post scheduler alarm (for Writer tab scheduled posts)
     if (alarm.name === 'postSchedulerCheck') {
         if (postScheduler) {
             await postScheduler.handleAlarm();
         }
     }
-    
+
     // Version check alarm
     if (alarm.name === 'versionCheck') {
         await versionChecker.handleAlarm(alarm);

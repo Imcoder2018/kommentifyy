@@ -96,6 +96,7 @@ import { API_CONFIG } from '../shared/config.js';
 import { versionChecker } from './versionChecker.js';
 import { syncAllSettingsFromWebsite } from '../shared/services/settingsSync.js';
 import { profileScanner } from './profileScanner.js';
+import { syncVoyagerData, shouldAutoSync } from './voyagerDataFetcher.js';
 import { startAnalyticsSyncService, forceAnalyticsSync } from '../shared/services/analyticsSync.js';
 import { startLiveLogger, liveLog } from '../shared/services/liveActivityLogger.js';
 
@@ -249,6 +250,15 @@ if (!globalThis._commandPollAlarmCreated) {
     chrome.alarms.create('commandPoller', { periodInMinutes: 0.5 }); // every 30 seconds
     globalThis._commandPollAlarmCreated = true;
     console.log('BACKGROUND: Command poller alarm created (every 30s)');
+}
+
+// Voyager data sync alarm — every 6 hours
+if (!globalThis._voyagerSyncAlarmCreated) {
+    // Clear stale sync timestamp so first alarm after reload always syncs
+    chrome.storage.local.remove('voyagerLastSync');
+    chrome.alarms.create('voyagerSync', { delayInMinutes: 1, periodInMinutes: 360 }); // first run after 1 min, then every 6h
+    globalThis._voyagerSyncAlarmCreated = true;
+    console.log('BACKGROUND: Voyager sync alarm created (every 6h)');
 }
 
 // Standalone command polling function - called by alarm, no dependency on content scripts
@@ -5329,6 +5339,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    // Handle Voyager data sync request
+    if (request.action === 'VOYAGER_SYNC') {
+        (async () => {
+            try {
+                console.log('[Voyager] Manual sync triggered via message');
+                const result = await syncVoyagerData();
+                sendResponse(result);
+            } catch (err) {
+                console.error('[Voyager] Sync error:', err);
+                sendResponse({ success: false, error: err.message });
+            }
+        })();
+        return true;
+    }
+
     // Default response
     console.log("BACKGROUND: Unhandled action:", request.action);
     sendResponse({ success: false, error: `Action '${request.action}' not implemented` });
@@ -5376,6 +5401,20 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     // Command poller alarm - polls for website commands every 30s
     if (alarm.name === 'commandPoller') {
         await pollCommandsDirectly();
+    }
+
+    // Voyager data sync alarm — auto-sync LinkedIn profile data
+    if (alarm.name === 'voyagerSync') {
+        try {
+            if (await shouldAutoSync()) {
+                console.log('[Voyager] Auto-sync triggered by alarm');
+                await syncVoyagerData();
+            } else {
+                console.log('[Voyager] Auto-sync skipped — synced recently');
+            }
+        } catch (err) {
+            console.warn('[Voyager] Auto-sync alarm error:', err.message);
+        }
     }
 });
 

@@ -362,6 +362,10 @@ function DashboardContent() {
     const [viewingProfilePosts, setViewingProfilePosts] = useState<string | null>(null);
     const [profilePostsData, setProfilePostsData] = useState<any[]>([]);
     const [profilePostsLoading, setProfilePostsLoading] = useState(false);
+    // Voyager data state
+    const [voyagerData, setVoyagerData] = useState<any>(null);
+    const [voyagerLoading, setVoyagerLoading] = useState(false);
+    const [voyagerSyncing, setVoyagerSyncing] = useState(false);
 
     // Toggle inspiration post selection
     const toggleInspirationPost = (post: string) => {
@@ -506,6 +510,7 @@ function DashboardContent() {
         };
 
         validateAndLoad();
+        loadVoyagerData(); // Load LinkedIn Voyager data on overview tab
 
         // Fetch referral data
         fetch('/api/referrals', {
@@ -1148,6 +1153,63 @@ function DashboardContent() {
         } catch { } finally { setLinkedInProfileLoading(false); }
     };
 
+    // Voyager data functions
+    const loadVoyagerData = async () => {
+        const token = localStorage.getItem('authToken');
+        console.log('[VOYAGER UI] loadVoyagerData called, token exists:', !!token);
+        if (!token) return;
+        setVoyagerLoading(true);
+        try {
+            const res = await fetch('/api/linkedin-profile', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            console.log('[VOYAGER UI] API response:', { success: data.success, hasData: !!data.data, fields: data.data ? Object.keys(data.data) : [], linkedInUrn: data.data?.linkedInUrn, followerCount: data.data?.followerCount, voyagerLastSyncAt: data.data?.voyagerLastSyncAt });
+            if (data.success && data.data) {
+                const d = data.data;
+                const recentPosts = Array.isArray(d.recentPosts) ? d.recentPosts : (typeof d.recentPosts === 'string' ? JSON.parse(d.recentPosts || '[]') : []);
+                const experience = Array.isArray(d.experience) ? d.experience : (typeof d.experience === 'string' ? JSON.parse(d.experience || '[]') : []);
+                const education = Array.isArray(d.education) ? d.education : (typeof d.education === 'string' ? JSON.parse(d.education || '[]') : []);
+                const profileViewsData = d.profileViewsData
+                    ? (typeof d.profileViewsData === 'string' ? JSON.parse(d.profileViewsData) : d.profileViewsData)
+                    : null;
+                const invitationsData = d.interests
+                    ? (typeof d.interests === 'string' ? (() => { try { return JSON.parse(d.interests); } catch { return null; } })() : d.interests)
+                    : null;
+                const profileMetadata = d.certifications
+                    ? (typeof d.certifications === 'string' ? (() => { try { return JSON.parse(d.certifications); } catch { return null; } })() : d.certifications)
+                    : null;
+                const topConnections = d.voyagerEmail
+                    ? (typeof d.voyagerEmail === 'string' ? (() => { try { return JSON.parse(d.voyagerEmail); } catch { return null; } })() : d.voyagerEmail)
+                    : null;
+                const voyagerState = {
+                    linkedInUrn: d.linkedInUrn,
+                    linkedInUsername: d.linkedInUsername,
+                    name: d.name,
+                    headline: d.headline,
+                    location: d.location,
+                    about: d.about,
+                    profileUrl: d.profileUrl,
+                    profilePicture: profileViewsData?.profilePicture || '',
+                    backgroundImage: profileViewsData?.backgroundImage || '',
+                    followerCount: d.followerCount,
+                    connectionCount: d.connectionCount,
+                    profileViewsData,
+                    recentPosts,
+                    experience,
+                    education,
+                    voyagerLastSyncAt: d.voyagerLastSyncAt,
+                    // New comprehensive data
+                    invitationsData,
+                    profileMetadata,
+                    topConnections: Array.isArray(topConnections) ? topConnections : [],
+                };
+                console.log('[VOYAGER UI] Setting voyagerData state:', { name: voyagerState.name, followers: voyagerState.followerCount, posts: voyagerState.recentPosts?.length, experience: voyagerState.experience?.length, education: voyagerState.education?.length, invitations: voyagerState.invitationsData, lastSync: voyagerState.voyagerLastSyncAt });
+                setVoyagerData(voyagerState);
+            } else {
+                console.warn('[VOYAGER UI] No data returned from API:', data);
+            }
+        } catch (e) { console.warn('[VOYAGER UI] Failed to load data:', e); } finally { setVoyagerLoading(false); }
+    };
+
     const deleteLinkedInProfile = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
@@ -1628,12 +1690,12 @@ function DashboardContent() {
     // Auto-fill expertise and background from LinkedIn profile data for both Writer and Comments tabs
     useEffect(() => {
         if (!linkedInProfile) return;
-        
+
         // Auto-fill writer background if empty
         if (!writerBackground && linkedInProfile.headline) {
             setWriterBackground(linkedInProfile.headline);
         }
-        
+
         // Auto-fill comment settings expertise and background if empty
         if (!csExpertise && linkedInProfile.headline) {
             const expertise = linkedInProfile.headline.split('|')[0]?.trim() || linkedInProfile.headline.substring(0, 50);
@@ -1937,6 +1999,7 @@ function DashboardContent() {
         setActiveTab(tabId);
         // Update URL without full navigation so reload preserves tab
         window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
+        if (tabId === 'overview') { loadVoyagerData(); }
         if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
         if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); loadLinkedInProfile(); fetchAIModels(); }
         if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
@@ -2831,6 +2894,300 @@ function DashboardContent() {
                                 <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>{user?.email}</div>
                             </div>
                         </div>
+
+                        {/* LinkedIn Profile Stats (Voyager Data) */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, rgba(0,119,181,0.15) 0%, rgba(0,77,128,0.08) 100%)',
+                            padding: '24px',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(0,119,181,0.25)',
+                            marginBottom: '30px'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                                    {miniIcon('M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z M2 9h4v12H2z M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', '#0077B5', 16)}
+                                    LinkedIn Profile
+                                </h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    {voyagerData?.voyagerLastSyncAt && (
+                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                                            Synced {new Date(voyagerData.voyagerLastSyncAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={async () => {
+                                            setVoyagerSyncing(true);
+                                            try {
+                                                showToast('Syncing LinkedIn data via extension...', 'info');
+                                                // Trigger sync via extension (if extension is installed, it will handle it)
+                                                const token = localStorage.getItem('authToken');
+                                                // Attempt to trigger via the extension's content script bridge
+                                                window.postMessage({ type: 'COMMENTRON_RUNTIME_SEND_MESSAGE', action: 'VOYAGER_SYNC', payload: {}, requestId: 'voyager_sync_' + Date.now() }, '*');
+                                                // Reload data after a short delay
+                                                setTimeout(() => { loadVoyagerData(); setVoyagerSyncing(false); showToast('LinkedIn data refreshed!', 'success'); }, 5000);
+                                            } catch (e) { setVoyagerSyncing(false); showToast('Sync failed', 'error'); }
+                                        }}
+                                        disabled={voyagerSyncing}
+                                        style={{
+                                            background: voyagerSyncing ? 'rgba(0,119,181,0.3)' : 'rgba(0,119,181,0.5)',
+                                            border: '1px solid rgba(0,119,181,0.5)',
+                                            color: 'white',
+                                            padding: '6px 14px',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: '600',
+                                            cursor: voyagerSyncing ? 'not-allowed' : 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {voyagerSyncing ? '⟳ Syncing...' : '↻ Sync Now'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {voyagerData ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+                                    {/* Followers */}
+                                    <div style={{ background: 'rgba(0,119,181,0.12)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.15)' }}>
+                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Followers</div>
+                                        <div style={{ fontSize: '26px', fontWeight: '700', color: '#38bdf8' }}>{voyagerData.followerCount != null ? voyagerData.followerCount.toLocaleString() : '—'}</div>
+                                    </div>
+                                    {/* Connections */}
+                                    <div style={{ background: 'rgba(0,119,181,0.12)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.15)' }}>
+                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Connections</div>
+                                        <div style={{ fontSize: '26px', fontWeight: '700', color: '#0ea5e9' }}>{voyagerData.connectionCount != null ? voyagerData.connectionCount.toLocaleString() : '—'}</div>
+                                    </div>
+                                    {/* Profile Views */}
+                                    <div style={{ background: 'rgba(0,119,181,0.12)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.15)' }}>
+                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Profile Views</div>
+                                        <div style={{ fontSize: '26px', fontWeight: '700', color: '#06b6d4' }}>{voyagerData.profileViewsData?.totalViews != null ? voyagerData.profileViewsData.totalViews.toLocaleString() : '—'}</div>
+                                    </div>
+                                    {/* Recent Posts */}
+                                    <div style={{ background: 'rgba(0,119,181,0.12)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.15)' }}>
+                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Recent Posts</div>
+                                        <div style={{ fontSize: '26px', fontWeight: '700', color: '#22d3ee' }}>{voyagerData.recentPosts?.length || 0}</div>
+                                    </div>
+                                    {/* Pending Invitations */}
+                                    <div style={{ background: 'rgba(16,185,129,0.12)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.15)' }}>
+                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Invitations</div>
+                                        <div style={{ fontSize: '26px', fontWeight: '700', color: '#10b981' }}>{voyagerData.invitationsData?.received?.total ?? '—'}</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>
+                                    {voyagerLoading ? '⟳ Loading LinkedIn data...' : 'No LinkedIn data yet — click "Sync Now" with the extension active on LinkedIn'}
+                                </div>
+                            )}
+
+                            {/* Profile info (below the stats) */}
+                            {voyagerData?.name && (
+                                <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(0,0,0,0.15)', borderRadius: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: voyagerData.about ? '12px' : '0' }}>
+                                        {voyagerData.profilePicture ? (
+                                            <img src={voyagerData.profilePicture} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                        ) : (
+                                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077B5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '18px', color: 'white', flexShrink: 0 }}>
+                                                {voyagerData.name.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '16px', fontWeight: '700', color: 'white' }}>{voyagerData.name}</div>
+                                            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>{voyagerData.headline || ''}</div>
+                                            {voyagerData.location && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>📍 {voyagerData.location}</div>}
+                                        </div>
+                                        {voyagerData.linkedInUsername && (
+                                            <a href={`https://linkedin.com/in/${voyagerData.linkedInUsername}`} target="_blank" rel="noopener noreferrer"
+                                                style={{ fontSize: '12px', color: '#38bdf8', textDecoration: 'none', flexShrink: 0, padding: '6px 12px', border: '1px solid rgba(56,189,248,0.3)', borderRadius: '8px' }}>View Profile →</a>
+                                        )}
+                                    </div>
+                                    {voyagerData.about && (
+                                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.5', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px' }}>
+                                            {voyagerData.about.length > 200 ? voyagerData.about.substring(0, 200) + '...' : voyagerData.about}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Experience Section */}
+                            {voyagerData?.experience && voyagerData.experience.length > 0 && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Experience</div>
+                                    <div style={{ display: 'grid', gap: '8px' }}>
+                                        {voyagerData.experience.map((exp: any, i: number) => (
+                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>💼</div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{exp.title || exp.companyName || 'Position'}</div>
+                                                    {exp.companyName && exp.title && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>{exp.companyName}</div>}
+                                                    {exp.dateRange && (
+                                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>
+                                                            {exp.dateRange.startMonth ? `${exp.dateRange.startMonth}/` : ''}{exp.dateRange.startYear || ''}
+                                                            {' — '}
+                                                            {exp.dateRange.endYear ? `${exp.dateRange.endMonth ? exp.dateRange.endMonth + '/' : ''}${exp.dateRange.endYear}` : 'Present'}
+                                                        </div>
+                                                    )}
+                                                    {exp.location && <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>📍 {exp.location}</div>}
+                                                    {exp.description && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', lineHeight: '1.4' }}>{exp.description.length > 150 ? exp.description.substring(0, 150) + '...' : exp.description}</div>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Education Section */}
+                            {voyagerData?.education && voyagerData.education.length > 0 && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Education</div>
+                                    <div style={{ display: 'grid', gap: '8px' }}>
+                                        {voyagerData.education.map((edu: any, i: number) => (
+                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>🎓</div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{edu.schoolName || 'School'}</div>
+                                                    {(edu.degree || edu.fieldOfStudy) && (
+                                                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                                                            {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(' · ')}
+                                                        </div>
+                                                    )}
+                                                    {edu.dateRange && (
+                                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>
+                                                            {edu.dateRange.startYear || ''}{edu.dateRange.endYear ? ` — ${edu.dateRange.endYear}` : ''}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Invitations Section */}
+                            {voyagerData?.invitationsData && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Invitations</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        <div style={{ background: 'rgba(16,185,129,0.1)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.12)' }}>
+                                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Received</div>
+                                            <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981' }}>{voyagerData.invitationsData?.received?.total ?? '—'}</div>
+                                        </div>
+                                        <div style={{ background: 'rgba(59,130,246,0.1)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(59,130,246,0.12)' }}>
+                                            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Sent</div>
+                                            <div style={{ fontSize: '20px', fontWeight: '700', color: '#3b82f6' }}>{voyagerData.invitationsData?.sent?.total ?? '—'}</div>
+                                        </div>
+                                    </div>
+                                    {/* Recent received invitations list */}
+                                    {voyagerData.invitationsData?.received?.invitations?.length > 0 && (
+                                        <div style={{ marginTop: '8px', display: 'grid', gap: '6px' }}>
+                                            {voyagerData.invitationsData.received.invitations.slice(0, 5).map((inv: any, i: number) => (
+                                                <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '10px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    {inv.senderPicture ? (
+                                                        <img src={inv.senderPicture} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                                    ) : (
+                                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px' }}>👤</div>
+                                                    )}
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '12px', fontWeight: '600', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.senderName}</div>
+                                                        {inv.senderOccupation && <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.senderOccupation}</div>}
+                                                    </div>
+                                                    {inv.sentTime && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>{new Date(inv.sentTime).toLocaleDateString()}</div>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Profile Viewers Section */}
+                            {voyagerData?.profileViewsData?.viewers && voyagerData.profileViewsData.viewers.length > 0 && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>
+                                        Profile Viewers {voyagerData.profileViewsData?.totalViews != null && <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: '400' }}>({voyagerData.profileViewsData.totalViews} total)</span>}
+                                    </div>
+                                    <div style={{ display: 'grid', gap: '6px' }}>
+                                        {voyagerData.profileViewsData.viewers.slice(0, 8).map((viewer: any, i: number) => (
+                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '10px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                {viewer.type === 'identified' && viewer.picture ? (
+                                                    <img src={viewer.picture} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                                ) : (
+                                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: viewer.type === 'anonymous' ? 'rgba(255,255,255,0.08)' : 'rgba(6,182,212,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px' }}>
+                                                        {viewer.type === 'anonymous' ? '🔒' : '👤'}
+                                                    </div>
+                                                )}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {viewer.type === 'identified' ? viewer.name : viewer.type === 'obfuscated' ? (viewer.description || viewer.companyName || 'LinkedIn Member') : `${viewer.count || 1} anonymous viewer(s)`}
+                                                    </div>
+                                                    {viewer.occupation && <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{viewer.occupation}</div>}
+                                                </div>
+                                                {viewer.viewedAt && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>{new Date(viewer.viewedAt).toLocaleDateString()}</div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Top Connections Section */}
+                            {voyagerData?.topConnections && voyagerData.topConnections.length > 0 && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Recent Connections</div>
+                                    <div style={{ display: 'grid', gap: '6px' }}>
+                                        {voyagerData.topConnections.slice(0, 6).map((conn: any, i: number) => (
+                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '10px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                {conn.picture ? (
+                                                    <img src={conn.picture} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                                ) : (
+                                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px' }}>👤</div>
+                                                )}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.name}</div>
+                                                    {conn.occupation && <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.occupation}</div>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Recent LinkedIn Posts Card */}
+                        {voyagerData?.recentPosts && voyagerData.recentPosts.length > 0 && (
+                            <div style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                padding: '24px',
+                                borderRadius: '20px',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                marginBottom: '30px'
+                            }}>
+                                <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', '#a78bfa', 16)} Recent Posts Engagement
+                                </h3>
+                                <div style={{ display: 'grid', gap: '10px' }}>
+                                    {voyagerData.recentPosts.map((post: any, i: number) => (
+                                        <div key={i} style={{ background: 'rgba(255,255,255,0.04)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    {post.date && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginBottom: '4px' }}>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                                                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
+                                                        {post.text || '(No text preview)'}
+                                                    </div>
+                                                    {post.url && (
+                                                        <a href={post.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#38bdf8', textDecoration: 'none', marginTop: '4px', display: 'inline-block' }}>View on LinkedIn →</a>
+                                                    )}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '14px', flexShrink: 0, alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '12px', color: '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>♥ {post.likes || 0}</span>
+                                                    <span style={{ fontSize: '12px', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '4px' }}>💬 {post.comments || 0}</span>
+                                                    <span style={{ fontSize: '12px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>↗ {post.shares || 0}</span>
+                                                    {post.views != null && <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}>👁 {post.views.toLocaleString()}</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Quick Usage Summary */}
                         <div style={{
@@ -4282,7 +4639,7 @@ function DashboardContent() {
                                 <div style={{ marginTop: '20px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                                         <h4 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 14)} 
+                                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 14)}
                                             Kommentify Shared ({sharedCommentProfiles.length})
                                         </h4>
                                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Curated by Kommentify team</span>
@@ -4293,12 +4650,12 @@ function DashboardContent() {
                                                 setCommentStyleExpanded(commentStyleExpanded === profile.id ? null : profile.id);
                                                 if (commentStyleExpanded !== profile.id) loadProfileComments(profile.id);
                                             }}
-                                                style={{ 
-                                                    background: 'linear-gradient(135deg, rgba(105,63,233,0.1) 0%, rgba(139,92,246,0.05) 100%)', 
-                                                    padding: '14px 12px', 
-                                                    borderRadius: '12px', 
-                                                    border: '1px solid rgba(105,63,233,0.25)', 
-                                                    cursor: 'pointer', 
+                                                style={{
+                                                    background: 'linear-gradient(135deg, rgba(105,63,233,0.1) 0%, rgba(139,92,246,0.05) 100%)',
+                                                    padding: '14px 12px',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid rgba(105,63,233,0.25)',
+                                                    cursor: 'pointer',
                                                     transition: 'all 0.2s',
                                                     textAlign: 'center'
                                                 }}
@@ -5436,18 +5793,18 @@ function DashboardContent() {
                                     </div>
                                 ) : (
                                     liveActivityLogs.map((log: any, idx: number) => {
-                                        const icons: any = { 
-                                            like: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', 
-                                            comment: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', 
-                                            share: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8 M16 6l-4-4-4 4 M12 2v13', 
-                                            follow: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 11l-3-3m0 0l-3 3m3-3v6', 
-                                            connect: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75', 
-                                            post: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', 
-                                            delay: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2', 
-                                            start: 'M5 12l5 5L20 7', 
-                                            stop: 'M18 6L6 18 M6 6l12 12', 
-                                            error: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01', 
-                                            info: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01' 
+                                        const icons: any = {
+                                            like: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+                                            comment: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z',
+                                            share: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8 M16 6l-4-4-4 4 M12 2v13',
+                                            follow: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 11l-3-3m0 0l-3 3m3-3v6',
+                                            connect: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+                                            post: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8',
+                                            delay: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2',
+                                            start: 'M5 12l5 5L20 7',
+                                            stop: 'M18 6L6 18 M6 6l12 12',
+                                            error: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
+                                            info: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01'
                                         };
                                         const levelColors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
                                         const taskColors: any = { automation: '#3b82f6', import: '#8b5cf6', networking: '#f59e0b', post_writer: '#10b981', trending: '#ec4899' };

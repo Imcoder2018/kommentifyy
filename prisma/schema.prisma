@@ -622,6 +622,15 @@ model LinkedInProfileData {
   totalPostsCount Int      @default(0)     // Actual count of posts extracted from recent-activity page
   isSelected      Boolean  @default(true)  // Whether to use this data in AI generation
   lastScannedAt   DateTime?
+  // Voyager API data
+  linkedInUrn       String?          // LinkedIn member URN (e.g., "urn:li:fsd_profile:xxx")
+  linkedInUsername   String?          // Public username slug
+  followerCount     Int?             // Number of followers
+  connectionCount   Int?             // Number of connections (1st degree)
+  profileViewsData  String?  @db.Text // JSON - recent profile view analytics
+  recentPosts       String   @default("[]") @db.Text // JSON - Voyager post data with engagement
+  voyagerEmail      String?          // Email from Voyager API (may differ from account email)
+  voyagerLastSyncAt DateTime?        // When Voyager data was last synced
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

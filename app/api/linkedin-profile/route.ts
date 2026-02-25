@@ -8,27 +8,54 @@ export async function GET(request: NextRequest) {
     if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     const payload = verifyToken(token);
 
+    console.log('[GET /api/linkedin-profile] Querying for userId:', payload.userId, 'email:', payload.email);
     let profileData = await (prisma as any).linkedInProfileData.findUnique({ where: { userId: payload.userId } });
-    
+
     if (!profileData) {
+      // Try fallback: find ANY record that has Voyager data for debugging
+      const anyRecord = await (prisma as any).linkedInProfileData.findFirst({
+        where: { linkedInUrn: { not: null } },
+        select: { userId: true, linkedInUsername: true, voyagerLastSyncAt: true }
+      });
+      console.warn('[GET /api/linkedin-profile] No record found for userId:', payload.userId, '| Voyager records exist:', anyRecord ? `userId=${anyRecord.userId}, username=${anyRecord.linkedInUsername}` : 'none');
       return NextResponse.json({ success: true, data: null, hasScanned: false });
     }
+
+    // Safe JSON parse helper — returns fallback on parse error
+    const safeJsonParse = (val: any, fallback: any = []) => {
+      if (!val) return fallback;
+      if (typeof val !== 'string') return val;
+      try { return JSON.parse(val); } catch { return fallback; }
+    };
 
     // Parse JSON fields for response
     const parsedData = {
       ...profileData,
-      posts: JSON.parse(profileData.posts || '[]'),
-      experience: JSON.parse(profileData.experience || '[]'),
-      education: JSON.parse(profileData.education || '[]'),
-      certifications: JSON.parse(profileData.certifications || '[]'),
-      projects: JSON.parse(profileData.projects || '[]'),
-      skills: JSON.parse(profileData.skills || '[]'),
-      interests: JSON.parse(profileData.interests || '[]'),
+      posts: safeJsonParse(profileData.posts, []),
+      experience: safeJsonParse(profileData.experience, []),
+      education: safeJsonParse(profileData.education, []),
+      certifications: safeJsonParse(profileData.certifications, []),
+      projects: safeJsonParse(profileData.projects, []),
+      skills: safeJsonParse(profileData.skills, []),
+      interests: safeJsonParse(profileData.interests, []),
       fullPageText: profileData.fullPageText || null,
+      // Voyager-specific fields
+      profileViewsData: safeJsonParse(profileData.profileViewsData, null),
+      recentPosts: safeJsonParse(profileData.recentPosts, []),
     };
+
+    console.log('[GET /api/linkedin-profile] Returning data:', {
+      userId: payload.userId,
+      hasLinkedInUrn: !!parsedData.linkedInUrn,
+      followerCount: parsedData.followerCount,
+      connectionCount: parsedData.connectionCount,
+      recentPostsCount: parsedData.recentPosts?.length,
+      voyagerLastSyncAt: parsedData.voyagerLastSyncAt,
+    });
 
     return NextResponse.json({ success: true, data: parsedData, hasScanned: true });
   } catch (error: any) {
+    console.error('[GET /api/linkedin-profile] Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
@@ -40,9 +67,9 @@ export async function POST(request: NextRequest) {
     const payload = verifyToken(token);
 
     const body = await request.json();
-    const { 
+    const {
       profileUrl, name, headline, location, connections, profileViews,
-      about, language, posts, experience, education, certifications, 
+      about, language, posts, experience, education, certifications,
       projects, skills, interests, postsTokenLimit, totalPostsCount, fullPageText
     } = body;
 
@@ -138,7 +165,7 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Delete LinkedIn profile error:', error);
-    
+
     if (error.code === 'P2025') {
       // Record not found
       return NextResponse.json(
@@ -146,7 +173,7 @@ export async function DELETE(request: NextRequest) {
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(
       { success: false, error: 'Failed to delete LinkedIn profile data' },
       { status: 500 }

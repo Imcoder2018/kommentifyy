@@ -46,7 +46,16 @@ export async function POST(request: NextRequest) {
             voyagerLastSyncAt: new Date(),
         };
 
-        if (linkedInUrn) updateData.linkedInUrn = linkedInUrn;
+        if (linkedInUrn) {
+            updateData.linkedInUrn = linkedInUrn;
+            // Validate: check if this URN already belongs to a different Kommentify user
+            const existingRecord = await (prisma as any).linkedInProfileData.findFirst({
+                where: { linkedInUrn }
+            });
+            if (existingRecord && existingRecord.userId !== payload.userId) {
+                console.warn(`🚨 [DATA LEAK WARNING] Browser extension synced LinkedIn data for URN ${linkedInUrn} to Kommentify user ${payload.userId}, but this URN is already claimed by user ${existingRecord.userId}! The extension is likely using a stale auth token from a previous login.`);
+            }
+        }
         if (linkedInUsername) updateData.linkedInUsername = linkedInUsername;
         if (followerCount !== undefined && followerCount !== null) updateData.followerCount = followerCount;
         if (connectionCount !== undefined && connectionCount !== null) updateData.connectionCount = connectionCount;

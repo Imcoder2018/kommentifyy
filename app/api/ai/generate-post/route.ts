@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    const { topic, template, tone, length, includeHashtags, includeEmojis, language, targetAudience, keyMessage, userBackground, useInspirationSources, inspirationSourceNames, useProfileData, profileData, model: requestedModel } = await request.json();
+    const { topic, template, tone, length, includeHashtags, includeEmojis, language, targetAudience, keyMessage, userBackground, useInspirationSources, inspirationSourceNames, useProfileData, profileData, model: requestedModel, userGoal, userWritingStyleSource } = await request.json();
 
     // Get user and check limits
     const user = await prisma.user.findUnique({
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const isDeveloper = DEVELOPER_EMAILS.includes(user.email || '');
 
     console.log('Generating post with model:', selectedModel);
-    
+
     // Fetch global admin settings for AI generation
     let adminPostEmbeddingsCount = 8;
     try {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           console.error('Invalid userId format detected');
           throw new Error('Invalid user ID');
         }
-        
+
         let filter = `userId = '${payload.userId}'`;
         const queryResponse = await vectorIndex.query({
           data: topic,
@@ -174,31 +174,52 @@ CRITICAL: Every sentence in your output should pass this test: "Would the author
     // Build profile data context if enabled
     let profileDataContext = '';
     if (useProfileData && profileData) {
-      console.log('📋 Using LinkedIn profile data for personalization');
+      console.log('📋 Using LinkedIn profile data for personalization (Voyager API)');
       const profileParts: string[] = [];
-      
+
       if (profileData.headline) {
         profileParts.push(`HEADLINE: ${profileData.headline}`);
       }
       if (profileData.about) {
         profileParts.push(`ABOUT: ${profileData.about}`);
       }
+      if (profileData.location) {
+        profileParts.push(`LOCATION: ${profileData.location}`);
+      }
+      if (profileData.followerCount) {
+        profileParts.push(`FOLLOWERS: ${profileData.followerCount.toLocaleString()}`);
+      }
+      if (profileData.connectionCount) {
+        profileParts.push(`CONNECTIONS: ${profileData.connectionCount.toLocaleString()}`);
+      }
       if (profileData.skills && profileData.skills.length > 0) {
         profileParts.push(`SKILLS: ${profileData.skills.slice(0, 10).join(', ')}`);
       }
       if (profileData.experience && profileData.experience.length > 0) {
-        profileParts.push(`EXPERIENCE:\n${profileData.experience.slice(0, 3).join('\n')}`);
+        const expTexts = profileData.experience.slice(0, 3).map((exp: any) => {
+          if (typeof exp === 'string') return exp;
+          const parts = [exp.title || exp.role, exp.company, exp.dateRange].filter(Boolean);
+          return parts.join(' · ') + (exp.description ? ` – ${exp.description.substring(0, 150)}` : '');
+        });
+        profileParts.push(`EXPERIENCE:\n${expTexts.join('\n')}`);
       }
       if (profileData.education && profileData.education.length > 0) {
-        profileParts.push(`EDUCATION: ${profileData.education.slice(0, 2).join(', ')}`);
+        const eduTexts = profileData.education.slice(0, 2).map((edu: any) => {
+          if (typeof edu === 'string') return edu;
+          return [edu.school || edu.institution, edu.degree, edu.field, edu.dateRange].filter(Boolean).join(' · ');
+        });
+        profileParts.push(`EDUCATION: ${eduTexts.join(', ')}`);
       }
-      if (profileData.posts && profileData.posts.length > 0) {
-        const postsSample = profileData.posts.slice(0, 3).map((p: string, i: number) => 
-          `[Post ${i + 1}]: "${p.substring(0, 300)}${p.length > 300 ? '...' : ''}"`
-        ).join('\n\n');
+      // Handle Voyager recentPosts (objects) or legacy posts (strings)
+      const postsArray = profileData.recentPosts || profileData.posts;
+      if (postsArray && postsArray.length > 0) {
+        const postsSample = postsArray.slice(0, 3).map((p: any, i: number) => {
+          const text = typeof p === 'string' ? p : (p.text || p.content || '');
+          return `[Post ${i + 1}]: "${text.substring(0, 300)}${text.length > 300 ? '...' : ''}"`;
+        }).join('\n\n');
         profileParts.push(`RECENT POSTS:\n${postsSample}`);
       }
-      
+
       if (profileParts.length > 0) {
         profileDataContext = `
 
@@ -223,9 +244,14 @@ PERSONALIZATION GUIDELINES:
     }
 
     // Generate prompt using shared logic with new elite prompt
+    let goalContext = '';
+    if (userGoal) {
+      goalContext = `\n\n🎯 CONTENT GOAL:\nThe user's primary goal for this content is: "${userGoal}". Ensure the final post directly serves this goal.`;
+    }
+
     const basePrompt = generatePostPrompt(topic, template, tone, length, includeHashtags, includeEmojis, targetAudience, keyMessage, userBackground, language);
-    const fullPrompt = basePrompt + inspirationContext + profileDataContext;
-    
+    const fullPrompt = basePrompt + goalContext + inspirationContext + profileDataContext;
+
     // 🐛 DEBUG: Log full prompt for Vercel logs
     console.log('\n' + '='.repeat(80));
     console.log('🤖 AI POST GENERATION - FULL PROMPT');
@@ -269,17 +295,17 @@ PERSONALIZATION GUIDELINES:
 
       content = result.content;
       console.log('✅ Post generation successful with model:', result.model, 'output length:', content?.length || 0);
-      
+
       // Update usage only on successful AI generation
       await limitService.incrementUsage(user.id, 'aiPosts');
-      
+
       // Extract token usage for developers
       if (isDeveloper && result.usage) {
         // Get model config for accurate pricing
         const modelConfig = await (await import('@/lib/ai-service')).getModelConfig(result.model);
         const inputCostPer1M = modelConfig?.inputCostPer1M || 0;
         const outputCostPer1M = modelConfig?.outputCostPer1M || 0;
-        
+
         tokenUsage = {
           inputTokens: result.usage.promptTokens,
           outputTokens: result.usage.completionTokens,
@@ -291,10 +317,10 @@ PERSONALIZATION GUIDELINES:
           modelName: result.provider,
         };
       }
-      
+
     } catch (error: any) {
       console.error('AI generation error:', error);
-      
+
       // Use fallback when AI service fails
       console.log('AI service failed, using fallback post');
       content = `${topic}

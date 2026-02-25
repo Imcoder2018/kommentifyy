@@ -151,11 +151,19 @@ export async function POST(request: NextRequest) {
           const profileParts: string[] = [];
           if (linkedInProfile.headline) profileParts.push(`HEADLINE: ${linkedInProfile.headline}`);
           if (linkedInProfile.about) profileParts.push(`ABOUT: ${linkedInProfile.about}`);
+          if (linkedInProfile.location) profileParts.push(`LOCATION: ${linkedInProfile.location}`);
+          if (linkedInProfile.followerCount) profileParts.push(`FOLLOWERS: ${linkedInProfile.followerCount.toLocaleString()}`);
+          if (linkedInProfile.connectionCount) profileParts.push(`CONNECTIONS: ${linkedInProfile.connectionCount.toLocaleString()}`);
           if (linkedInProfile.skills && Array.isArray(linkedInProfile.skills)) {
             profileParts.push(`SKILLS: ${linkedInProfile.skills.slice(0, 10).join(', ')}`);
           }
           if (linkedInProfile.experience && Array.isArray(linkedInProfile.experience)) {
-            profileParts.push(`EXPERIENCE: ${linkedInProfile.experience.slice(0, 3).join('; ')}`);
+            const expTexts = linkedInProfile.experience.slice(0, 3).map((exp: any) => {
+              if (typeof exp === 'string') return exp;
+              const parts = [exp.title || exp.role, exp.company, exp.dateRange].filter(Boolean);
+              return parts.join(' · ');
+            });
+            profileParts.push(`EXPERIENCE: ${expTexts.join('; ')}`);
           }
           if (profileParts.length > 0) {
             userProfileContext = `
@@ -173,7 +181,7 @@ GUIDELINES:
 - Match the professional tone of their headline/about
 - Write in first person ("I", "my", "me")
 `;
-            console.log('📋 Using LinkedIn profile data for comment personalization');
+            console.log('📋 Using LinkedIn profile data (Voyager) for comment personalization');
           }
         }
       } catch (profileErr) {

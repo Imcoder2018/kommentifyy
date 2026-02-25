@@ -66,14 +66,23 @@ export async function POST(request: NextRequest) {
     // Build profile context if profile data is provided and enabled
     let profileContext = '';
     if (useProfileData && profileData) {
+      const expText = profileData.experience && profileData.experience.length > 0
+        ? `Experience:\n${profileData.experience.slice(0, 3).map((exp: any, i: number) => {
+          if (typeof exp === 'string') return `  ${i + 1}. ${exp.substring(0, 200)}`;
+          const parts = [exp.title || exp.role, exp.company, exp.dateRange].filter(Boolean);
+          return `  ${i + 1}. ${parts.join(' · ')}`;
+        }).join('\n')}`
+        : '';
       profileContext = `
 ═══════════════════════════════════════════════════════════
 👤 USER PROFILE DATA (Use this to personalize the posts)
 ═══════════════════════════════════════════════════════════
 Name: ${profileData.name || 'Not specified'}
 Headline: ${profileData.headline || 'Not specified'}
+${profileData.location ? `Location: ${profileData.location}` : ''}
+${profileData.followerCount ? `Followers: ${profileData.followerCount.toLocaleString()}` : ''}
 ${profileData.about ? `About: ${profileData.about.substring(0, 500)}...` : ''}
-${profileData.experience && profileData.experience.length > 0 ? `Experience:\n${profileData.experience.slice(0, 3).map((exp: string, i: number) => `  ${i + 1}. ${exp.substring(0, 200)}`).join('\n')}` : ''}
+${expText}
 ${profileData.skills && profileData.skills.length > 0 ? `Skills: ${profileData.skills.slice(0, 10).join(', ')}` : ''}
 
 ⚠️ IMPORTANT: Incorporate the user's real experience, skills, and background into the posts. Make them personal and authentic.
@@ -86,7 +95,7 @@ ${profileData.skills && profileData.skills.length > 0 ? `Skills: ${profileData.s
       const lines = content.split('\n').filter((l: string) => l.trim());
       const firstLine = lines[0] || '';
       const lastLine = lines[lines.length - 1] || '';
-      
+
       return `═══ POST ${i + 1} ═══
 ENGAGEMENT: ${p.likes || 0} likes, ${p.comments || 0} comments
 AUTHOR: ${p.authorName || 'Unknown'}
@@ -232,7 +241,7 @@ Return ONLY this JSON (no markdown, no explanation):
     });
 
     let responseText = completion.choices[0].message.content || '';
-    
+
     // Extract token usage
     const inputTokens = completion.usage?.prompt_tokens || 0;
     const outputTokens = completion.usage?.completion_tokens || 0;
@@ -240,10 +249,10 @@ Return ONLY this JSON (no markdown, no explanation):
     const inputCost = (inputTokens / 1000000) * pricing.input;
     const outputCost = (outputTokens / 1000000) * pricing.output;
     const totalCost = inputCost + outputCost;
-    
+
     // Clean up response - extract JSON
     responseText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    
+
     let generatedPosts;
     try {
       generatedPosts = JSON.parse(responseText);

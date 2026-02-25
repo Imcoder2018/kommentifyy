@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, getLanguageDir } from '@/lib/i18n';
 import { cleanLinkedInProfileUrl, cleanLinkedInProfileUrls } from '@/lib/linkedin-url-cleaner';
 import OverviewTab from './components/OverviewTab';
-import WriterTab from './components/WriterTab';
+import WriterTab from './components/WriterTabNew';
 import CommentsTab from './components/CommentsTab';
 import TrendingPostsTab from './components/TrendingPostsTab';
 import TasksTab from './components/TasksTab';
@@ -122,6 +122,14 @@ function DashboardContent() {
     const [writerModel, setWriterModel] = useState<string>('gpt-4o');
     const [writerUseInspirationSources, setWriterUseInspirationSources] = useState(true);
     const [writerInspirationSourceNames, setWriterInspirationSourceNames] = useState<string[]>([]);
+
+    // User goals state
+    const [userGoal, setUserGoal] = useState<string>('');
+    const [userTargetAudience, setUserTargetAudience] = useState<string>('');
+    const [userWritingStyle, setUserWritingStyle] = useState<string>('');
+    const [userWritingStyleSource, setUserWritingStyleSource] = useState<string>('user_default');
+    const [goalsLoading, setGoalsLoading] = useState(false);
+    const [goalsSuggesting, setGoalsSuggesting] = useState(false);
 
     // Saved posts tab state
     const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -527,6 +535,7 @@ function DashboardContent() {
 
         validateAndLoad();
         loadVoyagerData(); // Load LinkedIn Voyager data on overview tab
+        loadUserGoals();
 
         // Fetch referral data
         fetch('/api/referrals', {
@@ -565,17 +574,23 @@ function DashboardContent() {
                     topic: writerTopic, template: writerTemplate, tone: writerTone,
                     length: writerLength, includeHashtags: writerHashtags, includeEmojis: writerEmojis,
                     language: writerLanguage,
-                    targetAudience: writerTargetAudience, keyMessage: writerKeyMessage, userBackground: writerBackground,
-                    useInspirationSources: inspirationSources.length > 0 && (inspirationUseAll || inspirationSelected.length > 0),
-                    inspirationSourceNames: inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected,
-                    useProfileData: useProfileData && linkedInProfile,
-                    profileData: useProfileData && linkedInProfile ? {
-                        headline: linkedInProfile.headline,
-                        about: linkedInProfile.about,
-                        skills: linkedInProfile.skills,
-                        experience: linkedInProfile.experience,
-                        education: linkedInProfile.education,
-                        posts: linkedInProfile.posts
+                    targetAudience: writerTargetAudience || userTargetAudience,
+                    userGoal: userGoal,
+                    userWritingStyleSource: userWritingStyleSource,
+                    keyMessage: writerKeyMessage, userBackground: writerBackground,
+                    useInspirationSources: userWritingStyleSource.startsWith('insp_') || userWritingStyleSource.startsWith('shared_') || (inspirationSources.length > 0 && (inspirationUseAll || inspirationSelected.length > 0)),
+                    inspirationSourceNames: userWritingStyleSource.startsWith('insp_') ? [userWritingStyleSource.replace('insp_', '')] : userWritingStyleSource.startsWith('shared_') ? [userWritingStyleSource.replace('shared_', '')] : (inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected),
+                    useProfileData: useProfileData && voyagerData,
+                    profileData: useProfileData && voyagerData ? {
+                        headline: voyagerData.headline,
+                        about: voyagerData.about,
+                        skills: [],
+                        experience: voyagerData.experience || [],
+                        education: voyagerData.education || [],
+                        posts: (voyagerData.recentPosts || []).map((p: any) => typeof p === 'string' ? p : (p.text || p.content || '')).filter(Boolean),
+                        location: voyagerData.location,
+                        followerCount: voyagerData.followerCount,
+                        connectionCount: voyagerData.connectionCount
                     } : null,
                     model: writerModel
                 }),
@@ -1169,6 +1184,82 @@ function DashboardContent() {
         } catch { } finally { setLinkedInProfileLoading(false); }
     };
 
+    // User goals functions
+    const loadUserGoals = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setGoalsLoading(true);
+        try {
+            const res = await fetch('/api/user-goals', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success && data.data) {
+                setUserGoal(data.data.goal || '');
+                setUserTargetAudience(data.data.targetAudience || '');
+                setUserWritingStyle(data.data.writingStyle || '');
+                setUserWritingStyleSource(data.data.writingStyleSource || 'user_default');
+            }
+        } catch (e) {
+            console.error('Failed to load goals:', e);
+        } finally {
+            setGoalsLoading(false);
+        }
+    };
+
+    const saveUserGoals = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        const savedData = {
+            goal: userGoal,
+            targetAudience: userTargetAudience,
+            writingStyle: userWritingStyle,
+            writingStyleSource: userWritingStyleSource
+        };
+        try {
+            const res = await fetch('/api/user-goals', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(savedData)
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Goals saved successfully!', 'success');
+            } else {
+                showToast(data.error || 'Failed to save goals', 'error');
+            }
+        } catch (e) {
+            showToast('Failed to save goals', 'error');
+        }
+    };
+
+    const suggestGoals = async () => {
+        if (!voyagerData) {
+            showToast('Please sync LinkedIn data first', 'error');
+            return;
+        }
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setGoalsSuggesting(true);
+        try {
+            const res = await fetch('/api/ai/suggest-goals', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profileData: voyagerData })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setUserGoal(data.goal || '');
+                setUserTargetAudience(data.targetAudience || '');
+                showToast('Suggested goals applied. Review and save!', 'success');
+            } else {
+                showToast(data.error || 'Failed to suggest goals', 'error');
+            }
+        } catch (e) {
+            showToast('Failed to suggest goals', 'error');
+        } finally {
+            setGoalsSuggesting(false);
+        }
+    };
+
     // Voyager data functions
     const loadVoyagerData = async () => {
         const token = localStorage.getItem('authToken');
@@ -1204,8 +1295,8 @@ function DashboardContent() {
                     location: d.location,
                     about: d.about,
                     profileUrl: d.profileUrl,
-                    profilePicture: profileViewsData?.profilePicture || '',
-                    backgroundImage: profileViewsData?.backgroundImage || '',
+                    profilePicture: typeof profileViewsData?.profilePicture === 'string' ? profileViewsData.profilePicture : (profileViewsData?.profilePicture?.url || profileViewsData?.profilePicture?.rootUrl || ''),
+                    backgroundImage: typeof profileViewsData?.backgroundImage === 'string' ? profileViewsData.backgroundImage : (profileViewsData?.backgroundImage?.url || ''),
                     followerCount: d.followerCount,
                     connectionCount: d.connectionCount,
                     profileViewsData,
@@ -2015,8 +2106,8 @@ function DashboardContent() {
         setActiveTab(tabId);
         // Update URL without full navigation so reload preserves tab
         window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
-        if (tabId === 'overview') { loadVoyagerData(); }
-        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
+        if (tabId === 'overview') { loadVoyagerData(); loadUserGoals(); }
+        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadVoyagerData(); loadUserGoals(); loadScheduledPosts(); fetchAIModels(); }
         if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); loadLinkedInProfile(); fetchAIModels(); }
         if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
@@ -2130,6 +2221,9 @@ function DashboardContent() {
         writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, writerModel,
         writerUseInspirationSources, setWriterUseInspirationSources, writerInspirationSourceNames,
         writerPosting, MODEL_OPTIONS, handleWriterModelChange,
+        userGoal, setUserGoal, userTargetAudience, setUserTargetAudience,
+        userWritingStyle, setUserWritingStyle, userWritingStyleSource, setUserWritingStyleSource,
+        goalsLoading, goalsSuggesting, loadUserGoals, saveUserGoals, suggestGoals,
         generatePost, saveDraft, loadDrafts, loadScheduledPosts, sendToExtension, schedulePost, deleteDraft,
         // Saved posts
         savedPosts, savedPostsLoading, savedPostsPage, setSavedPostsPage, savedPostsTotal,
@@ -2929,34 +3023,34 @@ function DashboardContent() {
                                     <>{miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#0ea5e9', 11)} Connect LinkedIn</>
                                 )}
                             </button>
-                            {/* Profile Scan Button */}
+                            {/* Profile Sync Button */}
                             {extensionConnected && (
                                 <button
-                                    onClick={linkedInProfile ? () => setShowLinkedInDataModal(true) : () => scanLinkedInProfile()}
-                                    disabled={linkedInProfileScanning}
+                                    onClick={voyagerData ? () => setShowLinkedInDataModal(true) : () => loadVoyagerData()}
+                                    disabled={voyagerLoading}
                                     style={{
                                         padding: '4px 10px',
-                                        background: linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
-                                        border: linkedInProfile ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(245,158,11,0.4)',
+                                        background: voyagerData ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)',
+                                        border: voyagerData ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(0,119,181,0.4)',
                                         borderRadius: '6px',
-                                        color: linkedInProfile ? '#34d399' : '#fbbf24',
+                                        color: voyagerData ? '#34d399' : '#38bdf8',
                                         fontSize: '10px',
                                         fontWeight: '600',
-                                        cursor: linkedInProfileScanning ? 'wait' : 'pointer',
+                                        cursor: voyagerLoading ? 'wait' : 'pointer',
                                         transition: 'all 0.2s',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '4px'
                                     }}
-                                    onMouseOver={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'; }}
+                                    onMouseOver={e => { e.currentTarget.style.background = voyagerData ? 'rgba(16,185,129,0.25)' : 'rgba(0,119,181,0.25)'; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = voyagerData ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)'; }}
                                 >
-                                    {linkedInProfileScanning ? (
-                                        <>Scanning...</>
-                                    ) : linkedInProfile ? (
+                                    {voyagerLoading ? (
+                                        <>Syncing...</>
+                                    ) : voyagerData ? (
                                         <>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#34d399', 11)} View Data</>
                                     ) : (
-                                        <>{miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#fbbf24', 11)} Scan Profile</>
+                                        <>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#38bdf8', 11)} Sync Profile</>
                                     )}
                                 </button>
                             )}
@@ -2990,6 +3084,160 @@ function DashboardContent() {
                 {activeTab === 'extension' && <ExtensionTab {...tabProps} />}
                 {activeTab === 'account' && <AccountTab {...tabProps} />}
             </div>
+
+            {/* Voyager LinkedIn Data Modal — renders on any tab */}
+            {showLinkedInDataModal && voyagerData && (() => {
+                try {
+                    // Safely parse arrays that might be JSON strings
+                    const safeArr = (v: any): any[] => {
+                        if (Array.isArray(v)) return v;
+                        if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } }
+                        return [];
+                    };
+                    const safeStr = (v: any): string => {
+                        if (typeof v === 'string') return v;
+                        if (v == null) return '';
+                        try { return JSON.stringify(v); } catch { return String(v); }
+                    };
+                    const expArr = safeArr(voyagerData.experience);
+                    const eduArr = safeArr(voyagerData.education);
+                    const postsArr = safeArr(voyagerData.recentPosts);
+                    const fCount = Number(voyagerData.followerCount) || 0;
+                    const cCount = Number(voyagerData.connectionCount) || 0;
+                    const nameStr = safeStr(voyagerData.name) || 'LinkedIn Profile';
+                    const headlineStr = safeStr(voyagerData.headline);
+                    const locationStr = safeStr(voyagerData.location);
+                    const aboutStr = safeStr(voyagerData.about);
+                    const urnStr = safeStr(voyagerData.linkedInUrn);
+                    const picUrl = typeof voyagerData.profilePicture === 'string' ? voyagerData.profilePicture : '';
+
+                    return (
+                        <div style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000
+                        }} onClick={() => setShowLinkedInDataModal(false)}>
+                            <div onClick={(e: any) => e.stopPropagation()} style={{
+                                background: '#13132b', borderRadius: '16px', border: '1px solid rgba(0,119,181,0.3)',
+                                padding: '24px', maxWidth: '700px', maxHeight: '85vh', overflow: 'auto', color: 'white', width: '90%'
+                            }}>
+                                {/* Header — using div avatar only, no img tag */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: picUrl ? `url(${picUrl}) center/cover no-repeat` : 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '22px', border: '3px solid rgba(0,119,181,0.4)', flexShrink: 0 }}>{picUrl ? '' : (nameStr[0] || 'U').toUpperCase()}</div>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>{nameStr}</h3>
+                                            {headlineStr && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginTop: '2px' }}>{headlineStr}</div>}
+                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '4px', display: 'flex', gap: '12px' }}>
+                                                {locationStr && <span>📍 {locationStr}</span>}
+                                                {fCount > 0 && <span>👥 {fCount.toLocaleString()} followers</span>}
+                                                {cCount > 0 && <span>🔗 {cCount.toLocaleString()} connections</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setShowLinkedInDataModal(false)}
+                                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', padding: '6px 12px', color: 'white', fontSize: '16px', cursor: 'pointer' }}>✕</button>
+                                </div>
+
+                                {/* Voyager badge */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '8px 12px', background: 'rgba(0,119,181,0.1)', borderRadius: '8px', border: '1px solid rgba(0,119,181,0.2)', flexWrap: 'wrap' }}>
+                                    <span style={{ color: '#00a0dc', fontSize: '11px', fontWeight: '600' }}>⚡ Voyager API Data</span>
+                                    {voyagerData.voyagerLastSyncAt && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>Last synced: {new Date(voyagerData.voyagerLastSyncAt).toLocaleString()}</span>}
+                                    {urnStr && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>URN: {urnStr}</span>}
+                                </div>
+
+                                <div style={{ display: 'grid', gap: '16px' }}>
+                                    {/* About */}
+                                    {aboutStr && (
+                                        <div>
+                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>About</strong>
+                                            <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.8)', fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{aboutStr}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Experience */}
+                                    {expArr.length > 0 && (
+                                        <div>
+                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>Experience ({expArr.length})</strong>
+                                            <div style={{ maxHeight: '200px', overflow: 'auto', marginTop: '6px' }}>
+                                                {expArr.map((exp: any, idx: number) => (
+                                                    <div key={idx} style={{ padding: '8px 10px', margin: '4px 0', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
+                                                        {typeof exp === 'string' ? exp : (
+                                                            <div>
+                                                                <div style={{ fontWeight: '600', color: 'white' }}>{safeStr(exp?.title || exp?.role)}</div>
+                                                                {exp?.company && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{safeStr(exp.company)}</div>}
+                                                                {exp?.dateRange && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{safeStr(exp.dateRange)}</div>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Education */}
+                                    {eduArr.length > 0 && (
+                                        <div>
+                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>Education ({eduArr.length})</strong>
+                                            <div style={{ maxHeight: '150px', overflow: 'auto', marginTop: '6px' }}>
+                                                {eduArr.map((edu: any, idx: number) => (
+                                                    <div key={idx} style={{ padding: '8px 10px', margin: '4px 0', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
+                                                        {typeof edu === 'string' ? edu : (
+                                                            <div>
+                                                                <div style={{ fontWeight: '600', color: 'white' }}>{safeStr(edu?.school || edu?.institution)}</div>
+                                                                {edu?.degree && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{safeStr(edu.degree)}{edu.field ? ` · ${safeStr(edu.field)}` : ''}</div>}
+                                                                {edu?.dateRange && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{safeStr(edu.dateRange)}</div>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Recent Posts */}
+                                    {postsArr.length > 0 && (
+                                        <div>
+                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>Recent Posts ({postsArr.length})</strong>
+                                            <div style={{ maxHeight: '300px', overflow: 'auto', marginTop: '6px' }}>
+                                                {postsArr.map((post: any, idx: number) => {
+                                                    const postText = safeStr(typeof post === 'string' ? post : (post?.text || post?.content || ''));
+                                                    const likes = typeof post === 'object' && post ? (Number(post.likes || post.numLikes) || 0) : 0;
+                                                    const cmts = typeof post === 'object' && post ? (Number(post.comments || post.numComments) || 0) : 0;
+                                                    return (
+                                                        <div key={idx} style={{ padding: '10px 12px', margin: '4px 0', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px' }}>
+                                                            <div style={{ color: 'rgba(255,255,255,0.8)', whiteSpace: 'pre-wrap', lineHeight: '1.5', maxHeight: '80px', overflow: 'hidden' }}>
+                                                                {postText.length > 300 ? postText.substring(0, 300) + '...' : postText}
+                                                            </div>
+                                                            {(likes > 0 || cmts > 0) && (
+                                                                <div style={{ display: 'flex', gap: '12px', marginTop: '6px', fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>
+                                                                    {likes > 0 && <span>👍 {likes}</span>}
+                                                                    {cmts > 0 && <span>💬 {cmts}</span>}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                } catch (modalErr: any) {
+                    console.error('[VOYAGER MODAL] Render error:', modalErr);
+                    return (
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }} onClick={() => setShowLinkedInDataModal(false)}>
+                            <div onClick={(e: any) => e.stopPropagation()} style={{ background: '#13132b', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.3)', padding: '24px', maxWidth: '500px', color: 'white', width: '90%' }}>
+                                <h3 style={{ margin: '0 0 12px', color: '#ef4444' }}>Error Loading Data</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>{String(modalErr?.message || modalErr)}</p>
+                                <pre style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', maxHeight: '200px', overflow: 'auto', margin: '12px 0 0' }}>{JSON.stringify(voyagerData, null, 2).substring(0, 2000)}</pre>
+                                <button onClick={() => setShowLinkedInDataModal(false)} style={{ marginTop: '12px', padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Close</button>
+                            </div>
+                        </div>
+                    );
+                }
+            })()}
         </div>
     );
 }

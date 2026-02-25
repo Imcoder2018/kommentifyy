@@ -12,12 +12,7 @@ export async function GET(request: NextRequest) {
     let profileData = await (prisma as any).linkedInProfileData.findUnique({ where: { userId: payload.userId } });
 
     if (!profileData) {
-      // Try fallback: find ANY record that has Voyager data for debugging
-      const anyRecord = await (prisma as any).linkedInProfileData.findFirst({
-        where: { linkedInUrn: { not: null } },
-        select: { userId: true, linkedInUsername: true, voyagerLastSyncAt: true }
-      });
-      console.warn('[GET /api/linkedin-profile] No record found for userId:', payload.userId, '| Voyager records exist:', anyRecord ? `userId=${anyRecord.userId}, username=${anyRecord.linkedInUsername}` : 'none');
+      console.log('[GET /api/linkedin-profile] No record found for userId:', payload.userId);
       return NextResponse.json({ success: true, data: null, hasScanned: false });
     }
 

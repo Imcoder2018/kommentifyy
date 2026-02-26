@@ -270,6 +270,68 @@ export default function ImportTab(props: any) {
                                 </div>
                             </div>
 
+                            {/* Quick Engage via Extension API */}
+                            <div style={{ background: 'linear-gradient(135deg, rgba(0,119,181,0.1), rgba(0,160,220,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.2)' }}>
+                                <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Quick Engage via API
+                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '400' }}>Follow/Like/Comment using LinkedIn Voyager API</span>
+                                </h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                    <button onClick={async () => {
+                                        const token = localStorage.getItem('authToken');
+                                        if (!token) return;
+                                        const urls = (importCfg?.profileUrls || '').split('\n').map((u: string) => u.trim()).filter((u: string) => u.includes('linkedin.com/in/'));
+                                        if (urls.length === 0) { showToast('Add LinkedIn profile URLs first', 'error'); return; }
+                                        showToast(`Batch engaging ${urls.length} profiles via API...`, 'info');
+                                        try {
+                                            const res = await fetch('/api/extension/command', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                body: JSON.stringify({
+                                                    command: 'linkedin_batch_engage',
+                                                    data: {
+                                                        profiles: urls.map((u: string) => ({ url: u })),
+                                                        actions: {
+                                                            follow: importCfg?.engageFollows || false,
+                                                            like: importCfg?.engageLikes || false,
+                                                            comment: importCfg?.engageComments || false,
+                                                            commentText: importCfg?.defaultComment || 'Great post! Thanks for sharing.'
+                                                        }
+                                                    }
+                                                })
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) showToast(`Batch engage task queued for ${urls.length} profiles!`, 'success');
+                                            else showToast(data.error || 'Failed', 'error');
+                                        } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+                                    }}
+                                        style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                                        {miniIcon('M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75', 'white', 12)} Batch Engage All
+                                    </button>
+                                    <button onClick={async () => {
+                                        const token = localStorage.getItem('authToken');
+                                        if (!token) return;
+                                        const urls = (importCfg?.profileUrls || '').split('\n').map((u: string) => u.trim()).filter((u: string) => u.includes('linkedin.com/in/'));
+                                        if (urls.length === 0) { showToast('Add LinkedIn profile URLs first', 'error'); return; }
+                                        showToast(`Following ${urls.length} profiles via API...`, 'info');
+                                        for (const url of urls.slice(0, 10)) {
+                                            try {
+                                                await fetch('/api/extension/command', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                    body: JSON.stringify({ command: 'linkedin_follow_profile', data: { profileUrl: url } })
+                                                });
+                                            } catch (e) { }
+                                        }
+                                        showToast(`Follow tasks queued for ${Math.min(urls.length, 10)} profiles!`, 'success');
+                                    }}
+                                        style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                                        {miniIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3A4 4 0 1 0 8.5 11 4 4 0 0 0 8.5 3z M20 8v6 M23 11h-6', 'white', 12)} Follow Only
+                                    </button>
+                                </div>
+                                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '9px', margin: '6px 0 0 0' }}>Uses LinkedIn Voyager API via extension. Faster than UI automation. Check Tasks tab for progress.</p>
+                            </div>
+
                             {/* Import History — compact inline stats + table */}
                             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>

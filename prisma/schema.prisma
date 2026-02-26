@@ -773,6 +773,101 @@ model ExtensionHeartbeat {
   @@index([lastSeen])
 }
 
+// Lead Warmer Campaign - multi-touch warming sequences
+model LeadWarmerCampaign {
+  id                String   @id @default(cuid())
+  userId            String
+  name              String
+  status            String   @default("active")  // active, paused, completed, archived
+  // Campaign goal context
+  businessContext   String?  @db.Text  // "I help SaaS founders reduce churn through onboarding audits"
+  campaignGoal      String   @default("relationship")  // relationship, authority, warm_pitch, recruit
+  // Sequence configuration (JSON array of steps)
+  // Each step: { day: 1, action: "follow", enabled: true }
+  // Actions: follow, like, comment, like_2, comment_2, connect
+  sequenceSteps     String   @default("[{\"day\":1,\"action\":\"follow\",\"enabled\":true},{\"day\":3,\"action\":\"like\",\"enabled\":true},{\"day\":5,\"action\":\"comment\",\"enabled\":true},{\"day\":7,\"action\":\"like_2\",\"enabled\":true},{\"day\":10,\"action\":\"connect\",\"enabled\":true}]") @db.Text
+  // Safety limits
+  profilesPerDay    Int      @default(20)
+  // Stats
+  totalProspects    Int      @default(0)
+  warmProspects     Int      @default(0)
+  connectedCount    Int      @default(0)
+  repliedCount      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  prospects         LeadWarmerProspect[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+// Lead Warmer Prospect - individual leads in a campaign
+model LeadWarmerProspect {
+  id                String   @id @default(cuid())
+  campaignId        String
+  userId            String
+  // Profile data
+  linkedinUrl       String
+  vanityId          String?  // extracted from URL e.g. "john-doe"
+  firstName         String?
+  lastName          String?
+  company           String?
+  jobTitle          String?
+  profileUrn        String?  // LinkedIn URN for API calls
+  campaignTag       String?  // user-defined tag: cold, hot, partners
+  notes             String?  @db.Text
+  // Status pipeline: cold → touched → warm → connected → replied
+  status            String   @default("cold")
+  // Touch tracking
+  touchCount        Int      @default(0)
+  nextTouchDate     DateTime?
+  nextTouchAction   String?  // follow, like, comment, connect
+  lastTouchDate     DateTime?
+  // Recent posts (JSON array scraped by extension)
+  recentPosts       String   @default("[]") @db.Text
+  // Hot signal tracking
+  engagedBack       Boolean  @default(false)
+  engagedBackAt     DateTime?
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  campaign          LeadWarmerCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  touchLogs         LeadWarmerTouchLog[]
+
+  @@unique([campaignId, linkedinUrl])
+  @@index([userId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([nextTouchDate])
+}
+
+// Lead Warmer Touch Log - individual actions taken on a prospect
+model LeadWarmerTouchLog {
+  id              String   @id @default(cuid())
+  prospectId      String
+  userId          String
+  // Action details
+  touchNumber     Int      // 1, 2, 3, 4, 5...
+  action          String   // follow, like, comment, connect
+  status          String   @default("completed")  // pending, completed, failed, skipped
+  // Content
+  postText        String?  @db.Text  // the post that was engaged with
+  postUrl         String?
+  commentText     String?  @db.Text  // AI-generated comment
+  connectionNote  String?  // connection request note (max 200 chars)
+  // Result
+  errorMessage    String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  prospect        LeadWarmerProspect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@index([prospectId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
 // OTP verification codes - serverless-safe storage
 model OTPVerification {
   id         String   @id @default(cuid())

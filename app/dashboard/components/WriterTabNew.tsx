@@ -761,10 +761,40 @@ export default function WriterTabNew(props: any) {
                             )}
                         </div>
 
-                        <button onClick={sendToExtension} disabled={writerPosting || !writerContent.trim()}
-                            style={{ width: '100%', padding: '12px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: writerPosting || !writerContent.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(105,63,233,0.3)' }}>
-                            {writerPosting ? 'Posting...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Post to LinkedIn</span>}
-                        </button>
+                        {/* Post via Extension API (Voyager) - default for non-OAuth users */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={async () => {
+                                if (!writerContent.trim()) return;
+                                const token = localStorage.getItem('authToken');
+                                if (!token) return;
+                                setWriterStatus('Posting via extension API...');
+                                try {
+                                    const res = await fetch('/api/extension/command', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                        body: JSON.stringify({
+                                            command: 'linkedin_post_via_api',
+                                            data: { content: writerContent, mediaUrl: writerMediaBlobUrl || null }
+                                        })
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                        showToast('Post sent to extension! Publishing via LinkedIn API...', 'success');
+                                        setWriterStatus('Task queued - extension will post via LinkedIn API');
+                                    } else {
+                                        showToast(data.error || 'Failed to queue post', 'error');
+                                        setWriterStatus('Failed: ' + (data.error || 'Unknown error'));
+                                    }
+                                } catch (e: any) { showToast('Error: ' + e.message, 'error'); setWriterStatus('Error: ' + e.message); }
+                            }} disabled={writerPosting || !writerContent.trim()}
+                                style={{ flex: 1, padding: '12px', background: writerPosting ? 'rgba(0,119,181,0.3)' : 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting || !writerContent.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,119,181,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                                {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', 'white', 12)} Post via API
+                            </button>
+                            <button onClick={sendToExtension} disabled={writerPosting || !writerContent.trim()}
+                                style={{ flex: 1, padding: '12px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting || !writerContent.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(105,63,233,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                                {miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Post via UI
+                            </button>
+                        </div>
 
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <button onClick={saveDraft}
@@ -781,6 +811,27 @@ export default function WriterTabNew(props: any) {
                                 <button onClick={schedulePost}
                                     style={{ padding: '8px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '8px', color: '#c4b5fd', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                     {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 10)} Schedule
+                                </button>
+                                <button onClick={async () => {
+                                    if (!writerContent.trim() || !writerScheduleDate || !writerScheduleTime) { showToast('Set date/time first', 'error'); return; }
+                                    const token = localStorage.getItem('authToken');
+                                    if (!token) return;
+                                    const scheduledTime = new Date(`${writerScheduleDate}T${writerScheduleTime}`).toISOString();
+                                    setWriterStatus('Scheduling via LinkedIn API...');
+                                    try {
+                                        const res = await fetch('/api/extension/command', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                            body: JSON.stringify({ command: 'linkedin_schedule_via_api', data: { content: writerContent, scheduledTime } })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) { showToast('Schedule task sent to extension!', 'success'); setWriterStatus('Scheduling via LinkedIn native scheduler...'); }
+                                        else { showToast(data.error || 'Failed', 'error'); setWriterStatus('Failed: ' + (data.error || '')); }
+                                    } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+                                }}
+                                    title="Schedule directly on LinkedIn via API"
+                                    style={{ padding: '8px', background: 'rgba(0,119,181,0.2)', border: '1px solid rgba(0,119,181,0.4)', borderRadius: '8px', color: '#60a5fa', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 9)} LI
                                 </button>
                             </div>
                         </div>

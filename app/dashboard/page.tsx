@@ -16,6 +16,7 @@ import LimitsTab from './components/LimitsTab';
 import ActivityTab from './components/ActivityTab';
 import CommenterTab from './components/CommenterTab';
 import ImportTab from './components/ImportTab';
+import LeadWarmerTab from './components/LeadWarmerTab';
 import AnalyticsTab from './components/AnalyticsTab';
 import UsageTab from './components/UsageTab';
 import ReferralsTab from './components/ReferralsTab';
@@ -2182,7 +2183,7 @@ function DashboardContent() {
         // Comments section
         { id: 'commenter', label: t('nav.autoCommenter'), icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'), section: 'comments' },
         { id: 'comments', label: t('nav.commentsSettings'), icon: svgIcon('M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'), section: 'comments' },
-        { id: 'import', label: t('nav.importProfiles'), icon: svgIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6'), section: 'comments' },
+        { id: 'import', label: t('nav.leadWarmer'), icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z'), section: 'outreach' },
         // Other
         { id: 'limits', label: t('nav.limitsDelays'), icon: svgIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), section: 'management' },
         { id: 'tasks', label: t('nav.tasks'), icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'), section: 'management' },
@@ -2750,6 +2751,16 @@ function DashboardContent() {
                         </button>
                     ))}
 
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.outreach')}</div>}
+                    {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
+                    {navItems.filter(i => i.section === 'outreach').map(item => (
+                        <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
+                            {!sidebarCollapsed && item.label}
+                        </button>
+                    ))}
+
                     {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.management')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'management').map(item => (
@@ -3077,7 +3088,7 @@ function DashboardContent() {
                 {activeTab === 'limits' && <LimitsTab {...tabProps} />}
                 {activeTab === 'activity' && <ActivityTab {...tabProps} />}
                 {activeTab === 'commenter' && <CommenterTab {...tabProps} />}
-                {activeTab === 'import' && <ImportTab {...tabProps} />}
+                {activeTab === 'import' && <LeadWarmerTab {...tabProps} />}
                 {activeTab === 'analytics' && <AnalyticsTab {...tabProps} />}
                 {activeTab === 'usage' && <UsageTab {...tabProps} />}
                 {activeTab === 'referrals' && <ReferralsTab {...tabProps} />}

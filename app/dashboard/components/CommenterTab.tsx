@@ -158,6 +158,74 @@ export default function CommenterTab(props: any) {
                     </div>
                 </div>
 
+                {/* Row 1.5: Quick Capture - Feed/Search/Trending via Extension API */}
+                <div style={{ background: 'linear-gradient(135deg, rgba(0,119,181,0.1), rgba(0,160,220,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.2)' }}>
+                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Quick Capture via Extension API
+                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '400' }}>Fetch posts without opening browser tabs</span>
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                        <button onClick={async () => {
+                            const token = localStorage.getItem('authToken');
+                            if (!token) return;
+                            showToast('Capturing feed posts via API...', 'info');
+                            try {
+                                const res = await fetch('/api/extension/command', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({ command: 'linkedin_get_feed_api', data: { count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
+                                });
+                                const data = await res.json();
+                                if (data.success) showToast('Feed capture task sent to extension!', 'success');
+                                else showToast(data.error || 'Failed', 'error');
+                            } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+                        }}
+                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            {miniIcon('M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4', 'white', 12)} Capture Feed
+                        </button>
+                        <button onClick={async () => {
+                            const token = localStorage.getItem('authToken');
+                            if (!token) return;
+                            const kw = commenterCfg?.searchKeywords?.split('\n')?.[0]?.trim() || '';
+                            if (!kw) { showToast('Enter search keywords first', 'error'); return; }
+                            showToast(`Searching "${kw}" via API...`, 'info');
+                            try {
+                                const res = await fetch('/api/extension/command', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({ command: 'linkedin_search_posts_api', data: { keyword: kw, count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
+                                });
+                                const data = await res.json();
+                                if (data.success) showToast('Search task sent to extension!', 'success');
+                                else showToast(data.error || 'Failed', 'error');
+                            } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+                        }}
+                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            {miniIcon('M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', 'white', 12)} Search Posts
+                        </button>
+                        <button onClick={async () => {
+                            const token = localStorage.getItem('authToken');
+                            if (!token) return;
+                            const kw = commenterCfg?.searchKeywords?.split('\n')?.[0]?.trim() || 'trending';
+                            showToast(`Fetching trending "${kw}" posts...`, 'info');
+                            try {
+                                const res = await fetch('/api/extension/command', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                    body: JSON.stringify({ command: 'linkedin_get_trending_api', data: { keyword: kw, count: 20 } })
+                                });
+                                const data = await res.json();
+                                if (data.success) showToast('Trending capture sent to extension!', 'success');
+                                else showToast(data.error || 'Failed', 'error');
+                            } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+                        }}
+                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            {miniIcon('M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', 'white', 12)} Trending
+                        </button>
+                    </div>
+                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '9px', margin: '6px 0 0 0' }}>Uses LinkedIn Voyager API via extension. Results appear in Tasks tab and saved posts.</p>
+                </div>
+
                 {/* Row 2: Actions + Ignore Keywords side-by-side */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>

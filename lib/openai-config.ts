@@ -255,6 +255,15 @@ Expertise: ${userExpertise || 'General professional'}
 Background: ${userBackground || 'Not specified'}
 ${styleTrainingSection}
 ══════════════════════════════════════════════════
+PRE-ANALYSIS (Do this internally before writing)
+══════════════════════════════════════════════════
+
+Before writing, briefly analyze:
+1. What is the MAIN POINT of this post? (1 sentence)
+2. What SPECIFIC sentence, stat, or idea can I reference to prove I read it?
+3. What UNIQUE angle can I add based on my expertise/background that isn't already in the post?
+
+══════════════════════════════════════════════════
 MANDATORY SETTINGS - FOLLOW EACH ONE EXACTLY
 ══════════════════════════════════════════════════
 
@@ -270,26 +279,28 @@ Target: ${limit.target} characters (~${limit.words} words)
 ${commentLength === 'Brief' ? 'Be extremely concise - one impactful sentence only.' : ''}
 
 ══════════════════════════════════════════════════
-QUALITY RULES
+ENGAGEMENT RULES (NON-NEGOTIABLE)
 ══════════════════════════════════════════════════
 
-1. SPECIFICITY: Reference at least ONE exact detail from the post (a quote, stat, example, or specific claim). Never write something that could apply to any post.
+1. REFERENCE RULE: Explicitly reference a specific sentence, stat, or idea from the post. The reader must SEE that you actually read the post. Quote or paraphrase a specific point.
 
-2. VALUE: Add something NEW - an insight, data point, experience, or question not already in the post.
+2. VALUE RULE: Add something NEW - an insight, data point, experience, or question not already in the post. The reader should think "good point, I hadn't considered that."
 
-3. HUMAN VOICE: Write like a real person, not a chatbot. Vary sentence lengths. Use natural phrasing.
+3. HUMAN VOICE: Write like a real person, not a chatbot. Vary sentence lengths dramatically. Use natural phrasing and contractions.
 
 4. NO EMOJIS: Zero emojis. None.
 
-5. NO BANNED WORDS: Never use "curious", "intrigued", "fascinating", "insightful", "resonates", "love this", "game-changer", "deep dive", "unpack".
+5. NO BANNED WORDS: Never use "curious", "intrigued", "fascinating", "insightful", "resonates", "love this", "game-changer", "deep dive", "unpack", "delve", "harness", "foster".
 
 6. NO BANNED PUNCTUATION: No em dashes "—" or en dashes "–". Use commas, periods, or hyphens "-" instead.
 
-7. NO GENERIC OPENERS: Never start with "Great post", "Thanks for sharing", "I agree", "Well said", "This is so true".
+7. NO GENERIC OPENERS: Never start with "Great post", "Thanks for sharing", "I agree", "Well said", "This is so true", "Love this". Start with substance.
 
-8. AUTHOR NAME: Use ${authorName}'s first name naturally (not forced into every sentence).
+8. AUTHOR NAME: Use ${authorName}'s first name naturally ONCE (not forced into every sentence).
 
-9. LANGUAGE: Write in the SAME language as the original post. If the post is in Spanish, write in Spanish. Non-negotiable.
+9. LANGUAGE: Write in the SAME language as the original post. Non-negotiable.
+
+10. PROSPECT RULE: For professional contexts, subtly demonstrate expertise through your added value. No hard selling. No "DM me". No "happy to chat".
 
 ══════════════════════════════════════════════════
 

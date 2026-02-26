@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { useState, useEffect } from 'react';
+
 export default function CommentsTab(props: any) {
     // Destructure everything from props to keep variable names identical to original
     const {
@@ -115,6 +117,47 @@ export default function CommentsTab(props: any) {
         setCommenterCfg, setCommentStyleComments, setImportCfg, setAutoSettings, setTrendingStatus, setFeedScrapeStatus, setFeedScrapeCommandId, setTrendingGeneratedPosts, setPlannerGenerating,
         handleTabChange, cleanLinkedInProfileUrls,
     } = props;
+
+    // Auto Decide state
+    const [autoDecideEnabled, setAutoDecideEnabled] = useState(false);
+    const [autoDeciding, setAutoDeciding] = useState(false);
+    const [autoDecideReasoning, setAutoDecideReasoning] = useState('');
+
+    // Auto-fill background from profile data on mount
+    useEffect(() => {
+        if (!csBackground && (voyagerData?.headline || linkedInProfile?.headline)) {
+            const profileBg = voyagerData?.headline || linkedInProfile?.headline || '';
+            if (profileBg) setCsBackground(profileBg);
+        }
+    }, [voyagerData, linkedInProfile]);
+
+    // Auto Decide function - calls AI to decide optimal settings
+    const runAutoDecide = async (postText: string, authorName: string) => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
+        setAutoDeciding(true);
+        setAutoDecideReasoning('');
+        try {
+            const token = localStorage.getItem('authToken');
+            const res = await fetch('/api/ai/auto-decide-comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ postText, authorName, model: csModel }),
+            });
+            const data = await res.json();
+            if (data.success && data.settings) {
+                setCsGoal(data.settings.goal);
+                setCsTone(data.settings.tone);
+                setCsLength(data.settings.length);
+                setCsStyle(data.settings.style);
+                setAutoDecideReasoning(data.settings.reasoning || '');
+                showToast('AI auto-decided optimal settings!', 'success');
+            }
+        } catch (e) {
+            console.error('Auto-decide error:', e);
+        } finally {
+            setAutoDeciding(false);
+        }
+    };
 
     return (
         <div>
@@ -263,6 +306,33 @@ export default function CommentsTab(props: any) {
                                 </select>
                             </div>
                         </div>
+                        {/* Auto Decide Toggle */}
+                        <div style={{ background: autoDecideEnabled ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: `1px solid ${autoDecideEnabled ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.1)'}`, marginTop: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                            onClick={() => setAutoDecideEnabled(!autoDecideEnabled)}>
+                            <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: autoDecideEnabled ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: autoDecideEnabled ? '20px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>
+                                    {miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', autoDecideEnabled ? '#c4b5fd' : 'white', 13)} Auto Decide for Each Post
+                                </div>
+                                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px' }}>
+                                    {autoDecideEnabled
+                                        ? 'AI reads each post + your profile to pick optimal Goal, Tone, Length & Style automatically.'
+                                        : 'Turn ON to let AI auto-select the best settings per post.'}
+                                </div>
+                            </div>
+                            {autoDeciding && (
+                                <div style={{ color: '#c4b5fd', fontSize: '10px', fontWeight: '600', flexShrink: 0 }}>Deciding...</div>
+                            )}
+                        </div>
+                        {autoDecideEnabled && autoDecideReasoning && (
+                            <div style={{ marginTop: '8px', padding: '8px 14px', background: 'rgba(168,85,247,0.08)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.2)' }}>
+                                <div style={{ color: '#c4b5fd', fontSize: '10px', fontWeight: '600', marginBottom: '2px' }}>AI Reasoning</div>
+                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', lineHeight: '1.4' }}>{autoDecideReasoning}</div>
+                            </div>
+                        )}
+
                         {/* Expertise, Background, AI Behavior — compact 3-col */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '12px' }}>
                             <div>

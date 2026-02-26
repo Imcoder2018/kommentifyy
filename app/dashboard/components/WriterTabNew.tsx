@@ -78,6 +78,7 @@ export default function WriterTabNew(props: any) {
     // Analysis state
     const [analysisData, setAnalysisData] = useState<any>(null);
     const [showAnalysis, setShowAnalysis] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
 
     // Hook generator state
     const [hooks, setHooks] = useState<any[]>([]);
@@ -120,58 +121,35 @@ export default function WriterTabNew(props: any) {
         if (typeMap[postType]) setWriterTemplate(typeMap[postType]);
     }, [postType]);
 
-    // Analyze post for LinkedIn algorithm fit
-    const analyzePost = () => {
+    // AI-powered post analysis (replaces heuristic)
+    const analyzePost = async () => {
         if (!writerContent.trim()) return;
-        const content = writerContent;
-        const wordCount = content.split(/\s+/).length;
-        const charCount = content.length;
-        const hasQuestion = content.includes('?');
-        const lineBreaks = (content.match(/\n\n/g) || []).length;
-        const hasEmoji = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/u.test(content);
-        const bannedWords = ['game-changer', 'unlock', 'leverage', 'paradigm', 'deep dive', 'resonate', 'navigate', 'landscape', 'synergy'];
-        const hasBanned = bannedWords.some(w => content.toLowerCase().includes(w));
-        const firstLine = content.split('\n')[0] || '';
-        const hookStrength = firstLine.length > 10 && firstLine.length < 130 ? 'strong' : firstLine.length >= 130 ? 'too long' : 'weak';
-        
-        // LinkedIn Algorithm Q1 2026 scoring
-        let humanScore = 70;
-        let performanceScore = 60;
-        let reachScore = 55;
-        let aiRisk = 20;
-        
-        // Boost for questions (drives comments)
-        if (hasQuestion) { performanceScore += 15; reachScore += 10; }
-        // Good formatting
-        if (lineBreaks >= 3 && lineBreaks <= 10) { humanScore += 10; performanceScore += 5; }
-        // Optimal length for dwell time
-        if (charCount >= 800 && charCount <= 2000) { reachScore += 15; performanceScore += 10; }
-        // Banned AI words
-        if (hasBanned) { aiRisk += 30; humanScore -= 20; }
-        // Strong hook
-        if (hookStrength === 'strong') { performanceScore += 10; reachScore += 10; }
-        // Emojis (strategic use OK)
-        if (hasEmoji && !hasBanned) { humanScore += 5; }
-        
-        setAnalysisData({
-            humanScore: Math.min(100, Math.max(0, humanScore)),
-            performanceScore: Math.min(100, Math.max(0, performanceScore)),
-            reachScore: Math.min(100, Math.max(0, reachScore)),
-            aiRisk: Math.min(100, Math.max(0, aiRisk)),
-            wordCount,
-            charCount,
-            hookStrength,
-            hasQuestion,
-            hasBanned,
-            improvements: [
-                !hasQuestion && 'Add a question to boost comments',
-                hasBanned && 'Remove AI-sounding words',
-                hookStrength !== 'strong' && 'Optimize hook (10-130 chars)',
-                charCount < 800 && 'Add more depth for dwell time',
-                charCount > 2500 && 'Shorten for better completion rate'
-            ].filter(Boolean)
-        });
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
+        setAnalyzing(true);
         setShowAnalysis(true);
+        setAnalysisData(null);
+        try {
+            const token = localStorage.getItem('authToken');
+            const res = await fetch('/api/ai/analyze-post-deep', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    postContent: writerContent,
+                    authorHeadline: voyagerData?.headline || linkedInProfile?.headline || '',
+                    model: writerModel
+                }),
+            });
+            const data = await res.json();
+            if (data.success && data.analysis) {
+                setAnalysisData(data.analysis);
+            } else {
+                setAnalysisData({ error: data.error || 'Analysis failed' });
+            }
+        } catch (e: any) {
+            setAnalysisData({ error: 'Error: ' + e.message });
+        } finally {
+            setAnalyzing(false);
+        }
     };
 
     // Generate hooks
@@ -406,12 +384,6 @@ export default function WriterTabNew(props: any) {
                     <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', '#a78bfa', 16)} High Performance Post Generator
                     </h3>
-                    {writerContent && (
-                        <button onClick={analyzePost}
-                            style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px', padding: '6px 12px', color: '#a78bfa', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {miniIcon('M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', '#a78bfa', 12)} Analyze Post
-                        </button>
-                    )}
                 </div>
 
                 {/* Goal & Post Type Selection */}
@@ -444,72 +416,20 @@ export default function WriterTabNew(props: any) {
                     </div>
                 </div>
 
-                {/* Depth & Outcome Focus */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
-                    {/* Depth Selection */}
-                    <div>
-                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginBottom: '8px', display: 'block' }}>📏 Depth</label>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                            {DEPTH_OPTIONS.map(depth => (
-                                <button key={depth.id} onClick={() => setPostDepth(depth.id)}
-                                    style={{ flex: 1, padding: '8px 6px', background: postDepth === depth.id ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.05)', border: postDepth === depth.id ? '1px solid rgba(16,185,129,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: postDepth === depth.id ? '#34d399' : 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}>
-                                    {depth.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Outcome Focus */}
-                    <div>
-                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginBottom: '8px', display: 'block' }}>🎯 Outcome Focus</label>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                            {OUTCOME_OPTIONS.map(outcome => (
-                                <button key={outcome.id} onClick={() => setOutcomeF(outcome.id)}
-                                    style={{ flex: 1, padding: '8px 6px', background: outcomeF === outcome.id ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.05)', border: outcomeF === outcome.id ? '1px solid rgba(245,158,11,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: outcomeF === outcome.id ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    <span>{outcome.icon}</span> {outcome.label}
-                                </button>
-                            ))}
-                        </div>
+                {/* Depth Selection - single row */}
+                <div>
+                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginBottom: '8px', display: 'block' }}>📏 Depth</label>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                        {DEPTH_OPTIONS.map(depth => (
+                            <button key={depth.id} onClick={() => setPostDepth(depth.id)}
+                                style={{ flex: 1, padding: '8px 6px', background: postDepth === depth.id ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.05)', border: postDepth === depth.id ? '1px solid rgba(16,185,129,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: postDepth === depth.id ? '#34d399' : 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}>
+                                {depth.label} <span style={{ opacity: 0.6, fontSize: '9px' }}>({depth.desc})</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                {/* Analysis Panel */}
-                {showAnalysis && analysisData && (
-                    <div style={{ marginTop: '14px', padding: '14px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                            <span style={{ color: 'white', fontSize: '12px', fontWeight: '700' }}>📊 Post Analysis</span>
-                            <button onClick={() => setShowAnalysis(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '14px' }}>×</button>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '12px' }}>
-                            <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                <div style={{ color: analysisData.humanScore >= 70 ? '#34d399' : analysisData.humanScore >= 50 ? '#fbbf24' : '#f87171', fontSize: '20px', fontWeight: '700' }}>{analysisData.humanScore}%</div>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Human Score</div>
-                            </div>
-                            <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                <div style={{ color: analysisData.performanceScore >= 70 ? '#34d399' : analysisData.performanceScore >= 50 ? '#fbbf24' : '#f87171', fontSize: '20px', fontWeight: '700' }}>{analysisData.performanceScore}%</div>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Performance</div>
-                            </div>
-                            <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                <div style={{ color: analysisData.reachScore >= 70 ? '#34d399' : analysisData.reachScore >= 50 ? '#fbbf24' : '#f87171', fontSize: '20px', fontWeight: '700' }}>{analysisData.reachScore}%</div>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Reach Potential</div>
-                            </div>
-                            <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                <div style={{ color: analysisData.aiRisk <= 30 ? '#34d399' : analysisData.aiRisk <= 50 ? '#fbbf24' : '#f87171', fontSize: '20px', fontWeight: '700' }}>{analysisData.aiRisk}%</div>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>AI Risk</div>
-                            </div>
-                        </div>
-                        {analysisData.improvements && analysisData.improvements.length > 0 && (
-                            <div>
-                                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px' }}>💡 Top Improvements</div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    {analysisData.improvements.slice(0, 3).map((tip: string, i: number) => (
-                                        <div key={i} style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>• {tip}</div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                {/* AI-Powered Analysis Panel - moved to AI Post Helper column */}
             </div>
 
             {/* 3 Column Layout: AI Post Helper, Hook Generator + Config, LinkedIn Preview */}
@@ -519,6 +439,77 @@ export default function WriterTabNew(props: any) {
                     <h3 style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                         {miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', '#60a5fa', 13)} AI Post Helper
                     </h3>
+
+                    {/* Analyze Post Button */}
+                    {writerContent.trim() && (
+                        <button onClick={analyzePost} disabled={analyzing}
+                            style={{ width: '100%', padding: '10px', background: analyzing ? 'rgba(139,92,246,0.3)' : 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(59,130,246,0.2))', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '8px', color: '#a78bfa', fontSize: '11px', fontWeight: '700', cursor: analyzing ? 'wait' : 'pointer', marginBottom: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}>
+                            {miniIcon('M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', '#a78bfa', 12)}
+                            {analyzing ? 'Analyzing with AI...' : 'Analyze Post'}
+                        </button>
+                    )}
+
+                    {/* AI Analysis Results Panel */}
+                    {showAnalysis && (
+                        <div style={{ marginBottom: '10px', flexShrink: 0, maxHeight: '350px', overflowY: 'auto' }}>
+                            {analyzing ? (
+                                <div style={{ padding: '20px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(139,92,246,0.2)' }}>
+                                    <div style={{ color: '#a78bfa', fontSize: '12px', marginBottom: '8px' }}>Analyzing your post against Q1 2026 LinkedIn algorithm...</div>
+                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>Built to compare against current algorithm research</div>
+                                </div>
+                            ) : analysisData?.error ? (
+                                <div style={{ padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: '11px' }}>
+                                    {analysisData.error}
+                                    <button onClick={() => setShowAnalysis(false)} style={{ float: 'right', background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>×</button>
+                                </div>
+                            ) : analysisData ? (
+                                <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(139,92,246,0.2)', overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <span style={{ color: 'white', fontSize: '11px', fontWeight: '700' }}>📊 AI Post Analysis</span>
+                                        <button onClick={() => setShowAnalysis(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '12px' }}>×</button>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', padding: '10px' }}>
+                                        {[
+                                            { label: 'Human Score', data: analysisData.humanScore, good: (s: number) => s >= 70 },
+                                            { label: 'Performance', data: analysisData.performanceStrength, good: (s: number) => s >= 70 },
+                                            { label: 'Reach Potential', data: analysisData.reachPotential, good: (s: number) => s >= 70 },
+                                            { label: 'AI Pattern Risk', data: analysisData.aiPatternRisk, good: (s: number) => s <= 30 },
+                                        ].map((metric, idx) => {
+                                            const score = metric.data?.score ?? 0;
+                                            const isGood = metric.good(score);
+                                            const isMid = metric.label === 'AI Pattern Risk' ? (score > 30 && score <= 50) : (score >= 50 && score < 70);
+                                            const color = isGood ? '#34d399' : isMid ? '#fbbf24' : '#f87171';
+                                            return (
+                                                <div key={idx} style={{ padding: '8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '9px', fontWeight: '600' }}>{metric.label}</span>
+                                                        <span style={{ color, fontSize: '16px', fontWeight: '700' }}>{score}</span>
+                                                    </div>
+                                                    {metric.data?.reasoning && (
+                                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '9px', lineHeight: '1.4' }}>{metric.data.reasoning.substring(0, 120)}{metric.data.reasoning.length > 120 ? '...' : ''}</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {analysisData.overallVerdict && (
+                                        <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(139,92,246,0.08)' }}>
+                                            <div style={{ color: '#c4b5fd', fontSize: '10px', fontWeight: '600', marginBottom: '2px' }}>Verdict</div>
+                                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px', lineHeight: '1.4' }}>{analysisData.overallVerdict}</div>
+                                        </div>
+                                    )}
+                                    {analysisData.topImprovements && analysisData.topImprovements.length > 0 && (
+                                        <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '9px', fontWeight: '600', marginBottom: '4px' }}>💡 Top Improvements</div>
+                                            {analysisData.topImprovements.slice(0, 3).map((tip: string, i: number) => (
+                                                <div key={i} style={{ color: 'rgba(255,255,255,0.5)', fontSize: '9px', padding: '3px 0', lineHeight: '1.3' }}>• {tip}</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
+                        </div>
+                    )}
 
                     <div style={{ flex: 1, overflowY: 'auto', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: 0 }}>
                         {chatMessages.length === 0 ? (
@@ -619,42 +610,10 @@ export default function WriterTabNew(props: any) {
                         </div>
                     )}
 
-                    {/* Config Section - merged below hooks */}
+                    {/* Config Section - simplified */}
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: 'auto' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                            <div>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>Template</label>
-                                <select value={writerTemplate} onChange={e => setWriterTemplate(e.target.value)}
-                                    style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '10px', cursor: 'pointer', outline: 'none' }}>
-                                    <option value="lead_magnet">Lead Magnet</option>
-                                    <option value="thought_leadership">Thought Leadership</option>
-                                    <option value="personal_story">Personal Story</option>
-                                    <option value="advice">Advice</option>
-                                    <option value="how_to">How-To Guide</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>Tone</label>
-                                <select value={writerTone} onChange={e => setWriterTone(e.target.value)}
-                                    style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '10px', cursor: 'pointer', outline: 'none' }}>
-                                    <option value="professional">Professional</option>
-                                    <option value="friendly">Friendly</option>
-                                    <option value="bold">Bold</option>
-                                    <option value="educational">Educational</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                            <div>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>Length</label>
-                                <select value={writerLength} onChange={e => setWriterLength(e.target.value)}
-                                    style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '10px', cursor: 'pointer', outline: 'none' }}>
-                                    <option value="500">Short</option>
-                                    <option value="1500">Long</option>
-                                    <option value="2500">Extra Long</option>
-                                </select>
-                            </div>
-                            <div>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'flex-end' }}>
+                            <div style={{ flex: 1 }}>
                                 <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>AI Model</label>
                                 <select value={writerModel} onChange={e => handleWriterModelChange(e.target.value)}
                                     style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '10px', cursor: 'pointer', outline: 'none' }}>
@@ -663,14 +622,12 @@ export default function WriterTabNew(props: any) {
                                     ))}
                                 </select>
                             </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', paddingBottom: '4px' }}>
                                 <input type="checkbox" checked={writerHashtags} onChange={e => setWriterHashtags(e.target.checked)} 
                                     style={{ width: '12px', height: '12px', accentColor: '#a78bfa', cursor: 'pointer' }} />
                                 <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '10px' }}>Hashtags</span>
                             </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', paddingBottom: '4px' }}>
                                 <input type="checkbox" checked={writerEmojis} onChange={e => setWriterEmojis(e.target.checked)} 
                                     style={{ width: '12px', height: '12px', accentColor: '#a78bfa', cursor: 'pointer' }} />
                                 <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '10px' }}>Emojis</span>

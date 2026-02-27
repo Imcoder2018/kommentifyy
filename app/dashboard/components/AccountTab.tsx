@@ -1,4 +1,15 @@
+import { useState, useEffect } from 'react';
+
 export default function AccountTab(props: any) {
+    // State for profile scan method to ensure re-rendering
+    const [profileScanMethod, setProfileScanMethod] = useState<string>('ai');
+    
+    // Load initial value from localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('profileScanMethod');
+        if (saved) setProfileScanMethod(saved);
+    }, []);
+
     // Destructure everything from props to keep variable names identical to original
     const {
         // Core

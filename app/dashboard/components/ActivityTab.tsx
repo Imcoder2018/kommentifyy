@@ -1,4 +1,3 @@
-// @ts-nocheck
 export default function ActivityTab(props: any) {
     // Destructure everything from props to keep variable names identical to original
     const {
@@ -131,7 +130,18 @@ export default function ActivityTab(props: any) {
                                     const taskType = e.target.value;
                                     setLiveActivityLoading(true);
                                     fetch(`/api/live-activity?limit=200${taskType ? `&taskType=${taskType}` : ''}`, { headers: { 'Authorization': `Bearer ${token}` } })
-                                        .then(r => r.json()).then(d => { if (d.success) setLiveActivityLogs(d.logs || []); })
+                                        .then(r => {
+                                            if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+                                            return r.json();
+                                        })
+                                        .then(d => { 
+                                            if (d.success) setLiveActivityLogs(d.logs || []); 
+                                            else throw new Error(d.error || 'Failed to fetch activity logs');
+                                        })
+                                        .catch(error => {
+                                            console.error('Error fetching activity logs:', error);
+                                            showToast('Failed to fetch activity logs', 'error');
+                                        })
                                         .finally(() => setLiveActivityLoading(false));
                                 }}
                                     style={{ padding: '7px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '11px' }}>
@@ -151,9 +161,19 @@ export default function ActivityTab(props: any) {
                                     if (!token) return;
                                     if (!confirm('Clear all activity logs?')) return;
                                     try {
-                                        await fetch('/api/live-activity', { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                                        setLiveActivityLogs([]);
-                                    } catch { }
+                                        const res = await fetch('/api/live-activity', { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                                        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                                        const data = await res.json();
+                                        if (data.success) {
+                                            setLiveActivityLogs([]);
+                                            showToast('Activity logs cleared successfully', 'success');
+                                        } else {
+                                            throw new Error(data.error || 'Failed to clear activity logs');
+                                        }
+                                    } catch (error: any) {
+                                        console.error('Error clearing activity logs:', error);
+                                        showToast('Failed to clear activity logs: ' + error.message, 'error');
+                                    }
                                 }}
                                     style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#f87171', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
                                     Clear

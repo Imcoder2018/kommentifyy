@@ -23,6 +23,425 @@ import ReferralsTab from './components/ReferralsTab';
 import ExtensionTab from './components/ExtensionTab';
 import AccountTab from './components/AccountTab';
 
+// Shared props interface for all tab components
+interface TabProps {
+    // Core
+    t: any;
+    user: any;
+    usage: any;
+    router: any;
+    miniIcon: any;
+    showToast: any;
+    setActiveTab: any;
+    isFreePlan: boolean;
+    showUpgradeModal: boolean;
+    setShowUpgradeModal: any;
+    dashLang: string;
+    isDeveloper: boolean;
+    // Writer
+    writerTopic: string;
+    setWriterTopic: any;
+    writerTemplate: string;
+    setWriterTemplate: any;
+    writerTone: string;
+    setWriterTone: any;
+    writerLength: string;
+    setWriterLength: any;
+    writerHashtags: boolean;
+    setWriterHashtags: any;
+    writerEmojis: boolean;
+    setWriterEmojis: any;
+    writerLanguage: string;
+    setWriterLanguage: any;
+    writerAdvancedOpen: boolean;
+    setWriterAdvancedOpen: any;
+    writerTargetAudience: string;
+    setWriterTargetAudience: any;
+    writerKeyMessage: string;
+    setWriterKeyMessage: any;
+    writerBackground: string;
+    setWriterBackground: any;
+    writerContent: string;
+    setWriterContent: any;
+    writerGenerating: boolean;
+    setWriterGenerating: any;
+    writerScheduleDate: string;
+    setWriterScheduleDate: any;
+    writerScheduleTime: string;
+    setWriterScheduleTime: any;
+    writerDrafts: any[];
+    writerScheduledPosts: any[];
+    writerTokenUsage: any;
+    writerImageFile: File | null;
+    setWriterImageFile: any;
+    writerImageUrl: string;
+    setWriterImageUrl: any;
+    writerMediaBlobUrl: string;
+    setWriterMediaBlobUrl: any;
+    writerMediaType: string;
+    setWriterMediaType: any;
+    writerUploading: boolean;
+    setWriterUploading: any;
+    writerPreviewMode: 'off' | 'desktop' | 'mobile';
+    setWriterPreviewMode: any;
+    writerPreviewExpanded: boolean;
+    setWriterPreviewExpanded: any;
+    writerUseLinkedInAPI: boolean;
+    setWriterUseLinkedInAPI: any;
+    fileInputRef: any;
+    writerStatus: string;
+    setWriterStatus: any;
+    writerModel: string;
+    writerUseInspirationSources: boolean;
+    setWriterUseInspirationSources: any;
+    writerInspirationSourceNames: string[];
+    writerPosting: boolean;
+    MODEL_OPTIONS: any[];
+    handleWriterModelChange: any;
+    userGoal: string;
+    setUserGoal: any;
+    userTargetAudience: string;
+    setUserTargetAudience: any;
+    userWritingStyle: string;
+    setUserWritingStyle: any;
+    userWritingStyleSource: string;
+    setUserWritingStyleSource: any;
+    goalsLoading: boolean;
+    goalsSuggesting: boolean;
+    loadUserGoals: any;
+    saveUserGoals: any;
+    suggestGoals: any;
+    generatePost: any;
+    saveDraft: any;
+    loadDrafts: any;
+    loadScheduledPosts: any;
+    sendToExtension: any;
+    schedulePost: any;
+    deleteDraft: any;
+    // Saved posts
+    savedPosts: any[];
+    savedPostsLoading: boolean;
+    savedPostsPage: number;
+    setSavedPostsPage: any;
+    savedPostsTotal: number;
+    savedPostsSortBy: string;
+    setSavedPostsSortBy: any;
+    savedPostsSortOrder: string;
+    setSavedPostsSortOrder: any;
+    savedPostsSearch: string;
+    setSavedPostsSearch: any;
+    loadSavedPosts: any;
+    deleteSavedPost: any;
+    // Feed schedule
+    feedSchedule: any;
+    feedScheduleLoading: boolean;
+    scheduleTimesInput: string[];
+    setScheduleTimesInput: any;
+    scheduleDuration: number;
+    setScheduleDuration: any;
+    scheduleMinLikes: number;
+    setScheduleMinLikes: any;
+    scheduleMinComments: number;
+    setScheduleMinComments: any;
+    scheduleKeywords: string;
+    setScheduleKeywords: any;
+    scheduleActive: boolean;
+    setScheduleActive: any;
+    loadFeedSchedule: any;
+    saveFeedSchedule: any;
+    feedScrapeCommandId: string | null;
+    feedScrapeStatus: any;
+    feedScrapePolling: boolean;
+    startFeedScrapePolling: any;
+    stopFeedScrape: any;
+    // Tasks
+    tasks: any[];
+    tasksLoading: boolean;
+    taskNotifications: any[];
+    taskStatusExpanded: string | null;
+    setTaskStatusExpanded: any;
+    taskCounts: any;
+    loadTasks: any;
+    addTaskNotification: any;
+    stopAllTasks: any;
+    // Trending
+    trendingPeriod: string;
+    setTrendingPeriod: any;
+    trendingSelectedPosts: string[];
+    setTrendingSelectedPosts: any;
+    trendingGenerating: boolean;
+    trendingCustomPrompt: string;
+    setTrendingCustomPrompt: any;
+    trendingIncludeHashtags: boolean;
+    setTrendingIncludeHashtags: any;
+    trendingLanguage: string;
+    setTrendingLanguage: any;
+    trendingGeneratedPosts: any[];
+    trendingShowGenPreview: boolean;
+    setTrendingShowGenPreview: any;
+    trendingStatus: string;
+    trendingModel: string;
+    setTrendingModel: any;
+    trendingTokenUsage: any;
+    trendingUseProfileData: boolean;
+    setTrendingUseProfileData: any;
+    generateTrendingPosts: any;
+    analyzePosts: any;
+    analysisResults: any[];
+    analysisLoading: boolean;
+    showAnalysis: boolean;
+    setShowAnalysis: any;
+    generatedPostImages: Record<number, string>;
+    setGeneratedPostImages: any;
+    postingToLinkedIn: Record<number, boolean>;
+    postGeneratedToLinkedIn: any;
+    handleImageAttach: any;
+    // History
+    historyItems: any[];
+    historyLoading: boolean;
+    historyFilter: string;
+    setHistoryFilter: any;
+    historyPage: number;
+    setHistoryPage: any;
+    historyTotal: number;
+    loadHistory: any;
+    deleteHistoryItem: any;
+    // Inspiration
+    inspirationProfiles: string;
+    setInspirationProfiles: any;
+    inspirationPostCount: number;
+    setInspirationPostCount: any;
+    inspirationScraping: boolean;
+    inspirationStatus: string;
+    inspirationSources: any[];
+    inspirationLoading: boolean;
+    inspirationUseAll: boolean;
+    setInspirationUseAll: any;
+    inspirationSelected: string[];
+    setInspirationSelected: any;
+    inspirationDeleteMode: boolean;
+    setInspirationDeleteMode: any;
+    inspirationDeleteSelected: string[];
+    setInspirationDeleteSelected: any;
+    useProfileData: boolean;
+    setUseProfileData: any;
+    showInspirationPopup: boolean;
+    setShowInspirationPopup: any;
+    showSharedProfilesPopup: boolean;
+    setShowSharedProfilesPopup: any;
+    loadInspirationSources: any;
+    scrapeInspirationProfiles: any;
+    deleteInspirationSource: any;
+    selectedInspirationPosts: string[];
+    setSelectedInspirationPosts: any;
+    toggleInspirationPost: any;
+    viewingProfilePosts: string | null;
+    setViewingProfilePosts: any;
+    profilePostsData: any[];
+    setProfilePostsData: any;
+    profilePostsLoading: boolean;
+    loadProfilePosts: any;
+    // Comment style
+    commentStyleProfiles: any[];
+    commentStyleLoading: boolean;
+    commentStyleUrl: string;
+    setCommentStyleUrl: any;
+    commentStyleScraping: boolean;
+    commentStyleStatus: string;
+    commentStyleExpanded: string | null;
+    setCommentStyleExpanded: any;
+    commentStyleComments: any[];
+    commentStyleCommentsLoading: boolean;
+    csUseProfileStyle: boolean;
+    setCsUseProfileStyle: any;
+    csUseProfileData: boolean;
+    setCsUseProfileData: any;
+    csGoal: string;
+    setCsGoal: any;
+    csTone: string;
+    setCsTone: any;
+    csLength: string;
+    setCsLength: any;
+    csStyle: string;
+    setCsStyle: any;
+    csModel: string;
+    setCsModel: any;
+    csExpertise: string;
+    setCsExpertise: any;
+    csBackground: string;
+    setCsBackground: any;
+    csAutoPost: string;
+    setCsAutoPost: any;
+    csSettingsLoading: boolean;
+    csSettingsSaving: boolean;
+    loadCommentStyleProfiles: any;
+    scrapeCommentStyle: any;
+    loadProfileComments: any;
+    toggleCommentTop: any;
+    toggleProfileSelect: any;
+    deleteCommentStyleProfile: any;
+    loadCommentSettings: any;
+    saveCommentSettings: any;
+    handleCommentModelChange: any;
+    // Shared content
+    sharedPosts: any[];
+    sharedPostsLoading: boolean;
+    sharedInspProfiles: any[];
+    sharedCommentProfiles: any[];
+    loadSharedPosts: any;
+    loadSharedInspProfiles: any;
+    loadSharedCommentProfiles: any;
+    // Automation settings
+    autoSettings: any;
+    autoSettingsLoading: boolean;
+    autoSettingsSaving: boolean;
+    loadAutoSettings: any;
+    saveAutoSettings: any;
+    // Activity
+    liveActivityLogs: any[];
+    liveActivityLoading: boolean;
+    showLogsPopup: boolean;
+    setShowLogsPopup: any;
+    loadLiveActivity: any;
+    // Commenter
+    commenterCfg: any;
+    commenterCfgLoading: boolean;
+    commenterCfgSaving: boolean;
+    loadCommenterCfg: any;
+    saveCommenterCfg: any;
+    // Import
+    importCfg: any;
+    importCfgLoading: boolean;
+    importCfgSaving: boolean;
+    loadImportCfg: any;
+    saveImportCfg: any;
+    // LinkedIn profile
+    linkedInProfile: any;
+    linkedInProfileLoading: boolean;
+    linkedInProfileScanning: boolean;
+    linkedInProfileStatus: string;
+    linkedInUseProfileData: boolean;
+    setLinkedInUseProfileData: any;
+    linkedInTopicSuggestions: string[];
+    linkedInGeneratingTopics: boolean;
+    showLinkedInDataModal: boolean;
+    setShowLinkedInDataModal: any;
+    showFullPageText: boolean;
+    setShowFullPageText: any;
+    rescanningMissing: boolean;
+    setRescanningMissing: any;
+    editingSection: string | null;
+    setEditingSection: any;
+    editValue: string;
+    setEditValue: any;
+    loadLinkedInProfile: any;
+    deleteLinkedInProfile: any;
+    scanLinkedInProfile: any;
+    generateTopicSuggestions: any;
+    selectTopicSuggestion: any;
+    toggleLinkedInProfileData: any;
+    // Planner
+    plannerOpen: boolean;
+    setPlannerOpen: any;
+    plannerMode: '7days' | '30days';
+    setPlannerMode: any;
+    plannerStep: 'context' | 'select' | 'time' | 'generating' | 'done';
+    setPlannerStep: any;
+    plannerContext: string;
+    setPlannerContext: any;
+    plannerTopics: string[];
+    setPlannerTopics: any;
+    plannerSelected: boolean[];
+    setPlannerSelected: any;
+    plannerGeneratingTopics: boolean;
+    plannerPublishTime: string;
+    setPlannerPublishTime: any;
+    plannerStartDate: string;
+    setPlannerStartDate: any;
+    plannerTemplate: string;
+    setPlannerTemplate: any;
+    plannerTone: string;
+    setPlannerTone: any;
+    plannerLength: string;
+    setPlannerLength: any;
+    plannerGenerating: boolean;
+    plannerDoneCount: number;
+    plannerTotal: number;
+    plannerStatusMsg: string;
+    plannerAbortRef: any;
+    openPlanner: any;
+    generatePlannerTopics: any;
+    startPlannerGeneration: any;
+    // Voyager
+    voyagerData: any;
+    voyagerLoading: boolean;
+    voyagerSyncing: boolean;
+    setVoyagerSyncing: any;
+    loadVoyagerData: any;
+    // Analytics
+    analyticsData: any;
+    analyticsLoading: boolean;
+    analyticsPeriod: string;
+    setAnalyticsPeriod: any;
+    analyticsAutoSearch: string;
+    setAnalyticsAutoSearch: any;
+    analyticsNetworkSearch: string;
+    setAnalyticsNetworkSearch: any;
+    analyticsImportSearch: string;
+    setAnalyticsImportSearch: any;
+    analyticsLeadsSearch: string;
+    setAnalyticsLeadsSearch: any;
+    analyticsAutoFilter: string;
+    setAnalyticsAutoFilter: any;
+    analyticsNetworkFilter: string;
+    setAnalyticsNetworkFilter: any;
+    loadAnalytics: any;
+    // Referral
+    referralData: ReferralData | null;
+    copied: boolean;
+    setCopied: any;
+    showReferrals: boolean;
+    setShowReferrals: any;
+    copyToClipboard: any;
+    loadReferralData: any;
+    // Extension
+    extensionConnected: boolean;
+    extensionLastSeen: Date | null;
+    checkExtensionConnectivity: any;
+    // Account
+    linkedInOAuth: any;
+    linkedInOAuthLoading: boolean;
+    theme: 'current' | 'light' | 'dark';
+    setTheme: any;
+    calendarMonth: number;
+    setCalendarMonth: any;
+    calendarYear: number;
+    setCalendarYear: any;
+    // Other
+    signOut: any;
+    loggingOut: boolean;
+    setLoggingOut: any;
+    sidebarCollapsed: boolean;
+    // Additional
+    changeDashboardLanguage: any;
+    setLinkedInOAuth: any;
+    setLinkedInProfileScanning: any;
+    setLinkedInProfile: any;
+    SUPPORTED_LANGUAGES: any;
+    setLiveActivityLogs: any;
+    setLiveActivityLoading: any;
+    setCommenterCfg: any;
+    setCommentStyleComments: any;
+    setImportCfg: any;
+    setAutoSettings: any;
+    setTrendingStatus: any;
+    setFeedScrapeStatus: any;
+    setFeedScrapeCommandId: any;
+    setTrendingGeneratedPosts: any;
+    setPlannerGenerating: any;
+    handleTabChange: any;
+    cleanLinkedInProfileUrls: any;
+}
 
 interface ReferralData {
     referralCode: string;
@@ -84,11 +503,11 @@ function DashboardContent() {
     // Check if user is on a free plan (no AI access)
     // Also treat expired trial users as free (trial plan with past trialEndsAt)
     const isTrialExpired = user?.plan?.isTrialPlan && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
-    const isFreePlan = user?.plan && (
+    const isFreePlan = Boolean(user?.plan && (
         user.plan.isDefaultFreePlan ||
         (user.plan.price === 0 && !user.plan.isLifetime && !user.plan.isTrialPlan) ||
         isTrialExpired
-    );
+    ));
 
     // Writer tab state
     const [writerTopic, setWriterTopic] = useState('');
@@ -193,8 +612,8 @@ function DashboardContent() {
         inspirationTimeout: null,
     });
 
-    // Developer emails for showing token costs
-    const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
+    // Developer emails for showing token costs (from environment variable)
+    const DEVELOPER_EMAILS = process.env.NEXT_PUBLIC_DEVELOPER_EMAILS?.split(',').map(e => e.trim()) || ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
     const isDeveloper = user?.email ? DEVELOPER_EMAILS.includes(user.email) : false;
 
     // AI Models state - fetched from database (admin-controlled)
@@ -469,6 +888,7 @@ function DashboardContent() {
         }
 
         let isRedirecting = false;
+        let isMounted = true;
 
         // Validate token and get user info
         const validateAndLoad = async () => {
@@ -486,6 +906,7 @@ function DashboardContent() {
                     return;
                 }
 
+                if (!isMounted) return;
                 setUser(validateData.user);
 
                 // Check if user has paid plan
@@ -513,7 +934,7 @@ function DashboardContent() {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const usageData = await usageRes.json();
-                    if (usageData?.success) {
+                    if (usageData?.success && isMounted) {
                         setUsage(usageData);
                     }
                 } catch (usageErr) {
@@ -523,6 +944,7 @@ function DashboardContent() {
                 console.error('Dashboard auth error:', err);
                 // Only redirect to login on auth failure, not network errors
                 // Check if token is still valid by trying refresh
+                let shouldRedirect = true;
                 try {
                     const refreshRes = await fetch('/api/auth/refresh', {
                         method: 'POST',
@@ -539,19 +961,23 @@ function DashboardContent() {
                 } catch (refreshErr) {
                     // Refresh also failed
                 }
-                localStorage.removeItem('authToken');
-                isRedirecting = true;
-                router.push('/login');
+                if (shouldRedirect) {
+                    localStorage.removeItem('authToken');
+                    isRedirecting = true;
+                    router.push('/login');
+                }
             } finally {
-                if (!isRedirecting) {
+                if (!isRedirecting && isMounted) {
                     setLoading(false);
                 }
             }
         };
 
         validateAndLoad();
-        loadVoyagerData(); // Load LinkedIn Voyager data on overview tab
-        loadUserGoals();
+        if (isMounted) {
+            loadVoyagerData(); // Load LinkedIn Voyager data on overview tab
+            loadUserGoals();
+        }
 
         // Fetch referral data
         fetch('/api/referrals', {
@@ -561,11 +987,16 @@ function DashboardContent() {
         })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
+                if (data.success && isMounted) {
                     setReferralData(data);
                 }
             })
             .catch(() => { });
+
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
     }, [router]);
 
     const copyToClipboard = (text: string) => {
@@ -732,10 +1163,6 @@ function DashboardContent() {
             loadDrafts();
             showToast('Draft deleted successfully', 'success');
         } catch (error: any) {
-            console.error('Error deleting draft:', error);
-            showToast('Failed to delete draft: ' + error.message, 'error');
-        }
-    };
 
     // Saved posts functions
     const loadSavedPosts = async (page = 1, periodOverride?: string) => {
@@ -744,15 +1171,16 @@ function DashboardContent() {
         setSavedPostsLoading(true);
         try {
             // Calculate date filter based on trending period
-            const activePeriod = periodOverride !== undefined ? periodOverride : trendingPeriod;
+            // Use current trendingPeriod value to avoid stale closure
+            const currentPeriod = periodOverride !== undefined ? periodOverride : trendingPeriod;
             let periodFilter = '';
-            if (activePeriod === 'today') {
+            if (currentPeriod === 'today') {
                 const d = new Date(); d.setHours(0, 0, 0, 0);
                 periodFilter = d.toISOString();
-            } else if (activePeriod === 'week') {
+            } else if (currentPeriod === 'week') {
                 const d = new Date(); d.setDate(d.getDate() - 7);
                 periodFilter = d.toISOString();
-            } else if (activePeriod === 'month') {
+            } else if (currentPeriod === 'month') {
                 const d = new Date(); d.setMonth(d.getMonth() - 1);
                 periodFilter = d.toISOString();
             }
@@ -1565,6 +1993,9 @@ function DashboardContent() {
         
         setPlannerGenerating(false);
         
+        // Reset abort ref after generation completes
+        plannerAbortRef.current = false;
+        
         if (wasAborted) {
             setPlannerStep('select');
             setPlannerStatusMsg('');
@@ -1728,7 +2159,7 @@ function DashboardContent() {
 
 
     // ---- Tab Props: pass all state and functions to tab components ----
-    const tabProps = {
+    const tabProps: TabProps = {
         // Core
         t, user, usage, router, miniIcon, showToast, setActiveTab, isFreePlan, showUpgradeModal, setShowUpgradeModal, dashLang, isDeveloper,
         // Writer
@@ -1844,6 +2275,7 @@ function DashboardContent() {
         SUPPORTED_LANGUAGES, setLiveActivityLogs, setLiveActivityLoading,
         setCommenterCfg, setCommentStyleComments, setImportCfg, setAutoSettings,
         setTrendingStatus, setFeedScrapeStatus, setFeedScrapeCommandId, setTrendingGeneratedPosts, setPlannerGenerating,
+        handleTabChange, cleanLinkedInProfileUrls,
     };
     return (
         <div data-theme={theme} style={{
@@ -2774,4 +3206,32 @@ function DashboardContent() {
             })()}
         </div>
     );
+
+    // Cleanup all intervals and timeouts on component unmount
+    useEffect(() => {
+        return () => {
+            // Clear all intervals and timeouts
+            if (cleanupRefs.current.feedScrapeInterval) {
+                clearInterval(cleanupRefs.current.feedScrapeInterval);
+                cleanupRefs.current.feedScrapeInterval = null;
+            }
+            if (cleanupRefs.current.commentScrapeInterval) {
+                clearInterval(cleanupRefs.current.commentScrapeInterval);
+                cleanupRefs.current.commentScrapeInterval = null;
+            }
+            if (cleanupRefs.current.scanProfileInterval) {
+                clearInterval(cleanupRefs.current.scanProfileInterval);
+                cleanupRefs.current.scanProfileInterval = null;
+            }
+            if (cleanupRefs.current.scanProfileTimeout) {
+                clearTimeout(cleanupRefs.current.scanProfileTimeout);
+                cleanupRefs.current.scanProfileTimeout = null;
+            }
+            // Clear feedScrapeIntervalRef as well
+            if (feedScrapeIntervalRef.current) {
+                clearInterval(feedScrapeIntervalRef.current);
+                feedScrapeIntervalRef.current = null;
+            }
+        };
+    }, []);
 }

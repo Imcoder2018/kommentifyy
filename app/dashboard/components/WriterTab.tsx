@@ -1,4 +1,3 @@
-// @ts-nocheck
 export default function WriterTab(props: any) {
     // Destructure everything from props to keep variable names identical to original
     const {

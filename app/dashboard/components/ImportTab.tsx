@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 
 const STATUS_COLORS = {
@@ -48,18 +47,22 @@ export default function ImportTab(props: any) {
     const [sequenceSteps, setSequenceSteps] = useState(DEFAULT_SEQUENCE);
     const [autopilotEnabled, setAutopilotEnabled] = useState(false);
 
-    const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    // Get fresh auth token on each call
+    const getAuthToken = () => typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
 
     const apiGet = async (url: string) => {
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${authToken}` } });
+        const token = getAuthToken();
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         return res.json();
     };
     const apiPost = async (url: string, body: any) => {
-        const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const token = getAuthToken();
+        const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         return res.json();
     };
     const apiDelete = async (url: string) => {
-        const res = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${authToken}` } });
+        const token = getAuthToken();
+        const res = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
         return res.json();
     };
 
@@ -154,7 +157,7 @@ export default function ImportTab(props: any) {
             })).filter(b => b.vanityId);
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` },
                 body: JSON.stringify({ command: 'fetch_lead_posts_bulk', data: { leads: batchData } })
             });
             const data = await res.json();
@@ -162,16 +165,18 @@ export default function ImportTab(props: any) {
                 showToast(`Fetching posts for ${batchData.length} leads...`, 'info');
                 const pollInterval = setInterval(async () => {
                     try {
-                        const statusRes = await fetch(`/api/extension/command?commandId=${data.commandId}`, { headers: { Authorization: `Bearer ${authToken}` } });
+                        const statusRes = await fetch(`/api/extension/command?commandId=${data.commandId}`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
                         const statusData = await statusRes.json();
                         if (statusData.command?.status === 'completed') {
                             clearInterval(pollInterval);
+                            clearTimeout(timeoutId); // Clear timeout when completed
                             setFetchingPosts(false);
                             setFetchProgress('');
                             showToast(`Fetched posts for ${statusData.command.data?.success || 0} leads!`, 'success');
                             loadLeads();
                         } else if (statusData.command?.status === 'failed') {
                             clearInterval(pollInterval);
+                            clearTimeout(timeoutId); // Clear timeout when failed
                             setFetchingPosts(false);
                             showToast('Fetch failed', 'error');
                         } else if (statusData.command?.data?.progress) {
@@ -179,7 +184,13 @@ export default function ImportTab(props: any) {
                         }
                     } catch (e) {}
                 }, 3000);
-                setTimeout(() => clearInterval(pollInterval), 300000);
+                // Store timeout ID for cleanup and clear both after 5 minutes
+                const timeoutId = setTimeout(() => {
+                    clearInterval(pollInterval);
+                    setFetchingPosts(false);
+                    setFetchProgress('');
+                    showToast('Fetch timed out', 'error');
+                }, 300000);
             } else { showToast(data.error || 'Failed', 'error'); setFetchingPosts(false); }
         } catch (e: any) { showToast('Error: ' + e.message, 'error'); setFetchingPosts(false); }
     };
@@ -190,7 +201,7 @@ export default function ImportTab(props: any) {
         try {
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` },
                 body: JSON.stringify({
                     command: 'engage_lead_post',
                     data: { postUrn: post.postUrn, enableLike: action === 'like', enableComment: action === 'comment', commentText: commentText || '', leadId: lead.id, postId: post.id }

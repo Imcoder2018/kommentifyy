@@ -357,10 +357,11 @@ export default function WriterTabNew(props: any) {
     };
 
     // AI Chatbot send message
-    const sendChatMessage = async () => {
-        if (!chatInput.trim() || chatSending) return;
+    const sendChatMessage = async (message?: string) => {
+        const inputToUse = message || chatInput;
+        if (!inputToUse.trim() || chatSending) return;
 
-        const userMsg = { role: 'user', content: chatInput };
+        const userMsg = { role: 'user', content: inputToUse };
         setChatMessages([...chatMessages, userMsg]);
         setChatInput('');
         setChatSending(true);
@@ -625,7 +626,7 @@ export default function WriterTabNew(props: any) {
                                 <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '12px' }}>Ask me anything about your post:</div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
                                     {['Help me find ideas', 'Make it casual', 'More formal', 'Shorter version'].map(q => (
-                                        <button key={q} onClick={() => { setChatInput(q); setTimeout(() => sendChatMessage(), 100); }}
+                                        <button key={q} onClick={() => { setChatInput(q); sendChatMessage(q); }}
                                             style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}
                                             onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                                             onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}>
@@ -664,7 +665,7 @@ export default function WriterTabNew(props: any) {
                             onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
                             placeholder="Ask for help or ideas..."
                             style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }} />
-                        <button onClick={sendChatMessage} disabled={!chatInput.trim() || chatSending}
+                        <button onClick={() => sendChatMessage()} disabled={!chatInput.trim() || chatSending}
                             style={{ padding: '10px 16px', background: chatSending ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', cursor: chatSending || !chatInput.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             {chatSending ? '...' : <>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)}</>}
                         </button>

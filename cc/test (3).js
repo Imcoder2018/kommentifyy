@@ -44,8 +44,8 @@ const ENABLE_FOLLOW      = true;   // Follow the lead
 const ENABLE_CONNECT     = true;   // Send connection request with note
 const ENABLE_CHECK_REPLY = true;   // Check if lead replied to your comment
 const ENABLE_AUTO_REPLY  = true;   // Auto-reply to people who replied to your comments
-const ENABLE_LIKE        = false;  // Like their most recent post
-const ENABLE_COMMENT     = false;  // Comment on their most recent post
+const ENABLE_LIKE        = true;  // Like their most recent post
+const ENABLE_COMMENT     = true;  // Comment on their most recent post
 
 
 // ═══════════════════════════════════════════════════════════

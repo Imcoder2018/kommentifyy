@@ -1,150 +1,87 @@
 // @ts-nocheck
+import { useState, useEffect } from 'react';
+
 export default function CommenterTab(props: any) {
-    // Destructure everything from props to keep variable names identical to original
     const {
-        // Core
         t, user, usage, router, miniIcon, showToast, setActiveTab, isFreePlan, showUpgradeModal, setShowUpgradeModal, dashLang, isDeveloper,
-        // Writer
-        writerTopic, setWriterTopic, writerTemplate, setWriterTemplate, writerTone, setWriterTone,
-        writerLength, setWriterLength, writerHashtags, setWriterHashtags, writerEmojis, setWriterEmojis,
-        writerLanguage, setWriterLanguage, writerAdvancedOpen, setWriterAdvancedOpen,
-        writerTargetAudience, setWriterTargetAudience, writerKeyMessage, setWriterKeyMessage,
-        writerBackground, setWriterBackground, writerContent, setWriterContent,
-        writerGenerating, writerScheduleDate, setWriterScheduleDate, writerScheduleTime, setWriterScheduleTime,
-        writerDrafts, writerScheduledPosts, writerTokenUsage, writerImageFile, setWriterImageFile,
-        writerImageUrl, setWriterImageUrl, writerMediaBlobUrl, setWriterMediaBlobUrl,
-        writerMediaType, setWriterMediaType, writerUploading, setWriterUploading,
-        writerPreviewMode, setWriterPreviewMode, writerPreviewExpanded, setWriterPreviewExpanded,
-        writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, writerModel,
-        writerUseInspirationSources, setWriterUseInspirationSources, writerInspirationSourceNames,
-        writerPosting, MODEL_OPTIONS, handleWriterModelChange,
-        generatePost, saveDraft, loadDrafts, loadScheduledPosts, sendToExtension, schedulePost, deleteDraft,
-        // Saved posts
-        savedPosts, savedPostsLoading, savedPostsPage, setSavedPostsPage, savedPostsTotal,
-        savedPostsSortBy, setSavedPostsSortBy, savedPostsSortOrder, setSavedPostsSortOrder,
-        savedPostsSearch, setSavedPostsSearch, loadSavedPosts, deleteSavedPost,
-        // Feed schedule
-        feedSchedule, feedScheduleLoading, scheduleTimesInput, setScheduleTimesInput,
-        scheduleDuration, setScheduleDuration, scheduleMinLikes, setScheduleMinLikes,
-        scheduleMinComments, setScheduleMinComments, scheduleKeywords, setScheduleKeywords,
-        scheduleActive, setScheduleActive, loadFeedSchedule, saveFeedSchedule,
-        feedScrapeCommandId, feedScrapeStatus, feedScrapePolling, startFeedScrapePolling, stopFeedScrape,
-        // Tasks
-        tasks, tasksLoading, taskNotifications, taskStatusExpanded, setTaskStatusExpanded,
-        taskCounts, loadTasks, addTaskNotification, stopAllTasks,
-        // Trending
-        trendingPeriod, setTrendingPeriod, trendingSelectedPosts, setTrendingSelectedPosts,
-        trendingGenerating, trendingCustomPrompt, setTrendingCustomPrompt,
-        trendingIncludeHashtags, setTrendingIncludeHashtags, trendingLanguage, setTrendingLanguage,
-        trendingGeneratedPosts, trendingShowGenPreview, setTrendingShowGenPreview,
-        trendingStatus, trendingModel, setTrendingModel, trendingTokenUsage,
-        trendingUseProfileData, setTrendingUseProfileData,
-        generateTrendingPosts, analyzePosts, analysisResults, analysisLoading, showAnalysis, setShowAnalysis,
-        generatedPostImages, setGeneratedPostImages, postingToLinkedIn, postGeneratedToLinkedIn, handleImageAttach,
-        // History
-        historyItems, historyLoading, historyFilter, setHistoryFilter, historyPage, setHistoryPage,
-        historyTotal, loadHistory, deleteHistoryItem,
-        // Inspiration
-        inspirationProfiles, setInspirationProfiles, inspirationPostCount, setInspirationPostCount,
-        inspirationScraping, inspirationStatus, inspirationSources, inspirationLoading,
-        inspirationUseAll, setInspirationUseAll, inspirationSelected, setInspirationSelected,
-        inspirationDeleteMode, setInspirationDeleteMode, inspirationDeleteSelected, setInspirationDeleteSelected,
-        useProfileData, setUseProfileData, showInspirationPopup, setShowInspirationPopup,
-        showSharedProfilesPopup, setShowSharedProfilesPopup,
-        loadInspirationSources, scrapeInspirationProfiles, deleteInspirationSource,
-        selectedInspirationPosts, setSelectedInspirationPosts, toggleInspirationPost,
-        viewingProfilePosts, setViewingProfilePosts, profilePostsData, setProfilePostsData, profilePostsLoading, loadProfilePosts,
-        // Comment style
-        commentStyleProfiles, commentStyleLoading, commentStyleUrl, setCommentStyleUrl,
-        commentStyleScraping, commentStyleStatus, commentStyleExpanded, setCommentStyleExpanded,
-        commentStyleComments, commentStyleCommentsLoading,
-        csUseProfileStyle, setCsUseProfileStyle, csUseProfileData, setCsUseProfileData,
+        commenterCfg, commenterCfgLoading, commenterCfgSaving, loadCommenterCfg, saveCommenterCfg, setCommenterCfg,
         csGoal, setCsGoal, csTone, setCsTone, csLength, setCsLength, csStyle, setCsStyle,
         csModel, setCsModel, csExpertise, setCsExpertise, csBackground, setCsBackground,
-        csAutoPost, setCsAutoPost, csSettingsLoading, csSettingsSaving,
-        loadCommentStyleProfiles, scrapeCommentStyle, loadProfileComments, toggleCommentTop,
-        toggleProfileSelect, deleteCommentStyleProfile, loadCommentSettings, saveCommentSettings,
-        handleCommentModelChange,
-        // Shared content
-        sharedPosts, sharedPostsLoading, sharedInspProfiles, sharedCommentProfiles,
-        loadSharedPosts, loadSharedInspProfiles, loadSharedCommentProfiles,
-        // Automation settings
-        autoSettings, autoSettingsLoading, autoSettingsSaving, loadAutoSettings, saveAutoSettings,
-        // Activity
-        liveActivityLogs, liveActivityLoading, showLogsPopup, setShowLogsPopup, loadLiveActivity,
-        // Commenter
-        commenterCfg, commenterCfgLoading, commenterCfgSaving, loadCommenterCfg, saveCommenterCfg,
-        // Import
-        importCfg, importCfgLoading, importCfgSaving, loadImportCfg, saveImportCfg,
-        // LinkedIn profile
-        linkedInProfile, linkedInProfileLoading, linkedInProfileScanning, linkedInProfileStatus,
-        linkedInUseProfileData, setLinkedInUseProfileData, linkedInTopicSuggestions, linkedInGeneratingTopics,
-        showLinkedInDataModal, setShowLinkedInDataModal, showFullPageText, setShowFullPageText,
-        rescanningMissing, setRescanningMissing, editingSection, setEditingSection, editValue, setEditValue,
-        loadLinkedInProfile, deleteLinkedInProfile, scanLinkedInProfile,
-        generateTopicSuggestions, selectTopicSuggestion, toggleLinkedInProfileData,
-        // Planner
-        plannerOpen, setPlannerOpen, plannerMode, setPlannerMode, plannerStep, setPlannerStep,
-        plannerContext, setPlannerContext, plannerTopics, setPlannerTopics,
-        plannerSelected, setPlannerSelected, plannerGeneratingTopics,
-        plannerPublishTime, setPlannerPublishTime, plannerStartDate, setPlannerStartDate,
-        plannerTemplate, setPlannerTemplate, plannerTone, setPlannerTone,
-        plannerLength, setPlannerLength, plannerGenerating, plannerDoneCount, plannerTotal,
-        plannerStatusMsg, plannerAbortRef,
-        openPlanner, generatePlannerTopics, startPlannerGeneration,
-        // Voyager
-        voyagerData, voyagerLoading, voyagerSyncing, setVoyagerSyncing, loadVoyagerData,
-        // Analytics
-        analyticsData, analyticsLoading, analyticsPeriod, setAnalyticsPeriod,
-        analyticsAutoSearch, setAnalyticsAutoSearch, analyticsNetworkSearch, setAnalyticsNetworkSearch,
-        analyticsImportSearch, setAnalyticsImportSearch, analyticsLeadsSearch, setAnalyticsLeadsSearch,
-        analyticsAutoFilter, setAnalyticsAutoFilter, analyticsNetworkFilter, setAnalyticsNetworkFilter,
-        loadAnalytics,
-        // Referral
-        referralData, copied, setCopied, showReferrals, setShowReferrals, copyToClipboard, loadReferralData,
-        // Extension
-        extensionConnected, extensionLastSeen, checkExtensionConnectivity,
-        // Account
-        linkedInOAuth, linkedInOAuthLoading, theme, setTheme,
-        calendarMonth, setCalendarMonth, calendarYear, setCalendarYear,
-        // Other
-        signOut, loggingOut, setLoggingOut, sidebarCollapsed,
-        // Additional (used by specific tabs)
-        changeDashboardLanguage, setLinkedInOAuth, setLinkedInProfileScanning, setLinkedInProfile,
-        SUPPORTED_LANGUAGES, setLiveActivityLogs, setLiveActivityLoading,
-        setCommenterCfg, setCommentStyleComments, setImportCfg, setAutoSettings, setTrendingStatus, setFeedScrapeStatus, setFeedScrapeCommandId, setTrendingGeneratedPosts, setPlannerGenerating,
-        handleTabChange, cleanLinkedInProfileUrls,
+        csAutoPost, setCsAutoPost, csSettingsLoading, csSettingsSaving, saveCommentSettings,
     } = props;
+
+    const [capturedPosts, setCapturedPosts] = useState<any[]>([]);
+    const [capturedLoading, setCapturedLoading] = useState(false);
+    const [capturedPage, setCapturedPage] = useState(1);
+    const [actionStates, setActionStates] = useState<Record<string, any>>({});
+
+    useEffect(() => {
+        loadCapturedPosts();
+    }, [capturedPage]);
+
+    const loadCapturedPosts = async () => {
+        setCapturedLoading(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            const res = await fetch(`/api/scraped-posts?page=${capturedPage}&limit=20`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCapturedPosts(data.posts || []);
+            }
+        } catch (e) {
+            console.error('Failed to load captured posts:', e);
+        } finally {
+            setCapturedLoading(false);
+        }
+    };
+
+    const handleAction = async (postId: string, action: string, post: any, commentText?: string) => {
+        const token = localStorage.getItem('authToken');
+        setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'loading' }));
+        
+        try {
+            const commandMap: Record<string, any> = {
+                like: { command: 'linkedin_like_post', data: { activityUrn: post.urn } },
+                comment: { command: 'linkedin_comment_on_post', data: { activityUrn: post.urn, commentText } },
+                follow: { command: 'linkedin_follow_profile', data: { profileUrl: post.authorUrl } }
+            };
+            
+            const payload = commandMap[action];
+            if (!payload) return;
+            
+            const res = await fetch('/api/extension/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'success' }));
+                showToast(`${action.charAt(0).toUpperCase() + action.slice(1)} task sent!`, 'success');
+                setTimeout(() => loadCapturedPosts(), 2000);
+            } else {
+                setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'error' }));
+                showToast(data.error || 'Failed', 'error');
+            }
+        } catch (e: any) {
+            setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'error' }));
+            showToast('Error: ' + e.message, 'error');
+        }
+    };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {(commenterCfgLoading || csSettingsLoading) ? <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div> : commenterCfg && (<>
-
-                {/* Row 1: Post Source + Processing side-by-side */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
+            {(commenterCfgLoading || csSettingsLoading) ? (
+                <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div>
+            ) : commenterCfg && (<>
+                {/* Simplified Controls Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z M12 7a3 3 0 100 6 3 3 0 000-6z', 'white', 13)} Post Source</h4>
-                        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                            {[{ val: 'search', label: 'Search' }, { val: 'feed', label: 'Feed' }].map(s => (
-                                <button key={s.val} onClick={() => setCommenterCfg((p: any) => ({ ...p, postSource: s.val }))}
-                                    style={{ flex: 1, padding: '7px', background: commenterCfg.postSource === s.val ? 'linear-gradient(135deg,#693fe9,#8b5cf6)' : 'rgba(255,255,255,0.08)', border: commenterCfg.postSource === s.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontWeight: commenterCfg.postSource === s.val ? '700' : '500', cursor: 'pointer', fontSize: '12px' }}>
-                                    {s.label}
-                                </button>
-                            ))}
-                        </div>
-                        {commenterCfg.postSource === 'search' && (
-                            <textarea value={commenterCfg.searchKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, searchKeywords: e.target.value }))}
-                                placeholder="AI marketing&#10;SaaS growth&#10;startup tips" rows={2}
-                                style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical' }} />
-                        )}
-                        {commenterCfg.postSource === 'feed' && (
-                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: 0 }}>Processes your home feed, ignores ads</p>
-                        )}
-                    </div>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 13)} Processing</h4>
+                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Filters</h4>
                         {[
-                            { key: 'totalPosts', label: 'Total Posts', min: 1, max: 50 },
                             { key: 'minLikes', label: 'Min Likes', min: 0, max: 9999 },
                             { key: 'minComments', label: 'Min Comments', min: 0, max: 9999 },
                         ].map(f => (
@@ -154,21 +91,30 @@ export default function CommenterTab(props: any) {
                                     style={{ width: '60px', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
                             </div>
                         ))}
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', margin: '2px 0 0 0' }}>0 = no minimum filter</p>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Search Keywords</h4>
+                        <textarea value={commenterCfg.searchKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, searchKeywords: e.target.value }))}
+                            placeholder="AI marketing&#10;SaaS growth" rows={2}
+                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '11px', resize: 'vertical' }} />
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Count</h4>
+                        <input type="number" min={1} max={50} value={commenterCfg.totalPosts || 20} onChange={e => setCommenterCfg((p: any) => ({ ...p, totalPosts: parseInt(e.target.value) || 20 }))}
+                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
                     </div>
                 </div>
 
-                {/* Row 1.5: Quick Capture - Feed/Search/Trending via Extension API */}
+                {/* Quick Capture Buttons */}
                 <div style={{ background: 'linear-gradient(135deg, rgba(0,119,181,0.1), rgba(0,160,220,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.2)' }}>
                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Quick Capture via Extension API
-                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '400' }}>Fetch posts without opening browser tabs</span>
+                        {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Quick Capture
                     </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         <button onClick={async () => {
                             const token = localStorage.getItem('authToken');
                             if (!token) return;
-                            showToast('Capturing feed posts via API...', 'info');
+                            showToast('Capturing feed posts...', 'info');
                             try {
                                 const res = await fetch('/api/extension/command', {
                                     method: 'POST',
@@ -176,11 +122,11 @@ export default function CommenterTab(props: any) {
                                     body: JSON.stringify({ command: 'linkedin_get_feed_api', data: { count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Feed capture task sent to extension!', 'success');
+                                if (data.success) showToast('Feed capture sent!', 'success');
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
-                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
                             {miniIcon('M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4', 'white', 12)} Capture Feed
                         </button>
                         <button onClick={async () => {
@@ -188,7 +134,7 @@ export default function CommenterTab(props: any) {
                             if (!token) return;
                             const kw = commenterCfg?.searchKeywords?.split('\n')?.[0]?.trim() || '';
                             if (!kw) { showToast('Enter search keywords first', 'error'); return; }
-                            showToast(`Searching "${kw}" via API...`, 'info');
+                            showToast(`Searching "${kw}"...`, 'info');
                             try {
                                 const res = await fetch('/api/extension/command', {
                                     method: 'POST',
@@ -196,18 +142,18 @@ export default function CommenterTab(props: any) {
                                     body: JSON.stringify({ command: 'linkedin_search_posts_api', data: { keyword: kw, count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Search task sent to extension!', 'success');
+                                if (data.success) showToast('Search sent!', 'success');
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
-                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
                             {miniIcon('M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', 'white', 12)} Search Posts
                         </button>
                         <button onClick={async () => {
                             const token = localStorage.getItem('authToken');
                             if (!token) return;
                             const kw = commenterCfg?.searchKeywords?.split('\n')?.[0]?.trim() || 'trending';
-                            showToast(`Fetching trending "${kw}" posts...`, 'info');
+                            showToast(`Fetching trending...`, 'info');
                             try {
                                 const res = await fetch('/api/extension/command', {
                                     method: 'POST',
@@ -215,103 +161,124 @@ export default function CommenterTab(props: any) {
                                     body: JSON.stringify({ command: 'linkedin_get_trending_api', data: { keyword: kw, count: 20 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Trending capture sent to extension!', 'success');
+                                if (data.success) showToast('Trending sent!', 'success');
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
-                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
                             {miniIcon('M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', 'white', 12)} Trending
                         </button>
                     </div>
-                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '9px', margin: '6px 0 0 0' }}>Uses LinkedIn Voyager API via extension. Results appear in Tasks tab and saved posts.</p>
                 </div>
 
-                {/* Row 2: Actions + Ignore Keywords side-by-side */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 'white', 13)} Actions</h4>
-                            <div style={{ display: 'flex', gap: '4px' }}>
-                                {[{ val: true, label: 'Window' }, { val: false, label: 'Tabs' }].map(o => (
-                                    <button key={String(o.val)} onClick={() => setCommenterCfg((p: any) => ({ ...p, openInNewWindow: o.val }))}
-                                        style={{ padding: '3px 8px', background: commenterCfg.openInNewWindow === o.val ? '#693fe9' : 'rgba(255,255,255,0.08)', border: commenterCfg.openInNewWindow === o.val ? 'none' : '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '10px', fontWeight: commenterCfg.openInNewWindow === o.val ? '700' : '500', cursor: 'pointer' }}>
-                                        {o.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                            {[
-                                { key: 'savePosts', label: 'Save' },
-                                { key: 'likePosts', label: 'Like' },
-                                { key: 'commentOnPosts', label: 'Comment' },
-                                { key: 'likeOrComment', label: 'Like/Comment' },
-                                { key: 'sharePosts', label: 'Share' },
-                                { key: 'followAuthors', label: 'Follow' },
-                            ].map(f => (
-                                <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer', padding: '6px 7px', background: commenterCfg[f.key] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.03)', borderRadius: '6px', border: commenterCfg[f.key] ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
-                                    <input type="checkbox" checked={commenterCfg[f.key]} onChange={e => setCommenterCfg((p: any) => ({ ...p, [f.key]: e.target.checked }))}
-                                        style={{ accentColor: '#693fe9', width: '13px', height: '13px' }} />
-                                    {f.label}
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0' }}>Ignore Keywords</h4>
-                        <textarea value={commenterCfg.ignoreKeywords} onChange={e => setCommenterCfg((p: any) => ({ ...p, ignoreKeywords: e.target.value }))}
-                            placeholder="hiring&#10;we're hiring&#10;job opening&#10;apply now" rows={4}
-                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '11px', resize: 'vertical', fontFamily: 'monospace' }} />
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px', margin: '3px 0 0 0' }}>One per line. Posts containing these are skipped.</p>
-                    </div>
+                {/* Save Settings Button */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
+                        style={{ padding: '12px 24px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer' }}>
+                        {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : 'Save Settings'}
+                    </button>
                 </div>
 
-                {/* Row 3: Schedule + Save/Start all in one row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0 }}>Auto-Schedule</h4>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                                <input type="checkbox" checked={commenterCfg.autoScheduleEnabled} onChange={e => setCommenterCfg((p: any) => ({ ...p, autoScheduleEnabled: e.target.checked }))} style={{ accentColor: '#693fe9', width: '14px', height: '14px' }} />
-                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px' }}>Enabled</span>
-                            </label>
-                        </div>
-                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                            {(() => {
-                                try {
-                                    const sches = JSON.parse(commenterCfg.schedules || '[]'); return sches.map((s: any, i: number) => (
-                                        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', background: 'rgba(167,139,250,0.15)', borderRadius: '5px', border: '1px solid rgba(167,139,250,0.3)', fontSize: '10px', color: '#a78bfa' }}>
-                                            {s.time} {s.ampm}
-                                            <button onClick={() => { const arr = [...sches]; arr.splice(i, 1); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); }}
-                                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '9px', padding: '0 1px' }}>✕</button>
-                                        </span>
-                                    ));
-                                } catch { return null; }
-                            })()}
-                        </div>
-                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                            <input id="commenter-sched-time" type="time" defaultValue="09:00" style={{ padding: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '11px' }} />
-                            <select id="commenter-sched-ampm" defaultValue="AM" style={{ padding: '4px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '5px', color: 'white', fontSize: '11px' }}>
-                                <option value="AM">AM</option><option value="PM">PM</option>
-                            </select>
-                            <button onClick={() => { const t = (document.getElementById('commenter-sched-time') as HTMLInputElement)?.value || '09:00'; const ap = (document.getElementById('commenter-sched-ampm') as HTMLSelectElement)?.value || 'AM'; try { const arr = JSON.parse(commenterCfg.schedules || '[]'); arr.push({ time: t, ampm: ap }); setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify(arr) })); } catch { setCommenterCfg((p: any) => ({ ...p, schedules: JSON.stringify([{ time: t, ampm: ap }]) })); } }}
-                                style={{ padding: '4px 9px', background: 'linear-gradient(135deg,#693fe9,#8b5cf6)', border: 'none', borderRadius: '5px', color: 'white', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}>+ Add</button>
-                        </div>
-                    </div>
-                    {/* Save + Start Buttons stacked */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <button onClick={async () => { await saveCommenterCfg(commenterCfg); await saveCommentSettings(); }} disabled={commenterCfgSaving || csSettingsSaving}
-                            style={{ flex: 1, padding: '14px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer' }}>
-                            {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : 'Save Settings'}
-                        </button>
-                        <button onClick={async () => { const token = localStorage.getItem('authToken'); if (!token) return; await saveCommenterCfg(commenterCfg); await saveCommentSettings(); showToast('Starting bulk commenting...', 'info'); try { const res = await fetch('/api/extension/command', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ command: 'start_bulk_commenting', data: { ...commenterCfg, commentSettings: { goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost } } }) }); const data = await res.json(); if (data.success) showToast('Task sent to extension!', 'success'); else showToast(data.error || 'Failed', 'error'); } catch (e: any) { showToast('Error: ' + e.message, 'error'); } }}
-                            style={{ flex: 1, padding: '14px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                            Start Commenting
+                {/* Captured Posts Feed */}
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>Captured Posts ({capturedPosts.length})</h3>
+                        <button onClick={loadCapturedPosts} disabled={capturedLoading}
+                            style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '12px', cursor: capturedLoading ? 'wait' : 'pointer' }}>
+                            {capturedLoading ? 'Loading...' : 'Refresh'}
                         </button>
                     </div>
+
+                    {capturedLoading ? (
+                        <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading posts...</div>
+                    ) : capturedPosts.length === 0 ? (
+                        <div style={{ color: 'rgba(255,255,255,0.4)', padding: '40px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📭</div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px' }}>No posts captured yet</div>
+                            <div style={{ fontSize: '12px' }}>Click "Capture Feed", "Search Posts", or "Trending" above to start</div>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {capturedPosts.map((post: any, idx: number) => {
+                                const postId = post.id || idx;
+                                const likeState = actionStates[`${postId}-like`];
+                                const commentState = actionStates[`${postId}-comment`];
+                                const followState = actionStates[`${postId}-follow`];
+                                
+                                return (
+                                    <div key={postId} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
+                                        {/* Post Header */}
+                                        <div style={{ padding: '12px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '18px', flexShrink: 0 }}>
+                                                {post.authorName?.charAt(0) || '?'}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ color: 'white', fontSize: '14px', fontWeight: '600', marginBottom: '2px' }}>{post.authorName || 'Unknown Author'}</div>
+                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>
+                                                    {new Date(post.createdAt).toLocaleDateString()} · {post.source || 'feed'}
+                                                </div>
+                                            </div>
+                                            {post.postUrl && (
+                                                <a href={post.postUrl} target="_blank" rel="noopener noreferrer"
+                                                    style={{ padding: '6px 12px', background: 'rgba(0,119,181,0.2)', color: '#60a5fa', border: '1px solid rgba(0,119,181,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', textDecoration: 'none' }}>
+                                                    View on LinkedIn
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        {/* Post Content with Scrollbar */}
+                                        <div style={{ padding: '0 16px 12px 16px' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '200px', overflowY: 'auto' }}>
+                                                {post.postContent || '(No content)'}
+                                            </div>
+                                        </div>
+
+                                        {/* Engagement Stats */}
+                                        <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '16px', fontSize: '12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)' }}>
+                                                <span style={{ color: '#60a5fa' }}>👍</span> {post.likes || 0} likes
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)' }}>
+                                                <span style={{ color: '#a78bfa' }}>💬</span> {post.comments || 0} comments
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)' }}>
+                                                <span style={{ color: '#10b981' }}>🔄</span> {post.shares || 0} shares
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div style={{ padding: '8px 16px 12px 16px', display: 'flex', gap: '8px' }}>
+                                            <button 
+                                                onClick={() => handleAction(postId, 'like', post)}
+                                                disabled={likeState === 'loading' || likeState === 'success'}
+                                                style={{ flex: 1, padding: '8px', background: likeState === 'success' ? 'rgba(96,165,250,0.4)' : 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: likeState === 'loading' || likeState === 'success' ? 'not-allowed' : 'pointer', opacity: likeState === 'success' ? 0.7 : 1 }}>
+                                                {likeState === 'loading' ? '⏳ Liking...' : likeState === 'success' ? '✓ Liked' : '👍 Like'}
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    const comment = prompt('Enter your comment:');
+                                                    if (comment) handleAction(postId, 'comment', post, comment);
+                                                }}
+                                                disabled={commentState === 'loading' || commentState === 'success'}
+                                                style={{ flex: 1, padding: '8px', background: commentState === 'success' ? 'rgba(167,139,250,0.4)' : 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: commentState === 'loading' || commentState === 'success' ? 'not-allowed' : 'pointer', opacity: commentState === 'success' ? 0.7 : 1 }}>
+                                                {commentState === 'loading' ? '⏳ Commenting...' : commentState === 'success' ? '✓ Commented' : '💬 Comment'}
+                                            </button>
+                                            {post.authorUrl && (
+                                                <button 
+                                                    onClick={() => handleAction(postId, 'follow', post)}
+                                                    disabled={followState === 'loading' || followState === 'success'}
+                                                    style={{ flex: 1, padding: '8px', background: followState === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: followState === 'loading' || followState === 'success' ? 'not-allowed' : 'pointer', opacity: followState === 'success' ? 0.7 : 1 }}>
+                                                    {followState === 'loading' ? '⏳ Following...' : followState === 'success' ? '✓ Followed' : '➕ Follow'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </>)}
         </div>
-
     );
 }

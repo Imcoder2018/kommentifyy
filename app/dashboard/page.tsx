@@ -1310,12 +1310,28 @@ function DashboardContent() {
                     profileMetadata,
                     topConnections: Array.isArray(topConnections) ? topConnections : [],
                 };
-                console.log('[VOYAGER UI] Setting voyagerData state:', { name: voyagerState.name, followers: voyagerState.followerCount, posts: voyagerState.recentPosts?.length, experience: voyagerState.experience?.length, education: voyagerState.education?.length, invitations: voyagerState.invitationsData, lastSync: voyagerState.voyagerLastSyncAt });
+                console.log('[VOYAGER UI] Setting voyagerData state:', { 
+                    name: voyagerState.name, 
+                    followers: voyagerState.followerCount, 
+                    posts: voyagerState.recentPosts?.length, 
+                    experience: voyagerState.experience?.length, 
+                    education: voyagerState.education?.length, 
+                    invitations: voyagerState.invitationsData, 
+                    lastSync: voyagerState.voyagerLastSyncAt 
+                });
                 setVoyagerData(voyagerState);
             } else {
                 console.warn('[VOYAGER UI] No data returned from API:', data);
+                if (!data.success) {
+                    showToast(data.error || 'Failed to load profile data', 'error');
+                }
             }
-        } catch (e) { console.warn('[VOYAGER UI] Failed to load data:', e); } finally { setVoyagerLoading(false); }
+        } catch (e: any) { 
+            console.error('[VOYAGER UI] Failed to load data:', e); 
+            showToast('Error loading profile: ' + (e.message || 'Unknown error'), 'error');
+        } finally { 
+            setVoyagerLoading(false); 
+        }
     };
 
     const deleteLinkedInProfile = async () => {
@@ -2214,12 +2230,12 @@ function DashboardContent() {
         writerLanguage, setWriterLanguage, writerAdvancedOpen, setWriterAdvancedOpen,
         writerTargetAudience, setWriterTargetAudience, writerKeyMessage, setWriterKeyMessage,
         writerBackground, setWriterBackground, writerContent, setWriterContent,
-        writerGenerating, writerScheduleDate, setWriterScheduleDate, writerScheduleTime, setWriterScheduleTime,
+        writerGenerating, setWriterGenerating, writerScheduleDate, setWriterScheduleDate, writerScheduleTime, setWriterScheduleTime,
         writerDrafts, writerScheduledPosts, writerTokenUsage, writerImageFile, setWriterImageFile,
         writerImageUrl, setWriterImageUrl, writerMediaBlobUrl, setWriterMediaBlobUrl,
         writerMediaType, setWriterMediaType, writerUploading, setWriterUploading,
         writerPreviewMode, setWriterPreviewMode, writerPreviewExpanded, setWriterPreviewExpanded,
-        writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, writerModel,
+        writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, setWriterStatus, writerModel,
         writerUseInspirationSources, setWriterUseInspirationSources, writerInspirationSourceNames,
         writerPosting, MODEL_OPTIONS, handleWriterModelChange,
         userGoal, setUserGoal, userTargetAudience, setUserTargetAudience,

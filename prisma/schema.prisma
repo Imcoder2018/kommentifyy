@@ -880,3 +880,154 @@ model OTPVerification {
   @@index([email])
   @@index([expiresAt])
 }
+
+// Warm Leads - imported leads without campaign structure (simplified lead warmer)
+model WarmLead {
+  id                String   @id @default(cuid())
+  userId            String
+  // Profile data
+  linkedinUrl       String
+  vanityId          String?  // extracted from URL e.g. "john-doe"
+  firstName         String?
+  lastName          String?
+  company           String?
+  jobTitle          String?
+  profileUrn        String?  // LinkedIn URN for API calls
+  headline          String?  @db.Text
+  tags              String?  // comma-separated user tags
+  notes             String?  @db.Text
+  // Status: pending_fetch, fetched, engaged, connected
+  status            String   @default("pending_fetch")
+  // Posts fetched flag
+  postsFetched      Boolean  @default(false)
+  postsFetchedAt    DateTime?
+  // Engagement tracking
+  touchCount        Int      @default(0)
+  lastEngagedAt     DateTime?
+  // Sequence position
+  currentSequenceStep Int    @default(0)
+  nextActionDate    DateTime?
+  nextAction        String?  // like, comment, follow, connect
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  posts             WarmLeadPost[]
+  engagementLogs    WarmLeadEngagement[]
+
+  @@unique([userId, linkedinUrl])
+  @@index([userId])
+  @@index([status])
+  @@index([nextActionDate])
+}
+
+// Warm Lead Posts - individual posts for each lead
+model WarmLeadPost {
+  id              String   @id @default(cuid())
+  leadId          String
+  userId          String
+  // Post data
+  postUrn         String?  // LinkedIn post URN (activity ID)
+  postText        String   @db.Text
+  postDate        DateTime?
+  postUrl         String?
+  // Engagement metrics
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  shares          Int      @default(0)
+  // Engagement status
+  isLiked         Boolean  @default(false)
+  likedAt         DateTime?
+  isCommented     Boolean  @default(false)
+  commentedAt     DateTime?
+  commentText     String?  @db.Text
+  // Metadata
+  createdAt       DateTime @default(now())
+
+  lead            WarmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([postDate])
+}
+
+// Warm Lead Engagement Log - individual engagement actions
+model WarmLeadEngagement {
+  id              String   @id @default(cuid())
+  leadId          String
+  postId          String?
+  userId          String
+  // Action details
+  action          String   // like, comment, follow, connect
+  status          String   @default("pending")  // pending, completed, failed
+  // Content
+  postUrn         String?
+  commentText     String?  @db.Text
+  // Result
+  errorMessage    String?  @db.Text
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  lead            WarmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Pending Extension Tasks - queue of tasks to execute when extension goes live
+model PendingExtensionTask {
+  id              String   @id @default(cuid())
+  userId          String
+  // Task details
+  taskType        String   // fetch_lead_posts, engage_post, follow_lead, etc.
+  taskData        String   @db.Text  // JSON payload
+  priority        Int      @default(0)  // Higher = execute first
+  // Status
+  status          String   @default("pending")  // pending, in_progress, completed, failed
+  // Scheduling
+  scheduledFor    DateTime?  // When this task was originally scheduled
+  missedSchedule  Boolean  @default(false)  // True if scheduled time passed while offline
+  // Result
+  result          String?  @db.Text  // JSON result
+  errorMessage    String?  @db.Text
+  attempts        Int      @default(0)
+  maxAttempts     Int      @default(3)
+  // Timestamps
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([status, scheduledFor])
+  @@index([userId, taskType])
+}
+
+// Warm Leads Settings - user settings for the lead warmer (no campaigns)
+model WarmLeadsSettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  // Campaign-like settings that apply to all leads
+  campaignName          String   @default("My Warm Leads")
+  businessContext       String?  @db.Text  // "I help SaaS founders reduce churn..."
+  campaignGoal          String   @default("relationship")  // relationship, authority, warm_pitch, recruit
+  // Sequence configuration (JSON array of steps)
+  sequenceSteps         String   @default("[{\"day\":1,\"action\":\"follow\",\"enabled\":true},{\"day\":3,\"action\":\"like\",\"enabled\":true},{\"day\":5,\"action\":\"comment\",\"enabled\":true},{\"day\":7,\"action\":\"like\",\"enabled\":true},{\"day\":10,\"action\":\"connect\",\"enabled\":false}]") @db.Text
+  // Daily limits
+  profilesPerDay        Int      @default(20)
+  postsPerLead          Int      @default(10)  // How many posts to fetch per lead
+  // Bulk task settings
+  bulkTaskLimit         Int      @default(10)  // Max leads per bulk task batch
+  // Schedule settings
+  scheduleEnabled       Boolean  @default(false)
+  scheduleTimes         String   @default("[]") @db.Text  // JSON array of times
+  scheduleTimezone      String   @default("UTC")
+  // Autopilot mode
+  autopilotEnabled      Boolean  @default(false)
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+}

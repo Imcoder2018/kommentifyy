@@ -123,30 +123,66 @@ export default function WriterTabNew(props: any) {
 
     // AI-powered post analysis (replaces heuristic)
     const analyzePost = async () => {
-        if (!writerContent.trim()) return;
-        if (isFreePlan) { setShowUpgradeModal(true); return; }
+        if (!writerContent.trim()) {
+            showToast('Please generate or write a post first', 'error');
+            return;
+        }
+        if (isFreePlan) { 
+            setShowUpgradeModal(true); 
+            return; 
+        }
+        
         setAnalyzing(true);
         setShowAnalysis(true);
         setAnalysisData(null);
+        
         try {
             const token = localStorage.getItem('authToken');
+            if (!token) {
+                setAnalysisData({ error: 'Not authenticated. Please refresh and log in again.' });
+                setAnalyzing(false);
+                return;
+            }
+
             const res = await fetch('/api/ai/analyze-post-deep', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify({
                     postContent: writerContent,
                     authorHeadline: voyagerData?.headline || linkedInProfile?.headline || '',
                     model: writerModel
                 }),
             });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('Analyze API error:', res.status, errorText);
+                setAnalysisData({ 
+                    error: `API Error (${res.status}): ${errorText.substring(0, 100)}` 
+                });
+                showToast(`Analysis failed: ${res.status}`, 'error');
+                setAnalyzing(false);
+                return;
+            }
+
             const data = await res.json();
             if (data.success && data.analysis) {
                 setAnalysisData(data.analysis);
+                showToast('Analysis complete!', 'success');
             } else {
-                setAnalysisData({ error: data.error || 'Analysis failed' });
+                const errorMsg = data.error || 'Analysis failed - no data returned';
+                setAnalysisData({ error: errorMsg });
+                showToast(errorMsg, 'error');
+                console.error('Analysis failed:', data);
             }
         } catch (e: any) {
-            setAnalysisData({ error: 'Error: ' + e.message });
+            const errorMsg = 'Network error: ' + (e.message || 'Could not connect to server');
+            setAnalysisData({ error: errorMsg });
+            showToast(errorMsg, 'error');
+            console.error('Analyze post exception:', e);
         } finally {
             setAnalyzing(false);
         }
@@ -154,16 +190,34 @@ export default function WriterTabNew(props: any) {
 
     // Generate hooks
     const generateHooks = async () => {
-        if (isFreePlan) { setShowUpgradeModal(true); return; }
-        if (!writerTopic.trim()) { setHooksStatus('Please enter a topic first'); return; }
+        if (isFreePlan) { 
+            setShowUpgradeModal(true); 
+            return; 
+        }
+        if (!writerTopic.trim()) { 
+            setHooksStatus('Please enter a topic first'); 
+            showToast('Please enter a topic first', 'error');
+            return; 
+        }
 
         setHooksGenerating(true);
         setHooksStatus('Generating 10 hook variations...');
+        
         try {
             const token = localStorage.getItem('authToken');
+            if (!token) {
+                setHooksStatus('Not authenticated. Please refresh and log in again.');
+                showToast('Authentication error', 'error');
+                setHooksGenerating(false);
+                return;
+            }
+
             const res = await fetch('/api/ai/generate-hooks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify({
                     topic: writerTopic,
                     voiceProfile: `${writerTone}, ${userGoal || 'engaging'}`,
@@ -171,15 +225,33 @@ export default function WriterTabNew(props: any) {
                     model: writerModel
                 }),
             });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('Generate hooks API error:', res.status, errorText);
+                const errorMsg = `API Error (${res.status}): ${errorText.substring(0, 100)}`;
+                setHooksStatus(errorMsg);
+                showToast(`Hook generation failed: ${res.status}`, 'error');
+                setHooksGenerating(false);
+                return;
+            }
+
             const data = await res.json();
             if (data.success && data.hooks) {
                 setHooks(data.hooks);
                 setHooksStatus(`Generated ${data.hooks.length} hooks! Click one to select.`);
+                showToast(`${data.hooks.length} hooks generated!`, 'success');
             } else {
-                setHooksStatus(data.error || 'Failed to generate hooks');
+                const errorMsg = data.error || 'Failed to generate hooks - no data returned';
+                setHooksStatus(errorMsg);
+                showToast(errorMsg, 'error');
+                console.error('Hook generation failed:', data);
             }
         } catch (e: any) {
-            setHooksStatus('Error: ' + e.message);
+            const errorMsg = 'Network error: ' + (e.message || 'Could not connect to server');
+            setHooksStatus(errorMsg);
+            showToast(errorMsg, 'error');
+            console.error('Generate hooks exception:', e);
         } finally {
             setHooksGenerating(false);
         }
@@ -187,16 +259,34 @@ export default function WriterTabNew(props: any) {
 
     // Generate full post (with or without selected hook)
     const generatePostWithHook = async () => {
-        if (isFreePlan) { setShowUpgradeModal(true); return; }
-        if (!writerTopic.trim()) { setWriterStatus('Please enter a topic first'); return; }
+        if (isFreePlan) { 
+            setShowUpgradeModal(true); 
+            return; 
+        }
+        if (!writerTopic.trim()) { 
+            setWriterStatus('Please enter a topic first'); 
+            showToast('Please enter a topic first', 'error');
+            return; 
+        }
 
         setWriterGenerating(true);
         setWriterStatus(selectedHook ? 'Generating post with selected hook...' : 'Generating post...');
+        
         try {
             const token = localStorage.getItem('authToken');
+            if (!token) {
+                setWriterStatus('Not authenticated. Please refresh and log in again.');
+                showToast('Authentication error', 'error');
+                setWriterGenerating(false);
+                return;
+            }
+
             const res = await fetch('/api/ai/generate-post-with-hook', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify({
                     selectedHook,
                     topic: writerTopic,
@@ -232,17 +322,35 @@ export default function WriterTabNew(props: any) {
                     outcomeF,
                 }),
             });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('Generate post API error:', res.status, errorText);
+                const errorMsg = `API Error (${res.status}): ${errorText.substring(0, 100)}`;
+                setWriterStatus(errorMsg);
+                showToast(`Post generation failed: ${res.status}`, 'error');
+                setWriterGenerating(false);
+                return;
+            }
+
             const data = await res.json();
             if (data.success && data.content) {
                 setWriterContent(data.content);
                 setWriterStatus('Post generated! Review and edit as needed.');
                 setWriterPreviewMode('desktop');
                 setWriterPreviewExpanded(false);
+                showToast('Post generated successfully!', 'success');
             } else {
-                setWriterStatus(data.error || 'Generation failed');
+                const errorMsg = data.error || 'Generation failed - no content returned';
+                setWriterStatus(errorMsg);
+                showToast(errorMsg, 'error');
+                console.error('Post generation failed:', data);
             }
         } catch (e: any) {
-            setWriterStatus('Error: ' + e.message);
+            const errorMsg = 'Network error: ' + (e.message || 'Could not connect to server');
+            setWriterStatus(errorMsg);
+            showToast(errorMsg, 'error');
+            console.error('Generate post exception:', e);
         } finally {
             setWriterGenerating(false);
         }
@@ -672,8 +780,23 @@ export default function WriterTabNew(props: any) {
                             const lines = writerContent.split('\n');
                             const truncated = lines.length > TRUNCATE_LINES && !writerPreviewExpanded;
                             const displayText = truncated ? lines.slice(0, TRUNCATE_LINES).join('\n') : writerContent;
-                            const profileName = voyagerData?.name || linkedInProfile?.name || user?.name || 'Your Name';
-                            const profileHeadline = voyagerData?.headline || linkedInProfile?.headline || 'Your Headline';
+                            
+                            // Use fresh user-specific data with proper fallbacks
+                            const profileName = voyagerData?.name || linkedInProfile?.name || user?.name || user?.email?.split('@')[0] || 'Your Name';
+                            const profileHeadline = voyagerData?.headline || linkedInProfile?.headline || user?.email || 'Your Headline';
+                            const profilePicture = voyagerData?.profilePicture || null;
+                            
+                            // Log for debugging data isolation
+                            if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+                                console.log('[LinkedIn Preview] Using data for:', { 
+                                    name: profileName, 
+                                    headline: profileHeadline?.substring(0, 30),
+                                    userId: user?.id,
+                                    hasVoyager: !!voyagerData,
+                                    hasLinkedIn: !!linkedInProfile
+                                });
+                            }
+                            
                             return (
                                 <div style={{ maxWidth: maxW, margin: '0 auto', background: '#1b1f23', borderRadius: '10px', border: '1px solid #38434f', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
                                     <div style={{ padding: isMobile ? '10px 12px' : '12px 16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
@@ -968,6 +1091,69 @@ export default function WriterTabNew(props: any) {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Inspiration Sources Section */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14)} Inspiration Sources
+                        </h3>
+                        <button onClick={() => setShowInspirationPopup?.(true)}
+                            style={{ padding: '6px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                            + Add Source
+                        </button>
+                    </div>
+                    {inspirationLoading ? (
+                        <div style={{ textAlign: 'center', padding: '12px', color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Loading sources...</div>
+                    ) : inspirationSources && inspirationSources.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {inspirationSources.map((source: any, idx: number) => (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '13px' }}>
+                                            {(source.name?.[0] || 'S').toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{source.name}</div>
+                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{source.count || 0} posts scraped</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ padding: '3px 8px', background: userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `1px solid ${userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: userWritingStyleSource === `insp_${source.name}` ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize: '9px', fontWeight: '600' }}>
+                                            {userWritingStyleSource === `insp_${source.name}` ? 'Active' : 'Available'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                            {sharedInspProfiles && sharedInspProfiles.length > 0 && (
+                                <>
+                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '600', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shared by Admin</div>
+                                    {sharedInspProfiles.map((source: any, idx: number) => (
+                                        <div key={`shared-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: '8px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '13px' }}>
+                                                    {(source.profileName?.[0] || 'S').toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{source.profileName} <span style={{ color: '#a78bfa', fontSize: '10px' }}>(Shared)</span></div>
+                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{source.postCount || 0} posts</div>
+                                                </div>
+                                            </div>
+                                            <span style={{ padding: '3px 8px', background: userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `1px solid ${userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: userWritingStyleSource === `shared_${source.profileName}` ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize: '9px', fontWeight: '600' }}>
+                                                {userWritingStyleSource === `shared_${source.profileName}` ? 'Active' : 'Available'}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                            <div style={{ marginBottom: '8px' }}>No inspiration sources added yet.</div>
+                            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>Add LinkedIn profiles to learn their writing style for AI post generation.</div>
                         </div>
                     )}
                 </div>

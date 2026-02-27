@@ -131,6 +131,25 @@ export default function CommentsTab(props: any) {
         }
     }, [voyagerData, linkedInProfile]);
 
+    // Track whether initial load is complete to avoid auto-saving on mount
+    const [settingsLoaded, setSettingsLoaded] = useState(false);
+    useEffect(() => {
+        if (!csSettingsLoading && !settingsLoaded) {
+            // Mark loaded after a short delay to skip the initial state hydration
+            const t = setTimeout(() => setSettingsLoaded(true), 1500);
+            return () => clearTimeout(t);
+        }
+    }, [csSettingsLoading]);
+
+    // Auto-save comment settings on any change (debounced)
+    useEffect(() => {
+        if (!settingsLoaded || csSettingsLoading) return;
+        const timer = setTimeout(() => {
+            saveCommentSettings();
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [csUseProfileStyle, csUseProfileData, csGoal, csTone, csLength, csStyle, csModel, csExpertise, csBackground, csAutoPost, autoDecideEnabled]);
+
     // Auto Decide function - calls AI to decide optimal settings
     const runAutoDecide = async (postText: string, authorName: string) => {
         if (isFreePlan) { setShowUpgradeModal(true); return; }

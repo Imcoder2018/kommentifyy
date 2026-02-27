@@ -260,24 +260,62 @@ export async function generateContent(params: {
   // Strip openai/ prefix if present for OpenAI API calls
   const actualModelId = params.model.startsWith('openai/') ? params.model.replace('openai/', '') : params.model;
 
-  if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
-    const openai = getOpenAIService();
-    result = await openai.generateContent({
-      model: actualModelId,
-      systemPrompt: params.systemPrompt,
-      userPrompt: params.userPrompt,
-      maxTokens: params.maxTokens || modelConfig.maxOutputTokens,
-      temperature: params.temperature
-    });
-  } else {
-    const openrouter = getOpenRouterService();
-    result = await openrouter.generateContent({
-      model: params.model,
-      systemPrompt: params.systemPrompt,
-      userPrompt: params.userPrompt,
-      maxTokens: params.maxTokens || modelConfig.maxOutputTokens,
-      temperature: params.temperature
-    });
+  const OPENAI_FALLBACK_MODEL = 'gpt-4o';
+
+  try {
+    if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
+      const openai = getOpenAIService();
+      result = await openai.generateContent({
+        model: actualModelId,
+        systemPrompt: params.systemPrompt,
+        userPrompt: params.userPrompt,
+        maxTokens: params.maxTokens || modelConfig.maxOutputTokens,
+        temperature: params.temperature
+      });
+    } else {
+      const openrouter = getOpenRouterService();
+      result = await openrouter.generateContent({
+        model: params.model,
+        systemPrompt: params.systemPrompt,
+        userPrompt: params.userPrompt,
+        maxTokens: params.maxTokens || modelConfig.maxOutputTokens,
+        temperature: params.temperature
+      });
+    }
+  } catch (primaryError: any) {
+    // Automatic fallback to OpenAI gpt-4o if primary model fails
+    console.error(`⚠️ Primary model ${params.model} failed: ${primaryError.message}. Falling back to ${OPENAI_FALLBACK_MODEL}...`);
+    
+    // Don't retry if the primary model was already gpt-4o
+    if (actualModelId === OPENAI_FALLBACK_MODEL) {
+      throw primaryError;
+    }
+
+    try {
+      const openai = getOpenAIService();
+      result = await openai.generateContent({
+        model: OPENAI_FALLBACK_MODEL,
+        systemPrompt: params.systemPrompt,
+        userPrompt: params.userPrompt,
+        maxTokens: params.maxTokens || 4096,
+        temperature: params.temperature
+      });
+      // Update model info for tracking
+      params.model = OPENAI_FALLBACK_MODEL;
+      modelConfig = {
+        modelId: OPENAI_FALLBACK_MODEL,
+        provider: 'OpenAI',
+        apiSource: 'openai',
+        inputCostPer1M: 2.50,
+        outputCostPer1M: 10.00,
+        maxContextTokens: 128000,
+        maxOutputTokens: 16384
+      };
+      console.log(`✅ Fallback to ${OPENAI_FALLBACK_MODEL} succeeded`);
+    } catch (fallbackError: any) {
+      console.error(`❌ Fallback model ${OPENAI_FALLBACK_MODEL} also failed: ${fallbackError.message}`);
+      throw new Error(`AI generation failed with both ${actualModelId} and fallback ${OPENAI_FALLBACK_MODEL}: ${primaryError.message}`);
+    }
   }
 
   // Calculate cost
@@ -325,20 +363,35 @@ export async function generateLinkedInPost(params: {
   background?: string;
   userId?: string;
 }): Promise<AIGenerationResult> {
-  const modelConfig = await getModelConfig(params.model);
+  let modelConfig = await getModelConfig(params.model);
 
   if (!modelConfig) {
-    throw new Error(`Model not found: ${params.model}`);
+    // Try fallback instead of throwing
+    console.warn(`⚠️ Model ${params.model} not found, trying gpt-4o fallback`);
+    params.model = 'gpt-4o';
+    modelConfig = await getModelConfig('gpt-4o') || {
+      modelId: 'gpt-4o', provider: 'OpenAI', apiSource: 'openai' as const,
+      inputCostPer1M: 2.50, outputCostPer1M: 10.00, maxContextTokens: 128000, maxOutputTokens: 16384
+    };
   }
 
   let result: { post: string; usage: any };
 
-  if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
+  try {
+    if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
+      const openai = getOpenAIService();
+      result = await openai.generateLinkedInPost(params);
+    } else {
+      const openrouter = getOpenRouterService();
+      result = await openrouter.generateLinkedInPost(params);
+    }
+  } catch (primaryError: any) {
+    if (params.model === 'gpt-4o') throw primaryError;
+    console.error(`⚠️ Post generation with ${params.model} failed, falling back to gpt-4o: ${primaryError.message}`);
     const openai = getOpenAIService();
-    result = await openai.generateLinkedInPost(params);
-  } else {
-    const openrouter = getOpenRouterService();
-    result = await openrouter.generateLinkedInPost(params);
+    params.model = 'gpt-4o';
+    result = await openai.generateLinkedInPost({ ...params, model: 'gpt-4o' });
+    modelConfig = { modelId: 'gpt-4o', provider: 'OpenAI', apiSource: 'openai', inputCostPer1M: 2.50, outputCostPer1M: 10.00, maxContextTokens: 128000, maxOutputTokens: 16384 };
   }
 
   const cost = calculateCost(
@@ -374,20 +427,34 @@ export async function generateLinkedInComment(params: {
   userBackground?: string;
   userId?: string;
 }): Promise<AIGenerationResult> {
-  const modelConfig = await getModelConfig(params.model);
+  let modelConfig = await getModelConfig(params.model);
 
   if (!modelConfig) {
-    throw new Error(`Model not found: ${params.model}`);
+    console.warn(`⚠️ Model ${params.model} not found, trying gpt-4o fallback`);
+    params.model = 'gpt-4o';
+    modelConfig = await getModelConfig('gpt-4o') || {
+      modelId: 'gpt-4o', provider: 'OpenAI', apiSource: 'openai' as const,
+      inputCostPer1M: 2.50, outputCostPer1M: 10.00, maxContextTokens: 128000, maxOutputTokens: 16384
+    };
   }
 
   let result: { comment: string; usage: any };
 
-  if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
+  try {
+    if (modelConfig.apiSource === 'openai' || isOpenAIModel(params.model)) {
+      const openai = getOpenAIService();
+      result = await openai.generateLinkedInComment(params);
+    } else {
+      const openrouter = getOpenRouterService();
+      result = await openrouter.generateLinkedInComment(params);
+    }
+  } catch (primaryError: any) {
+    if (params.model === 'gpt-4o') throw primaryError;
+    console.error(`⚠️ Comment generation with ${params.model} failed, falling back to gpt-4o: ${primaryError.message}`);
     const openai = getOpenAIService();
-    result = await openai.generateLinkedInComment(params);
-  } else {
-    const openrouter = getOpenRouterService();
-    result = await openrouter.generateLinkedInComment(params);
+    params.model = 'gpt-4o';
+    result = await openai.generateLinkedInComment({ ...params, model: 'gpt-4o' });
+    modelConfig = { modelId: 'gpt-4o', provider: 'OpenAI', apiSource: 'openai', inputCostPer1M: 2.50, outputCostPer1M: 10.00, maxContextTokens: 128000, maxOutputTokens: 16384 };
   }
 
   const cost = calculateCost(

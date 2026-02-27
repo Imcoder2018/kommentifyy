@@ -86,15 +86,41 @@ Return ONLY this JSON (no markdown, no explanation outside JSON):
 
     let analysis;
     try {
-      // Extract JSON from response (handle markdown code blocks)
+      // Extract JSON from response - multiple strategies
       let jsonStr = result.content.trim();
-      if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      
+      // Strategy 1: Remove markdown code blocks (```json ... ``` or ``` ... ```)
+      if (jsonStr.includes('```')) {
+        const codeBlockMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+        if (codeBlockMatch) {
+          jsonStr = codeBlockMatch[1].trim();
+        } else {
+          jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
+        }
       }
+      
+      // Strategy 2: Find JSON object in the text (first { to last })
+      if (!jsonStr.startsWith('{')) {
+        const firstBrace = jsonStr.indexOf('{');
+        const lastBrace = jsonStr.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+        }
+      }
+      
       analysis = JSON.parse(jsonStr);
     } catch (parseErr) {
-      console.error('Failed to parse analysis JSON:', result.content);
-      return NextResponse.json({ success: false, error: 'AI returned invalid analysis format' }, { status: 500 });
+      console.error('Failed to parse analysis JSON:', result.content?.substring(0, 500));
+      
+      // Strategy 3: Build a basic analysis from raw text so user still gets value
+      analysis = {
+        humanScore: { score: 50, reasoning: 'Analysis parsing failed - showing raw AI feedback below.' },
+        performanceStrength: { score: 50, reasoning: 'Could not parse structured scores.' },
+        reachPotential: { score: 50, reasoning: 'Could not parse structured scores.' },
+        aiPatternRisk: { score: 30, reasoning: 'Could not parse structured scores.' },
+        topImprovements: ['AI response could not be parsed into structured format. Try again or switch AI model.'],
+        overallVerdict: result.content?.substring(0, 300) || 'Analysis failed to parse. Please try again.'
+      };
     }
 
     return NextResponse.json({

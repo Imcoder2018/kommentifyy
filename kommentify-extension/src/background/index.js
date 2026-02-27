@@ -1080,6 +1080,214 @@ async function pollCommandsDirectly() {
                     }
                 }
 
+                // --- post_via_voyager (Direct Voyager API posting - exact working implementation) ---
+                else if (cmd.command === 'post_via_voyager' && cmd.data?.content) {
+                    console.log('🚀 POLL-ALARM: Executing post_via_voyager (direct API)...');
+                    let postTab = null;
+                    try {
+                        const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                        ll.start('post_writer', `🚀 Posting via Voyager API...`);
+
+                        // Open LinkedIn tab in background (needed for cookies/session)
+                        postTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
+                        globalThis._commandLinkedInTabs.add(postTab.id);
+
+                        // Wait for tab to load
+                        await new Promise((resolve) => {
+                            const checkComplete = (tabId, changeInfo) => {
+                                if (tabId === postTab.id && changeInfo.status === 'complete') {
+                                    chrome.tabs.onUpdated.removeListener(checkComplete);
+                                    resolve();
+                                }
+                            };
+                            chrome.tabs.onUpdated.addListener(checkComplete);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 15000);
+                        });
+
+                        await new Promise(r => setTimeout(r, 1500));
+
+                        const content = cmd.data.content;
+                        const imageUrl = cmd.data.imageUrl || cmd.data.mediaUrl || null;
+                        const imageDataUrl = cmd.data.imageDataUrl || null;
+                        const hasImage = cmd.data.hasImage || !!imageUrl || !!imageDataUrl;
+
+                        // Execute exact working Voyager API implementation
+                        const result = await chrome.scripting.executeScript({
+                            target: { tabId: postTab.id },
+                            func: async (postContent, imgUrl, imgDataUrl, hasImg) => {
+                                // Auth helpers (exact from working script)
+                                function getCsrfToken() {
+                                    for (const c of document.cookie.split("; ")) {
+                                        if (c.startsWith("JSESSIONID=")) return c.substring(11).replace(/"/g, "");
+                                    }
+                                    throw new Error("JSESSIONID not found — are you logged into LinkedIn?");
+                                }
+                                function buildHeaders(extra = {}) {
+                                    return {
+                                        "Accept": "application/vnd.linkedin.normalized+json+2.1",
+                                        "Content-Type": "application/json",
+                                        "csrf-token": getCsrfToken(),
+                                        "x-li-lang": "en_US",
+                                        "x-restli-protocol-version": "2.0.0",
+                                        ...extra,
+                                    };
+                                }
+                                async function liPost(url, body) {
+                                    return fetch(url, { method: "POST", headers: buildHeaders(), credentials: "include", body: JSON.stringify(body) });
+                                }
+
+                                // URN extraction (exact from working script)
+                                function extractPostUrn(data) {
+                                    const inner = (data.data && typeof data.data === "object") ? data.data : {};
+                                    for (const src of [data, inner, data.value || {}]) {
+                                        const urn = src.urn || "";
+                                        if (urn) return urn;
+                                    }
+                                    const bodyStr = JSON.stringify(data);
+                                    const m = bodyStr.match(/"urn:li:(share|ugcPost|normShare):[^"]+"/);
+                                    if (m) return m[0].replace(/"/g, "");
+                                    return "";
+                                }
+
+                                // Media URN extraction
+                                function extractUploadUrl(data) {
+                                    const value = data.value || data;
+                                    const um = value.uploadMechanism;
+                                    if (um && typeof um === "object") {
+                                        const http = um["com.linkedin.voyager.common.MediaUploadHttpRequest"];
+                                        if (http && http.uploadUrl) return http.uploadUrl;
+                                    }
+                                    return value.uploadUrl || value.singleUploadUrl || "";
+                                }
+                                function extractMediaUrn(data) {
+                                    const value = data.value || data;
+                                    return value.urn || value.mediaUrn || value.mediaArtifact || "";
+                                }
+
+                                try {
+                                    let mediaUrn = null;
+
+                                    // Upload image if provided
+                                    if (hasImg && (imgUrl || imgDataUrl)) {
+                                        try {
+                                            let imageData, filename = "image.jpg";
+                                            
+                                            if (imgDataUrl && imgDataUrl.startsWith('data:')) {
+                                                // Handle base64 data URL
+                                                const [header, base64] = imgDataUrl.split(',');
+                                                const mimeMatch = header.match(/data:([^;]+)/);
+                                                const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+                                                const ext = mime.split('/')[1] || 'jpg';
+                                                filename = `image.${ext}`;
+                                                const binary = atob(base64);
+                                                imageData = new Uint8Array(binary.length);
+                                                for (let i = 0; i < binary.length; i++) imageData[i] = binary.charCodeAt(i);
+                                            } else if (imgUrl) {
+                                                // Fetch from URL
+                                                const resp = await fetch(imgUrl);
+                                                if (!resp.ok) throw new Error(`Failed to fetch image: ${resp.status}`);
+                                                const buf = await resp.arrayBuffer();
+                                                imageData = new Uint8Array(buf);
+                                                filename = imgUrl.split("/").pop().split("?")[0] || "image.jpg";
+                                            }
+
+                                            if (imageData) {
+                                                // Step 1: Register upload (exact from working script)
+                                                const registerPayload = { mediaUploadType: "IMAGE_SHARING", fileSize: imageData.byteLength, filename };
+                                                const regResp = await liPost("https://www.linkedin.com/voyager/api/voyagerMediaUploadMetadata?action=upload", registerPayload);
+                                                
+                                                if (regResp.status === 429) throw new Error("Rate limited by LinkedIn");
+                                                if (regResp.status === 403) throw new Error("Forbidden — cookies may be expired");
+                                                if (!regResp.ok) throw new Error(`Upload registration failed: ${regResp.status}`);
+
+                                                const regData = await regResp.json();
+                                                const inner = (regData.data && typeof regData.data === "object") ? regData.data : null;
+                                                const uploadData = inner || regData;
+                                                const uploadUrl = extractUploadUrl(uploadData);
+                                                mediaUrn = extractMediaUrn(uploadData);
+
+                                                if (!uploadUrl || !mediaUrn) throw new Error("Missing uploadUrl or mediaUrn");
+
+                                                // Step 2: PUT binary image data
+                                                const ext = filename.split('.').pop().toLowerCase();
+                                                const contentType = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+                                                const uploadResp = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": contentType }, body: imageData });
+                                                if (!uploadResp.ok) throw new Error(`Image upload failed: ${uploadResp.status}`);
+                                            }
+                                        } catch (imgErr) {
+                                            console.error('Image upload error:', imgErr);
+                                            mediaUrn = null; // Continue without image
+                                        }
+                                    }
+
+                                    // Create post (exact payload from working script)
+                                    const payload = mediaUrn ? {
+                                        // With image
+                                        visibleToConnectionsOnly: false,
+                                        externalAudienceProviderUnion: { externalAudienceProvider: "LINKEDIN" },
+                                        commentaryV2: { text: postContent, attributes: [] },
+                                        origin: "FEED",
+                                        allowedCommentersScope: "ALL",
+                                        postState: "PUBLISHED",
+                                        mediaCategory: "IMAGE",
+                                        media: [{ category: "IMAGE", mediaUrn: mediaUrn }],
+                                    } : {
+                                        // Text only (exact from working script)
+                                        visibleToConnectionsOnly: false,
+                                        externalAudienceProviderUnion: { externalAudienceProvider: "LINKEDIN" },
+                                        commentaryV2: { text: postContent, attributes: [] },
+                                        origin: "FEED",
+                                        allowedCommentersScope: "ALL",
+                                        postState: "PUBLISHED",
+                                    };
+
+                                    const resp = await liPost("https://www.linkedin.com/voyager/api/contentcreation/normShares", payload);
+
+                                    if (resp.status === 429) throw new Error("Rate limited by LinkedIn — try again later");
+                                    if (resp.status === 403) throw new Error("Forbidden — cookies may be expired, re-login required");
+                                    if (resp.status !== 200 && resp.status !== 201) {
+                                        const body = await resp.text();
+                                        throw new Error(`Failed to create post: HTTP ${resp.status} — ${body.substring(0, 200)}`);
+                                    }
+
+                                    const data = await resp.json();
+                                    const urn = extractPostUrn(data);
+                                    if (!urn) throw new Error("Post created but no URN returned in response");
+
+                                    return { success: true, urn, hasImage: !!mediaUrn };
+                                } catch (e) {
+                                    return { success: false, error: e.message };
+                                }
+                            },
+                            args: [content, imageUrl, imageDataUrl, hasImage]
+                        });
+
+                        const scriptResult = result?.[0]?.result;
+                        console.log('🚀 POLL-ALARM: Voyager post result:', scriptResult);
+
+                        if (scriptResult?.success) {
+                            await fetch(`${apiUrl}/api/extension/command`, {
+                                method: 'PUT',
+                                headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { urn: scriptResult.urn } })
+                            });
+                            ll.post('post_writer', `✅ Posted via Voyager API${scriptResult.hasImage ? ' (with image)' : ''} - URN: ${scriptResult.urn}`);
+                        } else {
+                            throw new Error(scriptResult?.error || 'Voyager post failed');
+                        }
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: post_via_voyager failed:', e);
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.error('post_writer', `❌ Voyager post failed: ${e.message}`);
+                        } catch (x) { }
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message }) }); } catch (x) { }
+                    } finally {
+                        if (postTab) { try { await chrome.tabs.remove(postTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(postTab.id); }
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
+                }
+
                 // --- start_bulk_commenting ---
                 else if (cmd.command === 'start_bulk_commenting') {
                     console.log('💬 POLL-ALARM: Executing start_bulk_commenting from website...');
@@ -1979,7 +2187,7 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_schedule_via_api: Schedule a post using LinkedIn GraphQL ---
+                // --- linkedin_schedule_via_api: Schedule a post using LinkedIn GraphQL (exact working implementation) ---
                 else if (cmd.command === 'linkedin_schedule_via_api') {
                     console.log('📅 POLL-ALARM: Executing linkedin_schedule_via_api...');
                     let apiTab = null;
@@ -1988,48 +2196,160 @@ async function pollCommandsDirectly() {
                         const content = payload.content || '';
                         const scheduledTime = payload.scheduledTime || '';
                         const draftId = payload.draftId || null;
+                        const imageUrl = payload.imageUrl || payload.mediaUrl || null;
+                        const hasImage = payload.hasImage || (payload.mediaType === 'image');
 
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
+                        const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                        ll.start('post_writer', `📅 Scheduling post via LinkedIn API...`);
+
+                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
                         globalThis._commandLinkedInTabs.add(apiTab.id);
                         await new Promise((resolve) => {
                             const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
                             chrome.tabs.onUpdated.addListener(check);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
+                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 15000);
                         });
-                        await new Promise(r => setTimeout(r, 3000));
+                        await new Promise(r => setTimeout(r, 1500));
 
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
-                            func: async (postContent, schedTime) => {
-                                try {
-                                    const csrf = ('; ' + document.cookie).split('; JSESSIONID=').pop().split(';')[0].replace(/"/g, '');
-                                    const scheduleTs = new Date(schedTime).getTime();
-                                    const variables = {
-                                        createShareInput: {
-                                            allowedCommentersScope: 'ALL',
-                                            commentaryV2: { text: postContent, attributesV2: [] },
-                                            visibility: { visibleToConnectionsOnly: false },
-                                            origin: 'FEED',
-                                            distribution: { feedDistribution: 'MAIN_FEED', thirdPartyDistributionChannels: [] },
-                                            lifecycleState: 'DRAFT',
-                                            scheduledDistributionTime: scheduleTs
-                                        }
+                            func: async (postContent, schedTime, imgUrl, hasImg) => {
+                                // Exact implementation from working script
+                                const GRAPHQL_URL = "https://www.linkedin.com/voyager/api/graphql";
+                                const RESHARE_QUERY_ID = "voyagerContentcreationDashShares.279996efa5064c01775d5aff003d9377";
+                                const MEDIA_UPLOAD_URL = "https://www.linkedin.com/voyager/api/voyagerMediaUploadMetadata";
+
+                                function getCsrfToken() {
+                                    for (const c of document.cookie.split("; ")) {
+                                        if (c.startsWith("JSESSIONID=")) return c.substring(11).replace(/"/g, "");
+                                    }
+                                    throw new Error("JSESSIONID not found — are you logged into LinkedIn?");
+                                }
+                                function buildHeaders(extra = {}) {
+                                    return {
+                                        "Accept": "application/vnd.linkedin.normalized+json+2.1",
+                                        "Content-Type": "application/json",
+                                        "csrf-token": getCsrfToken(),
+                                        "x-li-lang": "en_US",
+                                        "x-restli-protocol-version": "2.0.0",
+                                        ...extra,
                                     };
-                                    const res = await fetch('https://www.linkedin.com/voyager/api/graphql', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json; charset=UTF-8', 'csrf-token': csrf, 'x-li-graphql-pegasus-client': 'true' },
-                                        body: JSON.stringify({ queryId: 'voyagerContentcreationDashShares.86b7e94fdb94ac5e39e79bac82e3f97c', variables: JSON.stringify(variables) })
-                                    });
-                                    if (!res.ok) { const t = await res.text(); throw new Error('Schedule failed (' + res.status + '): ' + t); }
-                                    const data = await res.json();
-                                    return { success: true, data };
-                                } catch (e) { return { success: false, error: e.message }; }
+                                }
+                                async function liPost(url, body) {
+                                    return fetch(url, { method: "POST", headers: buildHeaders(), credentials: "include", body: JSON.stringify(body) });
+                                }
+
+                                // Snap to 15-minute boundary (exact from working script)
+                                function snapToQuarterHourMs(date) {
+                                    const epochSec = date.getTime() / 1000;
+                                    const rounded = Math.ceil(epochSec / 900) * 900;
+                                    return String(Math.round(rounded * 1000));
+                                }
+
+                                // URN extraction
+                                function extractGraphqlShareUrn(data) {
+                                    let inner = data.data || {};
+                                    if (typeof inner === "object") inner = inner.data || inner;
+                                    const result = inner.createContentcreationDashShares;
+                                    if (result && typeof result === "object") {
+                                        return result.resourceKey || result.shareUrn || result["*entity"] || result.entity || "";
+                                    }
+                                    return "";
+                                }
+                                function extractPostUrn(data) {
+                                    const inner = (data.data && typeof data.data === "object") ? data.data : {};
+                                    for (const src of [data, inner, data.value || {}]) {
+                                        if (src.urn) return src.urn;
+                                    }
+                                    const bodyStr = JSON.stringify(data);
+                                    const m = bodyStr.match(/"urn:li:(share|ugcPost|normShare):[^"]+"/);
+                                    if (m) return m[0].replace(/"/g, "");
+                                    return "";
+                                }
+
+                                try {
+                                    const scheduledAt = new Date(schedTime);
+                                    if (isNaN(scheduledAt.getTime())) throw new Error("Invalid scheduledTime");
+                                    if (scheduledAt <= new Date()) throw new Error("scheduledTime must be in the future");
+
+                                    const scheduledAtMs = snapToQuarterHourMs(scheduledAt);
+                                    let mediaUrn = null;
+
+                                    // Upload image if provided
+                                    if (hasImg && imgUrl) {
+                                        try {
+                                            const resp = await fetch(imgUrl);
+                                            if (!resp.ok) throw new Error(`Failed to fetch image: ${resp.status}`);
+                                            const buf = await resp.arrayBuffer();
+                                            const imageData = new Uint8Array(buf);
+                                            const filename = imgUrl.split("/").pop().split("?")[0] || "image.jpg";
+
+                                            const regResp = await liPost(`${MEDIA_UPLOAD_URL}?action=upload`, { mediaUploadType: "IMAGE_SHARING", fileSize: imageData.byteLength, filename });
+                                            if (!regResp.ok) throw new Error(`Upload registration failed: ${regResp.status}`);
+                                            const regData = await regResp.json();
+                                            const d = (regData.data && typeof regData.data === "object") ? regData.data : regData;
+                                            const value = d.value || d;
+                                            const uploadUrl = (value.uploadMechanism?.["com.linkedin.voyager.common.MediaUploadHttpRequest"]?.uploadUrl) || value.uploadUrl || value.singleUploadUrl;
+                                            mediaUrn = value.urn || value.mediaUrn || value.mediaArtifact;
+
+                                            if (!uploadUrl || !mediaUrn) throw new Error("Missing uploadUrl or mediaUrn");
+                                            await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "image/png" }, body: imageData });
+                                        } catch (imgErr) {
+                                            console.error('Image upload error:', imgErr);
+                                            mediaUrn = null;
+                                        }
+                                    }
+
+                                    // Create scheduled post (exact payload from working script)
+                                    const url = `${GRAPHQL_URL}?action=execute&queryId=${RESHARE_QUERY_ID}`;
+                                    const postPayload = {
+                                        allowedCommentersScope: "ALL",
+                                        commentary: { text: postContent, attributesV2: [] },
+                                        intendedShareLifeCycleState: "SCHEDULED",
+                                        origin: "FEED",
+                                        scheduledAt: scheduledAtMs,
+                                        visibilityDataUnion: { visibilityType: "ANYONE" },
+                                    };
+
+                                    if (mediaUrn) {
+                                        postPayload.media = { category: "IMAGE", mediaUrn: mediaUrn, tapTargets: [], altText: "" };
+                                    }
+
+                                    const payload = {
+                                        variables: { post: postPayload },
+                                        queryId: RESHARE_QUERY_ID,
+                                        includeWebMetadata: true,
+                                    };
+
+                                    const resp = await liPost(url, payload);
+                                    if (resp.status === 429) throw new Error("Rate limited by LinkedIn");
+                                    if (resp.status === 403) throw new Error("Forbidden — cookies may be expired");
+                                    if (resp.status !== 200 && resp.status !== 201) {
+                                        const body = await resp.text();
+                                        throw new Error(`Failed to create scheduled post: HTTP ${resp.status} — ${body.substring(0, 200)}`);
+                                    }
+
+                                    const data = await resp.json();
+                                    let urn = extractGraphqlShareUrn(data);
+                                    if (!urn) urn = extractPostUrn(data);
+                                    if (!urn) throw new Error("Scheduled post created but no URN returned");
+
+                                    return { success: true, urn, scheduledAt: new Date(parseInt(scheduledAtMs)).toISOString(), hasImage: !!mediaUrn };
+                                } catch (e) {
+                                    return { success: false, error: e.message };
+                                }
                             },
-                            args: [content, scheduledTime]
+                            args: [content, scheduledTime, imageUrl, hasImage]
                         });
 
                         const scriptResult = result?.[0]?.result;
                         console.log('📅 POLL-ALARM: linkedin_schedule_via_api result:', scriptResult);
+
+                        if (scriptResult?.success) {
+                            ll.post('post_writer', `✅ Scheduled via LinkedIn API for ${scriptResult.scheduledAt}${scriptResult.hasImage ? ' (with image)' : ''} - URN: ${scriptResult.urn}`);
+                        } else {
+                            ll.error('post_writer', `❌ Schedule failed: ${scriptResult?.error || 'Unknown error'}`);
+                        }
 
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
@@ -2038,6 +2358,10 @@ async function pollCommandsDirectly() {
                         });
                     } catch (e) {
                         console.error('❌ POLL-ALARM: linkedin_schedule_via_api failed:', e);
+                        try {
+                            const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                            ll.error('post_writer', `❌ Schedule failed: ${e.message}`);
+                        } catch (x) { }
                         try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
                     } finally {
                         if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }

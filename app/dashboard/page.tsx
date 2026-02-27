@@ -720,67 +720,28 @@ function DashboardContent() {
         if (!token || !writerContent.trim()) { setWriterStatus('No content to post'); return; }
         setWriterPosting(true);
 
-        // Check if using LinkedIn API
-        if (writerUseLinkedInAPI) {
-            showToast('Posting via LinkedIn API...', 'info');
-            setWriterStatus('Posting via LinkedIn API...');
-            try {
-                const res = await fetch('/api/linkedin/post', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        content: writerContent,
-                        mediaUrl: writerMediaBlobUrl || null,
-                        mediaType: writerMediaType || null
-                    }),
-                });
-                if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
-                    throw new Error('LinkedIn API endpoint not available. Please try again later.');
-                }
-                const data = await res.json();
-                if (data.success) {
-                    setWriterStatus('✅ Posted to LinkedIn via API!');
-                    showToast('Posted to LinkedIn successfully!', 'success');
-                    await saveToHistory('published_post', 'LinkedIn Post (API)', { content: writerContent, source: 'writer_api', postId: data.postId });
-                    setWriterContent('');
-                    setWriterImageFile(null);
-                    setWriterImageUrl('');
-                    setWriterMediaBlobUrl('');
-                    setWriterMediaType('');
-                } else {
-                    setWriterStatus(data.error || 'Failed to post via API');
-                    showToast(data.error || 'Failed to post via API', 'error');
-                }
-            } catch (e: any) {
-                setWriterStatus('Error: ' + e.message);
-                showToast('Error: ' + e.message, 'error');
-            } finally { setWriterPosting(false); }
-            return;
-        }
-
-        // Use extension method
-        showToast('Sending post to extension...', 'info');
-        setWriterStatus('Sending to extension...');
+        // Use Voyager API via extension - fast and reliable
+        showToast('Posting via LinkedIn Voyager API...', 'info');
+        setWriterStatus('Posting via Voyager API...');
         try {
             const cmdData: any = { content: writerContent };
 
             // For media, include blob URL and type
             if (writerMediaBlobUrl) {
                 cmdData.mediaUrl = writerMediaBlobUrl;
+                cmdData.imageUrl = writerMediaBlobUrl;
                 cmdData.mediaType = writerMediaType;
                 cmdData.hasImage = writerMediaType === 'image';
                 cmdData.hasVideo = writerMediaType === 'video';
             } else if (writerImageUrl) {
                 cmdData.hasImage = true;
+                cmdData.imageUrl = writerImageUrl;
             }
 
-            window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', {
-                detail: { content: writerContent, hasImage: !!writerImageUrl, imageDataUrl: writerImageUrl, mediaUrl: writerMediaBlobUrl, mediaType: writerMediaType }
-            }));
             const res = await fetch('/api/extension/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ command: 'post_to_linkedin', data: cmdData }),
+                body: JSON.stringify({ command: 'post_via_voyager', data: cmdData }),
             });
 
             if (!res.ok) {
@@ -790,9 +751,15 @@ function DashboardContent() {
 
             const data = await res.json();
             if (data.success) {
-                setWriterStatus('Command sent! Extension will auto-open LinkedIn and post your content.');
-                showToast('Post sent to extension! It will auto-open LinkedIn.', 'success');
-                await saveToHistory('published_post', 'LinkedIn Post (Writer)', { content: writerContent, source: 'writer', hasImage: !!writerImageUrl });
+                setWriterStatus('✅ Posting via Voyager API... Check Tasks for status.');
+                showToast('Post command sent! Extension will post via Voyager API.', 'success');
+                await saveToHistory('published_post', 'LinkedIn Post (Voyager API)', { content: writerContent, source: 'voyager', hasImage: !!writerImageUrl || !!writerMediaBlobUrl });
+                // Clear content after successful send
+                setWriterContent('');
+                setWriterImageFile(null);
+                setWriterImageUrl('');
+                setWriterMediaBlobUrl('');
+                setWriterMediaType('');
             } else {
                 setWriterStatus(data.error || 'Failed to send');
                 showToast(data.error || 'Failed to send', 'error');
@@ -807,26 +774,57 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token || !writerContent.trim()) { setWriterStatus('No content to schedule'); return; }
         if (!writerScheduleDate || !writerScheduleTime) { setWriterStatus('Please set date and time'); return; }
+        
+        const scheduledFor = new Date(`${writerScheduleDate}T${writerScheduleTime}`).toISOString();
+        
+        // Option 1: Use LinkedIn's native scheduling via Voyager API (faster, more reliable)
+        showToast('Scheduling via LinkedIn Voyager API...', 'info');
+        setWriterStatus('Scheduling via Voyager API...');
+        
         try {
-            const scheduledFor = new Date(`${writerScheduleDate}T${writerScheduleTime}`).toISOString();
-            const res = await fetch('/api/post-drafts', {
+            // Send schedule command to extension
+            const cmdRes = await fetch('/api/extension/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor, mediaUrl: writerMediaBlobUrl || null, mediaType: writerMediaType || null }),
+                body: JSON.stringify({ 
+                    command: 'linkedin_schedule_via_api', 
+                    data: { 
+                        content: writerContent, 
+                        scheduledTime: scheduledFor,
+                        mediaUrl: writerMediaBlobUrl || null,
+                        mediaType: writerMediaType || null
+                    } 
+                }),
             });
-            const data = await res.json();
-            if (data.success) {
-                setWriterStatus('Post scheduled! Task created for extension.');
-                loadScheduledPosts(); // Refresh scheduled posts
-                // Clear schedule inputs
+            const cmdData = await cmdRes.json();
+            
+            if (cmdData.success) {
+                // Also save to database for tracking
+                await fetch('/api/post-drafts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor, mediaUrl: writerMediaBlobUrl || null, mediaType: writerMediaType || null, status: 'scheduled_via_linkedin' }),
+                });
+                
+                setWriterStatus('✅ Post scheduled via LinkedIn! Check Tasks for status.');
+                showToast('Post scheduled via LinkedIn Voyager API!', 'success');
+                loadScheduledPosts();
                 setWriterScheduleDate('');
                 setWriterScheduleTime('');
-                // Clear content
                 setWriterContent('');
                 setWriterTopic('');
+                setWriterImageFile(null);
+                setWriterImageUrl('');
+                setWriterMediaBlobUrl('');
+                setWriterMediaType('');
+            } else {
+                setWriterStatus(cmdData.error || 'Failed to schedule');
+                showToast(cmdData.error || 'Failed to schedule', 'error');
             }
-            else setWriterStatus(data.error || 'Failed to schedule');
-        } catch (e: any) { setWriterStatus('Error: ' + e.message); }
+        } catch (e: any) { 
+            setWriterStatus('Error: ' + e.message); 
+            showToast('Error: ' + e.message, 'error');
+        }
     };
 
     const deleteDraft = async (id: string) => {

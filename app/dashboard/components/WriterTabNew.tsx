@@ -1099,6 +1099,64 @@ export default function WriterTabNew(props: any) {
                     )}
                 </div>
             </div>
+
+            {/* Add Source Popup Modal */}
+            {showInspirationPopup && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowInspirationPopup(false)}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '500px', width: '100%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 16)} Add LinkedIn Profiles</h3>
+                            <button onClick={() => setShowInspirationPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', marginBottom: '12px' }}>Add LinkedIn profiles to learn from their writing style. AI will mimic them when generating posts.</p>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-end', marginBottom: '12px' }}>
+                            <textarea value={props.inspirationProfiles || ''} onChange={e => props.setInspirationProfiles?.(e.target.value)} placeholder={"https://linkedin.com/in/username1\nhttps://linkedin.com/in/username2"} rows={3}
+                                style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none', resize: 'vertical', fontFamily: 'monospace', lineHeight: '1.5' }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <select value={props.inspirationPostCount || 10} onChange={e => props.setInspirationPostCount?.(parseInt(e.target.value))} style={{ padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
+                                    <option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="30">30</option>
+                                </select>
+                                <button onClick={props.scrapeInspirationProfiles} disabled={props.inspirationScraping} style={{ padding: '10px 16px', background: props.inspirationScraping ? 'rgba(105,63,233,0.3)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: props.inspirationScraping ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                                    {props.inspirationScraping ? 'Scraping...' : 'Scrape'}
+                                </button>
+                            </div>
+                        </div>
+                        {props.inspirationStatus && <div style={{ marginBottom: '12px', padding: '8px 12px', background: props.inspirationStatus.includes('Error') || props.inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', border: `1px solid ${props.inspirationStatus.includes('Error') || props.inspirationStatus.includes('Failed') ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '8px', color: props.inspirationStatus.includes('Error') || props.inspirationStatus.includes('Failed') ? '#f87171' : '#34d399', fontSize: '12px' }}>{props.inspirationStatus}</div>}
+                        <button onClick={() => setShowInspirationPopup(false)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer' }}>Done</button>
+                    </div>
+                </div>
+            )}
+
+            {/* View Profile Posts Popup Modal */}
+            {props.viewingProfilePosts && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => { props.setViewingProfilePosts?.(null); props.setProfilePostsData?.([]); }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '800px', width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>Posts from {props.viewingProfilePosts}</h3>
+                            <button onClick={() => { props.setViewingProfilePosts?.(null); props.setProfilePostsData?.([]); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            {props.profilePostsLoading ? (
+                                <div style={{ textAlign: 'center', padding: '30px', color: 'rgba(255,255,255,0.5)' }}>Loading posts...</div>
+                            ) : props.profilePostsData && props.profilePostsData.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {props.profilePostsData.map((post: any, idx: number) => (
+                                        <div key={idx} style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '12px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{post.content?.substring(0, 500)}{post.content?.length > 500 ? '...' : ''}</div>
+                                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px', color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
+                                                <span>👍 {post.likes || 0}</span>
+                                                <span>💬 {post.comments || 0}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '30px', color: 'rgba(255,255,255,0.5)' }}>No posts found</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

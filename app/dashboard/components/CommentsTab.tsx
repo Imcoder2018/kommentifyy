@@ -318,7 +318,7 @@ export default function CommentsTab(props: any) {
                                 <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Model</label>
                                 <select value={csModel} onChange={e => handleCommentModelChange(e.target.value)}
                                     style={{ width: '100%', maxWidth: '350px', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', outline: 'none' }}>
-                                    {MODEL_OPTIONS.map(m => (
+                                    {MODEL_OPTIONS.map((m: any) => (
                                         <option key={m.id} value={m.id} style={{ background: '#1a1a3e' }}>{m.name}</option>
                                     ))}
                                 </select>

@@ -139,10 +139,10 @@ export default function TasksTab(props: any) {
                         {/* Task Stats */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
                             {[
-                                { label: 'Pending', count: tasks.filter(t => t.status === 'pending').length, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
-                                { label: 'In Progress', count: tasks.filter(t => t.status === 'in_progress').length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-                                { label: 'Completed', count: tasks.filter(t => t.status === 'completed' || t.status === 'completed_manual').length, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-                                { label: 'Failed/Cancelled', count: tasks.filter(t => t.status === 'failed' || t.status === 'cancelled').length, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+                                { label: 'Pending', count: tasks.filter((t: any) => t.status === 'pending').length, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+                                { label: 'In Progress', count: tasks.filter((t: any) => t.status === 'in_progress').length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+                                { label: 'Completed', count: tasks.filter((t: any) => t.status === 'completed' || t.status === 'completed_manual').length, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+                                { label: 'Failed/Cancelled', count: tasks.filter((t: any) => t.status === 'failed' || t.status === 'cancelled').length, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
                             ].map((s, i) => (
                                 <div key={i} style={{ background: s.bg, padding: '20px', borderRadius: '16px', textAlign: 'center', border: `1px solid ${s.color}33` }}>
                                     <div style={{ fontSize: '28px', fontWeight: '700', color: s.color }}>{s.count}</div>
@@ -151,11 +151,11 @@ export default function TasksTab(props: any) {
                             ))}
                         </div>
                         {/* Queue Info Banner */}
-                        {tasks.filter(t => t.status === 'pending').length > 0 && (
+                        {tasks.filter((t: { status: string }) => t.status === 'pending').length > 0 && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'rgba(245,158,11,0.1)', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.25)', marginBottom: '16px' }}>
                                 <span>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', '#f59e0b', 14)}</span>
                                 <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
-                                    <strong style={{ color: '#fbbf24' }}>{tasks.filter(t => t.status === 'pending').length} task(s) queued</strong> — only one task runs at a time. Each pending task waits for the current one to finish before starting.
+                                    <strong style={{ color: '#fbbf24' }}>{tasks.filter((t: { status: string }) => t.status === 'pending').length} task(s) queued</strong> — only one task runs at a time. Each pending task waits for the current one to finish before starting.
                                 </span>
                             </div>
                         )}

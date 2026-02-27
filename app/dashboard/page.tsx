@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, getLanguageDir } from '@/lib/i18n';
 import { cleanLinkedInProfileUrl, cleanLinkedInProfileUrls } from '@/lib/linkedin-url-cleaner';
 import OverviewTab from './components/OverviewTab';
-import WriterTab from './components/WriterTabNew';
+import WriterTab from './components/WriterTab';
 import CommentsTab from './components/CommentsTab';
 import TrendingPostsTab from './components/TrendingPostsTab';
 import TasksTab from './components/TasksTab';
@@ -16,432 +16,12 @@ import LimitsTab from './components/LimitsTab';
 import ActivityTab from './components/ActivityTab';
 import CommenterTab from './components/CommenterTab';
 import ImportTab from './components/ImportTab';
-import LeadWarmerTab from './components/LeadWarmerTab';
 import AnalyticsTab from './components/AnalyticsTab';
 import UsageTab from './components/UsageTab';
 import ReferralsTab from './components/ReferralsTab';
 import ExtensionTab from './components/ExtensionTab';
 import AccountTab from './components/AccountTab';
 
-// Shared props interface for all tab components
-interface TabProps {
-    // Core
-    t: any;
-    user: any;
-    usage: any;
-    router: any;
-    miniIcon: any;
-    showToast: any;
-    setActiveTab: any;
-    isFreePlan: boolean;
-    showUpgradeModal: boolean;
-    setShowUpgradeModal: any;
-    dashLang: string;
-    isDeveloper: boolean;
-    // Writer
-    writerTopic: string;
-    setWriterTopic: any;
-    writerTemplate: string;
-    setWriterTemplate: any;
-    writerTone: string;
-    setWriterTone: any;
-    writerLength: string;
-    setWriterLength: any;
-    writerHashtags: boolean;
-    setWriterHashtags: any;
-    writerEmojis: boolean;
-    setWriterEmojis: any;
-    writerLanguage: string;
-    setWriterLanguage: any;
-    writerAdvancedOpen: boolean;
-    setWriterAdvancedOpen: any;
-    writerTargetAudience: string;
-    setWriterTargetAudience: any;
-    writerKeyMessage: string;
-    setWriterKeyMessage: any;
-    writerBackground: string;
-    setWriterBackground: any;
-    writerContent: string;
-    setWriterContent: any;
-    writerGenerating: boolean;
-    setWriterGenerating: any;
-    writerScheduleDate: string;
-    setWriterScheduleDate: any;
-    writerScheduleTime: string;
-    setWriterScheduleTime: any;
-    writerDrafts: any[];
-    writerScheduledPosts: any[];
-    writerTokenUsage: any;
-    writerImageFile: File | null;
-    setWriterImageFile: any;
-    writerImageUrl: string;
-    setWriterImageUrl: any;
-    writerMediaBlobUrl: string;
-    setWriterMediaBlobUrl: any;
-    writerMediaType: string;
-    setWriterMediaType: any;
-    writerUploading: boolean;
-    setWriterUploading: any;
-    writerPreviewMode: 'off' | 'desktop' | 'mobile';
-    setWriterPreviewMode: any;
-    writerPreviewExpanded: boolean;
-    setWriterPreviewExpanded: any;
-    writerUseLinkedInAPI: boolean;
-    setWriterUseLinkedInAPI: any;
-    fileInputRef: any;
-    writerStatus: string;
-    setWriterStatus: any;
-    writerModel: string;
-    writerUseInspirationSources: boolean;
-    setWriterUseInspirationSources: any;
-    writerInspirationSourceNames: string[];
-    writerPosting: boolean;
-    MODEL_OPTIONS: any[];
-    handleWriterModelChange: any;
-    userGoal: string;
-    setUserGoal: any;
-    userTargetAudience: string;
-    setUserTargetAudience: any;
-    userWritingStyle: string;
-    setUserWritingStyle: any;
-    userWritingStyleSource: string;
-    setUserWritingStyleSource: any;
-    goalsLoading: boolean;
-    goalsSuggesting: boolean;
-    loadUserGoals: any;
-    saveUserGoals: any;
-    suggestGoals: any;
-    generatePost: any;
-    saveDraft: any;
-    loadDrafts: any;
-    loadScheduledPosts: any;
-    sendToExtension: any;
-    schedulePost: any;
-    deleteDraft: any;
-    // Saved posts
-    savedPosts: any[];
-    savedPostsLoading: boolean;
-    savedPostsPage: number;
-    setSavedPostsPage: any;
-    savedPostsTotal: number;
-    savedPostsSortBy: string;
-    setSavedPostsSortBy: any;
-    savedPostsSortOrder: string;
-    setSavedPostsSortOrder: any;
-    savedPostsSearch: string;
-    setSavedPostsSearch: any;
-    loadSavedPosts: any;
-    deleteSavedPost: any;
-    // Feed schedule
-    feedSchedule: any;
-    feedScheduleLoading: boolean;
-    scheduleTimesInput: string[];
-    setScheduleTimesInput: any;
-    scheduleDuration: number;
-    setScheduleDuration: any;
-    scheduleMinLikes: number;
-    setScheduleMinLikes: any;
-    scheduleMinComments: number;
-    setScheduleMinComments: any;
-    scheduleKeywords: string;
-    setScheduleKeywords: any;
-    scheduleActive: boolean;
-    setScheduleActive: any;
-    loadFeedSchedule: any;
-    saveFeedSchedule: any;
-    feedScrapeCommandId: string | null;
-    feedScrapeStatus: any;
-    feedScrapePolling: boolean;
-    startFeedScrapePolling: any;
-    stopFeedScrape: any;
-    // Tasks
-    tasks: any[];
-    tasksLoading: boolean;
-    taskNotifications: any[];
-    taskStatusExpanded: string | null;
-    setTaskStatusExpanded: any;
-    taskCounts: any;
-    loadTasks: any;
-    addTaskNotification: any;
-    stopAllTasks: any;
-    // Trending
-    trendingPeriod: string;
-    setTrendingPeriod: any;
-    trendingSelectedPosts: string[];
-    setTrendingSelectedPosts: any;
-    trendingGenerating: boolean;
-    trendingCustomPrompt: string;
-    setTrendingCustomPrompt: any;
-    trendingIncludeHashtags: boolean;
-    setTrendingIncludeHashtags: any;
-    trendingLanguage: string;
-    setTrendingLanguage: any;
-    trendingGeneratedPosts: any[];
-    trendingShowGenPreview: boolean;
-    setTrendingShowGenPreview: any;
-    trendingStatus: string;
-    trendingModel: string;
-    setTrendingModel: any;
-    trendingTokenUsage: any;
-    trendingUseProfileData: boolean;
-    setTrendingUseProfileData: any;
-    generateTrendingPosts: any;
-    analyzePosts: any;
-    analysisResults: any[];
-    analysisLoading: boolean;
-    showAnalysis: boolean;
-    setShowAnalysis: any;
-    generatedPostImages: Record<number, string>;
-    setGeneratedPostImages: any;
-    postingToLinkedIn: Record<number, boolean>;
-    postGeneratedToLinkedIn: any;
-    handleImageAttach: any;
-    // History
-    historyItems: any[];
-    historyLoading: boolean;
-    historyFilter: string;
-    setHistoryFilter: any;
-    historyPage: number;
-    setHistoryPage: any;
-    historyTotal: number;
-    loadHistory: any;
-    deleteHistoryItem: any;
-    // Inspiration
-    inspirationProfiles: string;
-    setInspirationProfiles: any;
-    inspirationPostCount: number;
-    setInspirationPostCount: any;
-    inspirationScraping: boolean;
-    inspirationStatus: string;
-    inspirationSources: any[];
-    inspirationLoading: boolean;
-    inspirationUseAll: boolean;
-    setInspirationUseAll: any;
-    inspirationSelected: string[];
-    setInspirationSelected: any;
-    inspirationDeleteMode: boolean;
-    setInspirationDeleteMode: any;
-    inspirationDeleteSelected: string[];
-    setInspirationDeleteSelected: any;
-    useProfileData: boolean;
-    setUseProfileData: any;
-    showInspirationPopup: boolean;
-    setShowInspirationPopup: any;
-    showSharedProfilesPopup: boolean;
-    setShowSharedProfilesPopup: any;
-    loadInspirationSources: any;
-    scrapeInspirationProfiles: any;
-    deleteInspirationSource: any;
-    selectedInspirationPosts: string[];
-    setSelectedInspirationPosts: any;
-    toggleInspirationPost: any;
-    viewingProfilePosts: string | null;
-    setViewingProfilePosts: any;
-    profilePostsData: any[];
-    setProfilePostsData: any;
-    profilePostsLoading: boolean;
-    loadProfilePosts: any;
-    // Comment style
-    commentStyleProfiles: any[];
-    commentStyleLoading: boolean;
-    commentStyleUrl: string;
-    setCommentStyleUrl: any;
-    commentStyleScraping: boolean;
-    commentStyleStatus: string;
-    commentStyleExpanded: string | null;
-    setCommentStyleExpanded: any;
-    commentStyleComments: any[];
-    commentStyleCommentsLoading: boolean;
-    csUseProfileStyle: boolean;
-    setCsUseProfileStyle: any;
-    csUseProfileData: boolean;
-    setCsUseProfileData: any;
-    csGoal: string;
-    setCsGoal: any;
-    csTone: string;
-    setCsTone: any;
-    csLength: string;
-    setCsLength: any;
-    csStyle: string;
-    setCsStyle: any;
-    csModel: string;
-    setCsModel: any;
-    csExpertise: string;
-    setCsExpertise: any;
-    csBackground: string;
-    setCsBackground: any;
-    csAutoPost: string;
-    setCsAutoPost: any;
-    csSettingsLoading: boolean;
-    csSettingsSaving: boolean;
-    loadCommentStyleProfiles: any;
-    scrapeCommentStyle: any;
-    loadProfileComments: any;
-    toggleCommentTop: any;
-    toggleProfileSelect: any;
-    deleteCommentStyleProfile: any;
-    loadCommentSettings: any;
-    saveCommentSettings: any;
-    handleCommentModelChange: any;
-    // Shared content
-    sharedPosts: any[];
-    sharedPostsLoading: boolean;
-    sharedInspProfiles: any[];
-    sharedCommentProfiles: any[];
-    loadSharedPosts: any;
-    loadSharedInspProfiles: any;
-    loadSharedCommentProfiles: any;
-    // Automation settings
-    autoSettings: any;
-    autoSettingsLoading: boolean;
-    autoSettingsSaving: boolean;
-    loadAutoSettings: any;
-    saveAutoSettings: any;
-    // Activity
-    liveActivityLogs: any[];
-    liveActivityLoading: boolean;
-    showLogsPopup: boolean;
-    setShowLogsPopup: any;
-    loadLiveActivity: any;
-    // Commenter
-    commenterCfg: any;
-    commenterCfgLoading: boolean;
-    commenterCfgSaving: boolean;
-    loadCommenterCfg: any;
-    saveCommenterCfg: any;
-    // Import
-    importCfg: any;
-    importCfgLoading: boolean;
-    importCfgSaving: boolean;
-    loadImportCfg: any;
-    saveImportCfg: any;
-    // LinkedIn profile
-    linkedInProfile: any;
-    linkedInProfileLoading: boolean;
-    linkedInProfileScanning: boolean;
-    linkedInProfileStatus: string;
-    linkedInUseProfileData: boolean;
-    setLinkedInUseProfileData: any;
-    linkedInTopicSuggestions: string[];
-    linkedInGeneratingTopics: boolean;
-    showLinkedInDataModal: boolean;
-    setShowLinkedInDataModal: any;
-    showFullPageText: boolean;
-    setShowFullPageText: any;
-    rescanningMissing: boolean;
-    setRescanningMissing: any;
-    editingSection: string | null;
-    setEditingSection: any;
-    editValue: string;
-    setEditValue: any;
-    loadLinkedInProfile: any;
-    deleteLinkedInProfile: any;
-    scanLinkedInProfile: any;
-    generateTopicSuggestions: any;
-    selectTopicSuggestion: any;
-    toggleLinkedInProfileData: any;
-    // Planner
-    plannerOpen: boolean;
-    setPlannerOpen: any;
-    plannerMode: '7days' | '30days';
-    setPlannerMode: any;
-    plannerStep: 'context' | 'select' | 'time' | 'generating' | 'done';
-    setPlannerStep: any;
-    plannerContext: string;
-    setPlannerContext: any;
-    plannerTopics: string[];
-    setPlannerTopics: any;
-    plannerSelected: boolean[];
-    setPlannerSelected: any;
-    plannerGeneratingTopics: boolean;
-    plannerPublishTime: string;
-    setPlannerPublishTime: any;
-    plannerStartDate: string;
-    setPlannerStartDate: any;
-    plannerTemplate: string;
-    setPlannerTemplate: any;
-    plannerTone: string;
-    setPlannerTone: any;
-    plannerLength: string;
-    setPlannerLength: any;
-    plannerGenerating: boolean;
-    plannerDoneCount: number;
-    plannerTotal: number;
-    plannerStatusMsg: string;
-    plannerAbortRef: any;
-    openPlanner: any;
-    generatePlannerTopics: any;
-    startPlannerGeneration: any;
-    // Voyager
-    voyagerData: any;
-    voyagerLoading: boolean;
-    voyagerSyncing: boolean;
-    setVoyagerSyncing: any;
-    loadVoyagerData: any;
-    // Analytics
-    analyticsData: any;
-    analyticsLoading: boolean;
-    analyticsPeriod: string;
-    setAnalyticsPeriod: any;
-    analyticsAutoSearch: string;
-    setAnalyticsAutoSearch: any;
-    analyticsNetworkSearch: string;
-    setAnalyticsNetworkSearch: any;
-    analyticsImportSearch: string;
-    setAnalyticsImportSearch: any;
-    analyticsLeadsSearch: string;
-    setAnalyticsLeadsSearch: any;
-    analyticsAutoFilter: string;
-    setAnalyticsAutoFilter: any;
-    analyticsNetworkFilter: string;
-    setAnalyticsNetworkFilter: any;
-    loadAnalytics: any;
-    // Referral
-    referralData: ReferralData | null;
-    copied: boolean;
-    setCopied: any;
-    showReferrals: boolean;
-    setShowReferrals: any;
-    copyToClipboard: any;
-    loadReferralData: any;
-    // Extension
-    extensionConnected: boolean;
-    extensionLastSeen: Date | null;
-    checkExtensionConnectivity: any;
-    // Account
-    linkedInOAuth: any;
-    linkedInOAuthLoading: boolean;
-    theme: 'current' | 'light' | 'dark';
-    setTheme: any;
-    calendarMonth: number;
-    setCalendarMonth: any;
-    calendarYear: number;
-    setCalendarYear: any;
-    // Other
-    signOut: any;
-    loggingOut: boolean;
-    setLoggingOut: any;
-    sidebarCollapsed: boolean;
-    // Additional
-    changeDashboardLanguage: any;
-    setLinkedInOAuth: any;
-    setLinkedInProfileScanning: any;
-    setLinkedInProfile: any;
-    SUPPORTED_LANGUAGES: any;
-    setLiveActivityLogs: any;
-    setLiveActivityLoading: any;
-    setCommenterCfg: any;
-    setCommentStyleComments: any;
-    setImportCfg: any;
-    setAutoSettings: any;
-    setTrendingStatus: any;
-    setFeedScrapeStatus: any;
-    setFeedScrapeCommandId: any;
-    setTrendingGeneratedPosts: any;
-    setPlannerGenerating: any;
-    handleTabChange: any;
-    cleanLinkedInProfileUrls: any;
-}
 
 interface ReferralData {
     referralCode: string;
@@ -503,11 +83,11 @@ function DashboardContent() {
     // Check if user is on a free plan (no AI access)
     // Also treat expired trial users as free (trial plan with past trialEndsAt)
     const isTrialExpired = user?.plan?.isTrialPlan && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
-    const isFreePlan = Boolean(user?.plan && (
+    const isFreePlan = user?.plan && (
         user.plan.isDefaultFreePlan ||
         (user.plan.price === 0 && !user.plan.isLifetime && !user.plan.isTrialPlan) ||
         isTrialExpired
-    ));
+    );
 
     // Writer tab state
     const [writerTopic, setWriterTopic] = useState('');
@@ -542,14 +122,6 @@ function DashboardContent() {
     const [writerModel, setWriterModel] = useState<string>('gpt-4o');
     const [writerUseInspirationSources, setWriterUseInspirationSources] = useState(true);
     const [writerInspirationSourceNames, setWriterInspirationSourceNames] = useState<string[]>([]);
-
-    // User goals state
-    const [userGoal, setUserGoal] = useState<string>('');
-    const [userTargetAudience, setUserTargetAudience] = useState<string>('');
-    const [userWritingStyle, setUserWritingStyle] = useState<string>('');
-    const [userWritingStyleSource, setUserWritingStyleSource] = useState<string>('user_default');
-    const [goalsLoading, setGoalsLoading] = useState(false);
-    const [goalsSuggesting, setGoalsSuggesting] = useState(false);
 
     // Saved posts tab state
     const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -597,23 +169,8 @@ function DashboardContent() {
     const [feedScrapePolling, setFeedScrapePolling] = useState(false);
     const feedScrapeIntervalRef = useRef<any>(null);
 
-    // Enhanced cleanup refs for all intervals and timeouts
-    const cleanupRefs = useRef<{
-        feedScrapeInterval: ReturnType<typeof setInterval> | null;
-        commentScrapeInterval: ReturnType<typeof setInterval> | null;
-        scanProfileInterval: ReturnType<typeof setInterval> | null;
-        scanProfileTimeout: ReturnType<typeof setTimeout> | null;
-        inspirationTimeout: ReturnType<typeof setTimeout> | null;
-    }>({
-        feedScrapeInterval: null,
-        commentScrapeInterval: null,
-        scanProfileInterval: null,
-        scanProfileTimeout: null,
-        inspirationTimeout: null,
-    });
-
-    // Developer emails for showing token costs (from environment variable)
-    const DEVELOPER_EMAILS = process.env.NEXT_PUBLIC_DEVELOPER_EMAILS?.split(',').map(e => e.trim()) || ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
+    // Developer emails for showing token costs
+    const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
     const isDeveloper = user?.email ? DEVELOPER_EMAILS.includes(user.email) : false;
 
     // AI Models state - fetched from database (admin-controlled)
@@ -888,7 +445,6 @@ function DashboardContent() {
         }
 
         let isRedirecting = false;
-        let isMounted = true;
 
         // Validate token and get user info
         const validateAndLoad = async () => {
@@ -906,7 +462,6 @@ function DashboardContent() {
                     return;
                 }
 
-                if (!isMounted) return;
                 setUser(validateData.user);
 
                 // Check if user has paid plan
@@ -934,7 +489,7 @@ function DashboardContent() {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const usageData = await usageRes.json();
-                    if (usageData?.success && isMounted) {
+                    if (usageData?.success) {
                         setUsage(usageData);
                     }
                 } catch (usageErr) {
@@ -944,7 +499,6 @@ function DashboardContent() {
                 console.error('Dashboard auth error:', err);
                 // Only redirect to login on auth failure, not network errors
                 // Check if token is still valid by trying refresh
-                let shouldRedirect = true;
                 try {
                     const refreshRes = await fetch('/api/auth/refresh', {
                         method: 'POST',
@@ -961,23 +515,18 @@ function DashboardContent() {
                 } catch (refreshErr) {
                     // Refresh also failed
                 }
-                if (shouldRedirect) {
-                    localStorage.removeItem('authToken');
-                    isRedirecting = true;
-                    router.push('/login');
-                }
+                localStorage.removeItem('authToken');
+                isRedirecting = true;
+                router.push('/login');
             } finally {
-                if (!isRedirecting && isMounted) {
+                if (!isRedirecting) {
                     setLoading(false);
                 }
             }
         };
 
         validateAndLoad();
-        if (isMounted) {
-            loadVoyagerData(); // Load LinkedIn Voyager data on overview tab
-            loadUserGoals();
-        }
+        loadVoyagerData(); // Load LinkedIn Voyager data on overview tab
 
         // Fetch referral data
         fetch('/api/referrals', {
@@ -987,16 +536,11 @@ function DashboardContent() {
         })
             .then(res => res.json())
             .then(data => {
-                if (data.success && isMounted) {
+                if (data.success) {
                     setReferralData(data);
                 }
             })
             .catch(() => { });
-
-        // Cleanup function
-        return () => {
-            isMounted = false;
-        };
     }, [router]);
 
     const copyToClipboard = (text: string) => {
@@ -1021,23 +565,17 @@ function DashboardContent() {
                     topic: writerTopic, template: writerTemplate, tone: writerTone,
                     length: writerLength, includeHashtags: writerHashtags, includeEmojis: writerEmojis,
                     language: writerLanguage,
-                    targetAudience: writerTargetAudience || userTargetAudience,
-                    userGoal: userGoal,
-                    userWritingStyleSource: userWritingStyleSource,
-                    keyMessage: writerKeyMessage, userBackground: writerBackground,
-                    useInspirationSources: userWritingStyleSource.startsWith('insp_') || userWritingStyleSource.startsWith('shared_') || (inspirationSources.length > 0 && (inspirationUseAll || inspirationSelected.length > 0)),
-                    inspirationSourceNames: userWritingStyleSource.startsWith('insp_') ? [userWritingStyleSource.replace('insp_', '')] : userWritingStyleSource.startsWith('shared_') ? [userWritingStyleSource.replace('shared_', '')] : (inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected),
-                    useProfileData: useProfileData && voyagerData,
-                    profileData: useProfileData && voyagerData ? {
-                        headline: voyagerData.headline,
-                        about: voyagerData.about,
-                        skills: [],
-                        experience: voyagerData.experience || [],
-                        education: voyagerData.education || [],
-                        posts: (voyagerData.recentPosts || []).map((p: any) => typeof p === 'string' ? p : (p.text || p.content || '')).filter(Boolean),
-                        location: voyagerData.location,
-                        followerCount: voyagerData.followerCount,
-                        connectionCount: voyagerData.connectionCount
+                    targetAudience: writerTargetAudience, keyMessage: writerKeyMessage, userBackground: writerBackground,
+                    useInspirationSources: inspirationSources.length > 0 && (inspirationUseAll || inspirationSelected.length > 0),
+                    inspirationSourceNames: inspirationUseAll ? inspirationSources.map(s => s.name) : inspirationSelected,
+                    useProfileData: useProfileData && linkedInProfile,
+                    profileData: useProfileData && linkedInProfile ? {
+                        headline: linkedInProfile.headline,
+                        about: linkedInProfile.about,
+                        skills: linkedInProfile.skills,
+                        experience: linkedInProfile.experience,
+                        education: linkedInProfile.education,
+                        posts: linkedInProfile.posts
                     } : null,
                     model: writerModel
                 }),
@@ -1088,10 +626,7 @@ function DashboardContent() {
                 setWriterScheduledPosts(scheduled);
                 setWriterDrafts(regularDrafts);
             }
-        } catch (error: any) {
-            console.error('Error loading drafts:', error);
-            showToast('Failed to load drafts: ' + error.message, 'error');
-        }
+        } catch { }
     };
 
     const loadScheduledPosts = async () => {
@@ -1104,16 +639,56 @@ function DashboardContent() {
                 setWriterScheduledPosts(data.scheduledPosts || []);
                 setTaskCounts(data.taskCounts || { pending: 0, in_progress: 0, completed: 0, failed: 0 });
             }
-        } catch (error: any) {
-            console.error('Error loading scheduled posts:', error);
-            showToast('Failed to load scheduled posts: ' + error.message, 'error');
-        }
+        } catch { }
     };
 
     const [writerPosting, setWriterPosting] = useState(false);
     const sendToExtension = async () => {
         const token = localStorage.getItem('authToken');
-        if (!token) return;
+        if (!token || !writerContent.trim()) { setWriterStatus('No content to post'); return; }
+        setWriterPosting(true);
+
+        // Check if using LinkedIn API
+        if (writerUseLinkedInAPI) {
+            showToast('Posting via LinkedIn API...', 'info');
+            setWriterStatus('Posting via LinkedIn API...');
+            try {
+                const res = await fetch('/api/linkedin/post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        content: writerContent,
+                        mediaUrl: writerMediaBlobUrl || null,
+                        mediaType: writerMediaType || null
+                    }),
+                });
+                if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
+                    throw new Error('LinkedIn API endpoint not available. Please try again later.');
+                }
+                const data = await res.json();
+                if (data.success) {
+                    setWriterStatus('✅ Posted to LinkedIn via API!');
+                    showToast('Posted to LinkedIn successfully!', 'success');
+                    await saveToHistory('published_post', 'LinkedIn Post (API)', { content: writerContent, source: 'writer_api', postId: data.postId });
+                    setWriterContent('');
+                    setWriterImageFile(null);
+                    setWriterImageUrl('');
+                    setWriterMediaBlobUrl('');
+                    setWriterMediaType('');
+                } else {
+                    setWriterStatus(data.error || 'Failed to post via API');
+                    showToast(data.error || 'Failed to post via API', 'error');
+                }
+            } catch (e: any) {
+                setWriterStatus('Error: ' + e.message);
+                showToast('Error: ' + e.message, 'error');
+            } finally { setWriterPosting(false); }
+            return;
+        }
+
+        // Use extension method
+        showToast('Sending post to extension...', 'info');
+        setWriterStatus('Sending to extension...');
         try {
             const cmdData: any = { content: writerContent };
 
@@ -1151,18 +726,49 @@ function DashboardContent() {
                 showToast(data.error || 'Failed to send', 'error');
             }
         } catch (e: any) {
+            setWriterStatus('Error: ' + e.message);
+            showToast('Error: ' + e.message, 'error');
+        } finally { setWriterPosting(false); }
+    };
+
+    const schedulePost = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token || !writerContent.trim()) { setWriterStatus('No content to schedule'); return; }
+        if (!writerScheduleDate || !writerScheduleTime) { setWriterStatus('Please set date and time'); return; }
         try {
+            const scheduledFor = new Date(`${writerScheduleDate}T${writerScheduleTime}`).toISOString();
             const res = await fetch('/api/post-drafts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor, mediaUrl: writerMediaBlobUrl || null, mediaType: writerMediaType || null }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setWriterStatus('Post scheduled! Task created for extension.');
+                loadScheduledPosts(); // Refresh scheduled posts
+                // Clear schedule inputs
+                setWriterScheduleDate('');
+                setWriterScheduleTime('');
+                // Clear content
+                setWriterContent('');
+                setWriterTopic('');
+            }
+            else setWriterStatus(data.error || 'Failed to schedule');
+        } catch (e: any) { setWriterStatus('Error: ' + e.message); }
+    };
+
+    const deleteDraft = async (id: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/post-drafts', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ id }),
             });
-            if (!res.ok) {
-                throw new Error(`Failed to delete draft: ${res.status}`);
-            }
             loadDrafts();
-            showToast('Draft deleted successfully', 'success');
-        } catch (error: any) {
+        } catch { }
+    };
 
     // Saved posts functions
     const loadSavedPosts = async (page = 1, periodOverride?: string) => {
@@ -1171,16 +777,15 @@ function DashboardContent() {
         setSavedPostsLoading(true);
         try {
             // Calculate date filter based on trending period
-            // Use current trendingPeriod value to avoid stale closure
-            const currentPeriod = periodOverride !== undefined ? periodOverride : trendingPeriod;
+            const activePeriod = periodOverride !== undefined ? periodOverride : trendingPeriod;
             let periodFilter = '';
-            if (currentPeriod === 'today') {
+            if (activePeriod === 'today') {
                 const d = new Date(); d.setHours(0, 0, 0, 0);
                 periodFilter = d.toISOString();
-            } else if (currentPeriod === 'week') {
+            } else if (activePeriod === 'week') {
                 const d = new Date(); d.setDate(d.getDate() - 7);
                 periodFilter = d.toISOString();
-            } else if (currentPeriod === 'month') {
+            } else if (activePeriod === 'month') {
                 const d = new Date(); d.setMonth(d.getMonth() - 1);
                 periodFilter = d.toISOString();
             }
@@ -1286,6 +891,22 @@ function DashboardContent() {
                     body: JSON.stringify({ command: 'scrape_profile', data: { profileUrl: urls[i], postCount: inspirationPostCount } }),
                 });
                 const data = await res.json();
+                if (!data.success) {
+                    setInspirationStatus(`Failed to queue profile ${i + 1}: ${data.error}`);
+                    continue;
+                }
+            }
+            // Trigger extension to pick up commands immediately
+            window.dispatchEvent(new CustomEvent('kommentify-post-to-linkedin', { detail: { command: 'scrape_profile' } }));
+            setInspirationStatus(`${urls.length} profile(s) queued for scraping! Extension will process them.`);
+            setInspirationProfiles('');
+            // Reload sources after a delay
+            setTimeout(() => loadInspirationSources(), 15000);
+        } catch (e: any) { setInspirationStatus('Error: ' + e.message); }
+        finally { setInspirationScraping(false); }
+    };
+
+    const deleteInspirationSource = async (sourceName: string) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         try {
@@ -1316,9 +937,7 @@ function DashboardContent() {
             const res = await fetch('/api/shared/inspiration-profiles', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setSharedInspProfiles(data.profiles || []);
-        } catch (error: any) {
-            console.error('Error loading shared inspiration profiles:', error);
-        }
+        } catch { }
     };
     const loadSharedCommentProfiles = async () => {
         const token = localStorage.getItem('authToken');
@@ -1327,9 +946,7 @@ function DashboardContent() {
             const res = await fetch('/api/shared/comment-profiles', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setSharedCommentProfiles(data.profiles || []);
-        } catch (error: any) {
-            console.error('Error loading shared comment profiles:', error);
-        }
+        } catch { }
     };
 
     // Comment Style Sources functions
@@ -1552,82 +1169,6 @@ function DashboardContent() {
         } catch { } finally { setLinkedInProfileLoading(false); }
     };
 
-    // User goals functions
-    const loadUserGoals = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
-        setGoalsLoading(true);
-        try {
-            const res = await fetch('/api/user-goals', { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await res.json();
-            if (data.success && data.data) {
-                setUserGoal(data.data.goal || '');
-                setUserTargetAudience(data.data.targetAudience || '');
-                setUserWritingStyle(data.data.writingStyle || '');
-                setUserWritingStyleSource(data.data.writingStyleSource || 'user_default');
-            }
-        } catch (e) {
-            console.error('Failed to load goals:', e);
-        } finally {
-            setGoalsLoading(false);
-        }
-    };
-
-    const saveUserGoals = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
-        const savedData = {
-            goal: userGoal,
-            targetAudience: userTargetAudience,
-            writingStyle: userWritingStyle,
-            writingStyleSource: userWritingStyleSource
-        };
-        try {
-            const res = await fetch('/api/user-goals', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(savedData)
-            });
-            const data = await res.json();
-            if (data.success) {
-                showToast('Goals saved successfully!', 'success');
-            } else {
-                showToast(data.error || 'Failed to save goals', 'error');
-            }
-        } catch (e) {
-            showToast('Failed to save goals', 'error');
-        }
-    };
-
-    const suggestGoals = async () => {
-        if (!voyagerData) {
-            showToast('Please sync LinkedIn data first', 'error');
-            return;
-        }
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
-        setGoalsSuggesting(true);
-        try {
-            const res = await fetch('/api/ai/suggest-goals', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ profileData: voyagerData })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setUserGoal(data.goal || '');
-                setUserTargetAudience(data.targetAudience || '');
-                showToast('Suggested goals applied. Review and save!', 'success');
-            } else {
-                showToast(data.error || 'Failed to suggest goals', 'error');
-            }
-        } catch (e) {
-            showToast('Failed to suggest goals', 'error');
-        } finally {
-            setGoalsSuggesting(false);
-        }
-    };
-
     // Voyager data functions
     const loadVoyagerData = async () => {
         const token = localStorage.getItem('authToken');
@@ -1663,8 +1204,8 @@ function DashboardContent() {
                     location: d.location,
                     about: d.about,
                     profileUrl: d.profileUrl,
-                    profilePicture: typeof profileViewsData?.profilePicture === 'string' ? profileViewsData.profilePicture : (profileViewsData?.profilePicture?.url || profileViewsData?.profilePicture?.rootUrl || ''),
-                    backgroundImage: typeof profileViewsData?.backgroundImage === 'string' ? profileViewsData.backgroundImage : (profileViewsData?.backgroundImage?.url || ''),
+                    profilePicture: profileViewsData?.profilePicture || '',
+                    backgroundImage: profileViewsData?.backgroundImage || '',
                     followerCount: d.followerCount,
                     connectionCount: d.connectionCount,
                     profileViewsData,
@@ -1677,28 +1218,12 @@ function DashboardContent() {
                     profileMetadata,
                     topConnections: Array.isArray(topConnections) ? topConnections : [],
                 };
-                console.log('[VOYAGER UI] Setting voyagerData state:', { 
-                    name: voyagerState.name, 
-                    followers: voyagerState.followerCount, 
-                    posts: voyagerState.recentPosts?.length, 
-                    experience: voyagerState.experience?.length, 
-                    education: voyagerState.education?.length, 
-                    invitations: voyagerState.invitationsData, 
-                    lastSync: voyagerState.voyagerLastSyncAt 
-                });
+                console.log('[VOYAGER UI] Setting voyagerData state:', { name: voyagerState.name, followers: voyagerState.followerCount, posts: voyagerState.recentPosts?.length, experience: voyagerState.experience?.length, education: voyagerState.education?.length, invitations: voyagerState.invitationsData, lastSync: voyagerState.voyagerLastSyncAt });
                 setVoyagerData(voyagerState);
             } else {
                 console.warn('[VOYAGER UI] No data returned from API:', data);
-                if (!data.success) {
-                    showToast(data.error || 'Failed to load profile data', 'error');
-                }
             }
-        } catch (e: any) { 
-            console.error('[VOYAGER UI] Failed to load data:', e); 
-            showToast('Error loading profile: ' + (e.message || 'Unknown error'), 'error');
-        } finally { 
-            setVoyagerLoading(false); 
-        }
+        } catch (e) { console.warn('[VOYAGER UI] Failed to load data:', e); } finally { setVoyagerLoading(false); }
     };
 
     const deleteLinkedInProfile = async () => {
@@ -1751,9 +1276,11 @@ function DashboardContent() {
 
                 // Track polling state with a flag to avoid stale closure issues
                 let isPollingActive = true;
-                
+                let pollIntervalId: ReturnType<typeof setInterval> | null = null;
+                let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
                 // Poll for completion to update UI automatically
-                cleanupRefs.current.scanProfileInterval = setInterval(async () => {
+                pollIntervalId = setInterval(async () => {
                     try {
                         const statusRes = await fetch('/api/extension/command/all', {
                             headers: { 'Authorization': `Bearer ${token}` }
@@ -1766,20 +1293,16 @@ function DashboardContent() {
                         if (cmd && isPollingActive) {
                             if (cmd.status === 'completed') {
                                 isPollingActive = false;
-                                if (cleanupRefs.current.scanProfileInterval) clearInterval(cleanupRefs.current.scanProfileInterval);
-                                if (cleanupRefs.current.scanProfileTimeout) clearTimeout(cleanupRefs.current.scanProfileTimeout);
-                                cleanupRefs.current.scanProfileInterval = null;
-                                cleanupRefs.current.scanProfileTimeout = null;
+                                if (pollIntervalId) clearInterval(pollIntervalId);
+                                if (timeoutId) clearTimeout(timeoutId);
                                 setLinkedInProfileScanning(false);
                                 setLinkedInProfileStatus('Scan completed successfully!');
                                 showToast('Profile scan complete! Data loaded.', 'success');
                                 loadLinkedInProfile(); // Auto-load the new data
                             } else if (cmd.status === 'failed' || cmd.status === 'cancelled') {
                                 isPollingActive = false;
-                                if (cleanupRefs.current.scanProfileInterval) clearInterval(cleanupRefs.current.scanProfileInterval);
-                                if (cleanupRefs.current.scanProfileTimeout) clearTimeout(cleanupRefs.current.scanProfileTimeout);
-                                cleanupRefs.current.scanProfileInterval = null;
-                                cleanupRefs.current.scanProfileTimeout = null;
+                                if (pollIntervalId) clearInterval(pollIntervalId);
+                                if (timeoutId) clearTimeout(timeoutId);
                                 setLinkedInProfileScanning(false);
                                 setLinkedInProfileStatus(`Scan ${cmd.status}`);
                                 showToast(`Profile scan ${cmd.status}`, 'error');
@@ -1791,12 +1314,10 @@ function DashboardContent() {
                 }, 2000);
 
                 // Timeout polling after 2 minutes
-                cleanupRefs.current.scanProfileTimeout = setTimeout(() => {
-                    if (isPollingActive && cleanupRefs.current.scanProfileInterval) {
+                timeoutId = setTimeout(() => {
+                    if (isPollingActive && pollIntervalId) {
                         isPollingActive = false;
-                        clearInterval(cleanupRefs.current.scanProfileInterval);
-                        cleanupRefs.current.scanProfileInterval = null;
-                        cleanupRefs.current.scanProfileTimeout = null;
+                        clearInterval(pollIntervalId);
                         setLinkedInProfileScanning(false);
                         setLinkedInProfileStatus('Scan timed out waiting for response.');
                         loadLinkedInProfile(); // Try loading anyway
@@ -1868,14 +1389,29 @@ function DashboardContent() {
         setPlannerStartDate(`${tomorrow.getFullYear()}-${mm}-${dd}`);
         plannerAbortRef.current = false;
         // Check localStorage for incomplete session
+        const key = `planner_${user?.id}_${mode}`;
+        try {
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                const s = JSON.parse(saved);
+                if (s.step === 'generating' && s.doneCount < s.total) {
+                    setPlannerTopics(s.topics || []);
+                    setPlannerSelected(s.selected || []);
+                    setPlannerPublishTime(s.publishTime || '09:00');
+                    setPlannerStartDate(s.startDate || `${tomorrow.getFullYear()}-${mm}-${dd}`);
+                    setPlannerTemplate(s.template || 'thought_leadership');
+                    setPlannerTone(s.tone || 'professional');
+                    setPlannerLength(s.length || '1500');
+                    setPlannerDoneCount(s.doneCount || 0);
+                    setPlannerTotal(s.total || 0);
+                    setPlannerStep('generating');
+                    setPlannerOpen(true);
+                    return;
                 }
-            }),
-        });
-        const data = await res.json();
-        if (data.success && data.topics) {
-            setLinkedInTopicSuggestions(data.topics);
-        } else {
-            showToast(data.error || 'Failed to generate topics', 'error');
+            }
+        } catch { }
+        setPlannerOpen(true);
+    };
 
     const generatePlannerTopics = async () => {
         const token = localStorage.getItem('authToken');
@@ -1907,6 +1443,10 @@ function DashboardContent() {
             }
         } catch (e: any) {
             setPlannerStatusMsg('Error: ' + e.message);
+        } finally {
+            setPlannerGeneratingTopics(false);
+        }
+    };
 
     const startPlannerGeneration = async () => {
         const token = localStorage.getItem('authToken');
@@ -1922,54 +1462,25 @@ function DashboardContent() {
         const key = `planner_${user?.id}_${plannerMode}`;
         const session = { step: 'generating', topics: plannerTopics, selected: plannerSelected, publishTime: plannerPublishTime, startDate: plannerStartDate, template: plannerTemplate, tone: plannerTone, length: plannerLength, doneCount: 0, total: topics.length };
         try { localStorage.setItem(key, JSON.stringify(session)); } catch { }
-        
-        let wasAborted = false;
         for (let i = 0; i < topics.length; i++) {
-            // Check abort ref before each iteration
-            if (plannerAbortRef.current) {
-                wasAborted = true;
-                setPlannerStatusMsg('Generation cancelled by user');
-                break;
-            }
-            
+            if (plannerAbortRef.current) break;
             const topic = topics[i];
             const scheduledDate = new Date(plannerStartDate + 'T' + plannerPublishTime + ':00');
             scheduledDate.setDate(scheduledDate.getDate() + i);
             setPlannerStatusMsg(`Generating post ${i + 1} of ${topics.length}: "${topic.substring(0, 60)}..."`);
-            
             try {
                 const genRes = await fetch('/api/ai/generate-post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ topic, template: plannerTemplate, tone: plannerTone, length: plannerLength, includeHashtags: writerHashtags, includeEmojis: writerEmojis, userBackground: linkedInProfile?.headline || '', useInspirationSources: writerUseInspirationSources, model: writerModel }),
                 });
-                
-                // Check abort ref after async operation
-                if (plannerAbortRef.current) {
-                    wasAborted = true;
-                    setPlannerStatusMsg('Generation cancelled by user');
-                    break;
-                }
-                
                 const genData = await genRes.json();
-                if (!genData.success) { 
-                    setPlannerStatusMsg(`Post ${i + 1} failed: ${genData.error}`); 
-                    continue; 
-                }
-                
+                if (!genData.success) { setPlannerStatusMsg(`Post ${i + 1} failed: ${genData.error}`); continue; }
                 const schedRes = await fetch('/api/post-drafts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ content: genData.content, topic, template: plannerTemplate, tone: plannerTone, scheduledFor: scheduledDate.toISOString() }),
                 });
-                
-                // Check abort ref after second async operation
-                if (plannerAbortRef.current) {
-                    wasAborted = true;
-                    setPlannerStatusMsg('Generation cancelled by user');
-                    break;
-                }
-                
                 const schedData = await schedRes.json();
                 if (schedData.success) {
                     const newCount = i + 1;
@@ -1980,29 +1491,472 @@ function DashboardContent() {
             } catch (e: any) {
                 setPlannerStatusMsg(`Error on post ${i + 1}: ${e.message}`);
             }
-            
-            // Check abort ref before delay
-            if (plannerAbortRef.current) {
-                wasAborted = true;
-                setPlannerStatusMsg('Generation cancelled by user');
-                break;
-            }
-            
             await new Promise(r => setTimeout(r, 400));
         }
-        
         setPlannerGenerating(false);
-        
-        // Reset abort ref after generation completes
-        plannerAbortRef.current = false;
-        
-        if (wasAborted) {
-            setPlannerStep('select');
-            setPlannerStatusMsg('');
-        } else {
-            setPlannerStep('done');
-            setPlannerStatusMsg('');
-            try { localStorage.removeItem(key); } catch { }
+        setPlannerStep('done');
+        setPlannerStatusMsg('');
+        try { localStorage.removeItem(key); } catch { }
+        loadScheduledPosts();
+    };
+
+    const toggleLinkedInProfileData = async (enabled: boolean) => {
+        setLinkedInUseProfileData(enabled);
+        const token = localStorage.getItem('authToken');
+        if (!token || !linkedInProfile) return;
+        try {
+            await fetch('/api/linkedin-profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ isSelected: enabled }),
+            });
+        } catch { }
+    };
+
+    // Automation settings functions
+    const loadAutoSettings = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setAutoSettingsLoading(true);
+        try {
+            const res = await fetch('/api/automation-settings', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setAutoSettings(data.settings);
+        } catch { } finally { setAutoSettingsLoading(false); }
+    };
+    const saveAutoSettings = async (updates: any) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setAutoSettingsSaving(true);
+        try {
+            const res = await fetch('/api/automation-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(updates) });
+            const data = await res.json();
+            if (data.success) { setAutoSettings(data.settings); showToast('Settings saved!', 'success'); }
+            else showToast('Failed to save', 'error');
+        } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+        finally { setAutoSettingsSaving(false); }
+    };
+
+    // Live activity log functions
+    const loadLiveActivity = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setLiveActivityLoading(true);
+        try {
+            const res = await fetch('/api/live-activity?limit=100', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setLiveActivityLogs(data.logs || []);
+        } catch { } finally { setLiveActivityLoading(false); }
+    };
+
+    // Commenter config functions
+    const loadCommenterCfg = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setCommenterCfgLoading(true);
+        try {
+            const res = await fetch('/api/commenter-config', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setCommenterCfg(data.config);
+        } catch { } finally { setCommenterCfgLoading(false); }
+    };
+    const saveCommenterCfg = async (updates: any) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setCommenterCfgSaving(true);
+        try {
+            const res = await fetch('/api/commenter-config', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(updates) });
+            const data = await res.json();
+            if (data.success) { setCommenterCfg(data.config); showToast('Commenter settings saved!', 'success'); }
+            else showToast('Failed to save', 'error');
+        } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+        finally { setCommenterCfgSaving(false); }
+    };
+
+    // Import config functions
+    const loadImportCfg = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setImportCfgLoading(true);
+        try {
+            const res = await fetch('/api/import-config', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) setImportCfg(data.config);
+        } catch { } finally { setImportCfgLoading(false); }
+    };
+    const saveImportCfg = async (updates: any) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setImportCfgSaving(true);
+        try {
+            const res = await fetch('/api/import-config', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(updates) });
+            const data = await res.json();
+            if (data.success) { setImportCfg(data.config); showToast('Import settings saved!', 'success'); }
+            else showToast('Failed to save', 'error');
+        } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+        finally { setImportCfgSaving(false); }
+    };
+
+    // Tasks functions
+    const addTaskNotification = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+        const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+        setTaskNotifications(prev => [...prev.slice(-4), { id, message, type, time: Date.now() }]);
+        setTimeout(() => setTaskNotifications(prev => prev.filter(n => n.id !== id)), 5000);
+    };
+
+    const loadTasks = async (silent = false) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        if (!silent) setTasksLoading(true);
+        try {
+            const res = await fetch('/api/extension/command/all', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) {
+                const newTasks = data.commands || [];
+                // Detect changes for notifications - use refs to avoid duplicates
+                if (prevTasksRef.current.length > 0) {
+                    for (const nt of newTasks) {
+                        const notifKey = `${nt.id}_${nt.status}`;
+                        if (notifiedTaskIds.current.has(notifKey)) continue;
+                        const prev = prevTasksRef.current.find((t: any) => t.id === nt.id);
+                        const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Scrape Feed' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command;
+                        if (!prev) {
+                            notifiedTaskIds.current.add(notifKey);
+                            addTaskNotification(`New task: ${cmdName}`, 'info');
+                        } else if (prev.status !== nt.status) {
+                            notifiedTaskIds.current.add(notifKey);
+                            if (nt.status === 'completed' || nt.status === 'completed_manual') addTaskNotification(`Completed: ${cmdName}`, 'success');
+                            else if (nt.status === 'failed' || nt.status === 'cancelled') addTaskNotification(`Failed: ${cmdName}`, 'error');
+                            else if (nt.status === 'in_progress') addTaskNotification(`Processing: ${cmdName}`, 'info');
+                        }
+                    }
+                }
+                prevTasksRef.current = newTasks;
+                setTasks(newTasks);
+
+                // Connectivity is handled by heartbeat polling (see checkExtensionConnectivity)
+            }
+        } catch { } finally { if (!silent) setTasksLoading(false); }
+    };
+
+    const loadReferralData = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/referrals', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success) {
+                setReferralData(data);
+            }
+        } catch { }
+    };
+
+    const loadAccountSettings = async () => {
+        // Account settings are loaded in the main auth useEffect
+    };
+
+    // Check extension connectivity via heartbeat endpoint and recent activity
+    const checkExtensionConnectivity = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/extension/heartbeat', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+
+            const isConnected = !!data.connected;
+            setExtensionConnected(isConnected);
+
+            // Always update last seen from server data if available
+            if (data.lastSeen) {
+                setExtensionLastSeen(new Date(data.lastSeen));
+            } else if (isConnected) {
+                setExtensionLastSeen(new Date());
+            }
+        } catch { }
+    };
+
+    // Poll tasks every 15 seconds for live notifications - empty deps so interval is created once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        checkExtensionConnectivity();
+        const taskInterval = setInterval(() => loadTasks(true), 15000);
+        const heartbeatInterval = setInterval(() => checkExtensionConnectivity(), 15000); // Check every 15 seconds
+        return () => { clearInterval(taskInterval); clearInterval(heartbeatInterval); };
+    }, []);
+
+    // Load LinkedIn OAuth status on mount
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (!token) { setLinkedInOAuthLoading(false); return; }
+        fetch('/api/auth/linkedin', { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(r => r.json())
+            .then(d => { if (d.success) setLinkedInOAuth(d); })
+            .catch(() => { })
+            .finally(() => setLinkedInOAuthLoading(false));
+    }, []);
+
+    // Load saved writer content from localStorage on mount
+    useEffect(() => {
+        const savedContent = localStorage.getItem('savedWriterContent');
+        const savedTopic = localStorage.getItem('savedWriterTopic');
+        if (savedContent) setWriterContent(savedContent);
+        if (savedTopic) setWriterTopic(savedTopic);
+    }, []);
+
+    // Auto-fill expertise and background from LinkedIn profile data for both Writer and Comments tabs
+    useEffect(() => {
+        if (!linkedInProfile) return;
+
+        // Auto-fill writer background if empty
+        if (!writerBackground && linkedInProfile.headline) {
+            setWriterBackground(linkedInProfile.headline);
+        }
+
+        // Auto-fill comment settings expertise and background if empty
+        if (!csExpertise && linkedInProfile.headline) {
+            const expertise = linkedInProfile.headline.split('|')[0]?.trim() || linkedInProfile.headline.substring(0, 50);
+            setCsExpertise(expertise);
+        }
+        if (!csBackground && linkedInProfile.about) {
+            const background = linkedInProfile.about.substring(0, 100);
+            setCsBackground(background);
+        }
+    }, [linkedInProfile]);
+
+    // Load tab-specific data on initial mount when auth completes (fixes ?tab=import reload)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (loading || !user) return;
+        const tab = activeTab;
+        if (tab === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
+        if (tab === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); loadLinkedInProfile(); fetchAIModels(); }
+        if (tab === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
+        if (tab === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
+        if (tab === 'tasks') loadTasks();
+        if (tab === 'history') loadHistory();
+        if (tab === 'analytics') loadAnalytics();
+        if (tab === 'limits') { loadAutoSettings(); loadLiveActivity(); }
+        if (tab === 'activity') loadLiveActivity();
+        if (tab === 'import') loadImportCfg();
+        if (tab === 'referrals') loadReferralData();
+        if (tab === 'account') loadAccountSettings();
+    }, [loading, user, activeTab]);
+
+    // Feed scrape polling - poll command status every 3 seconds while scraping
+    const startFeedScrapePolling = (commandId: string) => {
+        setFeedScrapeCommandId(commandId);
+        setFeedScrapePolling(true);
+        setFeedScrapeStatus({ status: 'pending', data: { message: 'Waiting for extension to pick up task...' } });
+        if (feedScrapeIntervalRef.current) clearInterval(feedScrapeIntervalRef.current);
+        feedScrapeIntervalRef.current = setInterval(async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/extension/command/all', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (data.success && data.commands) {
+                    const cmd = data.commands.find((c: any) => c.id === commandId);
+                    if (cmd) {
+                        setFeedScrapeStatus(cmd);
+                        if (cmd.status === 'completed' || cmd.status === 'failed' || cmd.status === 'cancelled') {
+                            clearInterval(feedScrapeIntervalRef.current);
+                            feedScrapeIntervalRef.current = null;
+                            setFeedScrapePolling(false);
+                            if (cmd.status === 'completed') {
+                                showToast(`Feed scrape complete! ${cmd.data?.postsFound || 0} posts saved.`, 'success');
+                                loadSavedPosts();
+                            } else if (cmd.status === 'failed') {
+                                showToast(cmd.data?.message || 'Feed scrape failed', 'error');
+                            }
+                        }
+                    }
+                }
+            } catch { }
+        }, 3000);
+    };
+    const stopFeedScrape = async () => {
+        if (!feedScrapeCommandId) return;
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/extension/command', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: feedScrapeCommandId, status: 'cancelled' }) });
+            if (feedScrapeIntervalRef.current) { clearInterval(feedScrapeIntervalRef.current); feedScrapeIntervalRef.current = null; }
+            setFeedScrapePolling(false);
+            setFeedScrapeStatus(null);
+            setFeedScrapeCommandId(null);
+            showToast('Feed scrape stopped', 'info');
+        } catch { }
+    };
+    useEffect(() => {
+        return () => {
+            if (feedScrapeIntervalRef.current) clearInterval(feedScrapeIntervalRef.current);
+            if (commentScrapeIntervalRef.current) clearInterval(commentScrapeIntervalRef.current);
+        };
+    }, []);
+
+    const stopAllTasks = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            // Tell extension to stop
+            window.dispatchEvent(new CustomEvent('kommentify-stop-all-tasks'));
+            // Cancel on server
+            await fetch('/api/extension/command/stop-all', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
+            // Reload tasks
+            setTimeout(() => loadTasks(), 1000);
+        } catch { }
+    };
+
+    // Trending AI generation
+    const generateTrendingPosts = async () => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        const selected = savedPosts.filter(p => trendingSelectedPosts.includes(p.id));
+        if (selected.length === 0) { setTrendingStatus('Please select at least 1 trending post'); return; }
+        if (selected.length > 10) { setTrendingStatus('Maximum 10 posts allowed'); return; }
+        setTrendingGenerating(true);
+        setTrendingStatus('Analyzing voice patterns and generating posts...');
+        setTrendingShowGenPreview(false);
+        setTrendingTokenUsage(null);
+        try {
+            const res = await fetch('/api/ai/generate-trending', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    trendingPosts: selected,
+                    customPrompt: trendingCustomPrompt,
+                    includeHashtags: trendingIncludeHashtags,
+                    language: trendingLanguage,
+                    model: trendingModel,
+                    useProfileData: trendingUseProfileData,
+                    profileData: trendingUseProfileData ? linkedInProfile : null
+                }),
+            });
+            const data = await res.json();
+            if (data.success && data.posts) {
+                setTrendingGeneratedPosts(data.posts);
+                setTrendingShowGenPreview(true);
+                setTrendingStatus(`Generated ${data.posts.length} viral posts using ${data.model || trendingModel}!`);
+                setGeneratedPostImages({});
+                // Capture token usage for developers
+                if (data.tokenUsage) {
+                    setTrendingTokenUsage(data.tokenUsage);
+                }
+                // Save to history
+                await saveToHistory('ai_generated', `AI Generated ${data.posts.length} Posts`, data.posts, { customPrompt: trendingCustomPrompt, selectedCount: selected.length, model: data.model });
+            } else setTrendingStatus(data.error || 'Generation failed');
+        } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
+        finally { setTrendingGenerating(false); }
+    };
+
+    // Analysis function
+    const analyzePosts = async () => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        if (trendingGeneratedPosts.length === 0) { setTrendingStatus('Generate posts first before analyzing'); return; }
+        const selected = savedPosts.filter(p => trendingSelectedPosts.includes(p.id));
+        if (selected.length === 0) { setTrendingStatus('Select some trending posts first'); return; }
+        setAnalysisLoading(true);
+        setShowAnalysis(false);
+        setTrendingStatus('Analyzing posts for viral potential...');
+        try {
+            // Mix AI posts with trending posts - AI posts go at the end
+            const allPosts = [
+                ...selected.map(p => ({ content: p.postContent, source: 'trending' })),
+                ...trendingGeneratedPosts.map(p => ({ content: p.content, source: 'ai' })),
+            ];
+            const aiPostIndices = allPosts.map((p, i) => p.source === 'ai' ? i : -1).filter(i => i >= 0);
+
+            const res = await fetch('/api/ai/analyze-posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ allPosts, aiPostIndices }),
+            });
+            const data = await res.json();
+            if (data.success && data.analysis) {
+                setAnalysisResults(data.analysis);
+                setShowAnalysis(true);
+                setTrendingStatus('Analysis complete!');
+                // Save to history
+                await saveToHistory('viral_analysis', 'Viral Potential Analysis', data.analysis, { postCount: allPosts.length, aiPostCount: aiPostIndices.length });
+            } else setTrendingStatus(data.error || 'Analysis failed');
+        } catch (e: any) { setTrendingStatus('Error: ' + e.message); }
+        finally { setAnalysisLoading(false); }
+    };
+
+    // Toast notification helper
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
+
+    // Analytics functions
+    const loadAnalytics = async (periodOverride?: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setAnalyticsLoading(true);
+        try {
+            const period = periodOverride || analyticsPeriod;
+            const res = await fetch(`/api/analytics?period=${period}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAnalyticsData(data);
+            }
+        } catch (e) { console.error('Failed to load analytics:', e); }
+        finally { setAnalyticsLoading(false); }
+    };
+
+    // History functions
+    const loadHistory = async (page = 1, filterOverride?: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setHistoryLoading(true);
+        try {
+            const activeFilter = filterOverride !== undefined ? filterOverride : historyFilter;
+            const typeParam = activeFilter === 'all' ? '' : activeFilter;
+            const res = await fetch(`/api/history?page=${page}&limit=20${typeParam ? `&type=${typeParam}` : ''}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (data.success) {
+                setHistoryItems(data.items || []);
+                setHistoryTotal(data.total || 0);
+                setHistoryPage(page);
+            }
+        } catch { } finally { setHistoryLoading(false); }
+    };
+
+    const saveToHistory = async (type: string, title: string, content: any, metadata?: any) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type, title, content: JSON.stringify(content), metadata: metadata ? JSON.stringify(metadata) : null }),
+            });
+        } catch { }
+    };
+
+    const deleteHistoryItem = async (id: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch(`/api/history?id=${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            loadHistory(historyPage);
+        } catch { }
+    };
+
+    const postGeneratedToLinkedIn = async (content: string, imageDataUrl?: string, postIndex?: number) => {
+        const token = localStorage.getItem('authToken');
+        if (!token || !content.trim()) return;
         if (postIndex !== undefined) setPostingToLinkedIn(prev => ({ ...prev, [postIndex]: true }));
         showToast('Sending post to extension...', 'info');
         try {
@@ -2061,8 +2015,8 @@ function DashboardContent() {
         setActiveTab(tabId);
         // Update URL without full navigation so reload preserves tab
         window.history.replaceState(null, '', `/dashboard?tab=${tabId}`);
-        if (tabId === 'overview') { loadVoyagerData(); loadUserGoals(); }
-        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadVoyagerData(); loadUserGoals(); loadScheduledPosts(); fetchAIModels(); }
+        if (tabId === 'overview') { loadVoyagerData(); }
+        if (tabId === 'writer') { loadDrafts(); loadInspirationSources(); loadSharedInspProfiles(); loadLinkedInProfile(); loadScheduledPosts(); fetchAIModels(); }
         if (tabId === 'comments') { loadCommentSettings(); loadCommentStyleProfiles(); loadSharedCommentProfiles(); loadLinkedInProfile(); fetchAIModels(); }
         if (tabId === 'commenter') { loadCommenterCfg(); loadCommentSettings(); }
         if (tabId === 'trending-posts') { loadSavedPosts(); loadSharedPosts(); loadFeedSchedule(); }
@@ -2137,7 +2091,7 @@ function DashboardContent() {
         // Comments section
         { id: 'commenter', label: t('nav.autoCommenter'), icon: svgIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'), section: 'comments' },
         { id: 'comments', label: t('nav.commentsSettings'), icon: svgIcon('M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z'), section: 'comments' },
-        { id: 'import', label: t('nav.leadWarmer'), icon: svgIcon('M13 2L3 14h9l-1 8 10-12h-9l1-8z'), section: 'outreach' },
+        { id: 'import', label: t('nav.importProfiles'), icon: svgIcon('M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M8.5 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M20 8v6 M23 11h-6'), section: 'comments' },
         // Other
         { id: 'limits', label: t('nav.limitsDelays'), icon: svgIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'), section: 'management' },
         { id: 'tasks', label: t('nav.tasks'), icon: svgIcon('M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'), section: 'management' },
@@ -2159,7 +2113,7 @@ function DashboardContent() {
 
 
     // ---- Tab Props: pass all state and functions to tab components ----
-    const tabProps: TabProps = {
+    const tabProps = {
         // Core
         t, user, usage, router, miniIcon, showToast, setActiveTab, isFreePlan, showUpgradeModal, setShowUpgradeModal, dashLang, isDeveloper,
         // Writer
@@ -2168,17 +2122,14 @@ function DashboardContent() {
         writerLanguage, setWriterLanguage, writerAdvancedOpen, setWriterAdvancedOpen,
         writerTargetAudience, setWriterTargetAudience, writerKeyMessage, setWriterKeyMessage,
         writerBackground, setWriterBackground, writerContent, setWriterContent,
-        writerGenerating, setWriterGenerating, writerScheduleDate, setWriterScheduleDate, writerScheduleTime, setWriterScheduleTime,
+        writerGenerating, writerScheduleDate, setWriterScheduleDate, writerScheduleTime, setWriterScheduleTime,
         writerDrafts, writerScheduledPosts, writerTokenUsage, writerImageFile, setWriterImageFile,
         writerImageUrl, setWriterImageUrl, writerMediaBlobUrl, setWriterMediaBlobUrl,
         writerMediaType, setWriterMediaType, writerUploading, setWriterUploading,
         writerPreviewMode, setWriterPreviewMode, writerPreviewExpanded, setWriterPreviewExpanded,
-        writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, setWriterStatus, writerModel,
+        writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, writerModel,
         writerUseInspirationSources, setWriterUseInspirationSources, writerInspirationSourceNames,
         writerPosting, MODEL_OPTIONS, handleWriterModelChange,
-        userGoal, setUserGoal, userTargetAudience, setUserTargetAudience,
-        userWritingStyle, setUserWritingStyle, userWritingStyleSource, setUserWritingStyleSource,
-        goalsLoading, goalsSuggesting, loadUserGoals, saveUserGoals, suggestGoals,
         generatePost, saveDraft, loadDrafts, loadScheduledPosts, sendToExtension, schedulePost, deleteDraft,
         // Saved posts
         savedPosts, savedPostsLoading, savedPostsPage, setSavedPostsPage, savedPostsTotal,
@@ -2275,7 +2226,6 @@ function DashboardContent() {
         SUPPORTED_LANGUAGES, setLiveActivityLogs, setLiveActivityLoading,
         setCommenterCfg, setCommentStyleComments, setImportCfg, setAutoSettings,
         setTrendingStatus, setFeedScrapeStatus, setFeedScrapeCommandId, setTrendingGeneratedPosts, setPlannerGenerating,
-        handleTabChange, cleanLinkedInProfileUrls,
     };
     return (
         <div data-theme={theme} style={{
@@ -2706,16 +2656,6 @@ function DashboardContent() {
                         </button>
                     ))}
 
-                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.outreach')}</div>}
-                    {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
-                    {navItems.filter(i => i.section === 'outreach').map(item => (
-                        <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
-                            {!sidebarCollapsed && item.label}
-                        </button>
-                    ))}
-
                     {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.management')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'management').map(item => (
@@ -2989,34 +2929,34 @@ function DashboardContent() {
                                     <>{miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#0ea5e9', 11)} Connect LinkedIn</>
                                 )}
                             </button>
-                            {/* Profile Sync Button */}
+                            {/* Profile Scan Button */}
                             {extensionConnected && (
                                 <button
-                                    onClick={voyagerData ? () => setShowLinkedInDataModal(true) : () => loadVoyagerData()}
-                                    disabled={voyagerLoading}
+                                    onClick={linkedInProfile ? () => setShowLinkedInDataModal(true) : () => scanLinkedInProfile()}
+                                    disabled={linkedInProfileScanning}
                                     style={{
                                         padding: '4px 10px',
-                                        background: voyagerData ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)',
-                                        border: voyagerData ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(0,119,181,0.4)',
+                                        background: linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
+                                        border: linkedInProfile ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(245,158,11,0.4)',
                                         borderRadius: '6px',
-                                        color: voyagerData ? '#34d399' : '#38bdf8',
+                                        color: linkedInProfile ? '#34d399' : '#fbbf24',
                                         fontSize: '10px',
                                         fontWeight: '600',
-                                        cursor: voyagerLoading ? 'wait' : 'pointer',
+                                        cursor: linkedInProfileScanning ? 'wait' : 'pointer',
                                         transition: 'all 0.2s',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '4px'
                                     }}
-                                    onMouseOver={e => { e.currentTarget.style.background = voyagerData ? 'rgba(16,185,129,0.25)' : 'rgba(0,119,181,0.25)'; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = voyagerData ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)'; }}
+                                    onMouseOver={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'; }}
                                 >
-                                    {voyagerLoading ? (
-                                        <>Syncing...</>
-                                    ) : voyagerData ? (
+                                    {linkedInProfileScanning ? (
+                                        <>Scanning...</>
+                                    ) : linkedInProfile ? (
                                         <>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#34d399', 11)} View Data</>
                                     ) : (
-                                        <>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#38bdf8', 11)} Sync Profile</>
+                                        <>{miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#fbbf24', 11)} Scan Profile</>
                                     )}
                                 </button>
                             )}
@@ -3050,188 +2990,6 @@ function DashboardContent() {
                 {activeTab === 'extension' && <ExtensionTab {...tabProps} />}
                 {activeTab === 'account' && <AccountTab {...tabProps} />}
             </div>
-
-            {/* Voyager LinkedIn Data Modal — renders on any tab */}
-            {showLinkedInDataModal && voyagerData && (() => {
-                try {
-                    // Safely parse arrays that might be JSON strings
-                    const safeArr = (v: any): any[] => {
-                        if (Array.isArray(v)) return v;
-                        if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } }
-                        return [];
-                    };
-                    const safeStr = (v: any): string => {
-                        if (typeof v === 'string') return v;
-                        if (v == null) return '';
-                        try { return JSON.stringify(v); } catch { return String(v); }
-                    };
-                    const expArr = safeArr(voyagerData.experience);
-                    const eduArr = safeArr(voyagerData.education);
-                    const postsArr = safeArr(voyagerData.recentPosts);
-                    const fCount = Number(voyagerData.followerCount) || 0;
-                    const cCount = Number(voyagerData.connectionCount) || 0;
-                    const nameStr = safeStr(voyagerData.name) || 'LinkedIn Profile';
-                    const headlineStr = safeStr(voyagerData.headline);
-                    const locationStr = safeStr(voyagerData.location);
-                    const aboutStr = safeStr(voyagerData.about);
-                    const urnStr = safeStr(voyagerData.linkedInUrn);
-                    const picUrl = typeof voyagerData.profilePicture === 'string' ? voyagerData.profilePicture : '';
-
-                    return (
-                        <div style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000
-                        }} onClick={() => setShowLinkedInDataModal(false)}>
-                            <div onClick={(e: any) => e.stopPropagation()} style={{
-                                background: '#13132b', borderRadius: '16px', border: '1px solid rgba(0,119,181,0.3)',
-                                padding: '24px', maxWidth: '700px', maxHeight: '85vh', overflow: 'auto', color: 'white', width: '90%'
-                            }}>
-                                {/* Header — using div avatar only, no img tag */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: picUrl ? `url(${picUrl}) center/cover no-repeat` : 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '22px', border: '3px solid rgba(0,119,181,0.4)', flexShrink: 0 }}>{picUrl ? '' : (nameStr[0] || 'U').toUpperCase()}</div>
-                                        <div>
-                                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>{nameStr}</h3>
-                                            {headlineStr && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginTop: '2px' }}>{headlineStr}</div>}
-                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '4px', display: 'flex', gap: '12px' }}>
-                                                {locationStr && <span>📍 {locationStr}</span>}
-                                                {fCount > 0 && <span>👥 {fCount.toLocaleString()} followers</span>}
-                                                {cCount > 0 && <span>🔗 {cCount.toLocaleString()} connections</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setShowLinkedInDataModal(false)}
-                                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', padding: '6px 12px', color: 'white', fontSize: '16px', cursor: 'pointer' }}>✕</button>
-                                </div>
-
-                                {/* Voyager badge */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '8px 12px', background: 'rgba(0,119,181,0.1)', borderRadius: '8px', border: '1px solid rgba(0,119,181,0.2)', flexWrap: 'wrap' }}>
-                                    <span style={{ color: '#00a0dc', fontSize: '11px', fontWeight: '600' }}>⚡ Voyager API Data</span>
-                                    {voyagerData.voyagerLastSyncAt && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>Last synced: {new Date(voyagerData.voyagerLastSyncAt).toLocaleString()}</span>}
-                                    {urnStr && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>URN: {urnStr}</span>}
-                                </div>
-
-                                <div style={{ display: 'grid', gap: '16px' }}>
-                                    {/* About */}
-                                    {aboutStr && (
-                                        <div>
-                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>About</strong>
-                                            <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.8)', fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{aboutStr}</p>
-                                        </div>
-                                    )}
-
-                                    {/* Experience */}
-                                    {expArr.length > 0 && (
-                                        <div>
-                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>Experience ({expArr.length})</strong>
-                                            <div style={{ maxHeight: '200px', overflow: 'auto', marginTop: '6px' }}>
-                                                {expArr.map((exp: any, idx: number) => (
-                                                    <div key={idx} style={{ padding: '8px 10px', margin: '4px 0', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
-                                                        {typeof exp === 'string' ? exp : (
-                                                            <div>
-                                                                <div style={{ fontWeight: '600', color: 'white' }}>{safeStr(exp?.title || exp?.role)}</div>
-                                                                {exp?.company && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{safeStr(exp.company)}</div>}
-                                                                {exp?.dateRange && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{safeStr(exp.dateRange)}</div>}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Education */}
-                                    {eduArr.length > 0 && (
-                                        <div>
-                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>Education ({eduArr.length})</strong>
-                                            <div style={{ maxHeight: '150px', overflow: 'auto', marginTop: '6px' }}>
-                                                {eduArr.map((edu: any, idx: number) => (
-                                                    <div key={idx} style={{ padding: '8px 10px', margin: '4px 0', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
-                                                        {typeof edu === 'string' ? edu : (
-                                                            <div>
-                                                                <div style={{ fontWeight: '600', color: 'white' }}>{safeStr(edu?.school || edu?.institution)}</div>
-                                                                {edu?.degree && <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{safeStr(edu.degree)}{edu.field ? ` · ${safeStr(edu.field)}` : ''}</div>}
-                                                                {edu?.dateRange && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{safeStr(edu.dateRange)}</div>}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Recent Posts */}
-                                    {postsArr.length > 0 && (
-                                        <div>
-                                            <strong style={{ color: '#0077b5', fontSize: '13px' }}>Recent Posts ({postsArr.length})</strong>
-                                            <div style={{ maxHeight: '300px', overflow: 'auto', marginTop: '6px' }}>
-                                                {postsArr.map((post: any, idx: number) => {
-                                                    const postText = safeStr(typeof post === 'string' ? post : (post?.text || post?.content || ''));
-                                                    const likes = typeof post === 'object' && post ? (Number(post.likes || post.numLikes) || 0) : 0;
-                                                    const cmts = typeof post === 'object' && post ? (Number(post.comments || post.numComments) || 0) : 0;
-                                                    return (
-                                                        <div key={idx} style={{ padding: '10px 12px', margin: '4px 0', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px' }}>
-                                                            <div style={{ color: 'rgba(255,255,255,0.8)', whiteSpace: 'pre-wrap', lineHeight: '1.5', maxHeight: '80px', overflow: 'hidden' }}>
-                                                                {postText.length > 300 ? postText.substring(0, 300) + '...' : postText}
-                                                            </div>
-                                                            {(likes > 0 || cmts > 0) && (
-                                                                <div style={{ display: 'flex', gap: '12px', marginTop: '6px', fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>
-                                                                    {likes > 0 && <span>👍 {likes}</span>}
-                                                                    {cmts > 0 && <span>💬 {cmts}</span>}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    );
-                } catch (modalErr: any) {
-                    console.error('[VOYAGER MODAL] Render error:', modalErr);
-                    return (
-                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }} onClick={() => setShowLinkedInDataModal(false)}>
-                            <div onClick={(e: any) => e.stopPropagation()} style={{ background: '#13132b', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.3)', padding: '24px', maxWidth: '500px', color: 'white', width: '90%' }}>
-                                <h3 style={{ margin: '0 0 12px', color: '#ef4444' }}>Error Loading Data</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>{String(modalErr?.message || modalErr)}</p>
-                                <pre style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', maxHeight: '200px', overflow: 'auto', margin: '12px 0 0' }}>{JSON.stringify(voyagerData, null, 2).substring(0, 2000)}</pre>
-                                <button onClick={() => setShowLinkedInDataModal(false)} style={{ marginTop: '12px', padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Close</button>
-                            </div>
-                        </div>
-                    );
-                }
-            })()}
         </div>
     );
-
-    // Cleanup all intervals and timeouts on component unmount
-    useEffect(() => {
-        return () => {
-            // Clear all intervals and timeouts
-            if (cleanupRefs.current.feedScrapeInterval) {
-                clearInterval(cleanupRefs.current.feedScrapeInterval);
-                cleanupRefs.current.feedScrapeInterval = null;
-            }
-            if (cleanupRefs.current.commentScrapeInterval) {
-                clearInterval(cleanupRefs.current.commentScrapeInterval);
-                cleanupRefs.current.commentScrapeInterval = null;
-            }
-            if (cleanupRefs.current.scanProfileInterval) {
-                clearInterval(cleanupRefs.current.scanProfileInterval);
-                cleanupRefs.current.scanProfileInterval = null;
-            }
-            if (cleanupRefs.current.scanProfileTimeout) {
-                clearTimeout(cleanupRefs.current.scanProfileTimeout);
-                cleanupRefs.current.scanProfileTimeout = null;
-            }
-            // Clear feedScrapeIntervalRef as well
-            if (feedScrapeIntervalRef.current) {
-                clearInterval(feedScrapeIntervalRef.current);
-                feedScrapeIntervalRef.current = null;
-            }
-        };
-    }, []);
 }

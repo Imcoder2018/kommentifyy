@@ -164,7 +164,7 @@ export default function ReferralsTab(props: any) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {referralData.referrals.map((ref) => (
+                                        {referralData.referrals.map((ref: any) => (
                                             <tr key={ref.id} style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                                                 <td style={{ padding: '16px', color: 'white', fontSize: '14px' }}>{ref.name || 'Anonymous'}</td>
                                                 <td style={{ padding: '16px', color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>{new Date(ref.joinedAt).toLocaleDateString()}</td>

@@ -261,7 +261,7 @@ export default function WriterTab(props: any) {
                             {linkedInTopicSuggestions.length > 0 && (
                                 <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Click to use an AI-generated idea based on your profile:</div>
-                                    {linkedInTopicSuggestions.map((topic, i) => (
+                                    {linkedInTopicSuggestions.map((topic: string, i: number) => (
                                         <div key={i} onClick={() => selectTopicSuggestion(topic)}
                                             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '10px 12px', color: '#cbd5e1', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '8px', transition: 'all 0.2s', lineHeight: '1.4' }}
                                             onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
@@ -322,9 +322,9 @@ export default function WriterTab(props: any) {
                             </div>
                             <div>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M4 4h16v16H4z M9 9h6v6H9z M9 2v2 M15 2v2 M9 20v2 M15 20v2 M2 9h2 M2 15h2 M20 9h2 M20 15h2', 'rgba(255,255,255,0.6)', 11)} AI Model</label>
-                                <select value={writerModel} onChange={e => handleWriterModelChange(e.target.value)}
+                                <select value={writerModel} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleWriterModelChange(e.target.value)}
                                     style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px' }}>
-                                    {MODEL_OPTIONS.map(m => (
+                                    {MODEL_OPTIONS.map((m: any) => (
                                         <option key={m.id} value={m.id}>{m.name}</option>
                                     ))}
                                 </select>
@@ -726,16 +726,16 @@ export default function WriterTab(props: any) {
                                         {plannerSelected.filter(Boolean).length} of {plannerTopics.length} selected (need {plannerMode === '7days' ? '7' : '30'})
                                     </span>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={() => setPlannerSelected(plannerTopics.map((_, i) => i < (plannerMode === '7days' ? 7 : 30)))}
+                                        <button onClick={() => setPlannerSelected(plannerTopics.map((_: any, i: number) => i < (plannerMode === '7days' ? 7 : 30)))}
                                             style={{ padding: '5px 12px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', fontSize: '11px', cursor: 'pointer' }}>Auto-select Top</button>
-                                        <button onClick={() => setPlannerSelected(plannerTopics.map(() => true))}
+                                        <button onClick={() => setPlannerSelected(plannerTopics.map((_: any) => true))}
                                             style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer' }}>All</button>
-                                        <button onClick={() => setPlannerSelected(plannerTopics.map(() => false))}
+                                        <button onClick={() => setPlannerSelected(plannerTopics.map((_: any) => false))}
                                             style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '11px', cursor: 'pointer' }}>None</button>
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
-                                    {plannerTopics.map((topic, i) => (
+                                    {plannerTopics.map((topic: string, i: number) => (
                                         <div key={i} onClick={() => { const s = [...plannerSelected]; s[i] = !s[i]; setPlannerSelected(s); }}
                                             style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 14px', background: plannerSelected[i] ? 'rgba(105,63,233,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${plannerSelected[i] ? 'rgba(105,63,233,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '10px', cursor: 'pointer' }}>
                                             <input type="checkbox" checked={!!plannerSelected[i]} readOnly style={{ accentColor: '#693fe9', marginTop: '2px', flexShrink: 0 }} />
@@ -841,7 +841,7 @@ export default function WriterTab(props: any) {
                                     Posts appear on your calendar below as they are generated. You can close this modal and watch the calendar update live.
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', gap: '6px', marginBottom: '20px' }}>
-                                    {plannerTopics.filter((_, i) => plannerSelected[i]).map((topic, i) => (
+                                    {plannerTopics.filter((_: string, i: number) => plannerSelected[i]).map((topic: string, i: number) => (
                                         <div key={i} style={{ padding: '6px', background: i < plannerDoneCount ? 'rgba(16,185,129,0.2)' : i === plannerDoneCount && plannerGenerating ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${i < plannerDoneCount ? 'rgba(16,185,129,0.4)' : i === plannerDoneCount && plannerGenerating ? 'rgba(105,63,233,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', textAlign: 'center' }}>
                                             <div style={{ fontSize: '10px', color: i < plannerDoneCount ? '#34d399' : i === plannerDoneCount && plannerGenerating ? '#a78bfa' : 'rgba(255,255,255,0.3)' }}>
                                                 {i < plannerDoneCount ? '✓' : i === plannerDoneCount && plannerGenerating ? '⟳' : '○'}

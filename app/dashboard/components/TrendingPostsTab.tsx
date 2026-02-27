@@ -175,11 +175,11 @@ export default function TrendingPostsTab(props: any) {
                             {/* Daily Schedule — compact inline */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', paddingTop: '8px', borderTop: '1px solid rgba(16,185,129,0.15)' }}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', textTransform: 'uppercase' as any }}>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', 'rgba(255,255,255,0.5)', 10)} Daily:</span>
-                                {scheduleTimesInput.map((time, i) => (
+                                {scheduleTimesInput.map((time: string, i: number) => (
                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.35)', borderRadius: '6px', padding: '2px 6px' }}>
                                         <input type="time" value={time} onChange={e => { const arr = [...scheduleTimesInput]; arr[i] = e.target.value; setScheduleTimesInput(arr); }}
                                             style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '11px', outline: 'none', width: '62px' }} />
-                                        <button onClick={() => setScheduleTimesInput(scheduleTimesInput.filter((_, idx) => idx !== i))}
+                                        <button onClick={() => setScheduleTimesInput(scheduleTimesInput.filter((item: string, idx: number) => idx !== i))}
                                             style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '12px', padding: '0 1px', lineHeight: 1 }}>×</button>
                                     </div>
                                 ))}
@@ -272,7 +272,7 @@ export default function TrendingPostsTab(props: any) {
                                     {sharedPosts.slice(0, 10).map((p: any, i: number) => {
                                         const sel = trendingSelectedPosts.includes(p.id);
                                         return (
-                                            <div key={p.id || i} onClick={() => { setTrendingSelectedPosts(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]); }}
+                                            <div key={p.id || i} onClick={() => { setTrendingSelectedPosts((prev: string[]) => prev.includes(p.id) ? prev.filter((x: string) => x !== p.id) : [...prev, p.id]); }}
                                                 style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: sel ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: '8px', border: sel ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
                                                 <input type="checkbox" checked={sel} readOnly style={{ accentColor: '#693fe9', width: '14px', height: '14px', marginTop: '1px', flexShrink: 0, cursor: 'pointer' }} />
                                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -289,7 +289,7 @@ export default function TrendingPostsTab(props: any) {
 
                         {/* Period Filters + Search — combined compact row */}
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            {[{ id: 'today', label: 'Today' }, { id: 'week', label: 'Week' }, { id: 'month', label: 'Month' }, { id: 'all', label: 'All' }].map(p => (
+                            {[{ id: 'today', label: 'Today' }, { id: 'week', label: 'Week' }, { id: 'month', label: 'Month' }, { id: 'all', label: 'All' }].map((p: any) => (
                                 <button key={p.id} onClick={() => { setTrendingPeriod(p.id); loadSavedPosts(1, p.id); }}
                                     style={{ padding: '6px 14px', background: trendingPeriod === p.id ? 'linear-gradient(135deg, #693fe9, #8b5cf6)' : 'rgba(255,255,255,0.06)', border: trendingPeriod === p.id ? 'none' : '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: 'white', fontWeight: trendingPeriod === p.id ? '700' : '500', cursor: 'pointer', fontSize: '12px' }}>
                                     {p.label}
@@ -319,7 +319,7 @@ export default function TrendingPostsTab(props: any) {
                                     {trendingSelectedPosts.length > 0 && <span style={{ marginLeft: '10px', color: '#a78bfa', fontWeight: '600' }}>{trendingSelectedPosts.length} selected <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>(max 10)</span></span>}
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                    <button onClick={() => { if (trendingSelectedPosts.length >= 10) setTrendingSelectedPosts([]); else setTrendingSelectedPosts(savedPosts.slice(0, 10).map(p => p.id)); }}
+                                    <button onClick={() => { if (trendingSelectedPosts.length >= 10) setTrendingSelectedPosts([]); else setTrendingSelectedPosts(savedPosts.slice(0, 10).map((p: any) => p.id)); }}
                                         style={{ padding: '6px 12px', background: trendingSelectedPosts.length >= 10 ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.06)', border: trendingSelectedPosts.length >= 10 ? '1px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: trendingSelectedPosts.length >= 10 ? '#a78bfa' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '11px' }}>
                                         {trendingSelectedPosts.length >= 10 ? 'Deselect All' : 'Select All'}
                                     </button>
@@ -362,7 +362,7 @@ export default function TrendingPostsTab(props: any) {
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M4 4h16v16H4z M9 9h6v6H9z M9 2v2 M15 2v2 M9 20v2 M15 20v2 M2 9h2 M2 15h2 M20 9h2 M20 15h2', 'rgba(255,255,255,0.5)', 11)} AI Model</label>
                                     <select value={trendingModel} onChange={e => setTrendingModel(e.target.value)}
                                         style={{ width: '100%', padding: '7px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '11px' }}>
-                                        {MODEL_OPTIONS.map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}
+                                        {MODEL_OPTIONS.map((m: any) => (<option key={m.id} value={m.id}>{m.name}</option>))}
                                     </select>
                                 </div>
                                 <div>
@@ -464,8 +464,8 @@ export default function TrendingPostsTab(props: any) {
                                                         {item.isAiGenerated && <span style={{ color: '#a78bfa', fontWeight: '700', fontSize: '11px', marginRight: '6px', background: 'rgba(105,63,233,0.3)', padding: '2px 8px', borderRadius: '10px' }}>AI</span>}
                                                         {(() => {
                                                             const idx = (item.postIndex || 1) - 1;
-                                                            const selected = savedPosts.filter(p => trendingSelectedPosts.includes(p.id));
-                                                            const allMixed = [...selected.map(p => p.postContent || ''), ...trendingGeneratedPosts.map(p => p.content || '')];
+                                                            const selected = savedPosts.filter((p: any) => trendingSelectedPosts.includes(p.id));
+                                                            const allMixed = [...selected.map((p: any) => p.postContent || ''), ...trendingGeneratedPosts.map((p: any) => p.content || '')];
                                                             return (allMixed[idx] || '').substring(0, 100) + '...';
                                                         })()}
                                                     </td>
@@ -494,7 +494,7 @@ export default function TrendingPostsTab(props: any) {
                                                             onChange={(e) => { if (e.target.files?.[0]) handleImageAttach(i, e.target.files[0]); }} />
                                                     </label>
                                                     {generatedPostImages[i] && (
-                                                        <button onClick={() => setGeneratedPostImages(prev => { const n = { ...prev }; delete n[i]; return n; })}
+                                                        <button onClick={() => setGeneratedPostImages((prev: any) => { const n = { ...prev }; delete n[i]; return n; })}
                                                             style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '12px', padding: '0 2px' }}>✕</button>
                                                     )}
                                                     <button onClick={() => postGeneratedToLinkedIn(gp.content, generatedPostImages[i], i)}
@@ -532,7 +532,7 @@ export default function TrendingPostsTab(props: any) {
                                     const isSelected = trendingSelectedPosts.includes(post.id);
                                     return (
                                         <div key={post.id} onClick={() => {
-                                            if (isSelected) setTrendingSelectedPosts(trendingSelectedPosts.filter(id => id !== post.id));
+                                            if (isSelected) setTrendingSelectedPosts(trendingSelectedPosts.filter((id: string) => id !== post.id));
                                             else if (trendingSelectedPosts.length < 10) setTrendingSelectedPosts([...trendingSelectedPosts, post.id]);
                                         }}
                                             style={{ background: isSelected ? 'rgba(105,63,233,0.12)' : 'rgba(255,255,255,0.04)', padding: '14px 16px', borderRadius: '12px', border: isSelected ? '2px solid rgba(105,63,233,0.4)' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>

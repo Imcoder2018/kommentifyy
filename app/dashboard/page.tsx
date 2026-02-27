@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, getLanguageDir } from '@/lib/i18n';
 import { cleanLinkedInProfileUrl, cleanLinkedInProfileUrls } from '@/lib/linkedin-url-cleaner';
 import OverviewTab from './components/OverviewTab';
-import WriterTab from './components/WriterTab';
+import WriterTabNew from './components/WriterTabNew';
 import CommentsTab from './components/CommentsTab';
 import TrendingPostsTab from './components/TrendingPostsTab';
 import TasksTab from './components/TasksTab';
@@ -122,6 +122,14 @@ function DashboardContent() {
     const [writerModel, setWriterModel] = useState<string>('gpt-4o');
     const [writerUseInspirationSources, setWriterUseInspirationSources] = useState(true);
     const [writerInspirationSourceNames, setWriterInspirationSourceNames] = useState<string[]>([]);
+
+    // User goals state (for WriterTabNew)
+    const [userGoal, setUserGoal] = useState('');
+    const [userTargetAudience, setUserTargetAudience] = useState('');
+    const [userWritingStyle, setUserWritingStyle] = useState('');
+    const [userWritingStyleSource, setUserWritingStyleSource] = useState('user_default');
+    const [goalsLoading, setGoalsLoading] = useState(false);
+    const [goalsSuggesting, setGoalsSuggesting] = useState(false);
 
     // Saved posts tab state
     const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -547,6 +555,70 @@ function DashboardContent() {
         navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    // User goals functions (for WriterTabNew)
+    const loadUserGoals = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        setGoalsLoading(true);
+        try {
+            const res = await fetch('/api/user-goals', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (data.success && data.goals) {
+                setUserGoal(data.goals.goal || '');
+                setUserTargetAudience(data.goals.targetAudience || '');
+                setUserWritingStyle(data.goals.writingStyle || '');
+                setUserWritingStyleSource(data.goals.writingStyleSource || 'user_default');
+            }
+        } catch { } finally { setGoalsLoading(false); }
+    };
+
+    const saveUserGoals = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/user-goals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ goal: userGoal, targetAudience: userTargetAudience, writingStyle: userWritingStyle, writingStyleSource: userWritingStyleSource }),
+            });
+            const data = await res.json();
+            if (data.success) showToast('Strategy saved!', 'success');
+            else showToast('Failed to save', 'error');
+        } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+    };
+
+    const suggestGoals = async () => {
+        if (isFreePlan) { setShowUpgradeModal(true); return; }
+        if (!voyagerData) { showToast('Please sync your LinkedIn profile first', 'error'); return; }
+        setGoalsSuggesting(true);
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/ai/suggest-goals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    profileData: {
+                        headline: voyagerData.headline,
+                        about: voyagerData.about,
+                        experience: voyagerData.experience,
+                        skills: voyagerData.skills,
+                    }
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.goal) setUserGoal(data.goal);
+                if (data.targetAudience) setUserTargetAudience(data.targetAudience);
+                if (data.writingStyle) setUserWritingStyle(data.writingStyle);
+                showToast('Strategy suggested! Review and save.', 'success');
+            } else {
+                showToast(data.error || 'Failed to suggest', 'error');
+            }
+        } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+        finally { setGoalsSuggesting(false); }
     };
 
     // Writer functions
@@ -2122,14 +2194,17 @@ function DashboardContent() {
         writerLanguage, setWriterLanguage, writerAdvancedOpen, setWriterAdvancedOpen,
         writerTargetAudience, setWriterTargetAudience, writerKeyMessage, setWriterKeyMessage,
         writerBackground, setWriterBackground, writerContent, setWriterContent,
-        writerGenerating, writerScheduleDate, setWriterScheduleDate, writerScheduleTime, setWriterScheduleTime,
+        writerGenerating, setWriterGenerating, writerScheduleDate, setWriterScheduleDate, writerScheduleTime, setWriterScheduleTime,
         writerDrafts, writerScheduledPosts, writerTokenUsage, writerImageFile, setWriterImageFile,
         writerImageUrl, setWriterImageUrl, writerMediaBlobUrl, setWriterMediaBlobUrl,
         writerMediaType, setWriterMediaType, writerUploading, setWriterUploading,
         writerPreviewMode, setWriterPreviewMode, writerPreviewExpanded, setWriterPreviewExpanded,
-        writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, writerModel,
+        writerUseLinkedInAPI, setWriterUseLinkedInAPI, fileInputRef, writerStatus, setWriterStatus, writerModel,
         writerUseInspirationSources, setWriterUseInspirationSources, writerInspirationSourceNames,
         writerPosting, MODEL_OPTIONS, handleWriterModelChange,
+        userGoal, setUserGoal, userTargetAudience, setUserTargetAudience,
+        userWritingStyle, setUserWritingStyle, userWritingStyleSource, setUserWritingStyleSource,
+        goalsLoading, goalsSuggesting, loadUserGoals, saveUserGoals, suggestGoals,
         generatePost, saveDraft, loadDrafts, loadScheduledPosts, sendToExtension, schedulePost, deleteDraft,
         // Saved posts
         savedPosts, savedPostsLoading, savedPostsPage, setSavedPostsPage, savedPostsTotal,
@@ -2975,7 +3050,7 @@ function DashboardContent() {
 
                 {/* Tab Content â€” rendered via extracted components */}
                 {activeTab === 'overview' && <OverviewTab {...tabProps} />}
-                {activeTab === 'writer' && <WriterTab {...tabProps} />}
+                {activeTab === 'writer' && <WriterTabNew {...tabProps} />}
                 {activeTab === 'comments' && <CommentsTab {...tabProps} />}
                 {activeTab === 'trending-posts' && <TrendingPostsTab {...tabProps} />}
                 {activeTab === 'tasks' && <TasksTab {...tabProps} />}

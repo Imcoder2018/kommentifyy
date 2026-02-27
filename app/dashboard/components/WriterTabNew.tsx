@@ -2,42 +2,42 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-// High Performance Post Generator - Goal options
-const POST_GOALS = [
-    { id: 'reach', label: 'Reach', icon: '📈', desc: 'Maximize impressions & views' },
-    { id: 'authority', label: 'Authority', icon: '👑', desc: 'Build thought leadership' },
-    { id: 'conversation', label: 'Conversation', icon: '💬', desc: 'Drive comments & discussion' },
-    { id: 'follower_growth', label: 'Followers', icon: '👥', desc: 'Gain new followers' },
-    { id: 'trust', label: 'Trust', icon: '🤝', desc: 'Build credibility' },
-    { id: 'lead_gen', label: 'Leads', icon: '🎯', desc: 'Generate business leads' },
+// Template options (from old WriterTab)
+const TEMPLATE_OPTIONS = [
+    { value: 'lead_magnet', label: 'Lead Magnet' },
+    { value: 'thought_leadership', label: 'Thought Leadership' },
+    { value: 'personal_story', label: 'Personal Story' },
+    { value: 'advice', label: 'Advice/Tips' },
+    { value: 'case_study', label: 'Case Study' },
+    { value: 'controversial', label: 'Controversial Opinion' },
+    { value: 'question', label: 'Question/Poll' },
+    { value: 'insight', label: 'Industry Insight' },
+    { value: 'announcement', label: 'Announcement' },
+    { value: 'achievement', label: 'Achievement' },
+    { value: 'tip', label: 'Pro Tip' },
+    { value: 'story', label: 'Story' },
+    { value: 'motivation', label: 'Motivation' },
+    { value: 'how_to', label: 'How-To Guide' },
 ];
 
-// Post Types based on HIGH PERFORMANCE POST GENERATOR
-const POST_TYPES = [
-    { id: 'operator_insight', label: 'Operator Insight', desc: 'Behind-the-scenes knowledge' },
-    { id: 'personal_story', label: 'Personal Story', desc: 'Vulnerable narrative with lesson' },
-    { id: 'contrarian_take', label: 'Contrarian Take', desc: 'Challenge conventional wisdom' },
-    { id: 'framework', label: 'Framework', desc: 'Step-by-step system or process' },
-    { id: 'mistake_lesson', label: 'Mistake / Lesson', desc: 'What you learned the hard way' },
-    { id: 'commentary', label: 'Commentary', desc: 'Industry news analysis' },
-    { id: 'question_post', label: 'Question Post', desc: 'Spark discussion & debate' },
-    { id: 'proof_case', label: 'Proof / Case Study', desc: 'Results with evidence' },
+// Tone options (from old WriterTab)
+const TONE_OPTIONS = [
+    { value: 'professional', label: 'Professional' },
+    { value: 'friendly', label: 'Friendly' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'bold', label: 'Bold/Provocative' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'conversational', label: 'Conversational' },
+    { value: 'authoritative', label: 'Authoritative' },
+    { value: 'humorous', label: 'Humorous' },
 ];
 
 // Depth options
 const DEPTH_OPTIONS = [
-    { id: 'short', label: 'Short', chars: '500', desc: '~100 words' },
-    { id: 'standard', label: 'Standard', chars: '1200', desc: '~250 words' },
-    { id: 'deep', label: 'Deep', chars: '2500', desc: '~500 words' },
-];
-
-// Outcome Focus options
-const OUTCOME_OPTIONS = [
-    { id: 'conversation', label: 'Conversation', icon: '💬' },
-    { id: 'saves', label: 'Saves', icon: '🔖' },
-    { id: 'shares', label: 'Shares', icon: '🔄' },
-    { id: 'profile_interest', label: 'Profile Interest', icon: '👤' },
-    { id: 'followers', label: 'Followers', icon: '➕' },
+    { id: 'short', label: 'Short', value: '500', desc: '~100 words' },
+    { id: 'standard', label: 'Standard', value: '900', desc: '~250 words' },
+    { id: 'deep', label: 'Deep', value: '1500', desc: '~500 words' },
+    { id: 'extra', label: 'Extra Long', value: '2500', desc: '~800 words' },
 ];
 
 export default function WriterTabNew(props: any) {
@@ -68,12 +68,18 @@ export default function WriterTabNew(props: any) {
         showInspirationPopup, setShowInspirationPopup, plannerOpen, setPlannerOpen
     } = props;
 
-    // High Performance Post Generator state
-    const [postGoal, setPostGoal] = useState<string>('reach');
-    const [postType, setPostType] = useState<string>('operator_insight');
+    // Post generation state
     const [postDepth, setPostDepth] = useState<string>('standard');
-    const [outcomeF, setOutcomeF] = useState<string>('conversation');
-    const [postStrength, setPostStrength] = useState<number>(50); // 0-100 slider
+    const [localWriterGenerating, setLocalWriterGenerating] = useState<boolean>(false);
+    const [localWriterStatus, setLocalWriterStatus] = useState<string>('');
+    
+    // Use passed prop or local state for generating
+    const isWriterGenerating = props.writerGenerating ?? localWriterGenerating;
+    const setWriterGeneratingState = props.setWriterGenerating ?? setLocalWriterGenerating;
+    
+    // Use writerStatus from props, with fallback to local state
+    const currentWriterStatus = writerStatus || localWriterStatus;
+    const currentSetWriterStatus: React.Dispatch<React.SetStateAction<string>> = setWriterStatus || setLocalWriterStatus;
 
     // Analysis state
     const [analysisData, setAnalysisData] = useState<any>(null);
@@ -103,23 +109,8 @@ export default function WriterTabNew(props: any) {
     // Sync depth to length
     useEffect(() => {
         const depthOpt = DEPTH_OPTIONS.find(d => d.id === postDepth);
-        if (depthOpt) setWriterLength(depthOpt.chars);
+        if (depthOpt) setWriterLength(depthOpt.value);
     }, [postDepth]);
-
-    // Sync post type to template
-    useEffect(() => {
-        const typeMap: Record<string, string> = {
-            'operator_insight': 'thought_leadership',
-            'personal_story': 'personal_story',
-            'contrarian_take': 'controversial',
-            'framework': 'how_to',
-            'mistake_lesson': 'personal_story',
-            'commentary': 'insight',
-            'question_post': 'question',
-            'proof_case': 'case_study'
-        };
-        if (typeMap[postType]) setWriterTemplate(typeMap[postType]);
-    }, [postType]);
 
     // AI-powered post analysis (replaces heuristic)
     const analyzePost = async () => {
@@ -264,20 +255,20 @@ export default function WriterTabNew(props: any) {
             return; 
         }
         if (!writerTopic.trim()) { 
-            setWriterStatus('Please enter a topic first'); 
+            currentSetWriterStatus('Please enter a topic first'); 
             showToast('Please enter a topic first', 'error');
             return; 
         }
 
-        setWriterGenerating(true);
-        setWriterStatus(selectedHook ? 'Generating post with selected hook...' : 'Generating post...');
+        setWriterGeneratingState(true);
+        currentSetWriterStatus(selectedHook ? 'Generating post with selected hook...' : 'Generating post...');
         
         try {
             const token = localStorage.getItem('authToken');
             if (!token) {
-                setWriterStatus('Not authenticated. Please refresh and log in again.');
+                currentSetWriterStatus('Not authenticated. Please refresh and log in again.');
                 showToast('Authentication error', 'error');
-                setWriterGenerating(false);
+                setWriterGeneratingState(false);
                 return;
             }
 
@@ -299,10 +290,10 @@ export default function WriterTabNew(props: any) {
                     targetAudience: writerTargetAudience || userTargetAudience,
                     keyMessage: writerKeyMessage,
                     userBackground: writerBackground,
-                    useInspirationSources: userWritingStyleSource !== 'user_default',
-                    inspirationSourceNames: userWritingStyleSource.startsWith('insp_')
+                    useInspirationSources: userWritingStyleSource && userWritingStyleSource !== 'user_default',
+                    inspirationSourceNames: userWritingStyleSource && userWritingStyleSource.startsWith('insp_')
                         ? [userWritingStyleSource.replace('insp_', '')]
-                        : userWritingStyleSource.startsWith('shared_')
+                        : userWritingStyleSource && userWritingStyleSource.startsWith('shared_')
                             ? [userWritingStyleSource.replace('shared_', '')]
                             : [],
                     useProfileData: linkedInUseProfileData && voyagerData,
@@ -316,10 +307,7 @@ export default function WriterTabNew(props: any) {
                     } : null,
                     model: writerModel,
                     userGoal,
-                    postGoal,
-                    postType,
                     postDepth,
-                    outcomeF,
                 }),
             });
 
@@ -327,32 +315,32 @@ export default function WriterTabNew(props: any) {
                 const errorText = await res.text();
                 console.error('Generate post API error:', res.status, errorText);
                 const errorMsg = `API Error (${res.status}): ${errorText.substring(0, 100)}`;
-                setWriterStatus(errorMsg);
+                currentSetWriterStatus(errorMsg);
                 showToast(`Post generation failed: ${res.status}`, 'error');
-                setWriterGenerating(false);
+                setWriterGeneratingState(false);
                 return;
             }
 
             const data = await res.json();
             if (data.success && data.content) {
                 setWriterContent(data.content);
-                setWriterStatus('Post generated! Review and edit as needed.');
+                currentSetWriterStatus('Post generated! Review and edit as needed.');
                 setWriterPreviewMode('desktop');
                 setWriterPreviewExpanded(false);
                 showToast('Post generated successfully!', 'success');
             } else {
                 const errorMsg = data.error || 'Generation failed - no content returned';
-                setWriterStatus(errorMsg);
+                currentSetWriterStatus(errorMsg);
                 showToast(errorMsg, 'error');
                 console.error('Post generation failed:', data);
             }
         } catch (e: any) {
             const errorMsg = 'Network error: ' + (e.message || 'Could not connect to server');
-            setWriterStatus(errorMsg);
+            currentSetWriterStatus(errorMsg);
             showToast(errorMsg, 'error');
             console.error('Generate post exception:', e);
         } finally {
-            setWriterGenerating(false);
+            setWriterGeneratingState(false);
         }
     };
 
@@ -487,62 +475,9 @@ export default function WriterTabNew(props: any) {
                 </div>
             </div>
 
-            {/* High Performance Post Generator Flow */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(59,130,246,0.08) 100%)', padding: '16px 20px', borderRadius: '14px', border: '1px solid rgba(139,92,246,0.2)', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                    <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', '#a78bfa', 16)} High Performance Post Generator
-                    </h3>
-                </div>
-
-                {/* Goal & Post Type Selection */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
-                    {/* Goal Selection */}
-                    <div>
-                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginBottom: '8px', display: 'block' }}>🎯 Post Goal</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                            {POST_GOALS.map(goal => (
-                                <button key={goal.id} onClick={() => setPostGoal(goal.id)}
-                                    style={{ padding: '8px 6px', background: postGoal === goal.id ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.05)', border: postGoal === goal.id ? '1px solid rgba(139,92,246,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: postGoal === goal.id ? '#a78bfa' : 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', transition: 'all 0.2s' }}>
-                                    <span style={{ fontSize: '14px' }}>{goal.icon}</span>
-                                    <span style={{ fontWeight: '600' }}>{goal.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Post Type Selection */}
-                    <div>
-                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginBottom: '8px', display: 'block' }}>📝 Post Type</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                            {POST_TYPES.map(type => (
-                                <button key={type.id} onClick={() => setPostType(type.id)}
-                                    style={{ padding: '6px 4px', background: postType === type.id ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.05)', border: postType === type.id ? '1px solid rgba(59,130,246,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: postType === type.id ? '#60a5fa' : 'rgba(255,255,255,0.7)', fontSize: '9px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', textAlign: 'center' }}>
-                                    {type.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Depth Selection - single row */}
-                <div>
-                    <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginBottom: '8px', display: 'block' }}>📏 Depth</label>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                        {DEPTH_OPTIONS.map(depth => (
-                            <button key={depth.id} onClick={() => setPostDepth(depth.id)}
-                                style={{ flex: 1, padding: '8px 6px', background: postDepth === depth.id ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.05)', border: postDepth === depth.id ? '1px solid rgba(16,185,129,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: postDepth === depth.id ? '#34d399' : 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}>
-                                {depth.label} <span style={{ opacity: 0.6, fontSize: '9px' }}>({depth.desc})</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* AI-Powered Analysis Panel - moved to AI Post Helper column */}
-            </div>
-
-            {/* 3 Column Layout: AI Post Helper, Hook Generator + Config, LinkedIn Preview */}
+            {/* Main Grid Layout: 3 columns for main sections, calendar spans full width at bottom */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.3fr', gap: '16px', marginBottom: '16px' }}>
+                {/* Row 1: AI Post Helper, Hook Generator + Config, LinkedIn Preview */}
                 {/* Column 1: AI Post Helper with scrollbar */}
                 <div style={{ background: 'rgba(255,255,255,0.03)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', maxHeight: '650px' }}>
                     <h3 style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -550,13 +485,48 @@ export default function WriterTabNew(props: any) {
                     </h3>
 
                     {/* Analyze Post Button */}
-                    {writerContent.trim() && (
-                        <button onClick={analyzePost} disabled={analyzing}
-                            style={{ width: '100%', padding: '10px', background: analyzing ? 'rgba(139,92,246,0.3)' : 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(59,130,246,0.2))', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '8px', color: '#a78bfa', fontSize: '11px', fontWeight: '700', cursor: analyzing ? 'wait' : 'pointer', marginBottom: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}>
-                            {miniIcon('M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', '#a78bfa', 12)}
-                            {analyzing ? 'Analyzing with AI...' : 'Analyze Post'}
-                        </button>
-                    )}
+                    <button 
+                        onClick={() => {
+                            if (!writerContent.trim()) {
+                                showToast('Please generate or write some content first before analyzing', 'info');
+                                return;
+                            }
+                            if (analysisData && !showAnalysis) {
+                                // If we have analysis data but panel is closed, just show the panel
+                                setShowAnalysis(true);
+                            } else {
+                                // Otherwise run new analysis
+                                analyzePost();
+                            }
+                        }} 
+                        disabled={analyzing || !writerContent.trim()}
+                        style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            background: (!writerContent.trim() || analyzing) 
+                                ? 'rgba(139,92,246,0.2)' 
+                                : (analysisData && !showAnalysis) 
+                                    ? 'linear-gradient(135deg, rgba(34,197,94,0.3), rgba(16,185,129,0.2))' 
+                                    : 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(59,130,246,0.2))', 
+                            border: '1px solid rgba(139,92,246,0.4)', 
+                            borderRadius: '8px', 
+                            color: !writerContent.trim() ? 'rgba(167,139,250,0.5)' : (analysisData && !showAnalysis) ? '#22c55e' : '#a78bfa', 
+                            fontSize: '11px', 
+                            fontWeight: '700', 
+                            cursor: (!writerContent.trim() || analyzing) ? 'not-allowed' : 'pointer', 
+                            marginBottom: '10px', 
+                            flexShrink: 0, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '6px', 
+                            transition: 'all 0.2s',
+                            opacity: (!writerContent.trim() || analyzing) ? 0.6 : 1
+                        }}
+                    >
+                        {miniIcon('M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', '#a78bfa', 12)}
+                        {analyzing ? 'Analyzing with AI...' : (!writerContent.trim() ? 'Analyze Post (write content first)' : (analysisData && !showAnalysis ? '📊 View Analysis' : 'Analyze Post'))}
+                    </button>
 
                     {/* AI Analysis Results Panel */}
                     {showAnalysis && (
@@ -719,8 +689,44 @@ export default function WriterTabNew(props: any) {
                         </div>
                     )}
 
-                    {/* Config Section - simplified */}
+                    {/* Config Section with Template, Tone, Depth */}
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: 'auto' }}>
+                        {/* Template & Tone row */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                            <div>
+                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>Template</label>
+                                <select value={writerTemplate} onChange={e => setWriterTemplate(e.target.value)}
+                                    style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '10px', cursor: 'pointer', outline: 'none' }}>
+                                    {TEMPLATE_OPTIONS.map((t: any) => (
+                                        <option key={t.value} value={t.value}>{t.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>Tone</label>
+                                <select value={writerTone} onChange={e => setWriterTone(e.target.value)}
+                                    style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '10px', cursor: 'pointer', outline: 'none' }}>
+                                    {TONE_OPTIONS.map((t: any) => (
+                                        <option key={t.value} value={t.value}>{t.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        {/* Depth Selection */}
+                        <div style={{ marginBottom: '8px' }}>
+                            <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>📏 Depth</label>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                                {DEPTH_OPTIONS.map(depth => (
+                                    <button key={depth.id} onClick={() => setPostDepth(depth.id)}
+                                        style={{ flex: 1, padding: '6px 4px', background: postDepth === depth.id ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.05)', border: postDepth === depth.id ? '1px solid rgba(16,185,129,0.6)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', color: postDepth === depth.id ? '#34d399' : 'rgba(255,255,255,0.7)', fontSize: '9px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}>
+                                        {depth.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* AI Model + Options row */}
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'flex-end' }}>
                             <div style={{ flex: 1 }}>
                                 <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '10px', marginBottom: '4px', display: 'block' }}>AI Model</label>
@@ -734,21 +740,21 @@ export default function WriterTabNew(props: any) {
                             <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', paddingBottom: '4px' }}>
                                 <input type="checkbox" checked={writerHashtags} onChange={e => setWriterHashtags(e.target.checked)} 
                                     style={{ width: '12px', height: '12px', accentColor: '#a78bfa', cursor: 'pointer' }} />
-                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '10px' }}>Hashtags</span>
+                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '10px' }}>#</span>
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', paddingBottom: '4px' }}>
                                 <input type="checkbox" checked={writerEmojis} onChange={e => setWriterEmojis(e.target.checked)} 
                                     style={{ width: '12px', height: '12px', accentColor: '#a78bfa', cursor: 'pointer' }} />
-                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '10px' }}>Emojis</span>
+                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '10px' }}>😊</span>
                             </label>
                         </div>
 
                         <button onClick={generatePostWithHook} 
-                            disabled={writerGenerating || !writerTopic.trim()}
-                            style={{ width: '100%', padding: '12px', background: writerGenerating ? 'rgba(105,63,233,0.5)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: (writerGenerating || !writerTopic.trim()) ? 'not-allowed' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)', transition: 'all 0.2s' }}
-                            onMouseOver={e => { if (!writerGenerating && writerTopic.trim()) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                            disabled={isWriterGenerating || !writerTopic.trim()}
+                            style={{ width: '100%', padding: '12px', background: isWriterGenerating ? 'rgba(105,63,233,0.5)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: (isWriterGenerating || !writerTopic.trim()) ? 'not-allowed' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)', transition: 'all 0.2s' }}
+                            onMouseOver={e => { if (!isWriterGenerating && writerTopic.trim()) e.currentTarget.style.transform = 'translateY(-1px)'; }}
                             onMouseOut={e => e.currentTarget.style.transform = 'none'}>
-                            {writerGenerating ? 'Generating Post...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 14)} {selectedHook ? 'Generate Full Post with Hook' : 'Generate Post'}</span>}
+                            {isWriterGenerating ? 'Generating Post...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 14)} {selectedHook ? 'Generate Full Post with Hook' : 'Generate Post'}</span>}
                         </button>
 
                         {writerStatus && (
@@ -777,29 +783,16 @@ export default function WriterTabNew(props: any) {
                         writerContent.trim() ? (() => {
                             const isMobile = writerPreviewMode === 'mobile';
                             const maxW = isMobile ? '375px' : '100%';
-                            const TRUNCATE_LINES = isMobile ? 3 : 5;
-                            const lines = writerContent.split('\n');
-                            const truncated = lines.length > TRUNCATE_LINES && !writerPreviewExpanded;
-                            const displayText = truncated ? lines.slice(0, TRUNCATE_LINES).join('\n') : writerContent;
+                            const TRUNCATE_CHARS = 130; // LinkedIn-style truncation at 130 characters
+                            const truncated = writerContent.length > TRUNCATE_CHARS && !writerPreviewExpanded;
+                            const displayText = truncated ? writerContent.substring(0, TRUNCATE_CHARS) : writerContent;
                             
                             // Use fresh user-specific data with proper fallbacks
                             const profileName = voyagerData?.name || linkedInProfile?.name || user?.name || user?.email?.split('@')[0] || 'Your Name';
                             const profileHeadline = voyagerData?.headline || linkedInProfile?.headline || user?.email || 'Your Headline';
-                            const profilePicture = voyagerData?.profilePicture || null;
-                            
-                            // Log for debugging data isolation
-                            if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-                                console.log('[LinkedIn Preview] Using data for:', { 
-                                    name: profileName, 
-                                    headline: profileHeadline?.substring(0, 30),
-                                    userId: user?.id,
-                                    hasVoyager: !!voyagerData,
-                                    hasLinkedIn: !!linkedInProfile
-                                });
-                            }
                             
                             return (
-                                <div style={{ maxWidth: maxW, margin: '0 auto', background: '#1b1f23', borderRadius: '10px', border: '1px solid #38434f', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+                                <div style={{ maxWidth: maxW, margin: '0 auto', background: '#1b1f23', borderRadius: '10px', border: '1px solid #38434f', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', flex: 1, overflowY: 'auto' }}>
                                     <div style={{ padding: isMobile ? '10px 12px' : '12px 16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                                         <div style={{ width: isMobile ? '36px' : '48px', height: isMobile ? '36px' : '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: isMobile ? '14px' : '18px', flexShrink: 0 }}>{(profileName?.[0] || 'U').toUpperCase()}</div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -809,13 +802,12 @@ export default function WriterTabNew(props: any) {
                                         </div>
                                     </div>
                                     <div style={{ padding: isMobile ? '0 12px 10px' : '0 16px 12px' }}>
-                                        <div contentEditable suppressContentEditableWarning onBlur={e => setWriterContent(e.currentTarget.textContent || '')}
-                                            style={{ color: '#ffffffe6', fontSize: isMobile ? '13px' : '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word', outline: 'none', cursor: 'text' }}>
+                                        <div style={{ color: '#ffffffe6', fontSize: isMobile ? '13px' : '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                                             {displayText}
+                                            {truncated && <span onClick={() => setWriterPreviewExpanded(true)} style={{ color: '#70b5f9', cursor: 'pointer' }}>...more</span>}
                                         </div>
-                                        {truncated && <span onClick={() => setWriterPreviewExpanded(true)} style={{ color: '#ffffff80', cursor: 'pointer' }}>... <span style={{ color: '#70b5f9' }}>see more</span></span>}
-                                        {writerPreviewExpanded && lines.length > TRUNCATE_LINES && (
-                                            <span onClick={() => setWriterPreviewExpanded(false)} style={{ color: '#70b5f9', cursor: 'pointer', fontSize: '13px' }}>show less</span>
+                                        {writerPreviewExpanded && writerContent.length > TRUNCATE_CHARS && (
+                                            <span onClick={() => setWriterPreviewExpanded(false)} style={{ color: '#70b5f9', cursor: 'pointer', fontSize: '13px', display: 'block', marginTop: '4px' }}>...less</span>
                                         )}
                                     </div>
                                     {writerImageUrl && (
@@ -885,85 +877,38 @@ export default function WriterTabNew(props: any) {
                             )}
                         </div>
 
-                        {/* Post via Extension API (Voyager) - default for non-OAuth users */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={async () => {
-                                if (!writerContent.trim()) return;
-                                const token = localStorage.getItem('authToken');
-                                if (!token) return;
-                                setWriterStatus('Posting via extension API...');
-                                try {
-                                    const res = await fetch('/api/extension/command', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                        body: JSON.stringify({
-                                            command: 'linkedin_post_via_api',
-                                            data: { content: writerContent, mediaUrl: writerMediaBlobUrl || null }
-                                        })
-                                    });
-                                    const data = await res.json();
-                                    if (data.success) {
-                                        showToast('Post sent to extension! Publishing via LinkedIn API...', 'success');
-                                        setWriterStatus('Task queued - extension will post via LinkedIn API');
-                                    } else {
-                                        showToast(data.error || 'Failed to queue post', 'error');
-                                        setWriterStatus('Failed: ' + (data.error || 'Unknown error'));
-                                    }
-                                } catch (e: any) { showToast('Error: ' + e.message, 'error'); setWriterStatus('Error: ' + e.message); }
-                            }} disabled={writerPosting || !writerContent.trim()}
-                                style={{ flex: 1, padding: '12px', background: writerPosting ? 'rgba(0,119,181,0.3)' : 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting || !writerContent.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,119,181,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                                {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', 'white', 12)} Post via API
-                            </button>
-                            <button onClick={sendToExtension} disabled={writerPosting || !writerContent.trim()}
-                                style={{ flex: 1, padding: '12px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting || !writerContent.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(105,63,233,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                                {miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Post via UI
-                            </button>
-                        </div>
+                        {/* Single Post Button - Extension by default, LinkedIn API if connected */}
+                        <button onClick={sendToExtension} disabled={writerPosting || !writerContent.trim()}
+                            style={{ width: '100%', padding: '12px', background: writerPosting ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: writerPosting || !writerContent.trim() ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(105,63,233,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            {miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 13)} Post to LinkedIn
+                        </button>
 
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
                             <button onClick={saveDraft}
-                                style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'white', fontSize: '11px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '10px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                                 onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
                                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
-                                {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z', 'white', 11)} Save Draft
+                                {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z', 'white', 10)} Draft
                             </button>
-                            <div style={{ display: 'flex', flex: 2, gap: '4px' }}>
-                                <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
-                                    style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '10px', width: '100%', minWidth: 0 }} />
-                                <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
-                                    style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '10px', width: '100%', minWidth: 0 }} />
-                                <button onClick={schedulePost}
-                                    style={{ padding: '8px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '8px', color: '#c4b5fd', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                    {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 10)} Schedule
-                                </button>
-                                <button onClick={async () => {
-                                    if (!writerContent.trim() || !writerScheduleDate || !writerScheduleTime) { showToast('Set date/time first', 'error'); return; }
-                                    const token = localStorage.getItem('authToken');
-                                    if (!token) return;
-                                    const scheduledTime = new Date(`${writerScheduleDate}T${writerScheduleTime}`).toISOString();
-                                    setWriterStatus('Scheduling via LinkedIn API...');
-                                    try {
-                                        const res = await fetch('/api/extension/command', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                            body: JSON.stringify({ command: 'linkedin_schedule_via_api', data: { content: writerContent, scheduledTime } })
-                                        });
-                                        const data = await res.json();
-                                        if (data.success) { showToast('Schedule task sent to extension!', 'success'); setWriterStatus('Scheduling via LinkedIn native scheduler...'); }
-                                        else { showToast(data.error || 'Failed', 'error'); setWriterStatus('Failed: ' + (data.error || '')); }
-                                    } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
-                                }}
-                                    title="Schedule directly on LinkedIn via API"
-                                    style={{ padding: '8px', background: 'rgba(0,119,181,0.2)', border: '1px solid rgba(0,119,181,0.4)', borderRadius: '8px', color: '#60a5fa', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                    {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 9)} LI
-                                </button>
-                            </div>
+                            <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
+                                style={{ flex: 1, padding: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '9px', minWidth: 0 }} />
+                            <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
+                                style={{ flex: 1, padding: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '9px', minWidth: 0 }} />
+                            <button onClick={schedulePost}
+                                style={{ padding: '6px 10px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '6px', color: '#c4b5fd', fontSize: '9px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 9)} Schedule
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Content Planner */}
-                <div style={{ background: 'linear-gradient(135deg, rgba(105,63,233,0.15) 0%, rgba(139,92,246,0.1) 100%)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.3)' }}>
+            {/* Full-width Content Calendar Section - spans entire width */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', marginBottom: '16px' }}>
+                {/* Content Planner + Inspiration Sources */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* AI Content Planner */}
+                    <div style={{ background: 'linear-gradient(135deg, rgba(105,63,233,0.15) 0%, rgba(139,92,246,0.1) 100%)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.3)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#a78bfa', 16)}
@@ -989,9 +934,67 @@ export default function WriterTabNew(props: any) {
                             </button>
                         </div>
                     </div>
+                    </div>
+
+                    {/* Inspiration Sources Section */}
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '300px', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 12)} Sources
+                            </h4>
+                            <button onClick={() => setShowInspirationPopup?.(true)}
+                                style={{ padding: '4px 8px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '9px', fontWeight: '600', cursor: 'pointer' }}>
+                                + Add
+                            </button>
+                        </div>
+                        {inspirationLoading ? (
+                            <div style={{ textAlign: 'center', padding: '8px', color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>Loading...</div>
+                        ) : inspirationSources && inspirationSources.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {inspirationSources.map((source: any, idx: number) => (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', background: userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `1px solid ${userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }} onClick={() => props.setUserWritingStyleSource?.(`insp_${source.name}`)}>
+                                            <span style={{ color: 'white', fontSize: '10px', fontWeight: '600' }}>{source.name}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px' }}>{source.count || 0}p</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <button onClick={(e) => { e.stopPropagation(); props.loadProfilePosts?.(source.name); }}
+                                                style={{ padding: '2px 6px', background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: '3px', color: '#60a5fa', fontSize: '8px', fontWeight: '600', cursor: 'pointer' }}>
+                                                View
+                                            </button>
+                                            <span style={{ padding: '2px 6px', background: userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `1px solid ${userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '3px', color: userWritingStyleSource === `insp_${source.name}` ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize: '8px', fontWeight: '600', cursor: 'pointer' }}
+                                                onClick={() => props.setUserWritingStyleSource?.(`insp_${source.name}`)}>
+                                                {userWritingStyleSource === `insp_${source.name}` ? '✓ Active' : 'Use'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {sharedInspProfiles?.map((source: any, idx: number) => (
+                                    <div key={`shared-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', background: userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.2)' : 'rgba(139,92,246,0.1)', border: `1px solid ${userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.4)' : 'rgba(139,92,246,0.2)'}`, borderRadius: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }} onClick={() => props.setUserWritingStyleSource?.(`shared_${source.profileName}`)}>
+                                            <span style={{ color: 'white', fontSize: '10px', fontWeight: '600' }}>{source.profileName}</span>
+                                            <span style={{ color: '#a78bfa', fontSize: '9px' }}>{source.postCount || 0}p</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <button onClick={(e) => { e.stopPropagation(); props.loadProfilePosts?.(source.profileName); }}
+                                                style={{ padding: '2px 6px', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: '3px', color: '#a78bfa', fontSize: '8px', fontWeight: '600', cursor: 'pointer' }}>
+                                                View
+                                            </button>
+                                            <span style={{ padding: '2px 6px', background: userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `1px solid ${userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '3px', color: userWritingStyleSource === `shared_${source.profileName}` ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize: '8px', fontWeight: '600', cursor: 'pointer' }}
+                                                onClick={() => props.setUserWritingStyleSource?.(`shared_${source.profileName}`)}>
+                                                {userWritingStyleSource === `shared_${source.profileName}` ? '✓ Active' : 'Use'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '10px', color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>No sources yet</div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Content Calendar Display */}
+                {/* Content Calendar Display - takes 2/3 width */}
                 <div style={{ background: 'rgba(255,255,255,0.03)', padding: '18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                         <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1092,69 +1095,6 @@ export default function WriterTabNew(props: any) {
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Inspiration Sources Section */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14)} Inspiration Sources
-                        </h3>
-                        <button onClick={() => setShowInspirationPopup?.(true)}
-                            style={{ padding: '6px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
-                            + Add Source
-                        </button>
-                    </div>
-                    {inspirationLoading ? (
-                        <div style={{ textAlign: 'center', padding: '12px', color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Loading sources...</div>
-                    ) : inspirationSources && inspirationSources.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {inspirationSources.map((source: any, idx: number) => (
-                                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '13px' }}>
-                                            {(source.name?.[0] || 'S').toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <div style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{source.name}</div>
-                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{source.count || 0} posts scraped</div>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ padding: '3px 8px', background: userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `1px solid ${userWritingStyleSource === `insp_${source.name}` ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: userWritingStyleSource === `insp_${source.name}` ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize: '9px', fontWeight: '600' }}>
-                                            {userWritingStyleSource === `insp_${source.name}` ? 'Active' : 'Available'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                            {sharedInspProfiles && sharedInspProfiles.length > 0 && (
-                                <>
-                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: '600', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shared by Admin</div>
-                                    {sharedInspProfiles.map((source: any, idx: number) => (
-                                        <div key={`shared-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: '8px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '13px' }}>
-                                                    {(source.profileName?.[0] || 'S').toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{source.profileName} <span style={{ color: '#a78bfa', fontSize: '10px' }}>(Shared)</span></div>
-                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{source.postCount || 0} posts</div>
-                                                </div>
-                                            </div>
-                                            <span style={{ padding: '3px 8px', background: userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', border: `1px solid ${userWritingStyleSource === `shared_${source.profileName}` ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '4px', color: userWritingStyleSource === `shared_${source.profileName}` ? '#34d399' : 'rgba(255,255,255,0.5)', fontSize: '9px', fontWeight: '600' }}>
-                                                {userWritingStyleSource === `shared_${source.profileName}` ? 'Active' : 'Available'}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </>
-                            )}
-                        </div>
-                    ) : (
-                        <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                            <div style={{ marginBottom: '8px' }}>No inspiration sources added yet.</div>
-                            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>Add LinkedIn profiles to learn their writing style for AI post generation.</div>
                         </div>
                     )}
                 </div>

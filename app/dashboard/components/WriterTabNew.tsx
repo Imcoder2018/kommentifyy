@@ -445,7 +445,7 @@ export default function WriterTabNew(props: any) {
             {/* Personal Brand Strategy */}
             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ color: 'white', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ color: 'white', fontSize: '17px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {miniIcon('M13 10V3L4 14h7v7l9-11h-7z', '#fbbf24', 16)} Personal Brand Strategy
                     </h3>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -467,22 +467,22 @@ export default function WriterTabNew(props: any) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Content Goal</label>
                         <input type="text" value={userGoal} onChange={e => setUserGoal(e.target.value)} placeholder="e.g. Build authority in B2B SaaS"
-                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', fontSize: '14px', width: '100%', outline: 'none' }} />
+                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', color: 'white', fontSize: '14px', width: '100%', outline: 'none', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Target Audience</label>
                         <input type="text" value={writerTargetAudience} onChange={e => setWriterTargetAudience(e.target.value)} placeholder="e.g. Startup Founders"
-                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', fontSize: '14px', width: '100%', outline: 'none' }} />
+                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', color: 'white', fontSize: '14px', width: '100%', outline: 'none', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Your Background</label>
                         <input type="text" value={writerBackground} onChange={e => setWriterBackground(e.target.value)} placeholder="e.g. CEO at TechCorp"
-                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', fontSize: '14px', width: '100%', outline: 'none' }} />
+                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', color: 'white', fontSize: '14px', width: '100%', outline: 'none', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Writing Style (Inspiration)</label>
                         <select value={userWritingStyleSource} onChange={e => setUserWritingStyleSource(e.target.value)}
-                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', fontSize: '14px', width: '100%', outline: 'none', cursor: 'pointer' }}>
+                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', color: 'white', fontSize: '14px', width: '100%', outline: 'none', cursor: 'pointer', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
                             <option value="user_default">My Own Top Posts</option>
                             {inspirationSources && inspirationSources.map((s: any, idx: number) => (
                                 <option key={idx} value={`insp_${s.name}`}>{s.name}</option>
@@ -677,7 +677,7 @@ export default function WriterTabNew(props: any) {
                         <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)}
                             onKeyPress={e => e.key === 'Enter' && sendChatMessage()}
                             placeholder="Ask for help or ideas..."
-                            style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', outline: 'none' }} />
+                            style={{ flex: 1, padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', outline: 'none', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }} />
                         <button onClick={() => sendChatMessage()} disabled={!chatInput.trim() || chatSending}
                             style={{ padding: '10px 16px', background: chatSending ? 'rgba(59,130,246,0.3)' : 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', cursor: chatSending || !chatInput.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             {chatSending ? '...' : <>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)}</>}
@@ -687,7 +687,7 @@ export default function WriterTabNew(props: any) {
 
                 {/* Column 2: Hook Generator + Config (merged) */}
                 <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', maxHeight: '650px' }}>
-                    <h3 style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                         {miniIcon('M13 10V3L4 14h7v7l9-11h-7z', '#fbbf24', 14)} Hook Generator & Config
                     </h3>
 
@@ -695,7 +695,7 @@ export default function WriterTabNew(props: any) {
                     <div style={{ marginBottom: '10px', flexShrink: 0 }}>
                         <textarea value={writerTopic} onChange={e => setWriterTopic(e.target.value)}
                             placeholder="What do you want to write about?"
-                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', outline: 'none', resize: 'none', minHeight: '50px', fontFamily: 'system-ui, sans-serif' }} />
+                            style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', outline: 'none', resize: 'none', minHeight: '60px', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }} />
                     </div>
 
                     <button onClick={generateHooks} disabled={hooksGenerating || !writerTopic.trim()}
@@ -737,18 +737,18 @@ export default function WriterTabNew(props: any) {
                         {/* Template & Tone row */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                             <div>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Template</label>
+                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '4px', display: 'block' }}>Template</label>
                                 <select value={writerTemplate} onChange={e => setWriterTemplate(e.target.value)}
-                                    style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
+                                    style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '13px', cursor: 'pointer', outline: 'none', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
                                     {TEMPLATE_OPTIONS.map((t: any) => (
                                         <option key={t.value} value={t.value}>{t.label}</option>
                                     ))}
                                 </select>
                             </div>
                             <div>
-                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '4px', display: 'block' }}>Tone</label>
+                                <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '4px', display: 'block' }}>Tone</label>
                                 <select value={writerTone} onChange={e => setWriterTone(e.target.value)}
-                                    style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
+                                    style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '13px', cursor: 'pointer', outline: 'none', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
                                     {TONE_OPTIONS.map((t: any) => (
                                         <option key={t.value} value={t.value}>{t.label}</option>
                                     ))}
@@ -802,7 +802,7 @@ export default function WriterTabNew(props: any) {
                 {/* Column 3: LinkedIn Preview */}
                 <div style={{ background: 'rgba(255,255,255,0.03)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', maxHeight: '650px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexShrink: 0 }}>
-                        <span style={{ color: 'white', fontSize: '13px', fontWeight: '700' }}>LinkedIn Preview</span>
+                        <span style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>LinkedIn Preview</span>
                         <div style={{ display: 'flex', gap: '4px' }}>
                             {(['desktop', 'mobile'] as const).map(mode => (
                                 <button key={mode} onClick={() => setWriterPreviewMode(writerPreviewMode === mode ? 'desktop' : mode)}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 
@@ -10,12 +10,24 @@ export default function AuthCallbackPage() {
     const { user: clerkUser } = useUser();
     const [status, setStatus] = useState('Authenticating...');
     const [error, setError] = useState('');
+    const hasSynced = useRef(false);
 
     useEffect(() => {
+        // Prevent multiple syncs
+        if (hasSynced.current) return;
+        hasSynced.current = true;
+
         if (!isLoaded) return;
 
         if (!isSignedIn) {
             router.push('/login');
+            return;
+        }
+
+        // Skip if already has valid token
+        const existingToken = localStorage.getItem('authToken');
+        if (existingToken) {
+            router.push('/dashboard');
             return;
         }
 

@@ -2,7 +2,7 @@
 
 import { SignUp, useAuth } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 
 export default function SignupPage() {
     return (
@@ -16,6 +16,7 @@ function SignupContent() {
     const { isSignedIn, isLoaded } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const hasRedirected = useRef(false);
 
     // Capture referral code from URL and persist in localStorage
     useEffect(() => {
@@ -26,12 +27,16 @@ function SignupContent() {
     }, [searchParams]);
 
     useEffect(() => {
+        // Prevent multiple redirects
+        if (hasRedirected.current) return;
+        hasRedirected.current = true;
+
         if (isLoaded && isSignedIn) {
             // User already signed in - redirect to auth-callback to complete sync
             // Don't redirect to /plans here as it conflicts with fallbackRedirectUrl
             router.push('/auth-callback');
         }
-    }, [isLoaded, isSignedIn, router]);
+    }, [isLoaded, isSignedIn]);
 
     if (!isLoaded) {
         return (

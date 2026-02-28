@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useClerk } from '@clerk/nextjs';
+import { useClerk, useAuth } from '@clerk/nextjs';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, getLanguageDir } from '@/lib/i18n';
 import { cleanLinkedInProfileUrl, cleanLinkedInProfileUrls } from '@/lib/linkedin-url-cleaner';
@@ -79,6 +79,10 @@ function DashboardContent() {
     const [loggingOut, setLoggingOut] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const { signOut } = useClerk();
+    const { isSignedIn: isClerkSignedIn, isLoaded: isClerkLoaded } = useAuth();
+
+    // Ref to prevent multiple validations
+    const hasValidated = useRef(false);
 
     // Check if user is on a free plan (no AI access)
     // Also treat expired trial users as free (trial plan with past trialEndsAt)
@@ -479,10 +483,26 @@ function DashboardContent() {
     }, []);
 
     useEffect(() => {
+        // Prevent multiple validations
+        if (hasValidated.current) return;
+        hasValidated.current = true;
+
         if (loggingOut) return;
-        const token = localStorage.getItem('authToken');
-        if (!token) {
+
+        // Wait for Clerk to load
+        if (!isClerkLoaded) return;
+
+        // If not signed in with Clerk, redirect to login
+        if (!isClerkSignedIn) {
             router.push('/login');
+            return;
+        }
+
+        const token = localStorage.getItem('authToken');
+
+        // If no token but Clerk is signed in, need to sync with backend
+        if (!token) {
+            router.push('/auth-callback');
             return;
         }
 
@@ -497,10 +517,10 @@ function DashboardContent() {
                 const validateData = await validateRes.json();
 
                 if (!validateData.success) {
-                    // Token invalid - clear and redirect to login
+                    // Token invalid - clear and redirect to auth-callback to re-sync
                     localStorage.removeItem('authToken');
                     isRedirecting = true;
-                    router.push('/login');
+                    router.push('/auth-callback');
                     return;
                 }
 
@@ -539,7 +559,7 @@ function DashboardContent() {
                 }
             } catch (err) {
                 console.error('Dashboard auth error:', err);
-                // Only redirect to login on auth failure, not network errors
+                // Only redirect to auth-callback on auth failure, not network errors
                 // Check if token is still valid by trying refresh
                 try {
                     const refreshRes = await fetch('/api/auth/refresh', {
@@ -559,7 +579,7 @@ function DashboardContent() {
                 }
                 localStorage.removeItem('authToken');
                 isRedirecting = true;
-                router.push('/login');
+                router.push('/auth-callback');
             } finally {
                 if (!isRedirecting) {
                     setLoading(false);
@@ -583,7 +603,7 @@ function DashboardContent() {
                 }
             })
             .catch(() => { });
-    }, [router]);
+    }, [isClerkLoaded, isClerkSignedIn, loggingOut, router]);
 
     const copyToClipboard = async (text: string) => {
         try {

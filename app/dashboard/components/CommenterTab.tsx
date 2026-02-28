@@ -12,24 +12,50 @@ export default function CommenterTab(props: any) {
     const [capturedPosts, setCapturedPosts] = useState<any[]>([]);
     const [capturedLoading, setCapturedLoading] = useState(false);
     const [capturedPage, setCapturedPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [sortBy, setSortBy] = useState('scrapedAt');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [searchQuery, setSearchQuery] = useState('');
     const [actionStates, setActionStates] = useState<Record<string, any>>({});
     const [aiGeneratedComments, setAiGeneratedComments] = useState<Record<string, string>>({});
     const [generatingComment, setGeneratingComment] = useState<string | null>(null);
 
     useEffect(() => {
         loadCapturedPosts();
-    }, [capturedPage]);
+    }, [capturedPage, sortBy, sortOrder]);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (capturedPage === 1) {
+                loadCapturedPosts();
+            } else {
+                setCapturedPage(1);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const loadCapturedPosts = async () => {
         setCapturedLoading(true);
         try {
             const token = localStorage.getItem('authToken');
-            const res = await fetch(`/api/scraped-posts?page=${capturedPage}&limit=20`, {
+            const params = new URLSearchParams({
+                page: capturedPage.toString(),
+                limit: '20',
+                sortBy,
+                sortOrder,
+            });
+            if (searchQuery.trim()) {
+                params.append('search', searchQuery.trim());
+            }
+            const res = await fetch(`/api/scraped-posts?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
             if (data.success) {
                 setCapturedPosts(data.posts || []);
+                setTotalPages(data.pagination?.totalPages || 1);
             }
         } catch (e) {
             console.error('Failed to load captured posts:', e);
@@ -71,6 +97,7 @@ export default function CommenterTab(props: any) {
                     commentStyle: csStyle || 'direct',
                     userExpertise: csExpertise || '',
                     userBackground: csBackground || '',
+                    model: csModel || '',
                 })
             });
             const data = await res.json();
@@ -231,12 +258,40 @@ export default function CommenterTab(props: any) {
 
                 {/* Captured Posts Feed */}
                 <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>Captured Posts ({capturedPosts.length})</h3>
+                    {/* Search and Sort Controls */}
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
+                            <input
+                                type="text"
+                                placeholder="Search posts..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }}
+                            />
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>🔍</span>
+                        </div>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => { setSortBy(e.target.value); setCapturedPage(1); }}
+                            style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', cursor: 'pointer' }}
+                        >
+                            <option value="scrapedAt" style={{ background: '#1a1a2e' }}>Most Recent</option>
+                            <option value="likes" style={{ background: '#1a1a2e' }}>Most Likes</option>
+                            <option value="comments" style={{ background: '#1a1a2e' }}>Most Comments</option>
+                            <option value="shares" style={{ background: '#1a1a2e' }}>Most Shares</option>
+                        </select>
+                        <button onClick={() => { setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }} disabled={capturedLoading}
+                            style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', cursor: capturedLoading ? 'not-allowed' : 'pointer' }}>
+                            {sortOrder === 'desc' ? '↓' : '↑'}
+                        </button>
                         <button onClick={loadCapturedPosts} disabled={capturedLoading}
                             style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '12px', cursor: capturedLoading ? 'wait' : 'pointer' }}>
-                            {capturedLoading ? 'Loading...' : 'Refresh'}
+                            {capturedLoading ? '...' : '↻'}
                         </button>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>Captured Posts ({capturedPosts.length})</h3>
                     </div>
 
                     {capturedLoading ? (
@@ -350,6 +405,27 @@ export default function CommenterTab(props: any) {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            <button
+                                onClick={() => setCapturedPage(p => Math.max(1, p - 1))}
+                                disabled={capturedPage === 1 || capturedLoading}
+                                style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', cursor: capturedPage === 1 ? 'not-allowed' : 'pointer', opacity: capturedPage === 1 ? 0.5 : 1 }}>
+                                ← Prev
+                            </button>
+                            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', padding: '0 8px' }}>
+                                Page {capturedPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCapturedPage(p => Math.min(totalPages, p + 1))}
+                                disabled={capturedPage >= totalPages || capturedLoading}
+                                style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', cursor: capturedPage >= totalPages ? 'not-allowed' : 'pointer', opacity: capturedPage >= totalPages ? 0.5 : 1 }}>
+                                Next →
+                            </button>
                         </div>
                     )}
                 </div>

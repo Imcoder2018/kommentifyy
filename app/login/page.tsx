@@ -1,22 +1,37 @@
 'use client';
 
-import { SignIn, SignedIn, SignedOut, useAuth } from '@clerk/nextjs';
+import { useEffect, useRef } from 'react';
+import { SignIn, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function LoginPage() {
     const { isSignedIn, isLoaded } = useAuth();
     const router = useRouter();
+    const redirecting = useRef(false);
 
     useEffect(() => {
-        if (isLoaded && isSignedIn) {
-            // User is already signed in, redirect to dashboard
-            router.push('/dashboard');
+        // Skip if still loading or already redirecting
+        if (!isLoaded || redirecting.current) return;
+
+        if (isSignedIn) {
+            // User is already signed in via Clerk
+            // Check if we have a valid authToken - if not, go to auth-callback to sync
+            const authToken = localStorage.getItem('authToken');
+
+            redirecting.current = true;
+
+            if (authToken) {
+                // Token exists, go to dashboard
+                router.push('/dashboard');
+            } else {
+                // No token - need to sync with backend first
+                router.push('/auth-callback');
+            }
         }
     }, [isLoaded, isSignedIn, router]);
 
     // Show loading while checking auth state
-    if (!isLoaded) {
+    if (!isLoaded || redirecting.current) {
         return (
             <div style={{
                 minHeight: '100vh',
@@ -30,7 +45,7 @@ export default function LoginPage() {
         );
     }
 
-    // If signed in, show nothing (will redirect)
+    // If signed in, show redirecting message
     if (isSignedIn) {
         return (
             <div style={{

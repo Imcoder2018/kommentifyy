@@ -786,23 +786,82 @@ export default function ImportTab(props: Props) {
           <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Try adjusting your search or filter</div>
         </div>
       ) : (
-        <div style={{ ...styles.card, padding: '0', overflow: 'hidden' }}>
-          <div style={{ maxHeight: '500px', overflowY: 'auto' }} role="region" aria-label="Leads list">
+        <div style={{ ...styles.card, padding: '0', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(105,63,233,0.2)' }}>
+          {/* Table Header Bar */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 24px',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            background: 'linear-gradient(135deg, rgba(105,63,233,0.12) 0%, rgba(76,29,149,0.08) 100%)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #693fe9, #a78bfa)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+                boxShadow: '0 4px 12px rgba(105,63,233,0.3)',
+              }}>
+                👥
+              </div>
+              <div>
+                <div style={{ color: 'white', fontWeight: '700', fontSize: '16px', letterSpacing: '-0.3px' }}>
+                  {filteredLeads.length} Lead{filteredLeads.length !== 1 ? 's' : ''}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                  {selectedLeads.size > 0 ? `${selectedLeads.size} selected` : 'Select leads to take action'}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {selectedLeads.size > 0 && (
+                <button
+                  onClick={() => fetchPostsForLeads(Array.from(selectedLeads))}
+                  disabled={fetchingPosts}
+                  style={{
+                    background: fetchingPosts ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '10px 20px',
+                    color: fetchingPosts ? 'rgba(255,255,255,0.4)' : 'white',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: fetchingPosts ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: fetchingPosts ? 'none' : '0 4px 15px rgba(105,63,233,0.4)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>📥</span> Fetch Posts
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ maxHeight: '600px', overflowY: 'auto' }} role="region" aria-label="Leads list">
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', minWidth: '700px' }} role="table">
-                <thead style={{ position: 'sticky', top: 0, background: '#1a1a3e', zIndex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '900px' }} role="table">
+                <thead style={{ position: 'sticky', top: 0, background: '#1e1b4b', zIndex: 1 }}>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <th style={{ padding: '10px 12px', width: '40px' }}>
+                    <th style={{ padding: '14px 16px', width: '48px' }}>
                       <input
                         type="checkbox"
                         checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
                         onChange={toggleAllSelection}
-                        style={{ accentColor: '#693fe9', cursor: 'pointer' }}
+                        style={{ accentColor: '#693fe9', cursor: 'pointer', width: '18px', height: '18px' }}
                         aria-label="Select all"
                       />
                     </th>
-                    {['Name', 'Company', 'Status', 'Posts', 'Engaged', 'Actions'].map(h => (
-                      <th key={h} style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textAlign: 'left' }}>{h}</th>
+                    {['Name', 'Status & Activity', 'Recent Posts', ''].map(h => (
+                      <th key={h} style={{ padding: '14px 16px', color: 'rgba(255,255,255,0.45)', fontWeight: '600', textAlign: 'left', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -813,138 +872,283 @@ export default function ImportTab(props: Props) {
                     const isSelected = selectedLeads.has(lead.id);
                     return (
                       <>
-                        <tr key={lead.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', background: isSelected ? 'rgba(105,63,233,0.1)' : 'transparent' }}
+                        <tr key={lead.id}
+                          style={{
+                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                            cursor: 'pointer',
+                            background: isSelected ? 'rgba(105,63,234,0.18)' : 'transparent',
+                            transition: 'background 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
+                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'rgba(105,63,234,0.18)' : 'transparent'; }}
                           onClick={() => setExpandedLeadId(isExpanded ? null : lead.id)}
                           role="row"
                           tabIndex={0}
                           onKeyDown={(e) => e.key === 'Enter' && setExpandedLeadId(isExpanded ? null : lead.id)}
                         >
-                          <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
+                          <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleLeadSelection(lead.id)}
-                              style={{ accentColor: '#693fe9', cursor: 'pointer' }}
+                              style={{ accentColor: '#693fe9', cursor: 'pointer', width: '18px', height: '18px' }}
                               aria-label={`Select ${lead.firstName || lead.vanityId}`}
                             />
                           </td>
-                          <td style={{ padding: '10px 12px' }}>
-                            <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'none', fontWeight: '600' }}
+                          <td style={{ padding: '14px 16px', minWidth: '180px' }}>
+                            <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'none', fontWeight: '600', fontSize: '14px' }}
                               onClick={e => e.stopPropagation()}>
                               {lead.firstName || lead.vanityId || 'Unknown'} {lead.lastName || ''}
                             </a>
-                            {lead.headline && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginTop: '2px' }}>{lead.headline.slice(0, DEFAULTS.MAX_HEADLINE_LENGTH)}...</div>}
+                            {lead.headline && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '4px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.headline}</div>}
                           </td>
-                          <td style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.6)' }}>{lead.company || '-'}</td>
-                          <td style={{ padding: '10px 12px' }}>
-                            <span style={{ padding: '3px 8px', background: sc.bg, border: `1px solid ${sc.border}`, borderRadius: '6px', color: sc.text, fontSize: '10px', fontWeight: '600' }}>
-                              {sc.label}
-                            </span>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              {/* Status Badge */}
+                              <span style={{
+                                padding: '5px 12px',
+                                background: sc.bg,
+                                border: `1px solid ${sc.border}`,
+                                borderRadius: '20px',
+                                color: sc.text,
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: sc.text }}></span>
+                                {sc.label}
+                              </span>
+                              {/* Touches Counter */}
+                              <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '5px 12px',
+                                background: (lead.touchCount || 0) > 0 ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.05)',
+                                borderRadius: '20px',
+                                border: `1px solid ${(lead.touchCount || 0) > 0 ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                              }}>
+                                <span style={{ fontSize: '12px' }}>👆</span>
+                                <span style={{ color: (lead.touchCount || 0) > 0 ? '#34d399' : 'rgba(255,255,255,0.4)', fontWeight: '600', fontSize: '12px' }}>
+                                  {lead.touchCount || 0}
+                                </span>
+                              </div>
+                            </div>
                           </td>
-                          <td style={{ padding: '10px 12px', color: '#a78bfa', fontWeight: '600' }}>{lead.posts?.length || 0}</td>
-                          <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: '600' }}>{lead.touchCount || 0}</td>
-                          <td style={{ padding: '10px 12px' }}>
-                            <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                          <td style={{ padding: '12px 16px', minWidth: '1fr' }}>
+                            {lead.posts && lead.posts.length > 0 ? (
+                              <div style={{
+                                display: 'flex',
+                                gap: '14px',
+                                overflowX: 'auto',
+                                paddingBottom: '8px',
+                                maxWidth: '1000px',
+                                scrollbarWidth: 'thin',
+                                scrollbarColor: '#4a4a6a #1e1b4b',
+                              }}>
+                                {lead.posts.slice(0, 10).map((post) => (
+                                  <div key={post.id} style={{
+                                    minWidth: '320px',
+                                    maxWidth: '320px',
+                                    background: 'linear-gradient(180deg, rgba(30,30,55,0.95) 0%, rgba(20,20,40,0.98) 100%)',
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    border: '1px solid rgba(105,63,233,0.15)',
+                                    flexShrink: 0,
+                                    transition: 'all 0.2s ease',
+                                  }}>
+                                    {/* LinkedIn-style Header */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                      <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', fontWeight: '500' }}>
+                                        {post.postDate ? new Date(post.postDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                                      </span>
+                                      {post.isLiked && (
+                                        <span style={{ color: '#0a66c2', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}>
+                                          👍 Liked
+                                        </span>
+                                      )}
+                                    </div>
+                                    {/* Post Text with proper formatting */}
+                                    <div style={{
+                                      color: 'rgba(255,255,255,0.88)',
+                                      fontSize: '13px',
+                                      lineHeight: '1.6',
+                                      maxHeight: '150px',
+                                      overflowY: 'auto',
+                                      marginBottom: '12px',
+                                      scrollbarWidth: 'thin',
+                                      scrollbarColor: '#4a4a6a transparent',
+                                      fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                      whiteSpace: 'pre-wrap',
+                                      wordBreak: 'break-word',
+                                    }}>
+                                      {post.postText?.split(/(#\w+)/g).map((part, i) =>
+                                        part.startsWith('#') ? (
+                                          <span key={i} style={{ color: '#0a66c2', fontWeight: '600' }}>{part}</span>
+                                        ) : part.match(/^@\w+/) ? (
+                                          <span key={i} style={{ color: '#0a66c2', fontWeight: '600' }}>{part}</span>
+                                        ) : (
+                                          part
+                                        )
+                                      )}
+                                    </div>
+                                    {/* LinkedIn-style Engagement bar */}
+                                    <div style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      paddingTop: '8px',
+                                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                                    }}>
+                                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                                        👍 {post.likes || 0} · 💬 {post.comments || 0}
+                                      </span>
+                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                        {!post.isLiked && (
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); engageWithPost(lead, post, 'like'); }}
+                                            disabled={engagingPost === post.id}
+                                            style={{
+                                              background: 'rgba(10,102,194,0.15)',
+                                              border: '1px solid rgba(10,102,194,0.3)',
+                                              borderRadius: '16px',
+                                              color: '#70b5f9',
+                                              fontSize: '11px',
+                                              padding: '6px 14px',
+                                              cursor: engagingPost === post.id ? 'not-allowed' : 'pointer',
+                                              opacity: engagingPost === post.id ? 0.5 : 1,
+                                              fontWeight: '600',
+                                            }}
+                                          >
+                                            👍 Like
+                                          </button>
+                                        )}
+                                        {!post.isCommented && (
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); setCommentInput({ postId: post.id, text: '' }); }}
+                                            disabled={engagingPost === post.id}
+                                            style={{
+                                              background: 'rgba(255,255,255,0.08)',
+                                              border: '1px solid rgba(255,255,255,0.1)',
+                                              borderRadius: '16px',
+                                              color: 'rgba(255,255,255,0.6)',
+                                              fontSize: '11px',
+                                              padding: '6px 14px',
+                                              cursor: engagingPost === post.id ? 'not-allowed' : 'pointer',
+                                              opacity: engagingPost === post.id ? 0.5 : 1,
+                                              fontWeight: '600',
+                                            }}
+                                          >
+                                            💬 Comment
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {/* Comment input */}
+                                    {commentInput?.postId === post.id && (
+                                      <div style={{ marginTop: '10px', display: 'flex', gap: '6px' }}>
+                                        <input
+                                          type="text"
+                                          value={commentInput.text}
+                                          onChange={(e) => setCommentInput({ ...commentInput, text: e.target.value })}
+                                          placeholder="Write a comment..."
+                                          style={{
+                                            flex: 1,
+                                            background: 'rgba(255,255,255,0.08)',
+                                            border: '1px solid rgba(255,255,255,0.15)',
+                                            borderRadius: '8px',
+                                            padding: '8px 12px',
+                                            color: 'white',
+                                            fontSize: '12px',
+                                            outline: 'none',
+                                          }}
+                                          aria-label="Comment text"
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && commentInput.text) {
+                                              engageWithPost(lead, post, 'comment', commentInput.text);
+                                              setCommentInput(null);
+                                            }
+                                          }}
+                                        />
+                                        <button
+                                          onClick={() => { engageWithPost(lead, post, 'comment', commentInput.text); setCommentInput(null); }}
+                                          disabled={!commentInput.text}
+                                          style={{
+                                            background: !commentInput.text ? 'rgba(255,255,255,0.08)' : 'rgba(167,139,250,0.3)',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            padding: '8px 14px',
+                                            color: !commentInput.text ? 'rgba(255,255,255,0.3)' : 'white',
+                                            fontSize: '11px',
+                                            fontWeight: '600',
+                                            cursor: !commentInput.text ? 'not-allowed' : 'pointer',
+                                          }}
+                                        >
+                                          Send
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                background: 'rgba(255,255,255,0.03)',
+                                borderRadius: '8px',
+                                border: '1px dashed rgba(255,255,255,0.1)',
+                              }}>
+                                <span style={{ fontSize: '14px' }}>📝</span>
+                                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>No posts yet</span>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', gap: '8px' }} onClick={e => e.stopPropagation()}>
                               {!lead.postsFetched && (
                                 <button onClick={() => fetchPostsForLeads([lead.id])} disabled={fetchingPosts}
                                   aria-label={`Fetch posts for ${lead.firstName || lead.vanityId}`}
-                                  style={{ ...styles.btn('rgba(0,119,181,0.2)', fetchingPosts), padding: '4px 8px', fontSize: '10px' }}>
-                                  Fetch
+                                  style={{
+                                    background: fetchingPosts ? 'rgba(0,119,181,0.1)' : 'linear-gradient(135deg, rgba(0,119,181,0.3), rgba(0,119,181,0.2))',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '6px 12px',
+                                    color: 'rgba(255,255,255,0.8)',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    cursor: fetchingPosts ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}>
+                                  <span>📄</span> Fetch
                                 </button>
                               )}
                               <button onClick={() => deleteLead(lead)}
                                 disabled={deletingLeadId === lead.id}
                                 aria-label={`Delete ${lead.firstName || lead.vanityId}`}
-                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: deletingLeadId === lead.id ? 'not-allowed' : 'pointer', fontSize: '14px', padding: '4px', opacity: deletingLeadId === lead.id ? 0.5 : 1 }}>
-                                {deletingLeadId === lead.id ? '...' : '✕'}
+                                style={{
+                                  background: 'rgba(248,113,113,0.1)',
+                                  border: '1px solid rgba(248,113,113,0.2)',
+                                  borderRadius: '8px',
+                                  padding: '6px 10px',
+                                  color: '#f87171',
+                                  cursor: deletingLeadId === lead.id ? 'not-allowed' : 'pointer',
+                                  fontSize: '12px',
+                                  opacity: deletingLeadId === lead.id ? 0.5 : 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                }}>
+                                {deletingLeadId === lead.id ? '...' : '🗑️'}
                               </button>
                             </div>
                           </td>
                         </tr>
-                        {/* Expanded Posts Row */}
-                        {isExpanded && lead.posts && lead.posts.length > 0 && (
-                          <tr key={`${lead.id}-posts`}>
-                            <td colSpan={7} style={{ padding: '0', background: 'rgba(0,0,0,0.2)' }}>
-                              <div style={{ padding: '12px 16px', maxHeight: '300px', overflowY: 'auto' }}>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: '600', marginBottom: '8px' }}>
-                                  Recent Posts ({lead.posts.length})
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                  {lead.posts.map((post) => (
-                                    <div key={post.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
-                                          {post.postDate ? new Date(post.postDate).toLocaleDateString() : 'Unknown date'}
-                                        </span>
-                                        <div style={{ display: 'flex', gap: '4px' }}>
-                                          {post.isLiked && <span style={{ color: '#34d399', fontSize: '10px' }}>✓ Liked</span>}
-                                          {post.isCommented && <span style={{ color: '#a78bfa', fontSize: '10px' }}>✓ Commented</span>}
-                                        </div>
-                                      </div>
-                                      <div style={{ color: 'white', fontSize: '11px', lineHeight: '1.4', maxHeight: `${DEFAULTS.MAX_POST_PREVIEW_LINES}px`, overflow: 'auto', marginBottom: '8px' }}>
-                                        {post.postText || '(No text)'}
-                                      </div>
-
-                                      {/* Inline comment input */}
-                                      {commentInput?.postId === post.id ? (
-                                        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                                          <input
-                                            type="text"
-                                            value={commentInput.text}
-                                            onChange={(e) => setCommentInput({ ...commentInput, text: e.target.value })}
-                                            placeholder="Enter your comment..."
-                                            style={{ ...styles.input, flex: 1 }}
-                                            aria-label="Comment text"
-                                            onKeyDown={(e) => {
-                                              if (e.key === 'Enter' && commentInput.text) {
-                                                engageWithPost(lead, post, 'comment', commentInput.text);
-                                                setCommentInput(null);
-                                              }
-                                            }}
-                                          />
-                                          <button
-                                            onClick={() => { engageWithPost(lead, post, 'comment', commentInput.text); setCommentInput(null); }}
-                                            disabled={!commentInput.text}
-                                            style={styles.btn('rgba(167,139,250,0.2)', !commentInput.text)}
-                                          >
-                                            Send
-                                          </button>
-                                          <button
-                                            onClick={() => setCommentInput(null)}
-                                            style={styles.btn('rgba(255,255,255,0.1)')}
-                                          >
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px' }}>
-                                            👍 {post.likes || 0} · 💬 {post.comments || 0}
-                                          </span>
-                                          <div style={{ flex: 1 }} />
-                                          {!post.isLiked && (
-                                            <button onClick={() => engageWithPost(lead, post, 'like')} disabled={engagingPost === post.id}
-                                              aria-label="Like post"
-                                              style={{ ...styles.btn('rgba(52,211,153,0.2)', engagingPost === post.id), padding: '4px 10px', fontSize: '10px' }}>
-                                              👍 Like
-                                            </button>
-                                          )}
-                                          {!post.isCommented && (
-                                            <button onClick={() => setCommentInput({ postId: post.id, text: '' })} disabled={engagingPost === post.id}
-                                              aria-label="Comment on post"
-                                              style={{ ...styles.btn('rgba(167,139,250,0.2)', engagingPost === post.id), padding: '4px 10px', fontSize: '10px' }}>
-                                              💬 Comment
-                                            </button>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </>
                     );
                   })}
@@ -956,12 +1160,29 @@ export default function ImportTab(props: Props) {
       )}
 
       {/* Safety Notice */}
-      <div style={{ ...styles.card, background: 'rgba(251,191,36,0.05)', border: '1px solid rgba(251,191,36,0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '16px' }}>🛡️</span>
+      <div style={{
+        ...styles.card,
+        background: 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(245,158,11,0.05) 100%)',
+        border: '1px solid rgba(251,191,36,0.2)',
+        borderRadius: '12px',
+        padding: '16px 20px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.15))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
+          }}>
+            🛡️
+          </div>
           <div>
-            <div style={{ color: '#fbbf24', fontSize: '11px', fontWeight: '700' }}>LinkedIn Safety Built-In</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
+            <div style={{ color: '#fbbf24', fontSize: '13px', fontWeight: '700', marginBottom: '2px' }}>LinkedIn Safety Built-In</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
               Max 20-30 profiles/day · Actions spaced across days · No same-session like+comment · Auto-pause on warnings
             </div>
           </div>

@@ -156,7 +156,9 @@ export default function HistoryTab(props: any) {
                                     let parsedContent: any = null;
                                     try { parsedContent = JSON.parse(item.content); } catch { parsedContent = item.content; }
                                     let parsedMeta: any = null;
-                                    try { if (item.metadata) parsedMeta = JSON.parse(item.metadata); } catch { }
+                                    try { if (item.metadata) parsedMeta = JSON.parse(item.metadata); } catch (error) {
+                                      console.warn('Failed to parse item metadata:', error);
+                                    }
 
                                     return (
                                         <div key={item.id} style={{ background: tc.bg, padding: '20px', borderRadius: '16px', border: `1px solid ${tc.color}33` }}>

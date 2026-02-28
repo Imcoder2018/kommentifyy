@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const limitCheck = await limitService.checkLimit(user.id, 'aiPosts');
     if (!limitCheck.allowed) {
-      return NextResponse.json({ success: false, error: 'Daily AI post limit reached' }, { status: 429 });
+      return NextResponse.json({ success: false, error: 'Monthly AI post limit reached' }, { status: 429 });
     }
 
     const { trendingPosts, customPrompt, includeHashtags, language, model: requestedModel, useProfileData, profileData } = await request.json();

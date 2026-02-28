@@ -1,8 +1,15 @@
 const { createClient } = require('@supabase/supabase-js');
 
 async function test() {
-    const supabaseUrl = 'https://fvoruwepflhyvwxoitov.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2b3J1d2VwZmxoeXZ3eG9pdG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4ODU0NzIsImV4cCI6MjA3ODQ2MTQ3Mn0.NlqFXwKyLHrHPGWEZ_Jxvf62siq8lcYKw0wMfi5WRfU';
+    // Use environment variables for Supabase credentials
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
+
+    if (supabaseUrl === 'https://your-project.supabase.co' || supabaseKey === 'your-anon-key') {
+        console.error('❌ Error: Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables');
+        return;
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
     // Test 1: Auth check (simplest)
     const { data: authData, error: authError } = await supabase.auth.getSession();

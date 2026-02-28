@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
+function verifyAdminToken(token: string) {
+  try {
+    jwt.verify(token, JWT_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // GET - Admin: List all comment style profiles across all users
 export async function GET(request: NextRequest) {
   try {
     const adminToken = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!adminToken) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    const jwt = require('jsonwebtoken');
-    try { jwt.verify(adminToken, process.env.JWT_SECRET || 'fallback-secret'); } catch { return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 }); }
+    if (!verifyAdminToken(adminToken)) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
 
     const profiles = await (prisma as any).commentStyleProfile.findMany({
       orderBy: { commentCount: 'desc' },
@@ -41,8 +55,7 @@ export async function PUT(request: NextRequest) {
   try {
     const adminToken = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!adminToken) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    const jwt = require('jsonwebtoken');
-    try { jwt.verify(adminToken, process.env.JWT_SECRET || 'fallback-secret'); } catch { return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 }); }
+    if (!verifyAdminToken(adminToken)) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
 
     const { profileIds, shared } = await request.json();
     if (!profileIds || !Array.isArray(profileIds)) return NextResponse.json({ success: false, error: 'profileIds array required' }, { status: 400 });

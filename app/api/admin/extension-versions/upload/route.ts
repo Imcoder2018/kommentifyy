@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { put, del, list } from '@vercel/blob';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';

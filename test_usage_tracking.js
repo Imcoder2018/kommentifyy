@@ -1,20 +1,29 @@
-const fetch = require('node-fetch');
+// Use native fetch (available in Node 18+)
 
-const BASE_URL = 'https://kommentify.com';
+const BASE_URL = process.env.TEST_API_URL || 'http://localhost:3000';
+
+// Get credentials from environment variables
+const TEST_EMAIL = process.env.TEST_USER_EMAIL;
+const TEST_PASSWORD = process.env.TEST_USER_PASSWORD;
+
+if (!TEST_EMAIL || !TEST_PASSWORD) {
+  console.error('❌ Error: TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables are required');
+  process.exit(1);
+}
 
 async function testUsageTracking() {
   try {
     console.log('🧪 Testing Usage Tracking & Dashboard Display\n');
     console.log('='.repeat(80));
-    
+
     // Step 1: Login
     console.log('1. Logging in...');
     const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'mwaqarsikandar@gmail.com',
-        password: 'grow/9876'
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD
       })
     });
     

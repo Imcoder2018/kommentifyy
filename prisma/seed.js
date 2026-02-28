@@ -3,6 +3,10 @@ const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
+// Get admin credentials from environment variables or use defaults for development
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@linkedin-automation.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@123456';
+
 async function main() {
   console.log('🌱 Seeding database...');
 
@@ -98,13 +102,13 @@ async function main() {
 
   // Create admin user
   console.log('Creating admin user...');
-  const hashedPassword = await bcrypt.hash('Admin@123456', 10);
+  const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
 
   const admin = await prisma.admin.upsert({
-    where: { email: 'admin@linkedin-automation.com' },
+    where: { email: ADMIN_EMAIL },
     update: {},
     create: {
-      email: 'admin@linkedin-automation.com',
+      email: ADMIN_EMAIL,
       password: hashedPassword,
       name: 'Admin User',
       role: 'admin',
@@ -114,9 +118,9 @@ async function main() {
   console.log('✅ Admin user created:', admin.email);
   console.log('\n🎉 Database seeded successfully!');
   console.log('\n📝 Default Admin Credentials:');
-  console.log('   Email: admin@linkedin-automation.com');
-  console.log('   Password: Admin@123456');
-  console.log('\n⚠️  IMPORTANT: Change these credentials in production!\n');
+  console.log(`   Email: ${ADMIN_EMAIL}`);
+  console.log('   Password: (use ADMIN_PASSWORD env var or default)');
+  console.log('\n⚠️  IMPORTANT: Change ADMIN_PASSWORD in production!\n');
 }
 
 main()

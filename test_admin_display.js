@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+// Test file - no external dependencies needed
 
 async function testAdminDisplay() {
   try {

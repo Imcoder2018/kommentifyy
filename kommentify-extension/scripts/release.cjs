@@ -17,8 +17,18 @@ const readline = require('readline');
 const { execSync } = require('child_process');
 const archiver = require('archiver');
 
+// Get admin token from environment variable
+const ADMIN_UPLOAD_TOKEN = process.env.ADMIN_UPLOAD_TOKEN;
+
+if (!ADMIN_UPLOAD_TOKEN) {
+    console.error('❌ Error: ADMIN_UPLOAD_TOKEN environment variable is not set');
+    console.log('   Run: export ADMIN_UPLOAD_TOKEN=your_token_here');
+    process.exit(1);
+}
+
 // Configuration
 const API_URL = 'https://kommentify.com/api/admin/extension-versions/upload';
+
 const MANIFEST_PATH = path.join(__dirname, '..', 'src', 'manifest.json');
 const DIST_MANIFEST_PATH = path.join(__dirname, '..', 'dist', 'manifest.json');
 const PACKAGE_PATH = path.join(__dirname, '..', 'package.json');
@@ -150,7 +160,7 @@ async function uploadToBackend(zipPath, version, features, bugFixes, releaseNote
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer admin-upload-token'
+                'Authorization': `Bearer ${ADMIN_UPLOAD_TOKEN}`
             },
             body: formData
         });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractToken } from '@/lib/auth';
-import { getLinkedInAuthUrl } from '@/lib/linkedin-service';
+import { getLinkedInAuthUrl, isLinkedInConfigured } from '@/lib/linkedin-service';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +16,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
     const payload = verifyToken(token);
+
+    // Check if LinkedIn OAuth is configured
+    if (!isLinkedInConfigured()) {
+      return NextResponse.json({ success: true, connected: false, configured: false, error: 'LinkedIn OAuth not configured' }, { status: 200 });
+    }
 
     // Check if user already has LinkedIn connected
     const existing = await (prisma as any).linkedInOAuth.findUnique({
@@ -37,7 +42,7 @@ export async function GET(request: NextRequest) {
     const state = Buffer.from(JSON.stringify({ userId: payload.userId, ts: Date.now() })).toString('base64');
     const authUrl = getLinkedInAuthUrl(state);
 
-    return NextResponse.json({ success: true, connected: false, authUrl });
+    return NextResponse.json({ success: true, connected: false, authUrl, configured: true });
   } catch (error: any) {
     console.error('LinkedIn OAuth init error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

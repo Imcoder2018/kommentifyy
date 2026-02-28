@@ -12,7 +12,7 @@ Write-Host "Run this command and paste your Supabase PostgreSQL URL:"
 Write-Host "npx vercel env add DATABASE_URL production" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Your DATABASE_URL should be:"
-Write-Host "postgresql://postgres.fvoruwepflhyvwxoitov:[YOUR_PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres" -ForegroundColor Gray
+Write-Host "postgresql://postgres.[PROJECT_REF]:[YOUR_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres" -ForegroundColor Gray
 Write-Host ""
 
 # Deploy the updated environment

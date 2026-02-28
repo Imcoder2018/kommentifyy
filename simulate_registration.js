@@ -1,9 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 
+// Use environment variable for database URL, fallback to default for local development
 const prisma = new PrismaClient({
     datasources: {
         db: {
-            url: "postgresql://postgres:8q0xoxpz8DJqJReL@db.fvoruwepflhyvwxoitov.supabase.co:5432/postgres?schema=linkedin_automation"
+            url: process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/postgres?schema=linkedin_automation"
         }
     }
 });

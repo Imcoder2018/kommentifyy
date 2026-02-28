@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
 
     // Calculate next touch based on sequence
     let sequenceSteps: any[] = [];
-    try { sequenceSteps = JSON.parse(prospect.campaign.sequenceSteps || '[]'); } catch {}
+    try { sequenceSteps = JSON.parse(prospect.campaign.sequenceSteps || '[]'); } catch (error) {
+      console.error('Failed to parse sequenceSteps:', error);
+    }
     const enabledSteps = sequenceSteps.filter((s: any) => s.enabled);
     const currentStepIdx = enabledSteps.findIndex((s: any) => s.day > (prospect.touchCount + 1) || enabledSteps.indexOf(s) > prospect.touchCount);
     const nextStep = enabledSteps[newTouchCount] || null;

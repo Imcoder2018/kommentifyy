@@ -3,7 +3,7 @@
  * =============================================================
  * Extracts ALL available user profile data, posts, connections,
  * invitations, and engagement metrics via LinkedIn's internal Voyager API.
- * 
+ *
  * v2 FIXES:
  *  - Experience: entries without `title` are now filtered out (were showing as duplicates)
  *  - Post text: exhaustive search of ALL included items for commentary text
@@ -13,24 +13,76 @@
 
 const VOYAGER_BASE = 'https://www.linkedin.com/voyager/api';
 
+// ─── Cookie Caching (for Voyager) ───────────────────────────────────────
+async function getCachedLinkedInCookies() {
+    try {
+        const cached = await chrome.storage.local.get('linkedInCookies');
+        if (cached.linkedInCookies) {
+            const { cookies, timestamp } = cached.linkedInCookies;
+            const age = Date.now() - timestamp;
+            // Cache valid for 6 hours
+            if (age < 6 * 60 * 60 * 1000 && cookies && cookies.JSESSIONID) {
+                console.log('[Voyager] Using cached cookies (age: ' + Math.round(age/1000/60) + 'min)');
+                return cookies;
+            }
+        }
+    } catch (e) {
+        console.log('[Voyager] Cache read error:', e.message);
+    }
+    return null;
+}
+
+async function refreshLinkedInCookies() {
+    console.log('[Voyager] Refreshing LinkedIn cookies...');
+    try {
+        const cookies = {};
+        const names = ['JSESSIONID', 'li_at', 'bcookie', 'bscookie'];
+        for (const name of names) {
+            const cookie = await new Promise((resolve) => {
+                chrome.cookies.get({ url: 'https://www.linkedin.com', name: name }, (c) => resolve(c));
+            });
+            if (cookie?.value) {
+                cookies[name] = cookie.value;
+            }
+        }
+        if (cookies.JSESSIONID || cookies.li_at) {
+            await chrome.storage.local.set({
+                linkedInCookies: { cookies, timestamp: Date.now() }
+            });
+            console.log('[Voyager] Cookies cached');
+            return cookies;
+        }
+    } catch (e) {
+        console.log('[Voyager] Cookie refresh error:', e.message);
+    }
+    return null;
+}
+
+async function getLinkedInCookiesWithCache() {
+    let cookies = await getCachedLinkedInCookies();
+    if (!cookies) {
+        cookies = await refreshLinkedInCookies();
+    }
+    if (!cookies) {
+        // Last resort - direct browser access
+        cookies = {};
+        const cookie = await new Promise((resolve) => {
+            chrome.cookies.get({ url: 'https://www.linkedin.com', name: 'JSESSIONID' }, (c) => resolve(c));
+        });
+        if (cookie?.value) {
+            cookies.JSESSIONID = cookie.value;
+        }
+    }
+    return cookies;
+}
+
 // ─── Cookie Extraction ──────────────────────────────────────────────────
 async function getLinkedInSessionCookie() {
-    return new Promise((resolve, reject) => {
-        chrome.cookies.get(
-            { url: 'https://www.linkedin.com', name: 'JSESSIONID' },
-            (cookie) => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
-                    return;
-                }
-                if (!cookie) {
-                    reject(new Error('Not logged into LinkedIn — JSESSIONID cookie not found'));
-                    return;
-                }
-                resolve(cookie.value.replace(/"/g, ''));
-            }
-        );
-    });
+    const cookies = await getLinkedInCookiesWithCache();
+    if (!cookies?.JSESSIONID) {
+        throw new Error('Not logged into LinkedIn — JSESSIONID cookie not found');
+    }
+    return cookies.JSESSIONID.replace(/"/g, '');
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────

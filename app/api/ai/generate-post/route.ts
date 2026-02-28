@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const limitCheck = await limitService.checkLimit(user.id, 'aiPosts');
     if (!limitCheck.allowed) {
       return NextResponse.json(
-        { success: false, error: 'Daily AI post limit reached', remaining: 0 },
+        { success: false, error: 'Monthly AI post limit reached', remaining: 0 },
         { status: 429 }
       );
     }

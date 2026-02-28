@@ -275,7 +275,9 @@ class ImportAutomation {
             if (engagement.follows > 0) liveLog.follow('import', `➕ Followed author`, { postUrl });
             return engagement;
         } finally {
-            try { await chrome.tabs.remove(tabId); } catch {}
+            try { await chrome.tabs.remove(tabId); } catch (error) {
+              console.warn('Failed to remove tab:', error);
+            }
         }
     }
 
@@ -323,7 +325,9 @@ class ImportAutomation {
         liveLog.info('import', `📄 Found ${postUrls.length} posts to engage with`, { count: postUrls.length });
 
         // Close activity page tab
-        try { await chrome.tabs.remove(tabId); } catch {}
+        try { await chrome.tabs.remove(tabId); } catch (error) {
+          console.warn('Failed to remove tab:', error);
+        }
 
         if (postUrls.length === 0) {
             console.warn('📱 IMPORT [INDIVIDUAL METHOD]: No post URLs found');

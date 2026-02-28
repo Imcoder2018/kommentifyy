@@ -270,6 +270,164 @@ async function getFreshToken() {
     return authToken;
 }
 
+// Cookie caching for LinkedIn - stores cookies in extension storage to avoid opening tabs
+const LINKEDIN_COOKIE_NAMES = ['JSESSIONID', 'li_at', 'bcookie', 'bscookie', 'lidc', 'liap', 'UserMatchHistory', 'L1e', 'AQC', 'GA2T', 'GraphQL'];
+
+async function getLinkedInCookiesFromCache() {
+    try {
+        const cached = await chrome.storage.local.get('linkedInCookies');
+        if (cached.linkedInCookies) {
+            const { cookies, timestamp } = cached.linkedInCookies;
+            const age = Date.now() - timestamp;
+            // Cache valid for 6 hours
+            if (age < 6 * 60 * 60 * 1000 && cookies && cookies.JSESSIONID) {
+                console.log('📋 getLinkedInCookiesFromCache: Using cached cookies (age: ' + Math.round(age/1000/60) + 'min)');
+                return cookies;
+            }
+        }
+    } catch (e) {
+        console.log('📋 getLinkedInCookiesFromCache: Error reading cache:', e.message);
+    }
+    return null;
+}
+
+async function refreshLinkedInCookies() {
+    console.log('📋 refreshLinkedInCookies: Fetching fresh LinkedIn cookies...');
+    try {
+        // Get all needed cookies from browser
+        const cookies = {};
+        for (const name of LINKEDIN_COOKIE_NAMES) {
+            const cookie = await chrome.cookies.get({
+                url: 'https://www.linkedin.com',
+                name: name
+            });
+            if (cookie?.value) {
+                cookies[name] = cookie.value;
+            }
+        }
+
+        if (cookies.JSESSIONID || cookies.li_at) {
+            // Store in cache
+            await chrome.storage.local.set({
+                linkedInCookies: {
+                    cookies: cookies,
+                    timestamp: Date.now()
+                }
+            });
+            console.log('📋 refreshLinkedInCookies: Cookies cached successfully');
+            return cookies;
+        }
+    } catch (e) {
+        console.log('📋 refreshLinkedInCookies: Error:', e.message);
+    }
+    return null;
+}
+
+async function getLinkedInCookies() {
+    // Try cache first
+    let cookies = await getLinkedInCookiesFromCache();
+
+    // If no cache or expired, get fresh cookies
+    if (!cookies) {
+        console.log('📋 getLinkedInCookies: Cache miss, fetching fresh cookies...');
+        cookies = await refreshLinkedInCookies();
+    }
+
+    // If still no cookies, try direct browser access
+    if (!cookies) {
+        console.log('📋 getLinkedInCookies: Direct browser access...');
+        try {
+            const cookiesObj = {};
+            for (const name of LINKEDIN_COOKIE_NAMES) {
+                const cookie = await chrome.cookies.get({
+                    url: 'https://www.linkedin.com',
+                    name: name
+                });
+                if (cookie?.value) {
+                    cookiesObj[name] = cookie.value;
+                }
+            }
+            if (cookiesObj.JSESSIONID || cookiesObj.li_at) {
+                // Cache these too
+                await chrome.storage.local.set({
+                    linkedInCookies: {
+                        cookies: cookiesObj,
+                        timestamp: Date.now()
+                    }
+                });
+                return cookiesObj;
+            }
+        } catch (e) {
+            console.log('📋 getLinkedInCookies: Direct browser error:', e.message);
+        }
+    }
+
+    return cookies;
+}
+
+// Periodic cookie refresh - refresh every hour to keep cookies fresh
+if (!globalThis._cookieRefreshAlarmCreated) {
+    chrome.alarms.create('cookieRefresh', { periodInMinutes: 60 }); // every hour
+    globalThis._cookieRefreshAlarmCreated = true;
+    console.log('BACKGROUND: Cookie refresh alarm created (every 60min)');
+}
+
+// Helper function to find or create a LinkedIn tab with retry logic
+async function getLinkedInTab() {
+    let tabId = null;
+    let tab = null;
+
+    // First, try to find existing LinkedIn tabs
+    try {
+        const tabs = await chrome.tabs.query({ url: '*://*.linkedin.com/*' });
+        if (tabs.length > 0) {
+            tab = tabs[0];
+            console.log('📋 getLinkedInTab: Reusing existing LinkedIn tab:', tab.id);
+            return tab;
+        }
+    } catch (e) {
+        console.log('📋 getLinkedInTab: Could not query tabs:', e.message);
+    }
+
+    // If no existing tab, create a new one with retry logic
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`📋 getLinkedInTab: Creating LinkedIn tab, attempt ${attempt}/${maxRetries}`);
+            tab = await chrome.tabs.create({
+                url: 'https://www.linkedin.com/feed/',
+                active: false
+            });
+            globalThis._commandLinkedInTabs.add(tab.id);
+
+            // Wait for tab to load
+            await new Promise((resolve) => {
+                const checkComplete = (tabId, changeInfo) => {
+                    if (tabId === tab.id && changeInfo.status === 'complete') {
+                        chrome.tabs.onUpdated.removeListener(checkComplete);
+                        resolve();
+                    }
+                };
+                chrome.tabs.onUpdated.addListener(checkComplete);
+                setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 15000);
+            });
+
+            await new Promise(r => setTimeout(r, 1000));
+            console.log('📋 getLinkedInTab: Created new LinkedIn tab:', tab.id);
+            return tab;
+        } catch (e) {
+            if (e.message?.includes('Tabs cannot be edited')) {
+                console.log(`📋 getLinkedInTab: Tab creation blocked, attempt ${attempt}/${maxRetries}`);
+                await new Promise(r => setTimeout(r, 2000 * attempt));
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    throw new Error('Failed to create LinkedIn tab after retries');
+}
+
 
 // --- COMMAND POLLING VIA ALARM (independent of content scripts) ---
 // This ensures commands from the website are picked up even if the dashboard tab is not open
@@ -750,25 +908,9 @@ async function pollCommandsDirectly() {
                             ll.start('post_writer', `✍️ Posting to LinkedIn...`);
                         } catch (e) { }
 
-                        // Step 1: Open LinkedIn feed tab
-                        console.log('📝 POLL-ALARM: Opening LinkedIn tab...');
-                        postTab = await chrome.tabs.create({
-                            url: 'https://www.linkedin.com/feed/',
-                            active: true
-                        });
-                        globalThis._commandLinkedInTabs.add(postTab.id);
-
-                        // Step 2: Wait for tab to fully load
-                        await new Promise((resolve) => {
-                            const checkComplete = (tabId, changeInfo) => {
-                                if (tabId === postTab.id && changeInfo.status === 'complete') {
-                                    chrome.tabs.onUpdated.removeListener(checkComplete);
-                                    resolve();
-                                }
-                            };
-                            chrome.tabs.onUpdated.addListener(checkComplete);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
-                        });
+                        // Step 1: Get LinkedIn tab (reuse existing or create new)
+                        console.log('📝 POLL-ALARM: Getting LinkedIn tab...');
+                        postTab = await getLinkedInTab();
 
                         if (globalThis._stopAllTasks) {
                             console.log('🛑 POLL-ALARM: Stop flag set, aborting post_to_linkedin');
@@ -1086,47 +1228,73 @@ async function pollCommandsDirectly() {
                     let postTab = null;
                     try {
                         const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
-                        ll.start('post_writer', `🚀 Posting via Voyager API...`);
+                        ll.start('post_writer', `🚀 Posting to LinkedIn...`);
 
-                        // Open LinkedIn tab in background (needed for cookies/session)
-                        postTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
-                        globalThis._commandLinkedInTabs.add(postTab.id);
-
-                        // Wait for tab to load
-                        await new Promise((resolve) => {
-                            const checkComplete = (tabId, changeInfo) => {
-                                if (tabId === postTab.id && changeInfo.status === 'complete') {
-                                    chrome.tabs.onUpdated.removeListener(checkComplete);
-                                    resolve();
-                                }
-                            };
-                            chrome.tabs.onUpdated.addListener(checkComplete);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 15000);
-                        });
-
-                        await new Promise(r => setTimeout(r, 1500));
+                        // Get CSRF token from cached cookies (with auto-refresh if needed)
+                        const cookies = await getLinkedInCookies();
+                        if (!cookies?.JSESSIONID && !cookies?.li_at) {
+                            throw new Error('LinkedIn cookies not found - please log into LinkedIn in your browser first');
+                        }
+                        const csrfTokenValue = cookies.JSESSIONID?.replace(/"/g, "") || "";
 
                         const content = cmd.data.content;
                         const imageUrl = cmd.data.imageUrl || cmd.data.mediaUrl || null;
                         const imageDataUrl = cmd.data.imageDataUrl || null;
                         const hasImage = cmd.data.hasImage || !!imageUrl || !!imageDataUrl;
 
-                        // Execute exact working Voyager API implementation
-                        const result = await chrome.scripting.executeScript({
-                            target: { tabId: postTab.id },
-                            func: async (postContent, imgUrl, imgDataUrl, hasImg) => {
-                                // Auth helpers (exact from working script)
-                                function getCsrfToken() {
-                                    for (const c of document.cookie.split("; ")) {
-                                        if (c.startsWith("JSESSIONID=")) return c.substring(11).replace(/"/g, "");
+                        // Find existing LinkedIn tab to use for API calls
+                        let linkedInTabId = null;
+                        try {
+                            const tabs = await chrome.tabs.query({ url: '*://*.linkedin.com/*' });
+                            if (tabs.length > 0) {
+                                linkedInTabId = tabs[0].id;
+                                console.log('📋 POLL-ALARM: Using existing LinkedIn tab:', linkedInTabId);
+                            }
+                        } catch (e) {
+                            console.log('📋 POLL-ALARM: Could not query tabs:', e.message);
+                        }
+
+                        // If no existing tab, create a minimal one (no wait needed, just for cookie context)
+                        if (!linkedInTabId) {
+                            let tabCreated = false;
+                            for (let attempt = 1; attempt <= 3; attempt++) {
+                                try {
+                                    const newTab = await chrome.tabs.create({
+                                        url: 'https://www.linkedin.com/feed/',
+                                        active: false
+                                    });
+                                    linkedInTabId = newTab.id;
+                                    globalThis._commandLinkedInTabs.add(linkedInTabId);
+                                    tabCreated = true;
+                                    console.log('📋 POLL-ALARM: Created LinkedIn tab:', linkedInTabId);
+                                    break;
+                                } catch (tabError) {
+                                    if (tabError.message?.includes('Tabs cannot be edited')) {
+                                        console.log(`📋 POLL-ALARM: Tab creation blocked, attempt ${attempt}/3`);
+                                        await new Promise(r => setTimeout(r, 2000 * attempt));
+                                    } else {
+                                        throw tabError;
                                     }
-                                    throw new Error("JSESSIONID not found — are you logged into LinkedIn?");
                                 }
+                            }
+                            if (!linkedInTabId) {
+                                throw new Error('Could not create LinkedIn tab for posting');
+                            }
+                        }
+
+                        // Wait briefly for tab to be ready
+                        await new Promise(r => setTimeout(r, 1000));
+
+                        // Execute Voyager API posting
+                        const result = await chrome.scripting.executeScript({
+                            target: { tabId: linkedInTabId },
+                            func: async (postContent, imgUrl, imgDataUrl, hasImg, csrf) => {
+                                // Auth helpers - use passed CSRF token
                                 function buildHeaders(extra = {}) {
                                     return {
                                         "Accept": "application/vnd.linkedin.normalized+json+2.1",
                                         "Content-Type": "application/json",
-                                        "csrf-token": getCsrfToken(),
+                                        "csrf-token": csrf,
                                         "x-li-lang": "en_US",
                                         "x-restli-protocol-version": "2.0.0",
                                         ...extra,
@@ -1259,7 +1427,7 @@ async function pollCommandsDirectly() {
                                     return { success: false, error: e.message };
                                 }
                             },
-                            args: [content, imageUrl, imageDataUrl, hasImage]
+                            args: [content, imageUrl, imageDataUrl, hasImage, csrfTokenValue]
                         });
 
                         const scriptResult = result?.[0]?.result;
@@ -1271,15 +1439,15 @@ async function pollCommandsDirectly() {
                                 headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { urn: scriptResult.urn } })
                             });
-                            ll.post('post_writer', `✅ Posted via Voyager API${scriptResult.hasImage ? ' (with image)' : ''} - URN: ${scriptResult.urn}`);
+                            ll.post('post_writer', `✅ Posted to LinkedIn${scriptResult.hasImage ? ' (with image)' : ''} - URN: ${scriptResult.urn}`);
                         } else {
-                            throw new Error(scriptResult?.error || 'Voyager post failed');
+                            throw new Error(scriptResult?.error || 'LinkedIn post failed');
                         }
                     } catch (e) {
                         console.error('❌ POLL-ALARM: post_via_voyager failed:', e);
                         try {
                             const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
-                            ll.error('post_writer', `❌ Voyager post failed: ${e.message}`);
+                            ll.error('post_writer', `❌ LinkedIn post failed: ${e.message}`);
                         } catch (x) { }
                         try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message }) }); } catch (x) { }
                     } finally {
@@ -1821,25 +1989,9 @@ async function pollCommandsDirectly() {
                             ll.start('post_writer', `✍️ Posting scheduled content to LinkedIn...`);
                         } catch (e) { }
 
-                        // Step 1: Open LinkedIn feed tab
-                        console.log('📅 POLL-ALARM: Opening LinkedIn tab...');
-                        postTab = await chrome.tabs.create({
-                            url: 'https://www.linkedin.com/feed/',
-                            active: true
-                        });
-                        globalThis._commandLinkedInTabs.add(postTab.id);
-
-                        // Step 2: Wait for tab to fully load
-                        await new Promise((resolve) => {
-                            const checkComplete = (tabId, changeInfo) => {
-                                if (tabId === postTab.id && changeInfo.status === 'complete') {
-                                    chrome.tabs.onUpdated.removeListener(checkComplete);
-                                    resolve();
-                                }
-                            };
-                            chrome.tabs.onUpdated.addListener(checkComplete);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
-                        });
+                        // Step 1: Get LinkedIn tab (reuse existing or create new)
+                        console.log('📅 POLL-ALARM: Getting LinkedIn tab...');
+                        postTab = await getLinkedInTab();
 
                         if (globalThis._stopAllTasks) {
                             console.log('🛑 POLL-ALARM: Stop flag set, aborting post_scheduled_content');
@@ -2099,15 +2251,8 @@ async function pollCommandsDirectly() {
                         const mediaUrl = payload.mediaUrl || null;
                         const draftId = payload.draftId || null;
 
-                        // Open a LinkedIn tab to get session cookies
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
-                        globalThis._commandLinkedInTabs.add(apiTab.id);
-                        await new Promise((resolve) => {
-                            const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
-                            chrome.tabs.onUpdated.addListener(check);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
-                        });
-                        await new Promise(r => setTimeout(r, 3000));
+                        // Get LinkedIn tab (reuse existing or create new)
+                        apiTab = await getLinkedInTab();
 
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
@@ -2202,14 +2347,8 @@ async function pollCommandsDirectly() {
                         const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
                         ll.start('post_writer', `📅 Scheduling post via LinkedIn API...`);
 
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
-                        globalThis._commandLinkedInTabs.add(apiTab.id);
-                        await new Promise((resolve) => {
-                            const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
-                            chrome.tabs.onUpdated.addListener(check);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 15000);
-                        });
-                        await new Promise(r => setTimeout(r, 1500));
+                        // Get LinkedIn tab (reuse existing or create new)
+                        apiTab = await getLinkedInTab();
 
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
@@ -3569,6 +3708,12 @@ async function pollCommandsDirectly() {
                     try {
                         await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
 
+                        // Get cached cookies first
+                        const cookies = await getLinkedInCookies();
+                        if (!cookies?.JSESSIONID && !cookies?.li_at) {
+                            throw new Error('LinkedIn cookies not found - please log into LinkedIn');
+                        }
+
                         const { postUrn, postUrl, enableLike, enableComment, commentText, leadId, postId } = cmd.data || {};
                         if (!postUrn && !postUrl) throw new Error('postUrn or postUrl required');
 
@@ -3587,14 +3732,49 @@ async function pollCommandsDirectly() {
                         const targetUrn = `urn:li:activity:${activityId}`;
                         const targetUrl = postUrl || `https://www.linkedin.com/feed/update/${targetUrn}/`;
 
-                        apiTab = await chrome.tabs.create({ url: targetUrl, active: false });
-                        globalThis._commandLinkedInTabs.add(apiTab.id);
-                        await new Promise(r => setTimeout(r, 4000));
+                        // Try to reuse existing LinkedIn tab first
+                        try {
+                            const tabs = await chrome.tabs.query({ url: '*://*.linkedin.com/*' });
+                            if (tabs.length > 0) {
+                                apiTab = tabs[0];
+                                console.log('💬 POLL-ALARM: Reusing existing LinkedIn tab:', apiTab.id);
+                            }
+                        } catch (e) {
+                            console.log('💬 POLL-ALARM: Could not query tabs:', e.message);
+                        }
+
+                        // Create new tab only if needed
+                        if (!apiTab) {
+                            for (let attempt = 1; attempt <= 3; attempt++) {
+                                try {
+                                    apiTab = await chrome.tabs.create({ url: targetUrl, active: false });
+                                    globalThis._commandLinkedInTabs.add(apiTab.id);
+                                    console.log('💬 POLL-ALARM: Created LinkedIn tab:', apiTab.id);
+                                    break;
+                                } catch (tabError) {
+                                    if (tabError.message?.includes('Tabs cannot be edited')) {
+                                        console.log(`💬 POLL-ALARM: Tab creation blocked, attempt ${attempt}/3`);
+                                        await new Promise(r => setTimeout(r, 2000 * attempt));
+                                    } else {
+                                        throw tabError;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!apiTab) throw new Error('Could not get LinkedIn tab');
+
+                        await new Promise(r => setTimeout(r, 2000));
 
                         const scriptResult = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
-                            func: async (config) => {
-                                const { postUrn, enableLike, enableComment, commentText } = config;
+                            func: async (config, cachedCookies) => {
+                                // Use cached cookies if available
+                                const csrf = cachedCookies?.JSESSIONID || (() => {
+                                    for (const c of document.cookie.split("; "))
+                                        if (c.startsWith("JSESSIONID=")) return c.slice(11).replace(/"/g, "");
+                                    return null;
+                                })();
                                 
                                 function getCsrf() {
                                     for (const c of document.cookie.split("; "))
@@ -3617,7 +3797,6 @@ async function pollCommandsDirectly() {
                                     });
                                 }
                                 function voyagerHeaders(extra = {}) {
-                                    const csrf = getCsrf();
                                     if (!csrf) throw new Error("JSESSIONID not found");
                                     return {
                                         "accept": "application/vnd.linkedin.normalized+json+2.1",
@@ -3683,7 +3862,7 @@ async function pollCommandsDirectly() {
                                 } catch (e) { results.error = e.message; }
                                 return { success: !results.error, ...results };
                             },
-                            args: [{ postUrn: targetUrn, enableLike: enableLike !== false, enableComment: !!enableComment, commentText: commentText || '' }]
+                            args: [{ postUrn: targetUrn, enableLike: enableLike !== false, enableComment: !!enableComment, commentText: commentText || '' }, cookies]
                         });
                         const result = scriptResult?.[0]?.result;
 
@@ -4482,7 +4661,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             });
                             const noteData = await noteRes.json();
                             if (noteData.success) connectionNote = noteData.note;
-                        } catch {}
+                        } catch (error) {
+                          console.error('Failed to fetch connection note:', error);
+                        }
                     }
                     const connectResult = await leadWarmer.executeConnect(params.linkedinUrl, connectionNote);
                     result.success = connectResult.success;
@@ -4511,7 +4692,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     errorMessage: result.error || null,
                                 }),
                             });
-                        } catch {}
+                        } catch (error) {
+                          console.error('Failed to report touch result to server:', error);
+                        }
                     }
                 }
 
@@ -5230,25 +5413,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             let postTab = null;
 
                             try {
-                                // Step 1: Open a new LinkedIn tab
-                                console.log('BACKGROUND: Opening LinkedIn tab for website command...');
-                                postTab = await chrome.tabs.create({
-                                    url: 'https://www.linkedin.com/feed/',
-                                    active: true
-                                });
-                                globalThis._commandLinkedInTabs.add(postTab.id);
-
-                                // Step 2: Wait for tab to fully load
-                                await new Promise((resolve) => {
-                                    const checkComplete = (tabId, changeInfo) => {
-                                        if (tabId === postTab.id && changeInfo.status === 'complete') {
-                                            chrome.tabs.onUpdated.removeListener(checkComplete);
-                                            resolve();
-                                        }
-                                    };
-                                    chrome.tabs.onUpdated.addListener(checkComplete);
-                                    setTimeout(() => { chrome.tabs.onUpdated.removeListener(checkComplete); resolve(); }, 30000);
-                                });
+                                // Step 1: Get LinkedIn tab (reuse existing or create new)
+                                console.log('BACKGROUND: Getting LinkedIn tab for website command...');
+                                postTab = await getLinkedInTab();
 
                                 // Check stop flag before continuing
                                 if (globalThis._stopAllTasks) { globalThis._processingCommandIds.delete(cmd.id); continue; }
@@ -7493,6 +7660,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
             }
         } catch (err) {
             console.warn('[Voyager] Auto-sync alarm error:', err.message);
+        }
+    }
+
+    // Cookie refresh alarm - proactively refresh cookies every hour
+    if (alarm.name === 'cookieRefresh') {
+        console.log('BACKGROUND: Refreshing LinkedIn cookies...');
+        try {
+            await refreshLinkedInCookies();
+            console.log('BACKGROUND: Cookies refreshed successfully');
+        } catch (err) {
+            console.log('BACKGROUND: Cookie refresh error:', err.message);
         }
     }
 });

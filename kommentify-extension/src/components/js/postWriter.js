@@ -172,7 +172,7 @@ export async function generatePost() {
             const errorMsg = response.error.toLowerCase();
             if (errorMsg.includes('limit') || errorMsg.includes('plan') || errorMsg.includes('upgrade')) {
                 // Show upgrade prompt
-                showToast('Daily AI post limit reached. Please upgrade your plan.', 'error');
+                showToast('Monthly AI post limit reached. Please upgrade your plan.', 'error');
                 
                 // Switch to limits tab to show upgrade option
                 const limitsTab = document.querySelector('[data-tab="limits"]');

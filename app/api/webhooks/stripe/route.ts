@@ -339,6 +339,11 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
         }
       });
       console.log(`✅ Updated payment tracking for ${user.email}: +$${amountPaid}`);
+
+      // Send payment succeeded email notification
+      // Note: Email sending requires GHL integration with user contact ID
+      console.log(`📧 [EMAIL] Payment succeeded notification should be sent to ${user.email}`);
+      // TODO: Implement email sending when ghlContactId is added to User model
     }
   } catch (error) {
     console.error('Error handling payment succeeded:', error);
@@ -382,7 +387,19 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
         }
       }
 
-      // TODO: Send payment failed email notification
+      // Send payment failed email notification
+      // Note: Email sending requires GHL integration with user contact ID
+      // For now, we'll log the intent to send email
+      console.log(`📧 [EMAIL] Payment failed notification should be sent to ${user?.email}`);
+      // TODO: Implement email sending when ghlContactId is added to User model
+      // Example implementation:
+      // if (user.ghlContactId) {
+      //   await sendEmailViaGHL({
+      //     contactId: user.ghlContactId,
+      //     subject: 'Payment Failed - Action Required',
+      //     body: `Your payment of $${amountPaid} failed. Please update your payment method.`
+      //   });
+      // }
     }
   } catch (error) {
     console.error('❌ Error handling payment failure:', error);
@@ -413,8 +430,18 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
         }
       });
 
-      // TODO: Send trial ending email notification
-      console.log(`📧 Should send trial ending email to ${user.email}`);
+      // Send trial ending email notification
+      // Note: Email sending requires GHL integration with user contact ID
+      console.log(`📧 [EMAIL] Trial ending notification should be sent to ${user.email} (trial ends ${trialEndDate.toISOString()})`);
+      // TODO: Implement email sending when ghlContactId is added to User model
+      // Example implementation:
+      // if (user.ghlContactId) {
+      //   await sendEmailViaGHL({
+      //     contactId: user.ghlContactId,
+      //     subject: 'Your Free Trial is Ending Soon',
+      //     body: `Your free trial ends on ${trialEndDate.toLocaleDateString()}. Upgrade now to continue using Kommentify!`
+      //   });
+      // }
     }
   } catch (error) {
     console.error('❌ Error handling trial will end:', error);

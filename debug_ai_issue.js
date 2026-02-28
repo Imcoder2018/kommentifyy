@@ -1,12 +1,14 @@
-const fetch = require('node-fetch');
+// Use native fetch (available in Node 18+)
+
+const BASE_URL = process.env.TEST_API_URL || 'http://localhost:3000';
 
 async function debugAIIssue() {
   try {
     console.log('🔍 Debugging AI Connection Issue...');
-    
+
     // Test the public plans API to see current plan structure
     console.log('1. Checking current plan structure...');
-    const plansRes = await fetch('https://kommentify.com/api/plans');
+    const plansRes = await fetch(`${BASE_URL}/api/plans`);
     const plansData = await plansRes.json();
     
     if (plansData.success) {
@@ -27,7 +29,7 @@ async function debugAIIssue() {
     // Test direct endpoint access (should fail with 401)
     console.log('\n2. Testing AI endpoint without auth (should get 401)...');
     try {
-      const aiRes = await fetch('https://kommentify.com/api/ai/generate-topics', {
+      const aiRes = await fetch(`${BASE_URL}/api/ai/generate-topics`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic: 'test', count: 3 })

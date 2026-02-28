@@ -105,3 +105,6 @@ debug/
 *.sqlite3
 data/
 
+# Generated data files
+valid-models.json
+

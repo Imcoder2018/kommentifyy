@@ -1,7 +1,14 @@
 // Fetch valid models from OpenRouter API
 const https = require('https');
 
-const API_KEY = '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';
+// Get API key from environment variable
+const API_KEY = process.env.OPENROUTER_API_KEY;
+
+if (!API_KEY) {
+  console.error('❌ Error: OPENROUTER_API_KEY environment variable is not set');
+  console.log('   Run: export OPENROUTER_API_KEY=your_key_here');
+  process.exit(1);
+}
 
 const options = {
   hostname: 'openrouter.ai',
@@ -17,7 +24,21 @@ const req = https.request(options, (res) => {
   res.on('data', (chunk) => { data += chunk; });
   res.on('end', () => {
     try {
+      // Check for HTTP errors
+      if (res.statusCode !== 200) {
+        console.error(`❌ API request failed with status code: ${res.statusCode}`);
+        console.error(`   Response: ${data.substring(0, 500)}`);
+        process.exit(1);
+      }
+
       const json = JSON.parse(data);
+
+      // Check for API errors
+      if (json.error) {
+        console.error(`❌ API error: ${json.error.message || JSON.stringify(json.error)}`);
+        process.exit(1);
+      }
+
       const models = json.data || [];
       console.log(`Total models available: ${models.length}\n`);
       

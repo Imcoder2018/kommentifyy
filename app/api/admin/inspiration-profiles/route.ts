@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Index } from '@upstash/vector';
+import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
+function verifyAdminToken(token: string) {
+  try {
+    jwt.verify(token, JWT_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 let vectorIndex: any = null;
 try {
@@ -19,8 +34,7 @@ export async function GET(request: NextRequest) {
   try {
     const adminToken = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!adminToken) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    const jwt = require('jsonwebtoken');
-    try { jwt.verify(adminToken, process.env.JWT_SECRET || 'fallback-secret'); } catch { return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 }); }
+    if (!verifyAdminToken(adminToken)) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
 
     if (!vectorIndex) return NextResponse.json({ success: false, error: 'Vector DB not configured' }, { status: 500 });
 
@@ -79,9 +93,8 @@ export async function PUT(request: NextRequest) {
   try {
     const adminToken = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!adminToken) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    const jwt = require('jsonwebtoken');
     let decoded: any;
-    try { decoded = jwt.verify(adminToken, process.env.JWT_SECRET || 'fallback-secret'); } catch { return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 }); }
+    try { decoded = jwt.verify(adminToken, JWT_SECRET); } catch { return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 }); }
 
     const { profiles, shared } = await request.json();
     if (!profiles || !Array.isArray(profiles)) return NextResponse.json({ success: false, error: 'profiles array required' }, { status: 400 });

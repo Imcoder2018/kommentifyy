@@ -3,14 +3,17 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+// Get schema name from environment or use default
+const SCHEMA = process.env.DATABASE_SCHEMA || 'linkedin_automation';
+
 async function checkTableNames() {
   console.log('🔍 Checking table names...\n');
 
   try {
     // Get all table names
     const tables = await prisma.$queryRawUnsafe(`
-      SELECT table_name FROM information_schema.tables 
-      WHERE table_schema = 'linkedin_automation' 
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = '${SCHEMA}'
       ORDER BY table_name
     `);
 

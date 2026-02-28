@@ -82,7 +82,10 @@ export default function LeadWarmerTab(props: any) {
           setActiveCampaignId(data.campaigns[0].id);
         }
       }
-    } catch {} finally { setCampaignsLoading(false); }
+    } catch (error) {
+      console.error('Failed to load campaigns:', error);
+      showToast('Failed to load campaigns', 'error');
+    } finally { setCampaignsLoading(false); }
   };
 
   // ── Load prospects for active campaign ──
@@ -93,7 +96,10 @@ export default function LeadWarmerTab(props: any) {
     try {
       const data = await apiGet(`/api/lead-warmer/prospects?campaignId=${cid}`);
       if (data.success) setProspects(data.prospects || []);
-    } catch {} finally { setProspectsLoading(false); }
+    } catch (error) {
+      console.error('Failed to load prospects:', error);
+      showToast('Failed to load prospects', 'error');
+    } finally { setProspectsLoading(false); }
   };
 
   // ── Create campaign ──
@@ -249,7 +255,9 @@ export default function LeadWarmerTab(props: any) {
       if (typeof chrome !== 'undefined' && chrome.runtime) {
         return null; // Will use internal messaging if on same extension
       }
-    } catch {}
+    } catch (error) {
+      console.debug('Chrome runtime check failed:', error);
+    }
     return null;
   };
 
@@ -300,7 +308,10 @@ export default function LeadWarmerTab(props: any) {
     try {
       const data = await apiGet(`/api/lead-warmer/touch-log?prospectId=${prospectId}`);
       if (data.success) setTouchLogs(data.logs || []);
-    } catch {} finally { setTouchLogsLoading(false); }
+    } catch (error) {
+      console.error('Failed to load touch history:', error);
+      showToast('Failed to load touch history', 'error');
+    } finally { setTouchLogsLoading(false); }
   };
 
   // ── Delete prospect ──
@@ -668,7 +679,9 @@ export default function LeadWarmerTab(props: any) {
                   {filteredProspects.map(p => {
                     const sc = STATUS_COLORS[p.status as keyof typeof STATUS_COLORS] || STATUS_COLORS.cold;
                     let posts: any[] = [];
-                    try { posts = JSON.parse(p.recentPosts || '[]'); } catch {}
+                    try { posts = JSON.parse(p.recentPosts || '[]'); } catch (error) {
+                      console.warn('Failed to parse recentPosts:', error);
+                    }
                     const latestPost = posts[0]?.text || '';
                     return (
                       <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>

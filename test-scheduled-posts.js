@@ -1,5 +1,5 @@
 // Test script to check scheduled posts API
-const fetch = require('node-fetch');
+// Use native fetch (available in Node 18+)
 
 async function testScheduledPosts() {
   try {

@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
+function verifyAdminToken(token: string) {
+  try {
+    jwt.verify(token, JWT_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // GET - Admin: List all users' scraped posts
 export async function GET(request: NextRequest) {
@@ -12,12 +27,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify it's an admin (simple check - you may want to enhance this)
-    const jwt = require('jsonwebtoken');
-    let decoded: any;
-    try {
-      decoded = jwt.verify(adminToken, process.env.JWT_SECRET || 'fallback-secret');
-    } catch {
+    // Verify it's an admin
+    if (!verifyAdminToken(adminToken)) {
       return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
     }
 
@@ -81,8 +92,7 @@ export async function PUT(request: NextRequest) {
   try {
     const adminToken = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!adminToken) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    const jwt = require('jsonwebtoken');
-    try { jwt.verify(adminToken, process.env.JWT_SECRET || 'fallback-secret'); } catch { return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 }); }
+    if (!verifyAdminToken(adminToken)) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
 
     const { postIds, shared } = await request.json();
     if (!postIds || !Array.isArray(postIds)) return NextResponse.json({ success: false, error: 'postIds array required' }, { status: 400 });

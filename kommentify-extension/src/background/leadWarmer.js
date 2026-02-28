@@ -163,7 +163,9 @@ class LeadWarmer {
                   includeWebMetadata: true,
                 }),
               });
-            } catch {}
+            } catch (error) {
+              console.error('Failed to submit comment via API:', error);
+            }
 
             const endpoint = 'https://www.linkedin.com/voyager/api/voyagerSocialDashNormComments?decorationId=com.linkedin.voyager.dash.deco.social.NormComment-43';
             const threadUrns = [ugcPostUrn, actUrn].filter(Boolean);
@@ -179,7 +181,9 @@ class LeadWarmer {
                   }),
                 });
                 if (r.status === 201 || r.status === 200) return true;
-              } catch {}
+              } catch (error) {
+                console.error('Failed to submit comment:', error);
+              }
             }
             return false;
           }
@@ -278,7 +282,9 @@ class LeadWarmer {
               method: 'POST', headers: hdrs(), credentials: 'include',
               body: JSON.stringify({ variables: { backendUpdateUrn: actUrn, actionType: 'submitComment' }, queryId: 'inSessionRelevanceVoyagerFeedDashClientSignal.c1c9c08097afa4e02954945e9df54091', includeWebMetadata: true }),
             });
-          } catch {}
+          } catch (error) {
+            console.error('Failed to send comment signal:', error);
+          }
 
           const endpoint = 'https://www.linkedin.com/voyager/api/voyagerSocialDashNormComments?decorationId=com.linkedin.voyager.dash.deco.social.NormComment-43';
           const threadUrns = [ugcPostUrn, actUrn].filter(Boolean);
@@ -291,7 +297,9 @@ class LeadWarmer {
                 body: JSON.stringify({ commentary: { text: commentText, attributesV2: [], '$type': 'com.linkedin.voyager.dash.common.text.TextViewModel' }, threadUrn }),
               });
               if (r.status === 201 || r.status === 200) return { success: true };
-            } catch {}
+            } catch (error) {
+              console.error('Failed to post comment:', error);
+            }
           }
           return { success: false, error: 'Comment failed with all threadUrn formats' };
         },
@@ -379,7 +387,9 @@ class LeadWarmer {
 
       return result?.[0]?.result || { success: false };
     } finally {
-      try { await chrome.tabs.remove(tabId); } catch {}
+      try { await chrome.tabs.remove(tabId); } catch (error) {
+        console.warn('Failed to remove tab:', error);
+      }
     }
   }
 

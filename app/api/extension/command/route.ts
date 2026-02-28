@@ -105,9 +105,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Extension polls for pending commands (queue: one at a time)
+// GET - Extension polls for pending commands (queue: one at a time) OR check specific command status
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const commandId = searchParams.get('commandId');
+
     const token = extractToken(request.headers.get('authorization'));
     if (!token) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -119,12 +122,29 @@ export async function GET(request: NextRequest) {
       const authInfo = handleAuthError(authError);
       // Debug: log the actual error and token prefix
       console.error('Get extension commands error:', authInfo.message, 'Token prefix:', token.substring(0, 20) + '...');
-      return NextResponse.json({ 
-        success: false, 
-        error: authInfo.error, 
+      return NextResponse.json({
+        success: false,
+        error: authInfo.error,
         message: authInfo.message,
-        shouldReauth: authInfo.shouldReauth 
+        shouldReauth: authInfo.shouldReauth
       }, { status: 401 });
+    }
+
+    // If commandId is provided, return the specific command status
+    if (commandId) {
+      const activity = await prisma.activity.findFirst({
+        where: { id: commandId, userId: payload.userId },
+      });
+
+      if (!activity) {
+        return NextResponse.json({ success: false, error: 'Command not found' }, { status: 404 });
+      }
+
+      const meta = typeof activity.metadata === 'string' ? JSON.parse(activity.metadata as string) : activity.metadata;
+      return NextResponse.json({
+        success: true,
+        command: { id: activity.id, ...meta, createdAt: activity.timestamp },
+      });
     }
 
     // Get recent commands from last 24 hours

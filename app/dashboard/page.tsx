@@ -779,9 +779,9 @@ function DashboardContent() {
         if (!token || !writerContent.trim()) { setWriterStatus('No content to post'); return; }
         setWriterPosting(true);
 
-        // Use Voyager API via extension - fast and reliable
-        showToast('Posting via LinkedIn Voyager API...', 'info');
-        setWriterStatus('Posting via Voyager API...');
+        // Use LinkedIn API via extension - fast and reliable
+        showToast('Posting via LinkedIn...', 'info');
+        setWriterStatus('Posting...');
         try {
             const cmdData: any = { content: writerContent };
 
@@ -810,9 +810,9 @@ function DashboardContent() {
 
             const data = await res.json();
             if (data.success) {
-                setWriterStatus('✅ Posting via Voyager API... Check Tasks for status.');
-                showToast('Post command sent! Extension will post via Voyager API.', 'success');
-                await saveToHistory('published_post', 'LinkedIn Post (Voyager API)', { content: writerContent, source: 'voyager', hasImage: !!writerImageUrl || !!writerMediaBlobUrl });
+                setWriterStatus('✅ Posting... Check Tasks for status.');
+                showToast('Post command sent! Extension will post to LinkedIn.', 'success');
+                await saveToHistory('published_post', 'LinkedIn Post', { content: writerContent, source: 'linkedin', hasImage: !!writerImageUrl || !!writerMediaBlobUrl });
                 // Clear content after successful send
                 setWriterContent('');
                 setWriterImageFile(null);
@@ -836,9 +836,9 @@ function DashboardContent() {
         
         const scheduledFor = new Date(`${writerScheduleDate}T${writerScheduleTime}`).toISOString();
         
-        // Option 1: Use LinkedIn's native scheduling via Voyager API (faster, more reliable)
-        showToast('Scheduling via LinkedIn Voyager API...', 'info');
-        setWriterStatus('Scheduling via Voyager API...');
+        // Option 1: Use LinkedIn's native scheduling via API (faster, more reliable)
+        showToast('Scheduling via LinkedIn...', 'info');
+        setWriterStatus('Scheduling...');
         
         try {
             // Send schedule command to extension
@@ -866,7 +866,7 @@ function DashboardContent() {
                 });
                 
                 setWriterStatus('✅ Post scheduled via LinkedIn! Check Tasks for status.');
-                showToast('Post scheduled via LinkedIn Voyager API!', 'success');
+                showToast('Post scheduled via LinkedIn!', 'success');
                 loadScheduledPosts();
                 setWriterScheduleDate('');
                 setWriterScheduleTime('');

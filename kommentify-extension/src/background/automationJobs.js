@@ -44,14 +44,37 @@ class BaseAutomationJob {
  */
 class AutomationPageJob extends BaseAutomationJob {
     async watch() {
-        for (;;) { // Loop indefinitely
+        const MAX_ITEMS_PER_RUN = 100; // Safety limit to prevent runaway automation
+        let itemsProcessed = 0;
+
+        for (;;) { // Loop indefinitely but check for exit conditions
+            // Check if automation is turned off before each iteration
+            const automationState = await storage.getEnum(T.StorageKey.AutomationPageState, T.SwitchState.Off);
+            if (automationState !== T.SwitchState.On) {
+                console.log("AutomationPageJob: Automation turned off, stopping...");
+                break;
+            }
+
+            // Safety check: max items per run
+            if (itemsProcessed >= MAX_ITEMS_PER_RUN) {
+                console.log(`AutomationPageJob: Processed ${itemsProcessed} items, stopping for safety. Restart to continue.`);
+                await this.handleCompleteActions();
+                break;
+            }
+
             await randomDelay(20000, 30000); // Wait 20-30 seconds between activities
+
             try {
                 const urns = await storage.getArray(T.StorageKey.AutomationPageUrns, []);
-                if (urns.length === 0) continue;
+                if (urns.length === 0) {
+                    // Add a longer delay when queue is empty to reduce CPU usage
+                    await randomDelay(60000, 90000); // Wait 1-1.5 minutes before checking again
+                    continue;
+                }
 
                 const urn = urns.shift(); // Get the first URN
                 await storage.setArray(T.StorageKey.AutomationPageUrns, urns); // Update the list
+                itemsProcessed++;
 
                 const postUrl = `https://www.linkedin.com/feed/update/${urn}`;
                 const success = await this.publishComment(postUrl);
@@ -65,6 +88,8 @@ class AutomationPageJob extends BaseAutomationJob {
                 }
             } catch (error) {
                 console.error("AutomationPageJob Error:", error);
+                // Add a longer delay on error to prevent rapid retry loops
+                await randomDelay(60000, 120000); // Wait 1-2 minutes on error
             }
         }
     }
@@ -91,14 +116,37 @@ class AutomationPageJob extends BaseAutomationJob {
  */
 class AutomationListJob extends AutomationPageJob { // Extends PageJob as the final step is the same
     async watch() {
-        for (;;) { // Loop indefinitely
-             await randomDelay(20000, 30000);
+        const MAX_ITEMS_PER_RUN = 100; // Safety limit to prevent runaway automation
+        let itemsProcessed = 0;
+
+        for (;;) { // Loop indefinitely but check for exit conditions
+            // Check if automation is turned off before each iteration
+            const automationState = await storage.getEnum(T.StorageKey.AutomationListState, T.SwitchState.Off);
+            if (automationState !== T.SwitchState.On) {
+                console.log("AutomationListJob: Automation turned off, stopping...");
+                break;
+            }
+
+            // Safety check: max items per run
+            if (itemsProcessed >= MAX_ITEMS_PER_RUN) {
+                console.log(`AutomationListJob: Processed ${itemsProcessed} items, stopping for safety. Restart to continue.`);
+                await this.handleCompleteActions();
+                break;
+            }
+
+            await randomDelay(20000, 30000);
+
             try {
                 const activityUrls = await storage.getArray(T.StorageKey.AutomationListActivityUrls, []);
-                if (activityUrls.length === 0) continue;
+                if (activityUrls.length === 0) {
+                    // Add a longer delay when queue is empty to reduce CPU usage
+                    await randomDelay(60000, 90000); // Wait 1-1.5 minutes before checking again
+                    continue;
+                }
 
                 const activityUrl = activityUrls.shift();
                 await storage.setArray(T.StorageKey.AutomationListActivityUrls, activityUrls);
+                itemsProcessed++;
 
                 const firstPostUrn = await this.getFirstPostUrn(activityUrl);
                 if (!firstPostUrn) {
@@ -118,6 +166,8 @@ class AutomationListJob extends AutomationPageJob { // Extends PageJob as the fi
                 }
             } catch (error) {
                 console.error("AutomationListJob Error:", error);
+                // Add a longer delay on error to prevent rapid retry loops
+                await randomDelay(60000, 120000); // Wait 1-2 minutes on error
             }
         }
     }

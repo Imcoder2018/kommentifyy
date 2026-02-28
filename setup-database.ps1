@@ -114,7 +114,7 @@ async function createDefaultPlans() {
   } catch (error) {
     console.error('❌ Error creating plans:', error);
   } finally {
-    await prisma.`$disconnect();
+    await prisma.$disconnect();
   }
 }
 

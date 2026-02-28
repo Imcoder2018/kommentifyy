@@ -59,7 +59,9 @@ export async function POST(request: NextRequest) {
 
     // Parse sequence to determine first touch
     let sequenceSteps: any[] = [];
-    try { sequenceSteps = JSON.parse(campaign.sequenceSteps || '[]'); } catch {}
+    try { sequenceSteps = JSON.parse(campaign.sequenceSteps || '[]'); } catch (error) {
+      console.error('Failed to parse sequenceSteps:', error);
+    }
     const firstStep = sequenceSteps.find((s: any) => s.enabled);
     const firstTouchAction = firstStep?.action || 'follow';
     const firstTouchDay = firstStep?.day || 1;

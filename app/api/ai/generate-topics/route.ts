@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const limitCheck = await limitService.checkLimit(user.id, 'aiTopicLines');
     if (!limitCheck.allowed) {
       return NextResponse.json(
-        { success: false, error: 'Daily AI topic generation limit reached', remaining: 0 },
+        { success: false, error: 'Monthly AI topic generation limit reached', remaining: 0 },
         { status: 429 }
       );
     }

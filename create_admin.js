@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 
 async function createAdmin() {
     try {
-        const email = 'admin@example.com';
-        const password = 'adminpassword123';
+        const email = process.env.ADMIN_EMAIL || 'admin@example.com';
+        const password = process.env.ADMIN_PASSWORD || 'adminpassword123';
         const hashedPassword = await hash(password, 10);
 
         const admin = await prisma.admin.upsert({

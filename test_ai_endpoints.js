@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
+// Use native fetch (available in Node 18+)
 
-const BASE_URL = 'https://kommentify.com';
+const BASE_URL = process.env.TEST_API_URL || 'http://localhost:3000';
 
 async function testAIEndpoints() {
   try {

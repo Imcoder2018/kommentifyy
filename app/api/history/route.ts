@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
-const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET!;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 function getUserFromToken(request: Request) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
   try {
-    return jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'kommentify-secret-key-2024') as any;
+    return jwt.verify(authHeader.split(' ')[1], JWT_SECRET) as any;
   } catch { return null; }
 }
 

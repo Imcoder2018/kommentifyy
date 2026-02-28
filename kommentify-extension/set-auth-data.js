@@ -1,13 +1,18 @@
 // Script to manually set authentication data for testing
 // Run this in the extension popup console
+// NOTE: Replace these values with actual test user credentials
+
+const AUTH_TOKEN = 'YOUR_AUTH_TOKEN_HERE'; // Replace with actual auth token
+const USER_EMAIL = 'test@example.com'; // Replace with test user email
+const API_BASE_URL = 'http://localhost:3000'; // Or 'https://kommentify.com' for production
 
 const authData = {
-    authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyXzE3NjQwMDQ1OTAxMzBfcDV1NTljNWhxIiwiZW1haWwiOiJ1aXRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE3NjQwMDQ1OTAsImV4cCI6MTc2NDYwOTM5MH0.N2aQk6dW4caPVRHnCJpqYElN_Da3NrU6CPI8kyaj5Qo',
+    authToken: AUTH_TOKEN,
     userData: {
-        id: 'user_1764004590130_p5u59c5hq',
-        email: 'uitest@example.com',
-        name: 'UI Test User',
-        createdAt: '2025-11-24T17:16:30.130Z',
+        id: 'user_test_id',
+        email: USER_EMAIL,
+        name: 'Test User',
+        createdAt: new Date().toISOString(),
         plan: {
             id: 'free_plan',
             name: 'Free',
@@ -29,7 +34,7 @@ const authData = {
             allowCsvExport: false
         }
     },
-    apiBaseUrl: 'https://kommentify.com'
+    apiBaseUrl: API_BASE_URL
 };
 
 // Set the auth data
@@ -51,6 +56,8 @@ async function checkStorage() {
 }
 
 console.log('Run these commands in the console:');
-console.log('1. checkStorage() - Check current storage');  
+console.log('1. checkStorage() - Check current storage');
 console.log('2. testAuthUI() - Test authentication UI update');
 console.log('3. initializePopup() - Reinitialize the extension');
+console.log('');
+console.log('IMPORTANT: Edit this file and replace AUTH_TOKEN with a valid token before running!');

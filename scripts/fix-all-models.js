@@ -1,7 +1,18 @@
 // Comprehensive fix for all AI model IDs in database
 // Uses actual valid model IDs from OpenRouter API
 const { PrismaClient } = require('@prisma/client');
-const validModels = require('../valid-models.json');
+const fs = require('fs');
+const path = require('path');
+
+// Check if valid-models.json exists
+const validModelsPath = path.join(__dirname, '..', 'valid-models.json');
+if (!fs.existsSync(validModelsPath)) {
+  console.error('❌ Error: valid-models.json not found!');
+  console.log('   Run: node scripts/fetch-openrouter-models.js first to fetch valid models');
+  process.exit(1);
+}
+
+const validModels = require(validModelsPath);
 
 const prisma = new PrismaClient();
 

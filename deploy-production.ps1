@@ -40,7 +40,7 @@ Write-Host "3️⃣ Setting Vercel environment variables..." -ForegroundColor Cy
 # Database URL (you may need to update this manually)
 Write-Host "⚠️ MANUAL STEP: Set DATABASE_URL on Vercel:" -ForegroundColor Yellow
 Write-Host "npx vercel env add DATABASE_URL production" -ForegroundColor White
-Write-Host "Use: postgresql://postgres.fvoruwepflhyvwxoitov:8q0xoxpz8DJqJReL@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1" -ForegroundColor Gray
+Write-Host "Use: postgresql://postgres.[PROJECT_REF]:[YOUR_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1" -ForegroundColor Gray
 Write-Host ""
 
 # JWT Secrets

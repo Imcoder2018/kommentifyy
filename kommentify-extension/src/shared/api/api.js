@@ -5,6 +5,9 @@ import * as T from '../storage/constants.js';
 // --- Axios Interceptor Setup --- //
 const isTokenAboutToExpire = (token) => {
     try {
+        if (!token || typeof token !== 'string' || !token.includes('.')) {
+            return true;
+        }
         const payload = JSON.parse(atob(token.split('.')[1]));
         const expiryTime = payload.exp * 1000;
         const oneMinute = 60 * 1000;

@@ -4,6 +4,10 @@
  */
 
 // Lazy initialization — avoid top-level throws that crash the app at import time (#17)
+export function isLinkedInConfigured(): boolean {
+  return !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET && process.env.LINKEDIN_REDIRECT_URI);
+}
+
 function getLinkedInConfig() {
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;

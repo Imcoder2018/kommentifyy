@@ -25,7 +25,9 @@ export async function GET(request: NextRequest) {
       try {
         const userId = settings.userId;
         let sequenceSteps: any[] = [];
-        try { sequenceSteps = JSON.parse(settings.sequenceSteps || '[]'); } catch {}
+        try { sequenceSteps = JSON.parse(settings.sequenceSteps || '[]'); } catch (error) {
+          console.error('Failed to parse sequenceSteps:', error);
+        }
         const enabledSteps = sequenceSteps.filter((s: any) => s.enabled);
         if (enabledSteps.length === 0) continue;
 

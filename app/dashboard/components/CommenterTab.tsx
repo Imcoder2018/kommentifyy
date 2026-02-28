@@ -114,6 +114,29 @@ export default function CommenterTab(props: any) {
         }
     };
 
+    const deletePost = async (postId: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        if (!confirm('Delete this post?')) return;
+
+        try {
+            const res = await fetch('/api/scraped-posts', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ id: postId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Post deleted', 'success');
+                loadCapturedPosts();
+            } else {
+                showToast(data.error || 'Failed to delete', 'error');
+            }
+        } catch (e: any) {
+            showToast('Error: ' + e.message, 'error');
+        }
+    };
+
     const handleAction = async (postId: string, action: string, post: any, commentText?: string) => {
         const token = localStorage.getItem('authToken');
         setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'loading' }));

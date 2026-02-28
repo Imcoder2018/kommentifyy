@@ -13,6 +13,8 @@ export default function CommenterTab(props: any) {
     const [capturedLoading, setCapturedLoading] = useState(false);
     const [capturedPage, setCapturedPage] = useState(1);
     const [actionStates, setActionStates] = useState<Record<string, any>>({});
+    const [aiGeneratedComments, setAiGeneratedComments] = useState<Record<string, string>>({});
+    const [generatingComment, setGeneratingComment] = useState<string | null>(null);
 
     useEffect(() => {
         loadCapturedPosts();
@@ -36,15 +38,64 @@ export default function CommenterTab(props: any) {
         }
     };
 
+    // Helper to extract LinkedIn URN from post URL
+    // LinkedIn URLs: https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/
+    // Or: https://www.linkedin.com/posts/activity_1234567890123456789/
+    const extractUrnFromUrl = (postUrl: string | null | undefined): string => {
+        if (!postUrl) return '';
+        // Try to extract from /feed/update/urn:li:activity: format
+        const urnMatch = postUrl.match(/urn:li:activity:\d+/);
+        if (urnMatch) return urnMatch[0];
+        // Try to extract from /posts/activity_ format
+        const activityMatch = postUrl.match(/activity_(\d+)/);
+        if (activityMatch) return `urn:li:activity:${activityMatch[1]}`;
+        // Return the original URL if no URN found - the extension may handle it
+        return postUrl;
+    };
+
+    const generateAiComment = async (postId: string, post: any) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        setGeneratingComment(postId);
+        try {
+            const res = await fetch('/api/ai/generate-comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    postText: post.postContent || '',
+                    authorName: post.authorName || '',
+                    goal: csGoal || 'AddValue',
+                    tone: csTone || 'Friendly',
+                    commentLength: csLength || 'Short',
+                    commentStyle: csStyle || 'direct',
+                    userExpertise: csExpertise || '',
+                    userBackground: csBackground || '',
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.content) {
+                setAiGeneratedComments(prev => ({ ...prev, [postId]: data.content }));
+                showToast('AI comment generated!', 'success');
+            } else {
+                showToast(data.error || 'Failed to generate comment', 'error');
+            }
+        } catch (e: any) {
+            showToast('Error: ' + e.message, 'error');
+        } finally {
+            setGeneratingComment(null);
+        }
+    };
+
     const handleAction = async (postId: string, action: string, post: any, commentText?: string) => {
         const token = localStorage.getItem('authToken');
         setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'loading' }));
         
         try {
             const commandMap: Record<string, any> = {
-                like: { command: 'linkedin_like_post', data: { activityUrn: post.urn } },
-                comment: { command: 'linkedin_comment_on_post', data: { activityUrn: post.urn, commentText } },
-                follow: { command: 'linkedin_follow_profile', data: { profileUrl: post.authorUrl } }
+                like: { command: 'linkedin_like_post', data: { activityUrn: extractUrnFromUrl(post.postUrl) } },
+                comment: { command: 'linkedin_comment_on_post', data: { activityUrn: extractUrnFromUrl(post.postUrl), commentText } },
+                follow: { command: 'linkedin_follow_profile', data: { profileUrl: post.authorProfileUrl } }
             };
             
             const payload = commandMap[action];
@@ -245,25 +296,50 @@ export default function CommenterTab(props: any) {
                                             </div>
                                         </div>
 
+                                        {/* AI Generated Comment Display */}
+                                        {aiGeneratedComments[postId] && (
+                                            <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                    <span style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '600' }}>🤖 AI Generated Comment</span>
+                                                    <button onClick={() => setAiGeneratedComments(prev => { const n = { ...prev }; delete n[postId]; return n; })}
+                                                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '14px' }}>✕</button>
+                                                </div>
+                                                <textarea
+                                                    value={aiGeneratedComments[postId]}
+                                                    onChange={(e) => setAiGeneratedComments(prev => ({ ...prev, [postId]: e.target.value }))}
+                                                    rows={3}
+                                                    style={{ width: '100%', padding: '10px', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical' }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                                    <button onClick={() => generateAiComment(postId, post)} disabled={generatingComment === postId}
+                                                        style={{ flex: 1, padding: '8px', background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                                                        {generatingComment === postId ? '⏳ Generating...' : '🔄 Regenerate'}
+                                                    </button>
+                                                    <button onClick={() => { handleAction(postId, 'comment', post, aiGeneratedComments[postId]); setAiGeneratedComments(prev => { const n = { ...prev }; delete n[postId]; return n; }); }}
+                                                        disabled={commentState === 'loading'}
+                                                        style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                                                        {commentState === 'loading' ? '⏳ Posting...' : '🚀 Post Comment'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Action Buttons */}
                                         <div style={{ padding: '8px 16px 12px 16px', display: 'flex', gap: '8px' }}>
-                                            <button 
+                                            <button
                                                 onClick={() => handleAction(postId, 'like', post)}
                                                 disabled={likeState === 'loading' || likeState === 'success'}
                                                 style={{ flex: 1, padding: '8px', background: likeState === 'success' ? 'rgba(96,165,250,0.4)' : 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: likeState === 'loading' || likeState === 'success' ? 'not-allowed' : 'pointer', opacity: likeState === 'success' ? 0.7 : 1 }}>
                                                 {likeState === 'loading' ? '⏳ Liking...' : likeState === 'success' ? '✓ Liked' : '👍 Like'}
                                             </button>
-                                            <button 
-                                                onClick={() => {
-                                                    const comment = prompt('Enter your comment:');
-                                                    if (comment) handleAction(postId, 'comment', post, comment);
-                                                }}
-                                                disabled={commentState === 'loading' || commentState === 'success'}
-                                                style={{ flex: 1, padding: '8px', background: commentState === 'success' ? 'rgba(167,139,250,0.4)' : 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: commentState === 'loading' || commentState === 'success' ? 'not-allowed' : 'pointer', opacity: commentState === 'success' ? 0.7 : 1 }}>
-                                                {commentState === 'loading' ? '⏳ Commenting...' : commentState === 'success' ? '✓ Commented' : '💬 Comment'}
+                                            <button
+                                                onClick={() => generateAiComment(postId, post)}
+                                                disabled={generatingComment === postId}
+                                                style={{ flex: 1, padding: '8px', background: generatingComment === postId ? 'rgba(167,139,250,0.4)' : 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: generatingComment === postId ? 'not-allowed' : 'pointer', opacity: generatingComment === postId ? 0.7 : 1 }}>
+                                                {generatingComment === postId ? '⏳ Generating...' : '🤖 AI Comment'}
                                             </button>
-                                            {post.authorUrl && (
-                                                <button 
+                                            {post.authorProfileUrl && (
+                                                <button
                                                     onClick={() => handleAction(postId, 'follow', post)}
                                                     disabled={followState === 'loading' || followState === 'success'}
                                                     style={{ flex: 1, padding: '8px', background: followState === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: followState === 'loading' || followState === 'success' ? 'not-allowed' : 'pointer', opacity: followState === 'success' ? 0.7 : 1 }}>

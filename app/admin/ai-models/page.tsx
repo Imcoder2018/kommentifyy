@@ -24,6 +24,17 @@ interface AIModel {
   description: string | null;
 }
 
+interface AdminAIModelSettings {
+  postModelId: string;
+  hookModelId: string;
+  commentModelId: string;
+  topicModelId: string;
+  chatbotModelId: string;
+  trendingModelId: string;
+  fallbackModelId: string;
+  allowUserModelSelection: boolean;
+}
+
 export default function AIModelsAdmin() {
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +47,10 @@ export default function AIModelsAdmin() {
   const [stats, setStats] = useState<any>({});
   const [editingModel, setEditingModel] = useState<AIModel | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  // Admin AI Model Settings state
+  const [adminSettings, setAdminSettings] = useState<AdminAIModelSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
   const [newModel, setNewModel] = useState<Partial<AIModel>>({
     modelId: '',
     name: '',
@@ -59,7 +74,52 @@ export default function AIModelsAdmin() {
 
   useEffect(() => {
     fetchModels();
+    fetchAdminSettings();
   }, [filter]);
+
+  const fetchAdminSettings = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/ai-models/settings', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAdminSettings(data.settings);
+      }
+    } catch (error) {
+      console.error('Error fetching admin settings:', error);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const saveAdminSettings = async () => {
+    if (!adminSettings) return;
+    setSettingsSaving(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/ai-models/settings', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(adminSettings)
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Settings saved successfully!');
+      } else {
+        alert('Error saving settings: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error saving admin settings:', error);
+      alert('Error saving settings');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const fetchModels = async () => {
     try {
@@ -254,6 +314,212 @@ export default function AIModelsAdmin() {
             + Add New Model
           </button>
         </div>
+
+        {/* Admin Model Configuration */}
+        {!settingsLoading && adminSettings && (
+          <div style={{ background: 'white', padding: '24px', borderRadius: '12px', marginBottom: '30px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333', margin: '0 0 4px 0' }}>
+                  Default Models Configuration
+                </h2>
+                <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+                  Configure which AI models are used for each feature. These settings apply to all users.
+                </p>
+              </div>
+              <button
+                onClick={saveAdminSettings}
+                disabled={settingsSaving}
+                style={{
+                  padding: '10px 20px',
+                  background: settingsSaving ? '#9ca3af' : '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: settingsSaving ? 'not-allowed' : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '600'
+                }}
+              >
+                {settingsSaving ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+
+            {/* Model Selection Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {/* Post Model */}
+              <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>📝</span>
+                  <label style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>Post Generation Model</label>
+                </div>
+                <select
+                  value={adminSettings.postModelId}
+                  onChange={(e) => setAdminSettings({ ...adminSettings, postModelId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
+                >
+                  {models.filter(m => m.isEnabled).map(m => (
+                    <option key={m.modelId} value={m.modelId}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Model used for generating LinkedIn posts</div>
+              </div>
+
+              {/* Hook Model */}
+              <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>⚡</span>
+                  <label style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>Hook Generation Model</label>
+                </div>
+                <select
+                  value={adminSettings.hookModelId}
+                  onChange={(e) => setAdminSettings({ ...adminSettings, hookModelId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
+                >
+                  {models.filter(m => m.isEnabled).map(m => (
+                    <option key={m.modelId} value={m.modelId}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Model used for generating hooks</div>
+              </div>
+
+              {/* Comment Model */}
+              <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>💬</span>
+                  <label style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>Comment Generation Model</label>
+                </div>
+                <select
+                  value={adminSettings.commentModelId}
+                  onChange={(e) => setAdminSettings({ ...adminSettings, commentModelId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
+                >
+                  {models.filter(m => m.isEnabled).map(m => (
+                    <option key={m.modelId} value={m.modelId}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Model used for generating comments</div>
+              </div>
+
+              {/* Topic Model */}
+              <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>💡</span>
+                  <label style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>Topic Generation Model</label>
+                </div>
+                <select
+                  value={adminSettings.topicModelId}
+                  onChange={(e) => setAdminSettings({ ...adminSettings, topicModelId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
+                >
+                  {models.filter(m => m.isEnabled).map(m => (
+                    <option key={m.modelId} value={m.modelId}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Model used for generating topic suggestions</div>
+              </div>
+
+              {/* Chatbot Model */}
+              <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>🤖</span>
+                  <label style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>AI Chatbot Model</label>
+                </div>
+                <select
+                  value={adminSettings.chatbotModelId}
+                  onChange={(e) => setAdminSettings({ ...adminSettings, chatbotModelId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
+                >
+                  {models.filter(m => m.isEnabled).map(m => (
+                    <option key={m.modelId} value={m.modelId}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Model used for AI Post Helper chatbot</div>
+              </div>
+
+              {/* Trending Posts Model */}
+              <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>📈</span>
+                  <label style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>Trending Posts Model</label>
+                </div>
+                <select
+                  value={adminSettings.trendingModelId}
+                  onChange={(e) => setAdminSettings({ ...adminSettings, trendingModelId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
+                >
+                  {models.filter(m => m.isEnabled).map(m => (
+                    <option key={m.modelId} value={m.modelId}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Model used for generating trending posts</div>
+              </div>
+
+              {/* Fallback Model */}
+              <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>🔄</span>
+                  <label style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>Fallback Model</label>
+                </div>
+                <select
+                  value={adminSettings.fallbackModelId}
+                  onChange={(e) => setAdminSettings({ ...adminSettings, fallbackModelId: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
+                >
+                  {models.filter(m => m.isEnabled).map(m => (
+                    <option key={m.modelId} value={m.modelId}>{m.name} ({m.provider})</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Used when selected model is disabled</div>
+              </div>
+            </div>
+
+            {/* Allow User Selection Toggle */}
+            <div style={{ marginTop: '20px', padding: '16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <label style={{ fontWeight: '600', color: '#166534', fontSize: '14px', display: 'block' }}>
+                    Allow User Model Selection
+                  </label>
+                  <p style={{ fontSize: '12px', color: '#15803d', margin: '4px 0 0 0' }}>
+                    If enabled, users can select their own model. Otherwise, admin-configured models are used.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setAdminSettings({ ...adminSettings, allowUserModelSelection: !adminSettings.allowUserModelSelection })}
+                  style={{
+                    width: '56px',
+                    height: '30px',
+                    borderRadius: '15px',
+                    border: 'none',
+                    background: adminSettings.allowUserModelSelection ? '#16a34a' : '#d1d5db',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    background: 'white',
+                    position: 'absolute',
+                    top: '2px',
+                    left: adminSettings.allowUserModelSelection ? '28px' : '2px',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                  }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {settingsLoading && (
+          <div style={{ background: 'white', padding: '40px', borderRadius: '12px', marginBottom: '30px', textAlign: 'center' }}>
+            Loading settings...
+          </div>
+        )}
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '30px' }}>

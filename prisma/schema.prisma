@@ -264,6 +264,27 @@ model GlobalSettings {
   updatedAt             DateTime @updatedAt
 }
 
+// Admin-configured AI model settings - controls which models are used for all users
+model AdminAIModelSettings {
+  id              String   @id @default(cuid())
+  // Model selections for different AI tasks
+  postModelId     String   @default("anthropic/claude-sonnet-4.5")  // Model for generating LinkedIn posts
+  hookModelId     String   @default("anthropic/claude-sonnet-4.5") // Model for generating hooks
+  commentModelId  String   @default("anthropic/claude-sonnet-4.5")  // Model for generating comments
+  topicModelId    String   @default("anthropic/claude-sonnet-4.5")  // Model for generating topics
+  chatbotModelId  String   @default("gpt-4o")                       // Model for AI chatbot helper
+  trendingModelId String   @default("anthropic/claude-sonnet-4.5") // Model for generating trending posts
+  // Fallback model if selected model is disabled
+  fallbackModelId String   @default("anthropic/claude-sonnet-4.5")
+  // Allow users to select their own model (admin override)
+  allowUserModelSelection Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([postModelId])
+  @@index([commentModelId])
+}
+
 // Scraped posts from LinkedIn feed (saved by extension)
 model ScrapedPost {
   id              String   @id @default(cuid())

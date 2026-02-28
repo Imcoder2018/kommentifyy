@@ -180,11 +180,15 @@ function DashboardContent() {
     // Developer emails for showing token costs
     const DEVELOPER_EMAILS = ['alanemarkef199@gmail.com', 'arman@arwebcraftslive.com'];
     const isDeveloper = user?.email ? DEVELOPER_EMAILS.includes(user.email) : false;
+    // Check if user is admin
+    const isAdmin = user?.role === 'admin' || user?.email === 'arman@arwebcraftslive.com';
 
     // AI Models state - fetched from database (admin-controlled)
     const [aiModels, setAiModels] = useState<any[]>([]);
     const [aiModelsLoading, setAiModelsLoading] = useState(false);
     const [userModelSettings, setUserModelSettings] = useState<any>(null);
+    // Admin AI model settings - fetched from database
+    const [adminModelSettings, setAdminModelSettings] = useState<any>(null);
 
     // Model options derived from fetched models - sorted by writing score
     const MODEL_OPTIONS = aiModels.length > 0
@@ -210,6 +214,33 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         setAiModelsLoading(true);
+        
+        // First fetch admin model settings (independent of user settings)
+        try {
+            const adminRes = await fetch('/api/admin/ai-models/settings', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const adminData = await adminRes.json();
+            console.log('Admin settings response:', adminData);
+            if (adminData.success) {
+                setAdminModelSettings(adminData.settings);
+                // Use admin-configured model if user selection is not allowed
+                if (!adminData.settings?.allowUserModelSelection) {
+                    if (adminData.settings?.postModelId) {
+                        console.log('Setting writer model to admin config:', adminData.settings.postModelId);
+                        setWriterModel(adminData.settings.postModelId);
+                    }
+                    if (adminData.settings?.trendingModelId) {
+                        console.log('Setting trending model to admin config:', adminData.settings.trendingModelId);
+                        setTrendingModel(adminData.settings.trendingModelId);
+                    }
+                }
+            }
+        } catch (adminErr) {
+            console.error('Failed to fetch admin settings:', adminErr);
+        }
+        
+        // Then fetch user/AI models
         try {
             const res = await fetch('/api/ai-models', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -218,9 +249,11 @@ function DashboardContent() {
             if (data.success) {
                 setAiModels(data.models || []);
                 setUserModelSettings(data.userSettings);
-                // Set default models from user settings
-                if (data.userSettings?.postModelId) setWriterModel(data.userSettings.postModelId);
-                if (data.userSettings?.commentModelId) setCsModel(data.userSettings.commentModelId);
+                // Only use user settings if admin allows user selection
+                if (adminModelSettings?.allowUserModelSelection) {
+                    if (data.userSettings?.postModelId) setWriterModel(data.userSettings.postModelId);
+                    if (data.userSettings?.commentModelId) setCsModel(data.userSettings.commentModelId);
+                }
             }
         } catch (e) {
             console.error('Failed to fetch AI models:', e);
@@ -2198,7 +2231,7 @@ function DashboardContent() {
     // ---- Tab Props: pass all state and functions to tab components ----
     const tabProps = {
         // Core
-        t, user, usage, router, miniIcon, showToast, setActiveTab, isFreePlan, showUpgradeModal, setShowUpgradeModal, dashLang, isDeveloper,
+        t, user, usage, router, miniIcon, showToast, setActiveTab, isFreePlan, showUpgradeModal, setShowUpgradeModal, dashLang, isDeveloper, isAdmin, adminModelSettings,
         // Writer
         writerTopic, setWriterTopic, writerTemplate, setWriterTemplate, writerTone, setWriterTone,
         writerLength, setWriterLength, writerHashtags, setWriterHashtags, writerEmojis, setWriterEmojis,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const STATUS_COLORS = {
   pending_fetch: { bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.3)', text: '#94a3b8', label: 'Pending' },
@@ -23,7 +23,7 @@ const DEFAULT_SEQUENCE = [
 ];
 
 export default function ImportTab(props: any) {
-    const { t, user, miniIcon, showToast, extensionConnected } = props;
+    const { t, user, miniIcon, showToast, extensionConnected = false } = props;
 
     const [leads, setLeads] = useState<any[]>([]);
     const [leadsLoading, setLeadsLoading] = useState(true);
@@ -39,6 +39,8 @@ export default function ImportTab(props: any) {
 
     const [importText, setImportText] = useState('');
     const csvFileRef = useRef<HTMLInputElement>(null);
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const [campaignName, setCampaignName] = useState('My Warm Leads');
     const [businessContext, setBusinessContext] = useState('');
@@ -53,16 +55,28 @@ export default function ImportTab(props: any) {
     const apiGet = async (url: string) => {
         const token = getAuthToken();
         const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) {
+            const error = await res.text();
+            throw new Error(`API Error: ${res.status} - ${error}`);
+        }
         return res.json();
     };
     const apiPost = async (url: string, body: any) => {
         const token = getAuthToken();
         const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!res.ok) {
+            const error = await res.text();
+            throw new Error(`API Error: ${res.status} - ${error}`);
+        }
         return res.json();
     };
     const apiDelete = async (url: string) => {
         const token = getAuthToken();
         const res = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) {
+            const error = await res.text();
+            throw new Error(`API Error: ${res.status} - ${error}`);
+        }
         return res.json();
     };
 
@@ -114,6 +128,26 @@ export default function ImportTab(props: any) {
         } else { showToast(data.error || 'Import failed', 'error'); }
     };
 
+    // Helper function to parse CSV line handling quoted fields with commas
+    const parseCsvLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current.trim());
+        return result;
+    };
+
     const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -122,12 +156,13 @@ export default function ImportTab(props: any) {
             const text = ev.target?.result as string;
             if (!text) return;
             const lines = text.split('\n');
-            const header = lines[0]?.toLowerCase() || '';
-            const urlCol = header.split(',').findIndex(h => h.includes('url') || h.includes('linkedin'));
+            const header = parseCsvLine(lines[0]?.toLowerCase() || '');
+            const urlCol = header.findIndex(h => h.includes('url') || h.includes('linkedin'));
             const leadsList: any[] = [];
             for (let i = 1; i < lines.length; i++) {
-                const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-                const url = cols[urlCol >= 0 ? urlCol : 0] || '';
+                if (!lines[i].trim()) continue;
+                const cols = parseCsvLine(lines[i]);
+                const url = (cols[urlCol >= 0 ? urlCol : 0] || '').replace(/^"|"$/g, '');
                 if (url.includes('linkedin.com/in/')) {
                     leadsList.push({ linkedinUrl: url.split('?')[0].replace(/\/$/, '') });
                 }
@@ -135,7 +170,7 @@ export default function ImportTab(props: any) {
             if (leadsList.length > 0) {
                 apiPost('/api/warm-leads', { leads: leadsList }).then(data => {
                     if (data.success) { showToast(`Imported ${data.created} leads`, 'success'); loadLeads(); }
-                });
+                }).catch(err => showToast('Import failed: ' + err.message, 'error'));
             } else { showToast('No LinkedIn URLs found in CSV', 'error'); }
         };
         reader.readAsText(file);
@@ -163,20 +198,27 @@ export default function ImportTab(props: any) {
             const data = await res.json();
             if (data.success) {
                 showToast(`Fetching posts for ${batchData.length} leads...`, 'info');
-                const pollInterval = setInterval(async () => {
+                // Clear any existing intervals/timeouts
+                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+                if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+                // Declare timeoutId BEFORE the interval so it's available in the callback
+                let timeoutId: NodeJS.Timeout;
+                pollIntervalRef.current = setInterval(async () => {
                     try {
                         const statusRes = await fetch(`/api/extension/command?commandId=${data.commandId}`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
                         const statusData = await statusRes.json();
                         if (statusData.command?.status === 'completed') {
-                            clearInterval(pollInterval);
-                            clearTimeout(timeoutId); // Clear timeout when completed
+                            clearInterval(pollIntervalRef.current!);
+                            clearTimeout(timeoutId);
+                            pollIntervalRef.current = null;
                             setFetchingPosts(false);
                             setFetchProgress('');
                             showToast(`Fetched posts for ${statusData.command.data?.success || 0} leads!`, 'success');
                             loadLeads();
                         } else if (statusData.command?.status === 'failed') {
-                            clearInterval(pollInterval);
-                            clearTimeout(timeoutId); // Clear timeout when failed
+                            clearInterval(pollIntervalRef.current!);
+                            clearTimeout(timeoutId);
+                            pollIntervalRef.current = null;
                             setFetchingPosts(false);
                             showToast('Fetch failed', 'error');
                         } else if (statusData.command?.data?.progress) {
@@ -185,12 +227,14 @@ export default function ImportTab(props: any) {
                     } catch (e) {}
                 }, 3000);
                 // Store timeout ID for cleanup and clear both after 5 minutes
-                const timeoutId = setTimeout(() => {
-                    clearInterval(pollInterval);
+                timeoutId = setTimeout(() => {
+                    clearInterval(pollIntervalRef.current!);
+                    pollIntervalRef.current = null;
                     setFetchingPosts(false);
                     setFetchProgress('');
                     showToast('Fetch timed out', 'error');
                 }, 300000);
+                pollTimeoutRef.current = timeoutId;
             } else { showToast(data.error || 'Failed', 'error'); setFetchingPosts(false); }
         } catch (e: any) { showToast('Error: ' + e.message, 'error'); setFetchingPosts(false); }
     };
@@ -221,6 +265,14 @@ export default function ImportTab(props: any) {
     };
 
     useEffect(() => { loadLeads(); }, []);
+
+    // Cleanup interval and timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+        };
+    }, []);
 
     const filteredLeads = leads.filter(l => {
         if (statusFilter !== 'all' && l.status !== statusFilter) return false;

@@ -272,6 +272,7 @@ function DashboardContent() {
     const [postingToLinkedIn, setPostingToLinkedIn] = useState<Record<number, boolean>>({});
     // Toast notification
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     // History tab state
     const [historyItems, setHistoryItems] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
@@ -551,10 +552,15 @@ function DashboardContent() {
             .catch(() => { });
     }, [router]);
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (e) {
+            console.error('Failed to copy to clipboard:', e);
+            showToast('Failed to copy to clipboard', 'error');
+        }
     };
 
     // User goals functions (for WriterTabNew)
@@ -571,7 +577,7 @@ function DashboardContent() {
                 setUserWritingStyle(data.goals.writingStyle || '');
                 setUserWritingStyleSource(data.goals.writingStyleSource || 'user_default');
             }
-        } catch { } finally { setGoalsLoading(false); }
+        } catch (e) { console.error('Failed to load user goals:', e); } finally { setGoalsLoading(false); }
     };
 
     const saveUserGoals = async () => {
@@ -698,7 +704,7 @@ function DashboardContent() {
                 setWriterScheduledPosts(scheduled);
                 setWriterDrafts(regularDrafts);
             }
-        } catch { }
+        } catch (e) { console.error('Failed to load drafts:', e); }
     };
 
     const loadScheduledPosts = async () => {
@@ -711,7 +717,7 @@ function DashboardContent() {
                 setWriterScheduledPosts(data.scheduledPosts || []);
                 setTaskCounts(data.taskCounts || { pending: 0, in_progress: 0, completed: 0, failed: 0 });
             }
-        } catch { }
+        } catch (e) { console.error('Failed to load scheduled posts:', e); }
     };
 
     const [writerPosting, setWriterPosting] = useState(false);
@@ -837,7 +843,7 @@ function DashboardContent() {
                 body: JSON.stringify({ id }),
             });
             loadDrafts();
-        } catch { }
+        } catch (e) { console.error('Failed to delete draft:', e); }
     };
 
     // Saved posts functions
@@ -872,7 +878,7 @@ function DashboardContent() {
                 setSavedPostsTotal(data.pagination?.total || 0);
                 setSavedPostsPage(page);
             }
-        } catch { } finally { setSavedPostsLoading(false); }
+        } catch (e) { console.error('Failed to load saved posts:', e); } finally { setSavedPostsLoading(false); }
     };
 
     const deleteSavedPost = async (id: string) => {
@@ -885,7 +891,7 @@ function DashboardContent() {
                 body: JSON.stringify({ id }),
             });
             loadSavedPosts(savedPostsPage);
-        } catch { }
+        } catch (e) { console.error('Failed to delete saved post:', e); }
     };
 
     // Feed schedule functions
@@ -906,7 +912,7 @@ function DashboardContent() {
                 setScheduleKeywords(data.schedule.keywords || '');
                 setScheduleActive(data.schedule.isActive);
             }
-        } catch { } finally { setFeedScheduleLoading(false); }
+        } catch (e) { console.error('Failed to load feed schedule:', e); } finally { setFeedScheduleLoading(false); }
     };
 
     const saveFeedSchedule = async () => {
@@ -924,7 +930,7 @@ function DashboardContent() {
             });
             const data = await res.json();
             if (data.success) { setFeedSchedule(data.schedule); setWriterStatus('Schedule saved!'); }
-        } catch { }
+        } catch (e) { console.error('Failed to save feed schedule:', e); }
     };
 
     // Inspiration Sources functions
@@ -941,7 +947,7 @@ function DashboardContent() {
             if (data.success && data.sources) {
                 setInspirationSources(data.sources.map((s: any) => ({ name: s.name, profileUrl: s.profileUrl, count: s.postCount || 0 })));
             }
-        } catch { } finally { setInspirationLoading(false); }
+        } catch (e) { console.error('Failed to load inspiration sources:', e); } finally { setInspirationLoading(false); }
     };
 
     const scrapeInspirationProfiles = async () => {
@@ -986,7 +992,7 @@ function DashboardContent() {
                 body: JSON.stringify({ sourceName }),
             });
             loadInspirationSources();
-        } catch { }
+        } catch (e) { console.error('Failed to delete inspiration source:', e); }
     };
 
     // Kommentify shared content functions
@@ -998,7 +1004,7 @@ function DashboardContent() {
             const res = await fetch('/api/shared/posts?limit=50', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setSharedPosts(data.posts || []);
-        } catch { } finally { setSharedPostsLoading(false); }
+        } catch (e) { console.error('Failed to load shared posts:', e); } finally { setSharedPostsLoading(false); }
     };
     const loadSharedInspProfiles = async () => {
         const token = localStorage.getItem('authToken');
@@ -1007,7 +1013,7 @@ function DashboardContent() {
             const res = await fetch('/api/shared/inspiration-profiles', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setSharedInspProfiles(data.profiles || []);
-        } catch { }
+        } catch (e) { console.error('Failed to load shared inspiration profiles:', e); }
     };
     const loadSharedCommentProfiles = async () => {
         const token = localStorage.getItem('authToken');
@@ -1016,7 +1022,7 @@ function DashboardContent() {
             const res = await fetch('/api/shared/comment-profiles', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setSharedCommentProfiles(data.profiles || []);
-        } catch { }
+        } catch (e) { console.error('Failed to load shared comment profiles:', e); }
     };
 
     // Comment Style Sources functions
@@ -1028,7 +1034,7 @@ function DashboardContent() {
             const res = await fetch('/api/scraped-comments', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setCommentStyleProfiles(data.profiles || []);
-        } catch { } finally { setCommentStyleLoading(false); }
+        } catch (e) { console.error('Failed to load comment style profiles:', e); } finally { setCommentStyleLoading(false); }
     };
 
     const commentScrapeIntervalRef = useRef<any>(null);
@@ -1078,7 +1084,7 @@ function DashboardContent() {
                                 setCommentStyleStatus(`Scraping in progress... (${pollCount * 5}s elapsed)`);
                             }
                         }
-                    } catch { }
+                    } catch (e) { console.error('Error polling comment scrape status:', e); }
                     // Timeout after 3 minutes
                     if (pollCount > 36) {
                         clearInterval(commentScrapeIntervalRef.current);
@@ -1104,7 +1110,7 @@ function DashboardContent() {
             const res = await fetch(`/api/scraped-comments?profileId=${profileId}`, { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setCommentStyleComments(data.comments || []);
-        } catch { } finally { setCommentStyleCommentsLoading(false); }
+        } catch (e) { console.error('Failed to load profile comments:', e); } finally { setCommentStyleCommentsLoading(false); }
     };
 
     const toggleCommentTop = async (commentId: string) => {
@@ -1118,7 +1124,7 @@ function DashboardContent() {
             });
             // Refresh comments
             setCommentStyleComments(prev => prev.map(c => c.id === commentId ? { ...c, isTopComment: !c.isTopComment } : c));
-        } catch { }
+        } catch (e) { console.error('Failed to toggle comment top status:', e); }
     };
 
     const toggleProfileSelect = async (profileId: string) => {
@@ -1152,7 +1158,7 @@ function DashboardContent() {
             setCommentStyleProfiles(prev => prev.filter(p => p.id !== profileId));
             if (commentStyleExpanded === profileId) { setCommentStyleExpanded(null); setCommentStyleComments([]); }
             showToast('Profile and comments deleted', 'success');
-        } catch { }
+        } catch (e) { console.error('Failed to delete comment style profile:', e); }
     };
 
     const loadCommentSettings = async () => {
@@ -1174,7 +1180,7 @@ function DashboardContent() {
                 setCsBackground(data.settings.userBackground || '');
                 setCsAutoPost(data.settings.aiAutoPost || 'manual');
             }
-        } catch { } finally { setCsSettingsLoading(false); }
+        } catch (e) { console.error('Failed to load comment settings:', e); } finally { setCsSettingsLoading(false); }
     };
 
     const saveCommentSettings = async () => {
@@ -1236,19 +1242,19 @@ function DashboardContent() {
                     setWriterBackground(data.data.headline);
                 }
             }
-        } catch { } finally { setLinkedInProfileLoading(false); }
+        } catch (e) { console.error('Failed to load LinkedIn profile:', e); } finally { setLinkedInProfileLoading(false); }
     };
 
     // Voyager data functions
     const loadVoyagerData = async () => {
         const token = localStorage.getItem('authToken');
-        console.log('[VOYAGER UI] loadVoyagerData called, token exists:', !!token);
+        console.debug('[VOYAGER UI] loadVoyagerData called, token exists:', !!token);
         if (!token) return;
         setVoyagerLoading(true);
         try {
             const res = await fetch('/api/linkedin-profile', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            console.log('[VOYAGER UI] API response:', { success: data.success, hasData: !!data.data, fields: data.data ? Object.keys(data.data) : [], linkedInUrn: data.data?.linkedInUrn, followerCount: data.data?.followerCount, voyagerLastSyncAt: data.data?.voyagerLastSyncAt });
+            console.debug('[VOYAGER UI] API response:', { success: data.success, hasData: !!data.data, fields: data.data ? Object.keys(data.data) : [], linkedInUrn: data.data?.linkedInUrn, followerCount: data.data?.followerCount, voyagerLastSyncAt: data.data?.voyagerLastSyncAt });
             if (data.success && data.data) {
                 const d = data.data;
                 const recentPosts = Array.isArray(d.recentPosts) ? d.recentPosts : (typeof d.recentPosts === 'string' ? JSON.parse(d.recentPosts || '[]') : []);
@@ -1288,12 +1294,12 @@ function DashboardContent() {
                     profileMetadata,
                     topConnections: Array.isArray(topConnections) ? topConnections : [],
                 };
-                console.log('[VOYAGER UI] Setting voyagerData state:', { name: voyagerState.name, followers: voyagerState.followerCount, posts: voyagerState.recentPosts?.length, experience: voyagerState.experience?.length, education: voyagerState.education?.length, invitations: voyagerState.invitationsData, lastSync: voyagerState.voyagerLastSyncAt });
+                console.debug('[VOYAGER UI] Setting voyagerData state:', { name: voyagerState.name, followers: voyagerState.followerCount, posts: voyagerState.recentPosts?.length, experience: voyagerState.experience?.length, education: voyagerState.education?.length, invitations: voyagerState.invitationsData, lastSync: voyagerState.voyagerLastSyncAt });
                 setVoyagerData(voyagerState);
             } else {
-                console.warn('[VOYAGER UI] No data returned from API:', data);
+                console.debug('[VOYAGER UI] No data returned from API:', data);
             }
-        } catch (e) { console.warn('[VOYAGER UI] Failed to load data:', e); } finally { setVoyagerLoading(false); }
+        } catch (e) { console.debug('[VOYAGER UI] Failed to load data:', e); } finally { setVoyagerLoading(false); }
     };
 
     const deleteLinkedInProfile = async () => {
@@ -1356,9 +1362,9 @@ function DashboardContent() {
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
                         const statusData = await statusRes.json();
-                        console.log('📊 Dashboard polling - commands:', statusData.commands?.length, 'looking for:', data.commandId);
+                        console.debug('📊 Dashboard polling - commands:', statusData.commands?.length, 'looking for:', data.commandId);
                         const cmd = statusData.commands?.find((c: any) => c.id === data.commandId);
-                        console.log('📊 Found command:', cmd?.command, 'status:', cmd?.status);
+                        console.debug('📊 Found command:', cmd?.command, 'status:', cmd?.status);
 
                         if (cmd && isPollingActive) {
                             if (cmd.status === 'completed') {
@@ -1479,7 +1485,7 @@ function DashboardContent() {
                     return;
                 }
             }
-        } catch { }
+        } catch (e) { console.error('Failed to restore planner session:', e); }
         setPlannerOpen(true);
     };
 
@@ -1531,7 +1537,7 @@ function DashboardContent() {
         // Save session for disconnect resilience
         const key = `planner_${user?.id}_${plannerMode}`;
         const session = { step: 'generating', topics: plannerTopics, selected: plannerSelected, publishTime: plannerPublishTime, startDate: plannerStartDate, template: plannerTemplate, tone: plannerTone, length: plannerLength, doneCount: 0, total: topics.length };
-        try { localStorage.setItem(key, JSON.stringify(session)); } catch { }
+        try { localStorage.setItem(key, JSON.stringify(session)); } catch (e) { console.error('Failed to save planner session:', e); }
         for (let i = 0; i < topics.length; i++) {
             if (plannerAbortRef.current) break;
             const topic = topics[i];
@@ -1555,7 +1561,7 @@ function DashboardContent() {
                 if (schedData.success) {
                     const newCount = i + 1;
                     setPlannerDoneCount(newCount);
-                    try { localStorage.setItem(key, JSON.stringify({ ...session, doneCount: newCount })); } catch { }
+                    try { localStorage.setItem(key, JSON.stringify({ ...session, doneCount: newCount })); } catch (e) { console.error('Failed to update planner session:', e); }
                     loadScheduledPosts();
                 }
             } catch (e: any) {
@@ -1566,7 +1572,7 @@ function DashboardContent() {
         setPlannerGenerating(false);
         setPlannerStep('done');
         setPlannerStatusMsg('');
-        try { localStorage.removeItem(key); } catch { }
+        try { localStorage.removeItem(key); } catch (e) { console.error('Failed to clear planner session:', e); }
         loadScheduledPosts();
     };
 
@@ -1580,7 +1586,7 @@ function DashboardContent() {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ isSelected: enabled }),
             });
-        } catch { }
+        } catch (e) { console.error('Failed to toggle LinkedIn profile data:', e); }
     };
 
     // Automation settings functions
@@ -1592,7 +1598,7 @@ function DashboardContent() {
             const res = await fetch('/api/automation-settings', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setAutoSettings(data.settings);
-        } catch { } finally { setAutoSettingsLoading(false); }
+        } catch (e) { console.error('Failed to load automation settings:', e); } finally { setAutoSettingsLoading(false); }
     };
     const saveAutoSettings = async (updates: any) => {
         const token = localStorage.getItem('authToken');
@@ -1616,7 +1622,7 @@ function DashboardContent() {
             const res = await fetch('/api/live-activity?limit=100', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setLiveActivityLogs(data.logs || []);
-        } catch { } finally { setLiveActivityLoading(false); }
+        } catch (e) { console.error('Failed to load live activity:', e); } finally { setLiveActivityLoading(false); }
     };
 
     // Commenter config functions
@@ -1628,7 +1634,7 @@ function DashboardContent() {
             const res = await fetch('/api/commenter-config', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setCommenterCfg(data.config);
-        } catch { } finally { setCommenterCfgLoading(false); }
+        } catch (e) { console.error('Failed to load commenter config:', e); } finally { setCommenterCfgLoading(false); }
     };
     const saveCommenterCfg = async (updates: any) => {
         const token = localStorage.getItem('authToken');
@@ -1652,7 +1658,7 @@ function DashboardContent() {
             const res = await fetch('/api/import-config', { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
             if (data.success) setImportCfg(data.config);
-        } catch { } finally { setImportCfgLoading(false); }
+        } catch (e) { console.error('Failed to load import config:', e); } finally { setImportCfgLoading(false); }
     };
     const saveImportCfg = async (updates: any) => {
         const token = localStorage.getItem('authToken');
@@ -1706,7 +1712,7 @@ function DashboardContent() {
 
                 // Connectivity is handled by heartbeat polling (see checkExtensionConnectivity)
             }
-        } catch { } finally { if (!silent) setTasksLoading(false); }
+        } catch (e) { console.error('Failed to load tasks:', e); } finally { if (!silent) setTasksLoading(false); }
     };
 
     const loadReferralData = async () => {
@@ -1718,7 +1724,7 @@ function DashboardContent() {
             if (data.success) {
                 setReferralData(data);
             }
-        } catch { }
+        } catch (e) { console.error('Failed to load referral data:', e); }
     };
 
     const loadAccountSettings = async () => {
@@ -1742,7 +1748,7 @@ function DashboardContent() {
             } else if (isConnected) {
                 setExtensionLastSeen(new Date());
             }
-        } catch { }
+        } catch (e) { console.error('Failed to check extension connectivity:', e); }
     };
 
     // Poll tasks every 15 seconds for live notifications - empty deps so interval is created once
@@ -1841,7 +1847,7 @@ function DashboardContent() {
                         }
                     }
                 }
-            } catch { }
+            } catch (e) { console.error('Error polling feed scrape status:', e); }
         }, 3000);
     };
     const stopFeedScrape = async () => {
@@ -1855,7 +1861,7 @@ function DashboardContent() {
             setFeedScrapeStatus(null);
             setFeedScrapeCommandId(null);
             showToast('Feed scrape stopped', 'info');
-        } catch { }
+        } catch (e) { console.error('Failed to stop feed scrape:', e); }
     };
     useEffect(() => {
         return () => {
@@ -1877,7 +1883,7 @@ function DashboardContent() {
             });
             // Reload tasks
             setTimeout(() => loadTasks(), 1000);
-        } catch { }
+        } catch (e) { console.error('Failed to stop all tasks:', e); }
     };
 
     // Trending AI generation
@@ -1961,8 +1967,15 @@ function DashboardContent() {
 
     // Toast notification helper
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        // Clear any existing toast timeout to prevent memory leaks
+        if (toastTimeoutRef.current) {
+            clearTimeout(toastTimeoutRef.current);
+        }
         setToast({ message, type });
-        setTimeout(() => setToast(null), 4000);
+        toastTimeoutRef.current = setTimeout(() => {
+            setToast(null);
+            toastTimeoutRef.current = null;
+        }, 4000);
     };
 
     // Analytics functions
@@ -2000,7 +2013,7 @@ function DashboardContent() {
                 setHistoryTotal(data.total || 0);
                 setHistoryPage(page);
             }
-        } catch { } finally { setHistoryLoading(false); }
+        } catch (e) { console.error('Failed to load history:', e); } finally { setHistoryLoading(false); }
     };
 
     const saveToHistory = async (type: string, title: string, content: any, metadata?: any) => {
@@ -2012,7 +2025,7 @@ function DashboardContent() {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ type, title, content: JSON.stringify(content), metadata: metadata ? JSON.stringify(metadata) : null }),
             });
-        } catch { }
+        } catch (e) { console.error('Failed to save to history:', e); }
     };
 
     const deleteHistoryItem = async (id: string) => {
@@ -2021,7 +2034,7 @@ function DashboardContent() {
         try {
             await fetch(`/api/history?id=${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             loadHistory(historyPage);
-        } catch { }
+        } catch (e) { console.error('Failed to delete history item:', e); }
     };
 
     const postGeneratedToLinkedIn = async (content: string, imageDataUrl?: string, postIndex?: number) => {
@@ -2518,7 +2531,7 @@ function DashboardContent() {
                                                     await fetch('/api/extension/command', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: task.id, status: 'cancelled' }) });
                                                     await loadTasks(true);
                                                     addTaskNotification(`Stopped: ${task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}`, 'error');
-                                                } catch { } finally { btn.style.opacity = '1'; }
+                                                } catch (e) { console.error('Failed to stop task:', e); } finally { btn.style.opacity = '1'; }
                                             }}
                                                 onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.9)')}
                                                 onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}

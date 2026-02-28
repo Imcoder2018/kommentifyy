@@ -75,6 +75,13 @@ export default function WriterTabNew(props: any) {
         plannerStatusMsg, plannerAbortRef, generatePlannerTopics, startPlannerGeneration,
     } = props;
 
+    // Load scheduled post for preview
+    const loadScheduledPost = (post: any) => {
+        setWriterContent(post.content || '');
+        setWriterTopic(post.topic || '');
+        showToast('Post loaded for preview', 'info');
+    };
+
     // Post generation state
     const [postDepth, setPostDepth] = useState<string>('standard');
     const [localWriterGenerating, setLocalWriterGenerating] = useState<boolean>(false);
@@ -826,49 +833,100 @@ export default function WriterTabNew(props: any) {
                             const profileHeadline = voyagerData?.headline || linkedInProfile?.headline || user?.email || 'Your Headline';
                             
                             return (
-                                <div style={{ maxWidth: maxW, margin: '0 auto', background: '#1b1f23', borderRadius: '10px', border: '1px solid #38434f', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', flex: 1, overflowY: 'auto' }}>
-                                    <div style={{ padding: isMobile ? '10px 12px' : '12px 16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                                        <div style={{ width: isMobile ? '36px' : '48px', height: isMobile ? '36px' : '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: isMobile ? '14px' : '18px', flexShrink: 0 }}>{(profileName?.[0] || 'U').toUpperCase()}</div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ color: 'white', fontWeight: '600', fontSize: isMobile ? '13px' : '14px', lineHeight: '1.3' }}>{profileName}</div>
-                                            <div style={{ color: '#ffffffb3', fontSize: isMobile ? '11px' : '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profileHeadline}</div>
-                                            <div style={{ color: '#ffffff80', fontSize: '13px', marginTop: '2px' }}>Just now · {miniIcon('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', '#ffffff80', 10)}</div>
+                                <div style={{ maxWidth: maxW, margin: '0 auto', background: '#ffffff', borderRadius: '8px', border: '1px solid #e0dfdc', overflow: 'hidden', fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', flex: 1, overflowY: 'auto', boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }}>
+                                    {/* Profile Header - LinkedIn Style */}
+                                    <div style={{ padding: isMobile ? '12px' : '16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                        <div style={{ width: isMobile ? '48px' : '56px', height: isMobile ? '48px' : '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '600', fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }}>
+                                            {(profileName?.[0] || 'U').toUpperCase()}
                                         </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span style={{ color: 'rgba(0,0,0,0.9)', fontWeight: '600', fontSize: isMobile ? '14px' : '16px', lineHeight: '1.2' }}>{profileName}</span>
+                                                <span style={{ color: '#057642', fontSize: '14px', fontWeight: '500' }}>• 1st</span>
+                                            </div>
+                                            <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: isMobile ? '12px' : '14px', lineHeight: '1.3' }}>{profileHeadline}</div>
+                                            <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '12px', lineHeight: '1.3', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span>Just now</span>
+                                                <span>•</span>
+                                                <svg width="14" height="14" viewBox="0 0 18 18" fill="rgba(0,0,0,0.6)"><circle cx="9" cy="9" r="7" stroke="rgba(0,0,0,0.6)" strokeWidth="1.5" fill="none"/><path d="M9 5v4l2.5 2.5" stroke="rgba(0,0,0,0.6)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                            </div>
+                                        </div>
+                                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: 'rgba(0,0,0,0.6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                                        </button>
                                     </div>
-                                    <div style={{ padding: isMobile ? '0 12px 10px' : '0 16px 12px' }}>
-                                        <div style={{ color: '#ffffffe6', fontSize: isMobile ? '13px' : '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+
+                                    {/* Post Content */}
+                                    <div style={{ padding: isMobile ? '0 12px 12px' : '0 16px 12px' }}>
+                                        <div style={{ color: 'rgba(0,0,0,0.9)', fontSize: isMobile ? '14px' : '16px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                                             {displayText}
-                                            {truncated && <span onClick={() => setWriterPreviewExpanded(true)} style={{ color: '#70b5f9', cursor: 'pointer' }}>...more</span>}
+                                            {truncated && <span onClick={() => setWriterPreviewExpanded(true)} style={{ color: '#0a66c2', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>...see more</span>}
                                         </div>
                                         {writerPreviewExpanded && writerContent.length > TRUNCATE_CHARS && (
-                                            <span onClick={() => setWriterPreviewExpanded(false)} style={{ color: '#70b5f9', cursor: 'pointer', fontSize: '13px', display: 'block', marginTop: '4px' }}>...less</span>
+                                            <span onClick={() => setWriterPreviewExpanded(false)} style={{ color: '#0a66c2', cursor: 'pointer', fontSize: '14px', display: 'block', marginTop: '4px', fontWeight: '500' }}>show less</span>
                                         )}
                                     </div>
+
+                                    {/* Media */}
                                     {writerImageUrl && (
-                                        <div style={{ borderTop: '1px solid #38434f' }}>
+                                        <div style={{ borderTop: '1px solid #e0dfdc' }}>
                                             {writerMediaType === 'video' ? (
-                                                <video src={writerImageUrl} controls style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#000' }} />
+                                                <video src={writerImageUrl} controls style={{ width: '100%', maxHeight: '420px', objectFit: 'contain', background: '#000' }} />
                                             ) : (
-                                                <img src={writerImageUrl} alt="Post media" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }} />
+                                                <img src={writerImageUrl} alt="Post media" style={{ width: '100%', maxHeight: '420px', objectFit: 'cover' }} />
                                             )}
                                         </div>
                                     )}
-                                    <div style={{ padding: isMobile ? '8px 12px' : '8px 16px', borderTop: '1px solid #38434f' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ffffff80', fontSize: isMobile ? '11px' : '12px' }}>
-                                            <span>👍 ❤️ 💡</span>
-                                            <span>0 comments · 0 reposts</span>
+
+                                    {/* Social Counts */}
+                                    <div style={{ padding: '8px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(0,0,0,0.6)', fontSize: '12px' }}>
+                                            <div style={{ display: 'flex' }}>
+                                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#0a66c2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '-4px' }}>
+                                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="white"><path d="M13.5 1h-11C1.7 1 1 1.7 1 2.5v11c0 .8.7 1.5 1.5 1.5h6.5v-5l-3-3h5l3-3v5h2.5c.8 0 1.5-.7 1.5-1.5v-11c0-.8-.7-1.5-1.5-1.5z"/></svg>
+                                                </div>
+                                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#e6683e', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '-4px' }}>
+                                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="white"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 11.5l-4.5-2-1 1 4.5 2.5 1-1z"/></svg>
+                                                </div>
+                                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#a0b4b7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="white"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm1 12H7V7h2v5zm1-5c-.4 0-.7-.3-.7-.7s.3-.7.7-.7.7.3.7.7-.3.7-.7.7z"/></svg>
+                                                </div>
+                                            </div>
+                                            <span style={{ color: 'rgba(0,0,0,0.6)', fontSize: '12px' }}>0</span>
+                                        </div>
+                                        <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '12px' }}>
+                                            <span style={{ cursor: 'pointer' }}>0 comments</span> • <span style={{ cursor: 'pointer' }}>0 reposts</span>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-around', padding: '4px 0', borderTop: '1px solid #38434f' }}>
-                                        {['👍 Like', '💬 Comment', '🔄 Repost', '✈️ Send'].map(action => (
-                                            <div key={action} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '10px 8px', color: '#ffffff80', fontSize: isMobile ? '11px' : '12px', fontWeight: '600' }}>{action}</div>
-                                        ))}
+
+                                    {/* Action Buttons - LinkedIn Style */}
+                                    <div style={{ display: 'flex', padding: '4px 8px' }}>
+                                        <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', color: 'rgba(0,0,0,0.6)', fontSize: isMobile ? '14px' : '16px', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.8"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                            Like
+                                        </button>
+                                        <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', color: 'rgba(0,0,0,0.6)', fontSize: isMobile ? '14px' : '16px', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                            Comment
+                                        </button>
+                                        <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', color: 'rgba(0,0,0,0.6)', fontSize: isMobile ? '14px' : '16px', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.8"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                                            Repost
+                                        </button>
+                                        <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', color: 'rgba(0,0,0,0.6)', fontSize: isMobile ? '14px' : '16px', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.6)" strokeWidth="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                            Send
+                                        </button>
                                     </div>
                                 </div>
                             );
                         })() : (
-                            <div style={{ padding: '40px 20px', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                                Generate a post to see live preview
+                            <div style={{ padding: '60px 20px', textAlign: 'center', background: '#ffffff', borderRadius: '8px', border: '1px solid #e0dfdc' }}>
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#e0e0e0" strokeWidth="1.5" style={{ marginBottom: '12px' }}>
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                                </svg>
+                                <div style={{ color: 'rgba(0,0,0,0.6)', fontSize: '14px', fontWeight: '500' }}>Your LinkedIn post will appear here</div>
+                                <div style={{ color: 'rgba(0,0,0,0.4)', fontSize: '12px', marginTop: '4px' }}>Generate content to see a preview</div>
                             </div>
                         )
                     }
@@ -1082,7 +1140,7 @@ export default function WriterTabNew(props: any) {
                                 const date = new Date(calendarYear, calendarMonth, day);
                                 const isToday = date.toDateString() === today.toDateString();
                                 const dateStr = date.toISOString().split('T')[0];
-                                const scheduledCount = writerScheduledPosts?.filter((p: any) => p.scheduledAt?.startsWith(dateStr)).length || 0;
+                                const scheduledCount = writerScheduledPosts?.filter((p: any) => p.scheduledFor?.startsWith(dateStr)).length || 0;
                                 
                                 cells.push(
                                     <div key={day}
@@ -1096,7 +1154,13 @@ export default function WriterTabNew(props: any) {
                                             transition: 'all 0.2s'
                                         }}
                                         onMouseOver={e => { if (scheduledCount > 0) e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
-                                        onMouseOut={e => { if (!isToday && scheduledCount > 0) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}>
+                                        onMouseOut={e => { if (!isToday && scheduledCount > 0) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                                        onClick={() => {
+                                            if (scheduledCount > 0) {
+                                                const postsForDay = writerScheduledPosts?.filter((p: any) => p.scheduledFor?.startsWith(dateStr));
+                                                if (postsForDay?.length) loadScheduledPost(postsForDay[0]);
+                                            }
+                                        }}>
                                         <div style={{ color: isToday ? '#60a5fa' : 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: isToday ? '700' : '500', marginBottom: '2px' }}>
                                             {day}
                                         </div>
@@ -1119,12 +1183,12 @@ export default function WriterTabNew(props: any) {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
                                 {writerScheduledPosts.slice(0, 5).map((post: any, idx: number) => (
-                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                                    <div key={idx} onClick={() => loadScheduledPost(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', cursor: 'pointer' }}>
                                         <span style={{ color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                             {post.content?.substring(0, 40)}...
                                         </span>
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginLeft: '8px', flexShrink: 0 }}>
-                                            {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            {post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
                                         </span>
                                     </div>
                                 ))}

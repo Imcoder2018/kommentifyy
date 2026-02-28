@@ -346,12 +346,18 @@ export default function CommenterTab(props: any) {
                                                     {new Date(post.createdAt).toLocaleDateString()} · {post.source || 'feed'}
                                                 </div>
                                             </div>
-                                            {post.postUrl && (
-                                                <a href={post.postUrl} target="_blank" rel="noopener noreferrer"
-                                                    style={{ padding: '6px 12px', background: 'rgba(0,119,181,0.2)', color: '#60a5fa', border: '1px solid rgba(0,119,181,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', textDecoration: 'none' }}>
-                                                    View on LinkedIn
-                                                </a>
-                                            )}
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                {post.postUrl && (
+                                                    <a href={post.postUrl} target="_blank" rel="noopener noreferrer"
+                                                        style={{ padding: '6px 12px', background: 'rgba(0,119,181,0.2)', color: '#60a5fa', border: '1px solid rgba(0,119,181,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', textDecoration: 'none' }}>
+                                                        View
+                                                    </a>
+                                                )}
+                                                <button onClick={() => deletePost(post.id)}
+                                                    style={{ padding: '6px 10px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                                                    🗑
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Post Content with Scrollbar */}

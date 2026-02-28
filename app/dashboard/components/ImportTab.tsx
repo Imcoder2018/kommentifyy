@@ -502,6 +502,19 @@ export default function ImportTab(props: Props) {
     });
   }, []);
 
+  // Memoized filtered leads (must be before toggleAllSelection)
+  const filteredLeads = useMemo(() => {
+    return leads.filter(l => {
+      if (statusFilter !== FILTER_ALL && l.status !== statusFilter) return false;
+      if (debouncedQuery) {
+        const q = debouncedQuery.toLowerCase();
+        return (l.firstName || '').toLowerCase().includes(q) || (l.lastName || '').toLowerCase().includes(q) ||
+          (l.company || '').toLowerCase().includes(q) || (l.linkedinUrl || '').toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [leads, statusFilter, debouncedQuery]);
+
   // Toggle all selection
   const toggleAllSelection = useCallback(() => {
     if (selectedLeads.size === filteredLeads.length) {
@@ -530,19 +543,6 @@ export default function ImportTab(props: Props) {
       if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
     };
   }, []);
-
-  // Memoized filtered leads
-  const filteredLeads = useMemo(() => {
-    return leads.filter(l => {
-      if (statusFilter !== FILTER_ALL && l.status !== statusFilter) return false;
-      if (debouncedQuery) {
-        const q = debouncedQuery.toLowerCase();
-        return (l.firstName || '').toLowerCase().includes(q) || (l.lastName || '').toLowerCase().includes(q) ||
-          (l.company || '').toLowerCase().includes(q) || (l.linkedinUrl || '').toLowerCase().includes(q);
-      }
-      return true;
-    });
-  }, [leads, statusFilter, debouncedQuery]);
 
   // Memoized status counts
   const statusCounts = useMemo(() => ({

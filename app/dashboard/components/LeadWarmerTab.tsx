@@ -1,4 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  Settings, Download, Upload, Search, X, Users, FileText, Heart, MessageCircle,
+  ThumbsUp, Trash2, ChevronDown, ChevronRight, ChevronUp, Check, AlertCircle, Loader2,
+  Sparkles, RefreshCw, ExternalLink, HelpCircle, UserPlus, Send, Plus, Minus,
+  Clock, GripVertical, Edit2
+} from 'lucide-react';
 
 // ============= TYPES =============
 interface Lead {
@@ -37,9 +43,11 @@ interface Settings {
 }
 
 interface SequenceStep {
+  id: string;
   day: number;
   action: string;
   enabled: boolean;
+  time?: string; // Format: "HH:mm" or "anytime"
 }
 
 interface Props {
@@ -79,10 +87,10 @@ const COLORS = {
     primaryDark: '#4c1d95',
   },
   status: {
-    pending: { bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.3)', text: '#94a3b8', label: 'Pending' },
-    fetched: { bg: 'rgba(96,165,250,0.15)', border: 'rgba(96,165,250,0.3)', text: '#60a5fa', label: 'Fetched' },
-    engaged: { bg: 'rgba(251,191,36,0.15)', border: 'rgba(251,191,36,0.3)', text: '#fbbf24', label: 'Engaged' },
-    connected: { bg: 'rgba(52,211,153,0.15)', border: 'rgba(52,211,153,0.3)', text: '#34d399', label: 'Connected' },
+    pending: { bg: '#f3f6f8', border: '#e0e0e0', text: '#666666', label: 'Pending' },
+    fetched: { bg: '#e8f4fd', border: '#0a66c2', text: '#0a66c2', label: 'Fetched' },
+    engaged: { bg: '#fff8e6', border: '#cc9900', text: '#997a00', label: 'Engaged' },
+    connected: { bg: '#e8f5e9', border: '#057642', text: '#057642', label: 'Connected' },
   },
   surface: {
     card: 'rgba(255,255,255,0.05)',
@@ -400,14 +408,30 @@ const ACTION_LABELS: Record<string, { label: string; icon: string; color: string
   like: { label: 'Like Post', icon: '👍', color: '#34d399' },
   comment: { label: 'Comment', icon: '💬', color: '#a78bfa' },
   connect: { label: 'Connect', icon: '🤝', color: '#10b981' },
+  message: { label: 'Send Message', icon: '✉️', color: '#f472b6' },
+  view_profile: { label: 'View Profile', icon: '👁️', color: '#fb923c' },
 };
 
 const DEFAULT_SEQUENCE: SequenceStep[] = [
-  { day: 1, action: 'follow', enabled: true },
-  { day: 3, action: 'like', enabled: true },
-  { day: 5, action: 'comment', enabled: true },
-  { day: 7, action: 'like', enabled: true },
-  { day: 10, action: 'connect', enabled: false },
+  { id: '1', day: 1, action: 'follow', enabled: true, time: '09:00' },
+  { id: '2', day: 3, action: 'like', enabled: true, time: '10:00' },
+  { id: '3', day: 5, action: 'comment', enabled: true, time: '14:00' },
+  { id: '4', day: 7, action: 'like', enabled: true, time: '09:00' },
+  { id: '5', day: 10, action: 'connect', enabled: false, time: 'anytime' },
+];
+
+// Helper to generate unique IDs
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// Campaign goals with descriptions
+const CAMPAIGN_GOALS = [
+  { key: 'relationship', icon: '🤝', label: 'Relationship', description: 'Build genuine connections and trust over time' },
+  { key: 'authority', icon: '👑', label: 'Authority', description: 'Establish thought leadership and expertise' },
+  { key: 'warm_pitch', icon: '🎯', label: 'Warm Pitch', description: 'Soft sell with personalized outreach' },
+  { key: 'recruit', icon: '🔍', label: 'Recruit', description: 'Source and engage potential candidates' },
+  { key: 'networking', icon: '🌐', label: 'Networking', description: 'Expand professional network strategically' },
+  { key: 'sales', icon: '💰', label: 'Sales', description: 'Direct outreach for business opportunities' },
+  { key: 'partnership', icon: '🤝', label: 'Partnership', description: 'Collaborate with complementary businesses' },
 ];
 
 // All magic numbers extracted to constants
@@ -510,6 +534,7 @@ export default function ImportTab(props: Props) {
   // Hover states for interactive elements
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const [hoveredLeadId, setHoveredLeadId] = useState<string | null>(null);
+  const [showExtensionTooltip, setShowExtensionTooltip] = useState(false);
 
   // Focus states for accessibility
   const [focusedElement, setFocusedElement] = useState<string | null>(null);
@@ -552,7 +577,18 @@ export default function ImportTab(props: Props) {
           setCampaignGoal(data.settings.campaignGoal || 'relationship');
           setProfilesPerDay(data.settings.profilesPerDay || DEFAULTS.PROFILES_PER_DAY);
           setAutopilotEnabled(data.settings.autopilotEnabled || false);
-          try { setSequenceSteps(JSON.parse(data.settings.sequenceSteps)); } catch { setSequenceSteps(DEFAULT_SEQUENCE); }
+          try {
+            const parsedSteps = JSON.parse(data.settings.sequenceSteps);
+            // Migrate old steps that don't have id and time fields
+            const migratedSteps = parsedSteps.map((step: any, idx: number) => ({
+              id: step.id || generateId(),
+              day: step.day || DEFAULT_SEQUENCE[idx]?.day || 1,
+              action: step.action || 'like',
+              enabled: step.enabled !== undefined ? step.enabled : true,
+              time: step.time || '09:00',
+            }));
+            setSequenceSteps(migratedSteps);
+          } catch { setSequenceSteps(DEFAULT_SEQUENCE); }
         }
       }
     } catch (e) { console.error('Load leads error:', e); }
@@ -1007,200 +1043,234 @@ export default function ImportTab(props: Props) {
           pointerEvents: 'none',
         }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg, flexWrap: 'wrap', gap: SPACING.md }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm + 2, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.lg }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: RADIUS.lg,
-                background: 'linear-gradient(135deg, #693fe9 0%, #a78bfa 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                boxShadow: '0 4px 16px rgba(105,63,233,0.4)',
-                animation: 'pulse-glow 2s infinite ease-in-out',
-              }}>
-                🔥
-              </div>
-              <div>
-                <h3 style={{ color: COLORS.text.primary, fontSize: TYPOGRAPHY.xxl + 2, fontWeight: '800', margin: 0, letterSpacing: '-0.5px' }}>Warm Leads</h3>
-                {campaignName && (
+        {/* Compact Header - Row 1: Title + Pipeline + Status + Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: SPACING.md, flexWrap: 'wrap' }}>
+          {/* Left: Icon + Title + Campaign */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: RADIUS.sm,
+              background: 'linear-gradient(135deg, #693fe9 0%, #a78bfa 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(105,63,233,0.4)',
+            }}>
+              <Sparkles size={16} color="white" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm, flexWrap: 'wrap' }}>
+              <h3 style={{ color: COLORS.text.primary, fontSize: TYPOGRAPHY.lg, fontWeight: '700', margin: 0 }}>Warm Leads</h3>
+              {campaignName && (
+                <span style={{
+                  background: 'rgba(105,63,233,0.25)',
+                  color: COLORS.brand.primaryLight,
+                  fontSize: TYPOGRAPHY.xs - 1,
+                  padding: '2px 8px',
+                  borderRadius: RADIUS.full,
+                  fontWeight: '600',
+                  border: '1px solid rgba(167,139,250,0.2)',
+                }}>
+                  {campaignName}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Center: Compact Pipeline Steps */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm, flexWrap: 'wrap' }}>
+            {[
+              { step: 1, label: 'Import', color: '#60a5fa' },
+              { step: 2, label: 'Fetch', color: '#a78bfa' },
+              { step: 3, label: 'Engage', color: '#fbbf24' },
+              { step: 4, label: 'Connect', color: '#34d399' },
+            ].map((item, idx, arr) => (
+              <div key={item.step} style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: RADIUS.md,
+                  border: `1px solid ${item.color}35`,
+                  boxShadow: `0 2px 8px ${item.color}15`,
+                }}>
                   <span style={{
-                    background: 'rgba(105,63,233,0.3)',
-                    color: COLORS.brand.primaryLight,
-                    fontSize: TYPOGRAPHY.xs,
-                    padding: SPACING.xs + ' ' + SPACING.sm,
-                    borderRadius: RADIUS.full,
-                    fontWeight: '600',
-                    border: '1px solid rgba(167,139,250,0.3)',
-                    display: 'inline-block',
-                    marginTop: SPACING.xs,
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    background: item.color + '25',
+                    border: `2px solid ${item.color}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    color: item.color,
+                    boxShadow: `0 0 8px ${item.color}40`,
                   }}>
-                    {campaignName}
+                    {item.step}
                   </span>
+                  <span style={{ color: COLORS.text.secondary, fontSize: TYPOGRAPHY.sm + 1, fontWeight: '600', letterSpacing: '0.2px' }}>{item.label}</span>
+                </div>
+                {idx < arr.length - 1 && (
+                  <ChevronRight size={16} color="rgba(255,255,255,0.25)" style={{ margin: '0 3px' }} />
                 )}
               </div>
-            </div>
-            </div>
-            {/* Pipeline Flow - Visual step indicator */}
-            <p style={{ color: COLORS.text.muted, fontSize: TYPOGRAPHY.md, margin: SPACING.sm + ' 0 0 0', display: 'flex', alignItems: 'center', gap: SPACING.sm, flexWrap: 'wrap' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ color: '#60a5fa' }}>📥</span> Import</span>
-              <span style={{ color: 'rgba(255,255,255,0.3)' }}>→</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ color: '#a78bfa' }}>📄</span> Fetch Posts</span>
-              <span style={{ color: 'rgba(255,255,255,0.3)' }}>→</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ color: '#fbbf24' }}>💬</span> Engage</span>
-              <span style={{ color: 'rgba(255,255,255,0.3)' }}>→</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ color: '#34d399' }}>🤝</span> Connect</span>
-            </p>
+            ))}
           </div>
-          <div style={{ display: 'flex', gap: SPACING.sm, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Extension Status Indicator - Enhanced with accessibility */}
+
+          {/* Right: Status + Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
+            {/* Extension Status - Compact */}
             <div
               role="status"
               aria-live="polite"
               aria-label={extensionConnected ? 'Extension connected' : 'Extension disconnected'}
+              onMouseEnter={() => setShowExtensionTooltip(true)}
+              onMouseLeave={() => setShowExtensionTooltip(false)}
               style={{
-                display: 'flex', alignItems: 'center', gap: SPACING.sm,
-                padding: SPACING.sm + ' ' + SPACING.md + 2, borderRadius: RADIUS.lg,
-                background: extensionConnected ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
-                border: `1px solid ${extensionConnected ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)'}`,
-                boxShadow: extensionConnected ? '0 0 20px rgba(52,211,153,0.15)' : '0 0 20px rgba(248,113,113,0.15)',
-                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: SPACING.xs,
+                padding: '4px 10px',
+                borderRadius: RADIUS.sm,
+                background: extensionConnected ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)',
+                border: `1px solid ${extensionConnected ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'}`,
+                position: 'relative',
+                cursor: 'help',
               }}
             >
               <div style={{
-                width: '10px', height: '10px', borderRadius: '50%',
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
                 background: extensionConnected ? COLORS.statusColors.success : COLORS.statusColors.error,
-                boxShadow: `0 0 12px ${extensionConnected ? 'rgba(52,211,153,0.8)' : 'rgba(248,113,113,0.8)'}`,
-                animation: extensionConnected ? 'pulse-glow 2s infinite' : 'none',
+                boxShadow: `0 0 6px ${extensionConnected ? 'rgba(52,211,153,0.6)' : 'rgba(248,113,113,0.6)'}`,
               }} />
-              <span style={{ fontSize: TYPOGRAPHY.sm, color: extensionConnected ? COLORS.statusColors.success : COLORS.statusColors.error, fontWeight: '600' }}>
-                {extensionConnected ? 'Extension Connected' : 'Extension Disconnected'}
+              <span style={{ fontSize: TYPOGRAPHY.xs, color: extensionConnected ? COLORS.statusColors.success : COLORS.statusColors.error, fontWeight: '600' }}>
+                {extensionConnected ? 'Ext' : 'No Ext'}
               </span>
+              {/* Tooltip */}
+              {showExtensionTooltip && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  marginTop: SPACING.xs,
+                  padding: SPACING.xs + ' ' + SPACING.sm,
+                  background: 'rgba(30,30,55,0.98)',
+                  border: '1px solid rgba(105,63,233,0.3)',
+                  borderRadius: RADIUS.sm,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                  zIndex: 100,
+                  whiteSpace: 'nowrap',
+                  fontSize: TYPOGRAPHY.xs - 1,
+                  color: COLORS.text.secondary,
+                }}>
+                  {extensionConnected ? 'LinkedIn extension active' : 'Open LinkedIn to connect'}
+                </div>
+              )}
             </div>
+
+            {/* Fetch Progress - Inline */}
             {fetchingPosts && (
-              <div
-                role="progressbar"
-                aria-valuenow={fetchProgress?.includes('%') ? parseInt(fetchProgress) : 50}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}
-              >
-                <span style={{ color: COLORS.brand.primaryLight, fontSize: TYPOGRAPHY.sm }}>{fetchProgress || 'Fetching...'}</span>
-                <div style={{ width: '80px', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #693fe9, #a78bfa)',
-                    width: fetchProgress?.includes('%') ? fetchProgress : '50%',
-                    transition: 'width 0.3s ease',
-                    borderRadius: '3px'
-                  }} />
+              <div role="progressbar" aria-valuenow={fetchProgress?.includes('%') ? parseInt(fetchProgress) : 50} aria-valuemin={0} aria-valuemax={100} style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
+                <span style={{ color: COLORS.brand.primaryLight, fontSize: TYPOGRAPHY.xs, whiteSpace: 'nowrap' }}>{fetchProgress || 'Fetching...'}</span>
+                <div style={{ width: '50px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: 'linear-gradient(90deg, #693fe9, #a78bfa)', width: fetchProgress?.includes('%') ? fetchProgress : '50%', transition: 'width 0.3s ease', borderRadius: '2px' }} />
                 </div>
               </div>
             )}
+
+            {/* Compact Icon Buttons */}
             <button
               onClick={() => setShowSettings(!showSettings)}
               aria-label={showSettings ? 'Close settings' : 'Open settings'}
               aria-expanded={showSettings}
-              onMouseEnter={() => setHoveredButton('settings')}
-              onMouseLeave={() => setHoveredButton(null)}
-              style={hoveredButton === 'settings' ? styles.btnSecondary() : styles.btnSecondary()}
+              title="Settings"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.xs,
+                padding: '6px',
+                background: showSettings ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${showSettings ? 'rgba(105,63,233,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: RADIUS.sm,
+                color: COLORS.text.secondary,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
             >
-              <span style={{ marginRight: SPACING.xs }}>⚙️</span> Settings
+              <Settings size={14} />
             </button>
             <button
               onClick={() => fetchPostsForLeads()}
               disabled={fetchingPosts || !extensionConnected}
-              aria-label={fetchingPosts ? 'Fetching posts in progress' : 'Fetch all posts from LinkedIn'}
-              onMouseEnter={() => setHoveredButton('fetchAll')}
-              onMouseLeave={() => setHoveredButton(null)}
-              style={styles.btnLinkedIn(fetchingPosts || !extensionConnected)}
+              aria-label={fetchingPosts ? 'Fetching posts in progress' : 'Fetch all posts'}
+              title="Fetch All Posts"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.xs,
+                padding: '6px 10px',
+                background: fetchingPosts || !extensionConnected ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #0a66c2, #0b7ad4)',
+                border: 'none',
+                borderRadius: RADIUS.sm,
+                color: fetchingPosts || !extensionConnected ? 'rgba(255,255,255,0.4)' : 'white',
+                fontSize: TYPOGRAPHY.xs,
+                fontWeight: '600',
+                cursor: fetchingPosts || !extensionConnected ? 'not-allowed' : 'pointer',
+                opacity: fetchingPosts || !extensionConnected ? 0.5 : 1,
+                boxShadow: fetchingPosts || !extensionConnected ? 'none' : '0 2px 8px rgba(10,102,194,0.3)',
+                transition: 'all 0.2s ease',
+              }}
             >
-              {fetchingPosts ? (
-                <>
-                  <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', marginRight: SPACING.xs }}>⏳</span>
-                  Fetching...
-                </>
-              ) : (
-                <>📥 Fetch All Posts</>
-              )}
+              {fetchingPosts ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={14} />}
             </button>
           </div>
         </div>
-        </div>
-        {/* Pipeline Stats - Enhanced with accessibility and visual hierarchy */}
-        <div
-          role="group"
-          aria-label="Lead status filters"
-          style={{
-            display: 'flex',
-            gap: SPACING.sm,
-            alignItems: 'flex-end',
-            flexDirection: isMobile ? 'column' : 'row',
-            marginTop: SPACING.lg,
-          }}
-        >
+
+        {/* Compact Stats Row - Inline Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: TYPOGRAPHY.xs, color: COLORS.text.muted, fontWeight: '600' }}>Stats:</span>
           {Object.entries(STATUS_COLORS).map(([key, val]) => {
             const count = statusCounts[key as keyof typeof statusCounts] || 0;
             const totalLeads = leads.length || 1;
             const percentage = Math.round((count / totalLeads) * 100);
-            const maxCount = Math.max(...Object.values(statusCounts), 1);
-            const height = Math.max(40, (count / maxCount) * 80);
             const isActive = statusFilter === key;
             return (
-              <div
+              <button
                 key={key}
                 onClick={() => setStatusFilter(statusFilter === key ? FILTER_ALL : key)}
-                onMouseEnter={() => setHoveredLeadId(key)}
-                onMouseLeave={() => setHoveredLeadId(null)}
                 role="button"
                 tabIndex={0}
                 aria-pressed={isActive}
-                aria-label={`${val.label}: ${count} leads (${percentage}%). Click to filter.`}
+                aria-label={`${val.label}: ${count} leads (${percentage}%)`}
                 onKeyDown={(e) => e.key === 'Enter' && setStatusFilter(statusFilter === key ? FILTER_ALL : key)}
                 style={{
-                  flex: 1,
-                  textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '3px 8px',
+                  background: isActive ? val.bg : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isActive ? val.border : 'rgba(255,255,255,0.06)'}`,
+                  borderRadius: RADIUS.sm,
                   cursor: 'pointer',
-                  padding: SPACING.md,
-                  background: isActive ? val.bg : hoveredLeadId === key ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
-                  border: isActive ? `1px solid ${val.border}` : hoveredLeadId === key ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: RADIUS.lg,
-                  transition: 'all 0.25s ease',
-                  outline: isActive ? `2px solid ${val.text}` : 'none',
-                  outlineOffset: '2px',
-                  minWidth: '80px',
-                  transform: hoveredLeadId === key && !isActive ? 'translateY(-2px)' : 'translateY(0)',
+                  transition: 'all 0.2s ease',
+                  outline: isActive ? `1px solid ${val.text}` : 'none',
                 }}
               >
-                <div style={{
-                  height: `${height}px`,
-                  background: isActive
-                    ? `linear-gradient(180deg, ${val.border} 0%, ${val.bg} 100%)`
-                    : `linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)`,
-                  borderRadius: RADIUS.sm + ' ' + RADIUS.sm + ' 0 0',
-                  margin: '0 auto ' + SPACING.sm,
-                  width: '70%',
-                  border: `1px solid ${isActive ? val.border : 'rgba(255,255,255,0.08)'}`,
-                  boxShadow: isActive ? `0 0 20px ${val.border}, 0 4px 12px rgba(0,0,0,0.2)` : 'none',
-                  transition: 'all 0.25s ease',
-                }} />
-                <div style={{
-                  fontSize: TYPOGRAPHY.xl + 2,
-                  fontWeight: '800',
-                  color: isActive ? val.text : COLORS.text.secondary,
-                  transition: 'color 0.2s ease'
-                }}>
-                  {count}
-                </div>
-                <div style={{ fontSize: TYPOGRAPHY.xs, color: isActive ? val.text : COLORS.text.muted, fontWeight: '600', marginTop: '2px' }}>{val.label}</div>
-                <div style={{ fontSize: TYPOGRAPHY.xs - 2, color: COLORS.text.subtle, marginTop: '2px' }}>{percentage}%</div>
-              </div>
+                <span style={{ fontSize: TYPOGRAPHY.xs, fontWeight: '700', color: isActive ? val.text : COLORS.text.secondary }}>{count}</span>
+                <span style={{ fontSize: TYPOGRAPHY.xs - 2, color: isActive ? val.text : COLORS.text.muted }}>({percentage}%)</span>
+              </button>
             );
           })}
+        </div>
         </div>
       </div>
 
@@ -1292,77 +1362,389 @@ export default function ImportTab(props: Props) {
             </div>
           </div>
 
-          {/* Section 3: Campaign Goal */}
+          {/* Section 3: Campaign Goal - Enhanced */}
           <div style={{ marginBottom: SPACING.xl }}>
             <h5 style={{ color: COLORS.brand.primaryLight, fontSize: TYPOGRAPHY.sm, fontWeight: '600', margin: '0 0 ' + SPACING.md + ' 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Campaign Goal
             </h5>
-            <div style={{ display: 'flex', gap: SPACING.sm, flexWrap: 'wrap' }} role="radiogroup" aria-label="Campaign goal selection">
-              {[
-                { key: 'relationship', icon: '🤝', label: 'Relationship' },
-                { key: 'authority', icon: '👑', label: 'Authority' },
-                { key: 'warm_pitch', icon: '🎯', label: 'Warm Pitch' },
-                { key: 'recruit', icon: '🔍', label: 'Recruit' },
-              ].map(g => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: SPACING.md }} role="radiogroup" aria-label="Campaign goal selection">
+              {CAMPAIGN_GOALS.map(g => (
                 <button
                   key={g.key}
                   onClick={() => setCampaignGoal(g.key)}
                   role="radio"
                   aria-checked={campaignGoal === g.key}
+                  title={g.description}
                   style={{
-                    padding: SPACING.sm + ' ' + (SPACING.sm + 6),
-                    background: campaignGoal === g.key ? 'rgba(105,63,233,0.25)' : 'rgba(255,255,255,0.05)',
+                    padding: SPACING.md + ' ' + SPACING.lg,
+                    background: campaignGoal === g.key ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.03)',
                     border: campaignGoal === g.key ? '2px solid rgba(105,63,233,0.6)' : '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: RADIUS.sm,
+                    borderRadius: RADIUS.md,
                     cursor: 'pointer',
-                    color: COLORS.text.primary,
+                    color: campaignGoal === g.key ? COLORS.text.primary : COLORS.text.secondary,
                     fontSize: TYPOGRAPHY.sm,
                     fontWeight: '600',
                     transition: 'all 0.2s ease',
                     transform: campaignGoal === g.key ? 'scale(1.02)' : 'scale(1)',
+                    textAlign: 'left',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: SPACING.xs,
                   }}
                 >
-                  {g.icon} {g.label}
+                  <span style={{ fontSize: '20px' }}>{g.icon}</span>
+                  <span>{g.label}</span>
+                  <span style={{ fontSize: TYPOGRAPHY.xs - 1, color: COLORS.text.muted, fontWeight: '400', lineHeight: 1.3 }}>
+                    {g.description}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Section 4: Sequence Timeline */}
+          {/* Section 4: Sequence Timeline - Fully Functional */}
           <div style={{ marginBottom: SPACING.xl }}>
-            <h5 style={{ color: COLORS.brand.primaryLight, fontSize: TYPOGRAPHY.sm, fontWeight: '600', margin: '0 0 ' + SPACING.md + ' 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Warm Sequence Timeline
-            </h5>
-            <div style={{ display: 'flex', gap: SPACING.sm, alignItems: 'center', flexWrap: 'wrap' }}>
-              {sequenceSteps.map((step, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
-                  <div
-                    style={{
-                      padding: SPACING.sm + ' ' + SPACING.md,
-                      background: step.enabled ? 'rgba(105,63,233,0.2)' : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${step.enabled ? 'rgba(105,63,233,0.3)' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: RADIUS.sm,
-                      cursor: 'pointer',
-                      opacity: step.enabled ? 1 : 0.5,
-                      transition: 'all 0.2s ease',
-                      transform: step.enabled ? 'scale(1.02)' : 'scale(1)',
-                    }}
-                    onClick={() => { const newSteps = [...sequenceSteps]; newSteps[idx].enabled = !newSteps[idx].enabled; setSequenceSteps(newSteps); }}
-                    role="switch"
-                    aria-checked={step.enabled}
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && (() => { const newSteps = [...sequenceSteps]; newSteps[idx].enabled = !newSteps[idx].enabled; setSequenceSteps(newSteps); })()}
-                  >
-                    <div style={{ fontSize: TYPOGRAPHY.xs - 1, color: COLORS.text.muted }}>Day {step.day}</div>
-                    <div style={{ fontSize: TYPOGRAPHY.sm, color: COLORS.text.primary, fontWeight: '600' }}>
-                      {ACTION_LABELS[step.action]?.icon} {ACTION_LABELS[step.action]?.label}
-                    </div>
-                  </div>
-                  {idx < sequenceSteps.length - 1 && <span style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>}
-                </div>
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md, flexWrap: 'wrap', gap: SPACING.sm }}>
+              <h5 style={{ color: COLORS.brand.primaryLight, fontSize: TYPOGRAPHY.sm, fontWeight: '600', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Warm Sequence Timeline
+              </h5>
+              <button
+                onClick={() => {
+                  const newStep: SequenceStep = {
+                    id: generateId(),
+                    day: Math.max(...sequenceSteps.map(s => s.day), 0) + 1,
+                    action: 'like',
+                    enabled: true,
+                    time: '09:00',
+                  };
+                  setSequenceSteps([...sequenceSteps, newStep]);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: SPACING.xs,
+                  padding: SPACING.xs + ' ' + SPACING.md,
+                  background: 'rgba(105,63,233,0.15)',
+                  border: '1px solid rgba(105,63,233,0.4)',
+                  borderRadius: RADIUS.sm,
+                  color: COLORS.brand.primaryLight,
+                  fontSize: TYPOGRAPHY.xs,
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Plus size={14} /> Add Step
+              </button>
             </div>
-            <p style={{ color: COLORS.text.subtle, fontSize: TYPOGRAPHY.xs - 1, margin: SPACING.xs + ' 0 0 0' }}>Click to enable/disable steps. Follow & Connect are in beta.</p>
+
+            {/* Empty State */}
+            {sequenceSteps.length === 0 && (
+              <div style={{
+                padding: SPACING.xxl,
+                background: 'rgba(255,255,255,0.02)',
+                border: '2px dashed rgba(255,255,255,0.1)',
+                borderRadius: RADIUS.md,
+                textAlign: 'center',
+                color: COLORS.text.muted,
+              }}>
+                <Clock size={32} style={{ opacity: 0.5, marginBottom: SPACING.sm }} />
+                <p style={{ margin: 0, fontSize: TYPOGRAPHY.sm }}>No sequence steps yet</p>
+                <p style={{ margin: SPACING.xs + ' 0 0 0', fontSize: TYPOGRAPHY.xs - 1 }}>Click "Add Step" to create your first sequence</p>
+              </div>
+            )}
+
+            {/* Steps List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+              {sequenceSteps
+                .sort((a, b) => a.day - b.day)
+                .map((step, idx) => (
+                  <div
+                    key={step.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: SPACING.sm,
+                      padding: SPACING.md + ' ' + SPACING.lg,
+                      background: step.enabled ? 'rgba(105,63,233,0.1)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${step.enabled ? 'rgba(105,63,233,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                      borderRadius: RADIUS.md,
+                      opacity: step.enabled ? 1 : 0.6,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {/* Day Number Input */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
+                      <span style={{ fontSize: TYPOGRAPHY.xs, color: COLORS.text.muted, whiteSpace: 'nowrap' }}>Day</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <button
+                          onClick={() => {
+                            const newSteps = [...sequenceSteps];
+                            const stepIdx = newSteps.findIndex(s => s.id === step.id);
+                            if (newSteps[stepIdx].day > 1) {
+                              newSteps[stepIdx].day -= 1;
+                              setSequenceSteps(newSteps);
+                            }
+                          }}
+                          style={{
+                            padding: 2,
+                            background: 'rgba(255,255,255,0.1)',
+                            border: 'none',
+                            borderRadius: 4,
+                            color: COLORS.text.secondary,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          disabled={step.day <= 1}
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <input
+                          type="number"
+                          min={1}
+                          max={90}
+                          value={step.day}
+                          onChange={(e) => {
+                            const newSteps = [...sequenceSteps];
+                            const stepIdx = newSteps.findIndex(s => s.id === step.id);
+                            const val = parseInt(e.target.value) || 1;
+                            newSteps[stepIdx].day = Math.max(1, Math.min(90, val));
+                            setSequenceSteps(newSteps);
+                          }}
+                          style={{
+                            width: '40px',
+                            padding: SPACING.xs,
+                            background: 'rgba(0,0,0,0.2)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: 4,
+                            color: COLORS.text.primary,
+                            fontSize: TYPOGRAPHY.sm,
+                            fontWeight: '600',
+                            textAlign: 'center',
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const newSteps = [...sequenceSteps];
+                            const stepIdx = newSteps.findIndex(s => s.id === step.id);
+                            if (newSteps[stepIdx].day < 90) {
+                              newSteps[stepIdx].day += 1;
+                              setSequenceSteps(newSteps);
+                            }
+                          }}
+                          style={{
+                            padding: 2,
+                            background: 'rgba(255,255,255,0.1)',
+                            border: 'none',
+                            borderRadius: 4,
+                            color: COLORS.text.secondary,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          disabled={step.day >= 90}
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Action Type Dropdown */}
+                    <select
+                      value={step.action}
+                      onChange={(e) => {
+                        const newSteps = [...sequenceSteps];
+                        const stepIdx = newSteps.findIndex(s => s.id === step.id);
+                        newSteps[stepIdx].action = e.target.value;
+                        setSequenceSteps(newSteps);
+                      }}
+                      style={{
+                        padding: SPACING.xs + ' ' + SPACING.sm,
+                        background: 'rgba(0,0,0,0.2)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        borderRadius: 4,
+                        color: COLORS.text.primary,
+                        fontSize: TYPOGRAPHY.sm,
+                        cursor: 'pointer',
+                        minWidth: '140px',
+                      }}
+                    >
+                      {Object.entries(ACTION_LABELS).map(([key, val]) => (
+                        <option key={key} value={key}>
+                          {val.icon} {val.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Time Picker */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
+                      <Clock size={14} style={{ color: COLORS.text.muted }} />
+                      <select
+                        value={step.time || 'anytime'}
+                        onChange={(e) => {
+                          const newSteps = [...sequenceSteps];
+                          const stepIdx = newSteps.findIndex(s => s.id === step.id);
+                          newSteps[stepIdx].time = e.target.value;
+                          setSequenceSteps(newSteps);
+                        }}
+                        style={{
+                          padding: SPACING.xs + ' ' + SPACING.sm,
+                          background: 'rgba(0,0,0,0.2)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: 4,
+                          color: COLORS.text.primary,
+                          fontSize: TYPOGRAPHY.xs,
+                          cursor: 'pointer',
+                          minWidth: '90px',
+                        }}
+                      >
+                        <option value="anytime">Anytime</option>
+                        <option value="06:00">6:00 AM</option>
+                        <option value="07:00">7:00 AM</option>
+                        <option value="08:00">8:00 AM</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="18:00">6:00 PM</option>
+                      </select>
+                    </div>
+
+                    {/* Reorder Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <button
+                        onClick={() => {
+                          const sortedSteps = [...sequenceSteps].sort((a, b) => a.day - b.day);
+                          const stepIdx = sortedSteps.findIndex(s => s.id === step.id);
+                          if (stepIdx > 0) {
+                            const newSteps = [...sequenceSteps];
+                            const prevStep = sortedSteps[stepIdx - 1];
+                            const currStepIdx = newSteps.findIndex(s => s.id === step.id);
+                            const prevStepIdx = newSteps.findIndex(s => s.id === prevStep.id);
+                            const tempDay = newSteps[currStepIdx].day;
+                            newSteps[currStepIdx].day = newSteps[prevStepIdx].day;
+                            newSteps[prevStepIdx].day = tempDay;
+                            setSequenceSteps(newSteps);
+                          }
+                        }}
+                        style={{
+                          padding: 2,
+                          background: 'transparent',
+                          border: 'none',
+                          color: COLORS.text.muted,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Move earlier"
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const sortedSteps = [...sequenceSteps].sort((a, b) => a.day - b.day);
+                          const stepIdx = sortedSteps.findIndex(s => s.id === step.id);
+                          if (stepIdx < sortedSteps.length - 1) {
+                            const newSteps = [...sequenceSteps];
+                            const nextStep = sortedSteps[stepIdx + 1];
+                            const currStepIdx = newSteps.findIndex(s => s.id === step.id);
+                            const nextStepIdx = newSteps.findIndex(s => s.id === nextStep.id);
+                            const tempDay = newSteps[currStepIdx].day;
+                            newSteps[currStepIdx].day = newSteps[nextStepIdx].day;
+                            newSteps[nextStepIdx].day = tempDay;
+                            setSequenceSteps(newSteps);
+                          }
+                        }}
+                        style={{
+                          padding: 2,
+                          background: 'transparent',
+                          border: 'none',
+                          color: COLORS.text.muted,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Move later"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => {
+                        setSequenceSteps(sequenceSteps.filter(s => s.id !== step.id));
+                      }}
+                      style={{
+                        padding: SPACING.xs,
+                        background: 'rgba(239,68,68,0.1)',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        borderRadius: 4,
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginLeft: 'auto',
+                      }}
+                      title="Delete step"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+
+                    {/* Enable/Disable Toggle */}
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={step.enabled}
+                        onChange={(e) => {
+                          const newSteps = [...sequenceSteps];
+                          const stepIdx = newSteps.findIndex(s => s.id === step.id);
+                          newSteps[stepIdx].enabled = e.target.checked;
+                          setSequenceSteps(newSteps);
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                      <div
+                        style={{
+                          width: '36px',
+                          height: '20px',
+                          background: step.enabled ? 'rgba(105,63,233,0.5)' : 'rgba(255,255,255,0.1)',
+                          borderRadius: '10px',
+                          position: 'relative',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '16px',
+                            height: '16px',
+                            background: step.enabled ? COLORS.brand.primary : '#666',
+                            borderRadius: '50%',
+                            position: 'absolute',
+                            top: '2px',
+                            left: step.enabled ? '18px' : '2px',
+                            transition: 'all 0.2s ease',
+                          }}
+                        />
+                      </div>
+                    </label>
+                  </div>
+                ))}
+            </div>
+            <p style={{ color: COLORS.text.subtle, fontSize: TYPOGRAPHY.xs - 1, margin: SPACING.md + ' 0 0 0' }}>
+              Follow & Connect actions are in beta. Use reorder buttons to change step order.
+            </p>
           </div>
 
           {/* Section 5: Autopilot & Save */}
@@ -1594,35 +1976,39 @@ export default function ImportTab(props: Props) {
           <div style={{ color: COLORS.text.muted, fontSize: TYPOGRAPHY.sm }}>Try adjusting your search or filter</div>
         </div>
       ) : (
-        <div style={{ ...styles.card, padding: '0', overflow: 'hidden', borderRadius: RADIUS.xl, border: '1px solid rgba(105,63,233,0.2)' }}>
+        <div style={{
+          background: COLORS.surface.card,
+          borderRadius: '8px',
+          border: COLORS.surface.border,
+          boxShadow: SHADOWS.card,
+          overflow: 'hidden',
+        }}>
           {/* Table Header Bar */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: SPACING.lg + ' ' + SPACING.xl,
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            background: 'linear-gradient(135deg, rgba(105,63,233,0.15) 0%, rgba(76,29,149,0.1) 100%)',
+            borderBottom: COLORS.surface.border,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.lg }}>
               <div style={{
                 width: '44px',
                 height: '44px',
                 borderRadius: RADIUS.lg,
-                background: 'linear-gradient(135deg, #693fe9, #a78bfa)',
+                background: 'linear-gradient(135deg, #0a66c2, #057642)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '20px',
-                boxShadow: '0 4px 16px rgba(105,63,233,0.4)',
+                boxShadow: '0 4px 12px rgba(10,102,194,0.3)',
               }}>
-                👥
+                <Users size={20} color="#FFFFFF" />
               </div>
               <div>
-                <div style={{ color: COLORS.text.primary, fontWeight: '700', fontSize: TYPOGRAPHY.lg, letterSpacing: '-0.3px' }}>
+                <div style={{ color: COLORS.text.primary, fontWeight: '800', fontSize: TYPOGRAPHY.xxl - 2, letterSpacing: '-0.5px' }}>
                   {filteredLeads.length} Lead{filteredLeads.length !== 1 ? 's' : ''}
                 </div>
-                <div style={{ color: COLORS.text.muted, fontSize: TYPOGRAPHY.sm }}>
+                <div style={{ color: COLORS.text.muted, fontSize: TYPOGRAPHY.md, fontWeight: '500', marginTop: '6px' }}>
                   {selectedLeads.size > 0 ? `${selectedLeads.size} selected` : 'Select leads to take action'}
                 </div>
               </div>
@@ -1639,7 +2025,7 @@ export default function ImportTab(props: Props) {
                     gap: SPACING.sm,
                   }}
                 >
-                  <span>📥</span> Fetch Posts
+                  <Download size={16} /> Fetch Posts
                 </button>
               )}
             </div>
@@ -1648,19 +2034,19 @@ export default function ImportTab(props: Props) {
           <div style={{ maxHeight: '600px', overflowY: 'auto' }} role="region" aria-label="Leads list">
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: TYPOGRAPHY.sm + 1, minWidth: '900px' }} role="table">
-                <thead style={{ ...styles.tableHeader, zIndex: 10 }}>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <thead style={{ zIndex: 10 }}>
+                  <tr style={{ borderBottom: COLORS.surface.border }}>
                     <th style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg, width: '48px' }}>
                       <input
                         type="checkbox"
                         checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
                         onChange={toggleAllSelection}
-                        style={{ accentColor: COLORS.brand.primary, cursor: 'pointer', width: '18px', height: '18px' }}
+                        style={{ accentColor: '#0a66c2', cursor: 'pointer', width: '18px', height: '18px' }}
                         aria-label="Select all"
                       />
                     </th>
                     {['Name', 'Status & Activity', 'Recent Posts', ''].map(h => (
-                      <th key={h} style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg, color: COLORS.text.secondary, fontWeight: '600', textAlign: 'left', fontSize: TYPOGRAPHY.xs, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                      <th key={h} style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg, color: COLORS.text.muted, fontWeight: '600', textAlign: 'left', fontSize: TYPOGRAPHY.sm + 1, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: COLORS.surface.border }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1673,9 +2059,14 @@ export default function ImportTab(props: Props) {
                     return (
                       <>
                         <tr key={lead.id}
-                          style={styles.tableRow(isSelected, isAlternate)}
-                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(105,63,234,0.08)'; }}
-                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = isAlternate ? 'rgba(255,255,255,0.015)' : 'transparent'; }}
+                          style={{
+                            background: isAlternate ? 'rgba(255,255,255,0.03)' : 'transparent',
+                            borderBottom: COLORS.surface.border,
+                            cursor: 'pointer',
+                            transition: 'background 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = COLORS.surface.cardHover; }}
+                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = isAlternate ? 'rgba(255,255,255,0.03)' : 'transparent'; }}
                           onClick={() => setExpandedLeadId(isExpanded ? null : lead.id)}
                           role="row"
                           tabIndex={0}
@@ -1686,7 +2077,7 @@ export default function ImportTab(props: Props) {
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleLeadSelection(lead.id)}
-                              style={{ accentColor: COLORS.brand.primary, cursor: 'pointer', width: '18px', height: '18px' }}
+                              style={{ accentColor: '#0a66c2', cursor: 'pointer', width: '18px', height: '18px' }}
                               aria-label={`Select ${lead.firstName || lead.vanityId}`}
                             />
                           </td>
@@ -1699,22 +2090,20 @@ export default function ImportTab(props: Props) {
                           </td>
                           <td style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm + 2 }}>
-                              {/* Status Badge */}
+                              {/* Status Badge - LinkedIn Style */}
                               <span style={{
                                 padding: SPACING.xs + 1 + ' ' + SPACING.sm + 2,
                                 background: sc.bg,
                                 border: `1px solid ${sc.border}`,
-                                borderRadius: RADIUS.full,
+                                borderRadius: '16px',
                                 color: sc.text,
                                 fontSize: TYPOGRAPHY.xs + 1,
                                 fontWeight: '600',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: SPACING.xs,
-                                boxShadow: `0 0 12px ${sc.bg}`,
                                 transition: 'all 0.2s ease',
                               }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: sc.text, boxShadow: `0 0 8px ${sc.text}` }}></span>
                                 {sc.label}
                               </span>
                               {/* Touches Counter */}
@@ -1723,13 +2112,13 @@ export default function ImportTab(props: Props) {
                                 alignItems: 'center',
                                 gap: SPACING.xs + 2,
                                 padding: SPACING.xs + ' ' + SPACING.md,
-                                background: (lead.touchCount || 0) > 0 ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.05)',
-                                borderRadius: RADIUS.full,
-                                border: `1px solid ${(lead.touchCount || 0) > 0 ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                                background: (lead.touchCount || 0) > 0 ? '#e8f5e9' : '#f5f5f5',
+                                borderRadius: '16px',
+                                border: `1px solid ${(lead.touchCount || 0) > 0 ? '#057642' : '#e0e0e0'}`,
                                 transition: 'all 0.2s ease',
                               }}>
-                                <span style={{ fontSize: TYPOGRAPHY.sm }}>👆</span>
-                                <span style={{ color: (lead.touchCount || 0) > 0 ? COLORS.statusColors.success : COLORS.text.subtle, fontWeight: '600', fontSize: TYPOGRAPHY.sm }}>
+                                <ThumbsUp size={12} color={(lead.touchCount || 0) > 0 ? '#057642' : '#666666'} />
+                                <span style={{ color: (lead.touchCount || 0) > 0 ? '#057642' : '#666666', fontWeight: '600', fontSize: TYPOGRAPHY.sm }}>
                                   {lead.touchCount || 0}
                                 </span>
                               </div>
@@ -1744,41 +2133,41 @@ export default function ImportTab(props: Props) {
                                 paddingBottom: SPACING.sm,
                                 maxWidth: '1000px',
                                 scrollbarWidth: 'thin',
-                                scrollbarColor: '#4a4a6a #1e1b4b',
+                                scrollbarColor: '#cococo #f5f5f5',
                               }}>
                                 {lead.posts.slice(0, 10).map((post) => (
                                   <div key={post.id} style={{
                                     minWidth: '320px',
                                     maxWidth: '320px',
-                                    background: 'linear-gradient(180deg, rgba(30,30,55,0.95) 0%, rgba(20,20,40,0.98) 100%)',
-                                    borderRadius: RADIUS.lg,
+                                    background: '#FFFFFF',
+                                    borderRadius: '8px',
                                     padding: SPACING.lg,
-                                    border: '1px solid rgba(105,63,233,0.15)',
+                                    border: '1px solid #e0e0e0',
                                     flexShrink: 0,
                                     transition: 'all 0.2s ease',
-                                    boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                                   }}>
                                     {/* LinkedIn-style Header */}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm + 2 }}>
-                                      <span style={{ color: COLORS.text.subtle, fontSize: TYPOGRAPHY.xs, fontWeight: '500' }}>
+                                      <span style={{ color: '#666666', fontSize: TYPOGRAPHY.xs, fontWeight: '500' }}>
                                         {post.postDate ? new Date(post.postDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                                       </span>
                                       {post.isLiked && (
                                         <span style={{ color: '#0a66c2', fontSize: TYPOGRAPHY.xs - 1, display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}>
-                                          👍 Liked
+                                          <ThumbsUp size={12} color="#0a66c2" /> Liked
                                         </span>
                                       )}
                                     </div>
                                     {/* Post Text with proper formatting */}
                                     <div style={{
-                                      color: 'rgba(255,255,255,0.88)',
+                                      color: '#1a1a1a',
                                       fontSize: TYPOGRAPHY.sm + 1,
                                       lineHeight: '1.6',
                                       maxHeight: '150px',
                                       overflowY: 'auto',
                                       marginBottom: SPACING.md,
                                       scrollbarWidth: 'thin',
-                                      scrollbarColor: '#4a4a6a transparent',
+                                      scrollbarColor: '#cccccc transparent',
                                       fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                       whiteSpace: 'pre-wrap',
                                       wordBreak: 'break-word',
@@ -1799,10 +2188,10 @@ export default function ImportTab(props: Props) {
                                       justifyContent: 'space-between',
                                       alignItems: 'center',
                                       paddingTop: SPACING.sm,
-                                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                                      borderTop: '1px solid #e0e0e0',
                                     }}>
-                                      <span style={{ color: COLORS.text.subtle, fontSize: TYPOGRAPHY.sm }}>
-                                        👍 {post.likes || 0} · 💬 {post.comments || 0}
+                                      <span style={{ color: '#666666', fontSize: TYPOGRAPHY.sm, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Heart size={14} color="#666666" /> {post.likes || 0} · <MessageCircle size={14} color="#666666" /> {post.comments || 0}
                                       </span>
                                       <div style={{ display: 'flex', gap: SPACING.xs + 2 }}>
                                         {!post.isLiked && (
@@ -1810,19 +2199,22 @@ export default function ImportTab(props: Props) {
                                             onClick={(e) => { e.stopPropagation(); engageWithPost(lead, post, 'like'); }}
                                             disabled={engagingPost === post.id}
                                             style={{
-                                              background: 'rgba(10,102,194,0.15)',
-                                              border: '1px solid rgba(10,102,194,0.3)',
-                                              borderRadius: RADIUS.full,
-                                              color: '#70b5f9',
+                                              background: '#f3f6f8',
+                                              border: '1px solid #e0e0e0',
+                                              borderRadius: '16px',
+                                              color: '#666666',
                                               fontSize: TYPOGRAPHY.xs,
                                               padding: '6px 14px',
                                               cursor: engagingPost === post.id ? 'not-allowed' : 'pointer',
                                               opacity: engagingPost === post.id ? 0.5 : 1,
                                               fontWeight: '600',
                                               transition: 'all 0.2s ease',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
                                             }}
                                           >
-                                            👍 Like
+                                            <ThumbsUp size={14} color="#666666" /> Like
                                           </button>
                                         )}
                                         {!post.isCommented && (
@@ -1830,19 +2222,22 @@ export default function ImportTab(props: Props) {
                                             onClick={(e) => { e.stopPropagation(); setCommentInput({ postId: post.id, text: '' }); }}
                                             disabled={engagingPost === post.id}
                                             style={{
-                                              background: COLORS.surface.input,
-                                              border: '1px solid rgba(255,255,255,0.1)',
-                                              borderRadius: RADIUS.full,
-                                              color: COLORS.text.secondary,
+                                              background: '#f3f6f8',
+                                              border: '1px solid #e0e0e0',
+                                              borderRadius: '16px',
+                                              color: '#666666',
                                               fontSize: TYPOGRAPHY.xs,
                                               padding: '6px 14px',
                                               cursor: engagingPost === post.id ? 'not-allowed' : 'pointer',
                                               opacity: engagingPost === post.id ? 0.5 : 1,
                                               fontWeight: '600',
                                               transition: 'all 0.2s ease',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
                                             }}
                                           >
-                                            💬 Comment
+                                            <MessageCircle size={14} color="#666666" /> Comment
                                           </button>
                                         )}
                                       </div>
@@ -1857,11 +2252,11 @@ export default function ImportTab(props: Props) {
                                           placeholder="Write a comment..."
                                           style={{
                                             flex: 1,
-                                            background: COLORS.surface.input,
-                                            border: '1px solid rgba(255,255,255,0.15)',
-                                            borderRadius: RADIUS.sm,
+                                            background: '#f3f6f8',
+                                            border: '1px solid #e0e0e0',
+                                            borderRadius: '4px',
                                             padding: SPACING.sm + ' ' + SPACING.md,
-                                            color: COLORS.text.primary,
+                                            color: '#1a1a1a',
                                             fontSize: TYPOGRAPHY.sm,
                                             outline: 'none',
                                             transition: 'all 0.2s ease',
@@ -1878,11 +2273,11 @@ export default function ImportTab(props: Props) {
                                           onClick={() => { engageWithPost(lead, post, 'comment', commentInput.text); setCommentInput(null); }}
                                           disabled={!commentInput.text}
                                           style={{
-                                            background: !commentInput.text ? COLORS.surface.input : 'rgba(167,139,250,0.3)',
+                                            background: !commentInput.text ? '#f3f6f8' : '#0a66c2',
                                             border: 'none',
-                                            borderRadius: RADIUS.sm,
+                                            borderRadius: '4px',
                                             padding: SPACING.sm + ' ' + SPACING.md,
-                                            color: !commentInput.text ? COLORS.text.subtle : COLORS.text.primary,
+                                            color: !commentInput.text ? '#999999' : '#FFFFFF',
                                             fontSize: TYPOGRAPHY.xs,
                                             fontWeight: '600',
                                             cursor: !commentInput.text ? 'not-allowed' : 'pointer',
@@ -1902,12 +2297,12 @@ export default function ImportTab(props: Props) {
                                 alignItems: 'center',
                                 gap: SPACING.sm,
                                 padding: SPACING.sm + ' ' + SPACING.lg,
-                                background: 'rgba(255,255,255,0.03)',
-                                borderRadius: RADIUS.sm,
-                                border: '1px dashed rgba(255,255,255,0.1)',
+                                background: '#f5f5f5',
+                                borderRadius: '4px',
+                                border: '1px dashed #e0e0e0',
                               }}>
-                                <span style={{ fontSize: TYPOGRAPHY.md }}>📝</span>
-                                <span style={{ color: COLORS.text.subtle, fontSize: TYPOGRAPHY.xs }}>No posts yet</span>
+                                <FileText size={TYPOGRAPHY.md} color="#666666" />
+                                <span style={{ color: '#666666', fontSize: TYPOGRAPHY.xs }}>No posts yet</span>
                               </div>
                             )}
                           </td>
@@ -1917,32 +2312,31 @@ export default function ImportTab(props: Props) {
                                 <button onClick={() => fetchPostsForLeads([lead.id])} disabled={fetchingPosts}
                                   aria-label={`Fetch posts for ${lead.firstName || lead.vanityId}`}
                                   style={{
-                                    background: fetchingPosts ? 'rgba(0,119,181,0.1)' : 'linear-gradient(135deg, rgba(0,119,181,0.3), rgba(0,119,181,0.2))',
+                                    background: fetchingPosts ? '#f3f6f8' : '#0a66c2',
                                     border: 'none',
-                                    borderRadius: RADIUS.sm,
+                                    borderRadius: '16px',
                                     padding: SPACING.xs + ' ' + SPACING.md,
-                                    color: COLORS.text.primary,
+                                    color: fetchingPosts ? '#999999' : '#FFFFFF',
                                     fontSize: TYPOGRAPHY.xs,
                                     fontWeight: '600',
                                     cursor: fetchingPosts ? 'not-allowed' : 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: SPACING.xs,
-                                    boxShadow: fetchingPosts ? 'none' : '0 2px 8px rgba(0,119,181,0.2)',
                                     transition: 'all 0.2s ease',
                                   }}>
-                                  <span>📄</span> Fetch
+                                  <Download size={14} color={fetchingPosts ? '#999999' : '#FFFFFF'} /> Fetch
                                 </button>
                               )}
                               <button onClick={() => deleteLead(lead)}
                                 disabled={deletingLeadId === lead.id}
                                 aria-label={`Delete ${lead.firstName || lead.vanityId}`}
                                 style={{
-                                  background: 'rgba(248,113,113,0.1)',
-                                  border: '1px solid rgba(248,113,113,0.2)',
-                                  borderRadius: RADIUS.sm,
+                                  background: '#fef2f2',
+                                  border: '1px solid #fecaca',
+                                  borderRadius: '16px',
                                   padding: SPACING.xs + ' ' + SPACING.sm + 2,
-                                  color: COLORS.statusColors.error,
+                                  color: '#dc2626',
                                   cursor: deletingLeadId === lead.id ? 'not-allowed' : 'pointer',
                                   fontSize: TYPOGRAPHY.sm,
                                   opacity: deletingLeadId === lead.id ? 0.5 : 1,
@@ -1950,7 +2344,7 @@ export default function ImportTab(props: Props) {
                                   alignItems: 'center',
                                   transition: 'all 0.2s ease',
                                 }}>
-                                {deletingLeadId === lead.id ? '...' : '🗑️'}
+                                {deletingLeadId === lead.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                               </button>
                             </div>
                           </td>

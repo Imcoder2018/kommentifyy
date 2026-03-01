@@ -173,7 +173,7 @@ export default function CommenterTab(props: any) {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <>
             {(commenterCfgLoading || csSettingsLoading) ? (
                 <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div>
             ) : commenterCfg && (<>
@@ -326,109 +326,72 @@ export default function CommenterTab(props: any) {
                             <div style={{ fontSize: '12px' }}>Click "Capture Feed", "Search Posts", or "Trending" above to start</div>
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        /* LinkedIn-style 3-column grid */
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
                             {capturedPosts.map((post: any, idx: number) => {
                                 const postId = post.id || idx;
                                 const likeState = actionStates[`${postId}-like`];
                                 const commentState = actionStates[`${postId}-comment`];
                                 const followState = actionStates[`${postId}-follow`];
-                                
+
                                 return (
-                                    <div key={postId} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-                                        {/* Post Header */}
-                                        <div style={{ padding: '12px 16px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '18px', flexShrink: 0 }}>
+                                    <div key={postId} style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e0e0e0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                                        {/* LinkedIn-style Post Header */}
+                                        <div style={{ padding: '12px 14px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>
                                                 {post.authorName?.charAt(0) || '?'}
                                             </div>
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ color: 'white', fontSize: '14px', fontWeight: '600', marginBottom: '2px' }}>{post.authorName || 'Unknown Author'}</div>
-                                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>
+                                                <div style={{ color: '#0a0a0a', fontSize: '13px', fontWeight: '600', marginBottom: '1px', lineHeight: '1.3' }}>{post.authorName || 'Unknown Author'}</div>
+                                                <div style={{ color: '#666666', fontSize: '11px', lineHeight: '1.3' }}>
                                                     {new Date(post.createdAt).toLocaleDateString()} · {post.source || 'feed'}
                                                 </div>
                                             </div>
-                                            <div style={{ display: 'flex', gap: '6px' }}>
-                                                {post.postUrl && (
-                                                    <a href={post.postUrl} target="_blank" rel="noopener noreferrer"
-                                                        style={{ padding: '6px 12px', background: 'rgba(0,119,181,0.2)', color: '#60a5fa', border: '1px solid rgba(0,119,181,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', textDecoration: 'none' }}>
-                                                        View
-                                                    </a>
-                                                )}
-                                                <button onClick={() => deletePost(post.id)}
-                                                    style={{ padding: '6px 10px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
-                                                    🗑
-                                                </button>
+                                        </div>
+
+                                        {/* Post Content */}
+                                        <div style={{ padding: '0 14px 10px 14px' }}>
+                                            <div style={{ color: '#1a1a1a', fontSize: '12px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '100px', overflowY: 'auto', fontFamily: '-apple-system, system-ui, sans-serif' }}>
+                                                {post.postContent?.length > 200 ? post.postContent.substring(0, 200) + '...' : post.postContent || '(No content)'}
                                             </div>
                                         </div>
 
-                                        {/* Post Content with Scrollbar */}
-                                        <div style={{ padding: '0 16px 12px 16px' }}>
-                                            <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '200px', overflowY: 'auto' }}>
-                                                {post.postContent || '(No content)'}
+                                        {/* Engagement Stats - LinkedIn style */}
+                                        <div style={{ padding: '8px 14px', borderTop: '1px solid #e5e5e5', display: 'flex', gap: '12px', fontSize: '11px', color: '#666666' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span>👍</span> <span>{post.likes || 0}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span>💬</span> <span>{post.comments || 0}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span>🔄</span> <span>{post.shares || 0}</span>
                                             </div>
                                         </div>
 
-                                        {/* Engagement Stats */}
-                                        <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '16px', fontSize: '12px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)' }}>
-                                                <span style={{ color: '#60a5fa' }}>👍</span> {post.likes || 0} likes
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)' }}>
-                                                <span style={{ color: '#a78bfa' }}>💬</span> {post.comments || 0} comments
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.6)' }}>
-                                                <span style={{ color: '#10b981' }}>🔄</span> {post.shares || 0} shares
-                                            </div>
-                                        </div>
-
-                                        {/* AI Generated Comment Display */}
-                                        {aiGeneratedComments[postId] && (
-                                            <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                    <span style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '600' }}>🤖 AI Generated Comment</span>
-                                                    <button onClick={() => setAiGeneratedComments(prev => { const n = { ...prev }; delete n[postId]; return n; })}
-                                                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '14px' }}>✕</button>
-                                                </div>
-                                                <textarea
-                                                    value={aiGeneratedComments[postId]}
-                                                    onChange={(e) => setAiGeneratedComments(prev => ({ ...prev, [postId]: e.target.value }))}
-                                                    rows={3}
-                                                    style={{ width: '100%', padding: '10px', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '8px', color: 'white', fontSize: '12px', resize: 'vertical' }}
-                                                />
-                                                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                                    <button onClick={() => generateAiComment(postId, post)} disabled={generatingComment === postId}
-                                                        style={{ flex: 1, padding: '8px', background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
-                                                        {generatingComment === postId ? '⏳ Generating...' : '🔄 Regenerate'}
-                                                    </button>
-                                                    <button onClick={() => { handleAction(postId, 'comment', post, aiGeneratedComments[postId]); setAiGeneratedComments(prev => { const n = { ...prev }; delete n[postId]; return n; }); }}
-                                                        disabled={commentState === 'loading'}
-                                                        style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
-                                                        {commentState === 'loading' ? '⏳ Posting...' : '🚀 Post Comment'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Action Buttons */}
-                                        <div style={{ padding: '8px 16px 12px 16px', display: 'flex', gap: '8px' }}>
+                                        {/* Action Buttons - LinkedIn style */}
+                                        <div style={{ padding: '6px 8px 8px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderTop: '1px solid #e5e5e5' }}>
                                             <button
                                                 onClick={() => handleAction(postId, 'like', post)}
                                                 disabled={likeState === 'loading' || likeState === 'success'}
-                                                style={{ flex: 1, padding: '8px', background: likeState === 'success' ? 'rgba(96,165,250,0.4)' : 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: likeState === 'loading' || likeState === 'success' ? 'not-allowed' : 'pointer', opacity: likeState === 'success' ? 0.7 : 1 }}>
-                                                {likeState === 'loading' ? '⏳ Liking...' : likeState === 'success' ? '✓ Liked' : '👍 Like'}
+                                                style={{ padding: '6px 8px', background: likeState === 'success' ? '#e8f4fd' : '#f3f6f8', color: '#0077b5', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: likeState === 'loading' || likeState === 'success' ? 'not-allowed' : 'pointer', opacity: likeState === 'success' ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                {likeState === 'loading' ? '...' : likeState === 'success' ? '✓' : '👍'} Like
                                             </button>
                                             <button
                                                 onClick={() => generateAiComment(postId, post)}
                                                 disabled={generatingComment === postId}
-                                                style={{ flex: 1, padding: '8px', background: generatingComment === postId ? 'rgba(167,139,250,0.4)' : 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: generatingComment === postId ? 'not-allowed' : 'pointer', opacity: generatingComment === postId ? 0.7 : 1 }}>
-                                                {generatingComment === postId ? '⏳ Generating...' : '🤖 AI Comment'}
+                                                style={{ padding: '6px 8px', background: generatingComment === postId ? '#f3e8ff' : '#f3f6f8', color: '#9333ea', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: generatingComment === postId ? 'not-allowed' : 'pointer', opacity: generatingComment === postId ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                {generatingComment === postId ? '...' : '🤖'} Comment
                                             </button>
-                                            {post.authorProfileUrl && (
-                                                <button
-                                                    onClick={() => handleAction(postId, 'follow', post)}
-                                                    disabled={followState === 'loading' || followState === 'success'}
-                                                    style={{ flex: 1, padding: '8px', background: followState === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: followState === 'loading' || followState === 'success' ? 'not-allowed' : 'pointer', opacity: followState === 'success' ? 0.7 : 1 }}>
-                                                    {followState === 'loading' ? '⏳ Following...' : followState === 'success' ? '✓ Followed' : '➕ Follow'}
-                                                </button>
+                                            <button onClick={() => deletePost(post.id)}
+                                                style={{ gridColumn: 'span 2', padding: '6px 8px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                🗑 Delete
+                                            </button>
+                                            {post.postUrl && (
+                                                <a href={post.postUrl} target="_blank" rel="noopener noreferrer"
+                                                    style={{ gridColumn: 'span 2', padding: '6px 8px', background: '#0077b5', color: 'white', borderRadius: '4px', fontSize: '11px', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                    🔗 View on LinkedIn
+                                                </a>
                                             )}
                                         </div>
                                     </div>
@@ -459,6 +422,6 @@ export default function CommenterTab(props: any) {
                     )}
                 </div>
             </>)}
-        </div>
+        </>
     );
 }

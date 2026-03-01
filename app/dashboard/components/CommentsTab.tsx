@@ -339,6 +339,242 @@ const styles = {
         background: 'rgba(255,255,255,0.08)',
         margin: SPACING.md + ' 0',
     },
+
+    // ============================================
+    // SIDEBAR STYLES (Comment Style Sources - Right Side)
+    // ============================================
+    sidebar: {
+        position: 'fixed' as const,
+        right: '24px',
+        top: '120px',
+        width: '320px',
+        background: 'rgba(17, 24, 39, 0.98)',
+        backdropFilter: 'blur(12px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderLeft: '3px solid #8b5cf6',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 92, 246, 0.1)',
+        padding: SPACING.lg,
+        maxHeight: 'calc(100vh - 160px)',
+        overflowY: 'auto' as const,
+        zIndex: 50,
+    },
+    // RIGHT SIDEBAR STYLES (Comment Settings - positioned left of Style Sources)
+    rightSidebar: {
+        position: 'fixed' as const,
+        right: '384px',
+        top: '120px',
+        width: '360px',
+        background: 'rgba(17, 24, 39, 0.98)',
+        backdropFilter: 'blur(12px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderLeft: '3px solid #3b82f6',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1)',
+        padding: SPACING.lg,
+        maxHeight: 'calc(100vh - 160px)',
+        overflowY: 'auto' as const,
+        zIndex: 50,
+    },
+    sidebarHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
+    },
+    sidebarTitle: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: SPACING.sm,
+    },
+    sidebarTitleText: {
+        color: 'white',
+        fontSize: TYPOGRAPHY.fontSizeLg,
+        fontWeight: TYPOGRAPHY.fontWeightBold,
+        margin: 0,
+    },
+    profileCountBadge: {
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+        color: 'white',
+        fontSize: TYPOGRAPHY.fontSizeXs,
+        fontWeight: TYPOGRAPHY.fontWeightSemibold,
+        padding: '2px 8px',
+        borderRadius: '12px',
+        minWidth: '24px',
+        textAlign: 'center' as const,
+    },
+    refreshButton: {
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '8px',
+        padding: '8px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease',
+        color: 'rgba(255,255,255,0.6)',
+    },
+    inputLabel: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: TYPOGRAPHY.fontSizeXs,
+        fontWeight: TYPOGRAPHY.fontWeightSemibold,
+        marginBottom: '8px',
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.5px',
+    },
+    inputWithIcon: {
+        position: 'relative' as const,
+        marginBottom: SPACING.md,
+    },
+    inputIcon: {
+        position: 'absolute' as const,
+        left: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        color: 'rgba(255,255,255,0.4)',
+        pointerEvents: 'none' as const,
+    },
+    addButton: {
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        padding: '10px 16px',
+        fontWeight: TYPOGRAPHY.fontWeightSemibold,
+        fontSize: TYPOGRAPHY.fontSizeSm,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        transition: 'all 0.2s ease',
+        boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+    },
+    accordionHeader: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 0',
+        cursor: 'pointer',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        marginBottom: '12px',
+    },
+    accordionTitle: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+    },
+    accordionTitleText: {
+        color: 'white',
+        fontSize: TYPOGRAPHY.fontSizeSm,
+        fontWeight: TYPOGRAPHY.fontWeightSemibold,
+    },
+    accordionBadge: {
+        background: 'rgba(255,255,255,0.08)',
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: TYPOGRAPHY.fontSizeXs,
+        padding: '2px 6px',
+        borderRadius: '6px',
+    },
+    chevron: {
+        color: 'rgba(255,255,255,0.4)',
+        transition: 'transform 0.2s ease',
+    },
+    sidebarProfileCard: {
+        background: 'rgba(255,255,255,0.03)',
+        padding: '12px 14px',
+        borderRadius: '10px',
+        border: '1px solid rgba(255,255,255,0.06)',
+        transition: 'all 0.2s ease',
+        marginBottom: '8px',
+    },
+    sidebarProfileCardHover: {
+        transform: 'translateX(4px)',
+        borderColor: 'rgba(139, 92, 246, 0.3)',
+        background: 'rgba(139, 92, 246, 0.05)',
+    },
+    profileAvatar: {
+        width: '36px',
+        height: '36px',
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontWeight: TYPOGRAPHY.fontWeightBold,
+        fontSize: TYPOGRAPHY.fontSizeSm,
+        flexShrink: 0,
+    },
+    profileName: {
+        color: 'white',
+        fontSize: '13px',
+        fontWeight: TYPOGRAPHY.fontWeightMedium,
+    },
+    profileCommentCount: {
+        color: 'rgba(255,255,255,0.4)',
+        fontSize: '11px',
+    },
+    actionButton: {
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '6px',
+        padding: '6px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease',
+        color: 'rgba(255,255,255,0.5)',
+    },
+    deleteButton: {
+        background: 'rgba(239, 68, 68, 0.1)',
+        border: '1px solid rgba(239, 68, 68, 0.2)',
+        borderRadius: '6px',
+        padding: '6px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease',
+        color: '#f87171',
+    },
+    trainingBanner: {
+        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%)',
+        border: '1px solid rgba(139, 92, 246, 0.2)',
+        borderRadius: '10px',
+        padding: '12px 14px',
+        marginTop: SPACING.md,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+    },
+    trainingDot: {
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        background: '#10b981',
+        animation: 'pulse 2s ease-in-out infinite',
+        flexShrink: 0,
+    },
+    trainingText: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: TYPOGRAPHY.fontSizeSm,
+    },
+    sharedProfileChip: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        background: 'rgba(245, 158, 11, 0.08)',
+        padding: '6px 10px',
+        borderRadius: '8px',
+        border: '1px solid rgba(245, 158, 11, 0.2)',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+    },
 };
 
 // ============================================
@@ -385,6 +621,11 @@ const globalStyles = `
         50% { opacity: 0.5; }
     }
 
+    @keyframes pulseGreen {
+        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+    }
+
     .fade-in {
         animation: fadeIn 0.3s ease-out forwards;
     }
@@ -415,6 +656,17 @@ const globalStyles = `
         }
         .comment-tab-card {
             padding: 12px 14px !important;
+        }
+    }
+
+    /* Sidebar responsive styles */
+    @media (max-width: 1200px) {
+        .style-sources-sidebar {
+            position: relative !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            top: 0 !important;
+            margin-bottom: 24px;
         }
     }
 
@@ -586,6 +838,10 @@ export default function CommentsTab(props: any) {
 
     // Track whether initial load is complete to avoid auto-saving on mount
     const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+    // Accordion state for Comment Style Sources sidebar
+    const [sharedProfilesOpen, setSharedProfilesOpen] = useState(true);
+    const [savedProfilesOpen, setSavedProfilesOpen] = useState(true);
     useEffect(() => {
         if (!csSettingsLoading && !settingsLoaded) {
             // Mark loaded after a short delay to skip the initial state hydration
@@ -665,9 +921,9 @@ export default function CommentsTab(props: any) {
                 paddingBottom: SPACING.lg,
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
             }}>
-                {/* Breadcrumbs */}
-                <div style={{
-                    display: 'flex',
+            {/* Breadcrumbs */}
+            <div style={{
+                display: 'flex',
                     alignItems: 'center',
                     gap: SPACING.sm,
                     marginBottom: SPACING.md,
@@ -743,14 +999,13 @@ export default function CommentsTab(props: any) {
                 </div>
             </div>
 
-            {/* Comment Settings Section */}
-            <div className="slide-in stagger-1" style={styles.card}>
+            {/* Comment Settings LEFT SIDEBAR */}
+            <div className="comment-settings-sidebar" style={styles.rightSidebar}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-                    <h3 style={styles.sectionTitle}>
-                        {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 18)}
-                        <span>Comment Settings</span>
+                    <h3 style={{ color: 'white', fontSize: TYPOGRAPHY.fontSizeLg, fontWeight: TYPOGRAPHY.fontWeightBold, margin: 0, display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
+                        {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#3b82f6', 18)}
+                        <span>Settings</span>
                     </h3>
-                    <span style={styles.sectionSubtitle}>Controls AI comments — manual button & auto-commenting</span>
                 </div>
                 {csSettingsLoading ? (
                     <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading settings...</div>
@@ -1015,328 +1270,365 @@ export default function CommentsTab(props: any) {
                 {/* Save button - removed from here since it's in the header now */}
             </div>
 
-            {/* Comment Style Sources Section - improved styling */}
-            <div className="slide-in stagger-2" style={styles.card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-                    <h3 style={styles.sectionTitle}>
-                        {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', 'white', 16)}
-                        <span>Comment Style Sources</span>
-                    </h3>
+        {/* ============================================ */}
+        {/* STYLE SOURCES SIDEBAR - Fixed Right Side */}
+        {/* ============================================ */}
+        <div className="style-sources-sidebar" style={styles.sidebar}>
+                {/* Sidebar Header */}
+                <div style={styles.sidebarHeader}>
+                    <div style={styles.sidebarTitle}>
+                        {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#8b5cf6', 18)}
+                        <span style={styles.sidebarTitleText}>Style Sources</span>
+                        <span style={styles.profileCountBadge}>{commentStyleProfiles.length}</span>
+                    </div>
                     <button
                         onClick={loadCommentStyleProfiles}
-                        style={styles.buttonSecondary as React.CSSProperties}
+                        style={styles.refreshButton as React.CSSProperties}
+                        onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+                        title="Refresh profiles"
                     >
-                        {miniIcon('M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', 'rgba(255,255,255,0.7)', 12)}
-                        <span>Refresh</span>
+                        {miniIcon('M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', 'rgba(255,255,255,0.6)', 14)}
                     </button>
                 </div>
-                {/* Add Profile Input — improved */}
-                <div style={{ display: 'flex', gap: SPACING.sm, marginBottom: SPACING.md, alignItems: 'center' }}>
-                    <input
-                        value={commentStyleUrl}
-                        onChange={e => setCommentStyleUrl(e.target.value)}
-                        placeholder="https://linkedin.com/in/username"
-                        style={{ ...styles.input, flex: 1 } as React.CSSProperties}
-                    />
-                    <button
-                        onClick={scrapeCommentStyle}
-                        disabled={commentStyleScraping}
-                        style={{
-                            padding: '10px 16px',
-                            background: commentStyleScraping ? 'rgba(59,130,246,0.4)' : 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontWeight: TYPOGRAPHY.fontWeightBold,
-                            fontSize: TYPOGRAPHY.fontSizeSm,
-                            cursor: commentStyleScraping ? 'wait' : 'pointer',
-                            whiteSpace: 'nowrap',
-                            transition: 'all 0.2s ease',
-                        }}
-                    >
-                        {commentStyleScraping ? (
-                            <div style={styles.spinner} />
-                        ) : (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                {miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 'white', 14)}
-                                Scrape
+
+                {/* Add Profile Input */}
+                <div style={styles.inputWithIcon}>
+                    <label style={styles.inputLabel}>
+                        {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', 'rgba(255,255,255,0.5)', 12)}
+                        Add LinkedIn Profile
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                            <span style={styles.inputIcon}>
+                                {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', 'rgba(255,255,255,0.4)', 14)}
                             </span>
-                        )}
-                    </button>
+                            <input
+                                value={commentStyleUrl}
+                                onChange={e => setCommentStyleUrl(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') scrapeCommentStyle(); }}
+                                placeholder="linkedin.com/in/username"
+                                style={{ ...styles.input, paddingLeft: '36px', flex: 1 } as React.CSSProperties}
+                            />
+                        </div>
+                        <button
+                            onClick={scrapeCommentStyle}
+                            disabled={commentStyleScraping}
+                            style={styles.addButton as React.CSSProperties}
+                            onMouseOver={e => { if (!commentStyleScraping) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)'; } }}
+                            onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)'; }}
+                        >
+                            {commentStyleScraping ? (
+                                <div style={styles.spinner} />
+                            ) : (
+                                <>
+                                    {miniIcon('M12 4v16m8-8H4', 'white', 14)}
+                                    Add
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
+
+                {/* Status Message */}
                 {commentStyleStatus && (
                     <div style={{
-                        marginBottom: SPACING.md,
-                        padding: SPACING.sm + ' ' + SPACING.md,
-                        background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.1)' : 'rgba(59,130,246,0.1)',
-                        border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`,
+                        marginBottom: '12px',
+                        padding: '8px 12px',
+                        background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.1)' : 'rgba(139, 92, 246, 0.1)',
+                        border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(139, 92, 246, 0.3)'}`,
                         borderRadius: '8px',
-                        color: commentStyleStatus.includes('Error') ? '#f87171' : '#60a5fa',
-                        fontSize: TYPOGRAPHY.fontSizeSm,
+                        color: commentStyleStatus.includes('Error') ? '#f87171' : '#a78bfa',
+                        fontSize: TYPOGRAPHY.fontSizeXs,
                     }}>
                         {commentStyleStatus}
                     </div>
                 )}
-                {/* Kommentify Shared Comment Profiles - improved */}
-                {sharedCommentProfiles.length > 0 && (
-                    <div style={{ marginBottom: SPACING.md, padding: SPACING.md, background: 'rgba(245,158,11,0.05)', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.15)' }}>
-                        <div style={{ color: '#fbbf24', fontSize: TYPOGRAPHY.fontSizeSm, fontWeight: TYPOGRAPHY.fontWeightBold, marginBottom: SPACING.sm, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 12)}
-                            <span>Kommentify Shared</span>
-                            <span style={{ opacity: 0.6, fontWeight: TYPOGRAPHY.fontWeightNormal }}>({sharedCommentProfiles.length})</span>
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                            {sharedCommentProfiles.map((p: any, i: number) => {
-                                const profileMatch = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
-                                const isSelected = profileMatch?.isSelected || false;
-                                return (
-                                    <div key={i} onClick={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            background: isSelected ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.03)',
-                                            padding: '6px 12px',
-                                            borderRadius: '8px',
-                                            border: isSelected ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s ease',
-                                        }}>
-                                        <input type="checkbox" checked={isSelected} readOnly style={{ accentColor: '#f59e0b', width: '14px', height: '14px', cursor: 'pointer' }} />
-                                        <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: TYPOGRAPHY.fontSizeSm, fontWeight: TYPOGRAPHY.fontWeightSemibold }}>{p.profileName || p.profileId}</span>
-                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: TYPOGRAPHY.fontSizeXs }}>{p.commentCount}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-                {/* Saved Profiles - improved */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm }}>
-                    <h4 style={{ color: 'white', fontSize: TYPOGRAPHY.fontSizeMd, fontWeight: TYPOGRAPHY.fontWeightBold, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 14)}
-                        <span>Saved Profiles</span>
-                        <span style={{ opacity: 0.5, fontWeight: TYPOGRAPHY.fontWeightNormal }}>({commentStyleProfiles.length})</span>
-                    </h4>
-                </div>
-                {commentStyleLoading ? (
-                    <div className="fade-in" style={styles.emptyState}>
-                        <div className="skeleton" style={{ width: '100%', height: '60px', marginBottom: '8px' }} />
-                        <div className="skeleton" style={{ width: '80%', height: '20px', margin: '0 auto' }} />
-                    </div>
-                ) : commentStyleProfiles.length === 0 ? (
-                    <div className="fade-in" style={styles.emptyState}>
-                        <div style={styles.emptyStateIcon}>
-                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#693fe9', 24)}
-                        </div>
-                        <h4 style={styles.emptyStateTitle}>No Comment Profiles</h4>
-                        <p style={styles.emptyStateDesc}>Add a LinkedIn profile above to get started with AI-powered comments.</p>
-                    </div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {commentStyleProfiles.map((profile: any) => (
-                            <div key={profile.id}>
-                                <div
-                                    className="slide-in"
-                                    style={{
-                                        ...styles.profileCard,
-                                        ...(profile.isSelected ? styles.profileCardSelected : {}),
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: SPACING.md,
-                                        padding: SPACING.md,
-                                    }}
-                                >
-                                    <span style={{ flexShrink: 0 }}>{miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', 18)}</span>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ color: 'white', fontWeight: TYPOGRAPHY.fontWeightSemibold, fontSize: TYPOGRAPHY.fontSizeMd }}>{profile.profileName || profile.profileId}</div>
-                                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: TYPOGRAPHY.fontSizeXs, marginTop: '2px' }}>{profile._count?.comments || profile.commentCount} comments{profile.lastScrapedAt ? ` · ${new Date(profile.lastScrapedAt).toLocaleDateString()}` : ''}</div>
-                                    </div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: TYPOGRAPHY.fontSizeXs, color: profile.isSelected ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontWeight: TYPOGRAPHY.fontWeightSemibold }}>
-                                        <input type="checkbox" checked={profile.isSelected} onChange={() => toggleProfileSelect(profile.id)}
-                                            style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
-                                        Train
-                                    </label>
-                                    <button
-                                        onClick={() => { if (commentStyleExpanded === profile.id) { setCommentStyleExpanded(null); setCommentStyleComments([]); } else { setCommentStyleExpanded(profile.id); loadProfileComments(profile.id); } }}
-                                        style={styles.buttonSmall as React.CSSProperties}
-                                    >
-                                        {commentStyleExpanded === profile.id ? '▲' : '▼'}
-                                    </button>
-                                    <button onClick={() => deleteCommentStyleProfile(profile.id)}
-                                        style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#f87171', padding: '6px 10px', fontSize: TYPOGRAPHY.fontSizeSm, cursor: 'pointer' }}>
-                                        ×
-                                    </button>
-                                </div>
-                                {/* Expanded comments list */}
-                                {commentStyleExpanded === profile.id && (
-                                    <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '0 0 12px 12px', padding: '16px', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', maxHeight: '500px', overflowY: 'auto' }}>
-                                        {commentStyleCommentsLoading ? (
-                                            <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading comments...</div>
-                                        ) : commentStyleComments.length === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>No comments found. Try scraping again.</div>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{commentStyleComments.length} comments · {commentStyleComments.filter((c: any) => c.isTopComment).length} marked as top</span>
-                                                </div>
-                                                {commentStyleComments.map((comment: any) => (
-                                                    <div key={comment.id} style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '10px', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                {/* Comment Type Badge - improved */}
-                                                                <div style={comment.context === 'DIRECT COMMENT ON POST' ? styles.badge('success') : styles.badge('info') as React.CSSProperties}>
-                                                                    {miniIcon(comment.context === 'DIRECT COMMENT ON POST' ? 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' : 'M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6', comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#a78bfa', 10)}
-                                                                    <span>{comment.context === 'DIRECT COMMENT ON POST' ? 'Direct comment' : 'Reply'}</span>
-                                                                </div>
-                                                                {/* Reply To (if applicable) */}
-                                                                {comment.context !== 'DIRECT COMMENT ON POST' && (
-                                                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>REPLY TO:</div>
-                                                                        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', lineHeight: '1.5', maxHeight: '120px', overflowY: 'auto', paddingRight: '4px' }}>
-                                                                            {comment.context.replace('REPLY TO [', '').replace(/]:.*/, '')} said: {comment.context.match(/]: "(.*)"$/)?.[1] || 'N/A'}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {/* Post Text */}
-                                                                <div style={{ background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>POST:</div>
-                                                                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', lineHeight: '1.5', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px', fontStyle: 'italic' }}>
-                                                                        {comment.postText || 'N/A'}
-                                                                    </div>
-                                                                </div>
-                                                                {/* Comment Text */}
-                                                                <div style={{ background: 'rgba(105,63,233,0.08)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(105,63,233,0.2)' }}>
-                                                                    <div style={{ color: '#a78bfa', fontSize: '10px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase' }}>COMMENT:</div>
-                                                                    <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.6', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', whiteSpace: 'pre-wrap' }}>
-                                                                        {comment.commentText}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <button onClick={() => toggleCommentTop(comment.id)}
-                                                                title={comment.isTopComment ? 'Remove from top comments' : 'Mark as top comment for AI training'}
-                                                                style={{ background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)', border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '8px', padding: '6px 12px', fontSize: '14px', cursor: 'pointer', flexShrink: 0, color: comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.5)', transition: 'all 0.2s' }}>
-                                                                {comment.isTopComment ? miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14) : miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', 'rgba(255,255,255,0.3)', 14)}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-                {/* AI Training Info - improved */}
+
+                {/* Training Banner */}
                 {commentStyleProfiles.some((p: any) => p.isSelected) && (
-                    <div className="fade-in" style={{ background: 'rgba(59,130,246,0.08)', padding: SPACING.md, borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)', marginTop: SPACING.md, display: 'flex', alignItems: 'flex-start', gap: SPACING.sm }}>
-                        <span style={{ flexShrink: 0, marginTop: '2px' }}>{miniIcon('M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 18a6 6 0 100-12 6 6 0 000 12z M12 14a2 2 0 100-4 2 2 0 000 4z', '#60a5fa', 16)}</span>
-                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: TYPOGRAPHY.fontSizeSm, margin: 0, lineHeight: 1.5 }}>
-                            <strong style={{ color: '#60a5fa' }}>Training Active:</strong> AI uses {commentStyleProfiles.filter((p: any) => p.isSelected).length} profile(s) with starred comments to match commenting style.
-                        </p>
+                    <div style={styles.trainingBanner}>
+                        <span style={styles.trainingDot} />
+                        <span style={styles.trainingText}>
+                            <strong>{commentStyleProfiles.filter((p: any) => p.isSelected).length}</strong> profile{commentStyleProfiles.filter((p: any) => p.isSelected).length > 1 ? 's' : ''} training active
+                        </span>
                     </div>
                 )}
 
-                {/* Kommentify Shared Profiles - improved */}
+                {/* Collapsible: Kommentify Shared */}
                 {sharedCommentProfiles.length > 0 && (
-                    <div style={{ marginTop: SPACING.xl }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.md }}>
-                            <h4 style={{ color: 'white', fontSize: TYPOGRAPHY.fontSizeLg, fontWeight: TYPOGRAPHY.fontWeightBold, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#a78bfa', 16)}
-                                <span>Kommentify Shared</span>
-                                <span style={{ opacity: 0.5, fontWeight: TYPOGRAPHY.fontWeightNormal }}>({sharedCommentProfiles.length})</span>
-                            </h4>
-                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: TYPOGRAPHY.fontSizeSm }}>Curated by Kommentify team</span>
+                    <div style={{ marginTop: '16px' }}>
+                        <div
+                            style={styles.accordionHeader}
+                            onClick={() => setSharedProfilesOpen(!sharedProfilesOpen)}
+                        >
+                            <div style={styles.accordionTitle}>
+                                {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14)}
+                                <span style={styles.accordionTitleText}>Kommentify Shared</span>
+                                <span style={styles.accordionBadge}>{sharedCommentProfiles.length}</span>
+                            </div>
+                            <span style={{ ...styles.chevron, transform: sharedProfilesOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                                {miniIcon('M19 9l-7 7-7-7', 'rgba(255,255,255,0.4)', 14)}
+                            </span>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: SPACING.md }}>
-                            {sharedCommentProfiles.map((profile: any) => (
-                                <div key={profile.id} onClick={() => {
-                                    setCommentStyleExpanded(commentStyleExpanded === profile.id ? null : profile.id);
-                                    if (commentStyleExpanded !== profile.id) loadProfileComments(profile.id);
-                                }}
-                                    className="slide-in"
-                                    style={{
-                                        background: 'linear-gradient(135deg, rgba(105,63,233,0.1) 0%, rgba(139,92,246,0.03) 100%)',
-                                        padding: SPACING.md,
-                                        borderRadius: '12px',
-                                        border: '1px solid rgba(105,63,233,0.2)',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease',
-                                        textAlign: 'center'
-                                    }}
-                                    onMouseOver={e => {
-                                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(105,63,233,0.2) 0%, rgba(139,92,246,0.08) 100%)';
-                                        e.currentTarget.style.borderColor = 'rgba(105,63,233,0.4)';
-                                        e.currentTarget.style.transform = 'translateY(-2px)';
-                                    }}
-                                    onMouseOut={e => {
-                                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(105,63,233,0.1) 0%, rgba(139,92,246,0.03) 100%)';
-                                        e.currentTarget.style.borderColor = 'rgba(105,63,233,0.2)';
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                    }}
-                                >
-                                    <div style={{ color: 'white', fontWeight: TYPOGRAPHY.fontWeightBold, fontSize: TYPOGRAPHY.fontSizeMd, marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {profile.profileName || profile.profileId}
-                                    </div>
-                                    <div style={{ color: '#a78bfa', fontSize: '24px', fontWeight: '800', marginBottom: '4px' }}>
-                                        {profile._count?.comments || profile.commentCount || 0}
-                                    </div>
-                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: TYPOGRAPHY.fontSizeXs }}>comments</div>
-                                </div>
-                            ))}
-                        </div>
-                        {/* Expanded shared profile comments */}
-                        {commentStyleExpanded && sharedCommentProfiles.find((p: any) => p.id === commentStyleExpanded) && (
-                            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '12px', padding: '16px', border: '1px solid rgba(105,63,233,0.2)', marginTop: '12px', maxHeight: '500px', overflowY: 'auto' }}>
-                                {commentStyleCommentsLoading ? (
-                                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.5)' }}>Loading comments...</div>
-                                ) : commentStyleComments.length === 0 ? (
-                                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>No comments found.</div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                            <h5 style={{ color: '#a78bfa', fontSize: '13px', fontWeight: '700', margin: 0 }}>
-                                                {sharedCommentProfiles.find((p: any) => p.id === commentStyleExpanded)?.profileName} - Comments
-                                            </h5>
-                                            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{commentStyleComments.length} total</span>
+                        {sharedProfilesOpen && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingBottom: '12px' }}>
+                                {sharedCommentProfiles.map((p: any, i: number) => {
+                                    const profileMatch = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
+                                    const isSelected = profileMatch?.isSelected || false;
+                                    return (
+                                        <div
+                                            key={i}
+                                            onClick={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}
+                                            style={{
+                                                ...styles.sharedProfileChip,
+                                                background: isSelected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+                                                borderColor: isSelected ? 'rgba(245, 158, 11, 0.5)' : 'rgba(255,255,255,0.08)',
+                                            }}
+                                            onMouseOver={e => {
+                                                e.currentTarget.style.background = isSelected ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.06)';
+                                            }}
+                                            onMouseOut={e => {
+                                                e.currentTarget.style.background = isSelected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)';
+                                            }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                readOnly
+                                                style={{ accentColor: '#f59e0b', width: '12px', height: '12px', cursor: 'pointer', margin: 0 }}
+                                            />
+                                            <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: TYPOGRAPHY.fontSizeXs, fontWeight: TYPOGRAPHY.fontWeightMedium }}>
+                                                {p.profileName || p.profileId}
+                                            </span>
                                         </div>
-                                        {commentStyleComments.map((comment: any) => (
-                                            <div key={comment.id} style={{ background: 'rgba(255,255,255,0.04)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                                <div style={comment.context === 'DIRECT COMMENT ON POST' ? styles.badge('success') : styles.badge('info') as React.CSSProperties}>
-                                                    {miniIcon(comment.context === 'DIRECT COMMENT ON POST' ? 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' : 'M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6', comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#a78bfa', 10)}
-                                                    <span>{comment.context === 'DIRECT COMMENT ON POST' ? 'Direct comment' : 'Reply'}</span>
-                                                </div>
-                                                {comment.context !== 'DIRECT COMMENT ON POST' && (
-                                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>REPLY TO:</div>
-                                                        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', lineHeight: '1.5', maxHeight: '120px', overflowY: 'auto', paddingRight: '4px' }}>
-                                                            {comment.context.replace('REPLY TO [', '').replace(/]:.*/, '')} said: {comment.context.match(/]: "(.*)"$/)?.[1] || 'N/A'}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div style={{ background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '700', marginBottom: '4px', textTransform: 'uppercase' }}>POST:</div>
-                                                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', lineHeight: '1.5', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px', fontStyle: 'italic' }}>
-                                                        {comment.postText || 'N/A'}
-                                                    </div>
-                                                </div>
-                                                <div style={{ background: 'rgba(105,63,233,0.08)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(105,63,233,0.2)' }}>
-                                                    <div style={{ color: '#a78bfa', fontSize: '10px', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase' }}>COMMENT:</div>
-                                                    <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.6', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', whiteSpace: 'pre-wrap' }}>
-                                                        {comment.commentText}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
                 )}
+
+                {/* Collapsible: Saved Profiles */}
+                <div style={{ marginTop: '8px' }}>
+                    <div
+                        style={styles.accordionHeader}
+                        onClick={() => setSavedProfilesOpen(!savedProfilesOpen)}
+                    >
+                        <div style={styles.accordionTitle}>
+                            {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 14)}
+                            <span style={styles.accordionTitleText}>Saved Profiles</span>
+                            <span style={styles.accordionBadge}>{commentStyleProfiles.length}</span>
+                        </div>
+                        <span style={{ ...styles.chevron, transform: savedProfilesOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                            {miniIcon('M19 9l-7 7-7-7', 'rgba(255,255,255,0.4)', 14)}
+                        </span>
+                    </div>
+
+                    {savedProfilesOpen && (
+                        <>
+                            {commentStyleLoading ? (
+                                <div className="fade-in" style={styles.emptyState}>
+                                    <div className="skeleton" style={{ width: '100%', height: '60px', marginBottom: '8px' }} />
+                                    <div className="skeleton" style={{ width: '80%', height: '20px', margin: '0 auto' }} />
+                                </div>
+                            ) : commentStyleProfiles.length === 0 ? (
+                                <div className="fade-in" style={{ ...styles.emptyState, padding: '24px 16px' }}>
+                                    <div style={{ ...styles.emptyStateIcon, width: '48px', height: '48px', marginBottom: '12px' }}>
+                                        {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#693fe9', 20)}
+                                    </div>
+                                    <h4 style={{ ...styles.emptyStateTitle, fontSize: '14px' }}>No Profiles Yet</h4>
+                                    <p style={{ ...styles.emptyStateDesc, fontSize: '12px', marginBottom: '0' }}>Add a LinkedIn profile above to start.</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '400px', overflowY: 'auto', paddingRight: '4px' }}>
+                                    {commentStyleProfiles.map((profile: any) => {
+                                        const getInitials = (name: string) => {
+                                            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                                        };
+                                        return (
+                                            <div key={profile.id}>
+                                                <div
+                                                    className="slide-in"
+                                                    style={{
+                                                        ...styles.sidebarProfileCard,
+                                                        ...(profile.isSelected ? styles.sidebarProfileCardHover : {}),
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '10px',
+                                                        padding: '10px 12px',
+                                                    }}
+                                                    onMouseOver={e => {
+                                                        e.currentTarget.style.transform = 'translateX(4px)';
+                                                        e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+                                                        e.currentTarget.style.background = 'rgba(139, 92, 246, 0.05)';
+                                                    }}
+                                                    onMouseOut={e => {
+                                                        e.currentTarget.style.transform = 'translateX(0)';
+                                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                                                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                                                    }}
+                                                >
+                                                    {/* Avatar with initials */}
+                                                    <div style={styles.profileAvatar}>
+                                                        {getInitials(profile.profileName || profile.profileId || 'U')}
+                                                    </div>
+
+                                                    {/* Profile info */}
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={styles.profileName}>
+                                                            {profile.profileName || profile.profileId}
+                                                        </div>
+                                                        <div style={styles.profileCommentCount}>
+                                                            {profile._count?.comments || profile.commentCount || 0} comments
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Train toggle switch */}
+                                                    <label
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '10px',
+                                                            color: profile.isSelected ? '#8b5cf6' : 'rgba(255,255,255,0.4)',
+                                                            fontWeight: TYPOGRAPHY.fontWeightSemibold,
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        <div
+                                                            onClick={() => toggleProfileSelect(profile.id)}
+                                                            style={{
+                                                                ...styles.toggleTrack(profile.isSelected, '#8b5cf6'),
+                                                                width: '32px',
+                                                                height: '18px',
+                                                            }}
+                                                        >
+                                                            <div style={{
+                                                                ...styles.toggleThumb(profile.isSelected),
+                                                                width: '14px',
+                                                                height: '14px',
+                                                                left: profile.isSelected ? '16px' : '2px',
+                                                            }} />
+                                                        </div>
+                                                        Train
+                                                    </label>
+
+                                                    {/* Action buttons */}
+                                                    <button
+                                                        onClick={() => {
+                                                            if (commentStyleExpanded === profile.id) {
+                                                                setCommentStyleExpanded(null);
+                                                                setCommentStyleComments([]);
+                                                            } else {
+                                                                setCommentStyleExpanded(profile.id);
+                                                                loadProfileComments(profile.id);
+                                                            }
+                                                        }}
+                                                        style={styles.actionButton as React.CSSProperties}
+                                                        onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white'; }}
+                                                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+                                                        title="View comments"
+                                                    >
+                                                        {commentStyleExpanded === profile.id
+                                                            ? miniIcon('M19 9l-7 7-7-7', 'rgba(255,255,255,0.5)', 12)
+                                                            : miniIcon('M9 5l7 7-7 7', 'rgba(255,255,255,0.5)', 12)
+                                                        }
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteCommentStyleProfile(profile.id)}
+                                                        style={styles.deleteButton as React.CSSProperties}
+                                                        onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+                                                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                                                        title="Delete profile"
+                                                    >
+                                                        {miniIcon('M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', 'rgba(239,68,68,0.7)', 12)}
+                                                    </button>
+                                                </div>
+
+                                                {/* Expanded comments */}
+                                                {commentStyleExpanded === profile.id && (
+                                                    <div style={{
+                                                        background: 'rgba(0,0,0,0.2)',
+                                                        borderRadius: '0 0 10px 10px',
+                                                        padding: '12px',
+                                                        border: '1px solid rgba(255,255,255,0.06)',
+                                                        borderTop: 'none',
+                                                        maxHeight: '300px',
+                                                        overflowY: 'auto',
+                                                        marginBottom: '8px',
+                                                    }}>
+                                                        {commentStyleCommentsLoading ? (
+                                                            <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Loading...</div>
+                                                        ) : commentStyleComments.length === 0 ? (
+                                                            <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>No comments found.</div>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                {commentStyleComments.slice(0, 5).map((comment: any) => (
+                                                                    <div key={comment.id} style={{
+                                                                        background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
+                                                                        padding: '10px',
+                                                                        borderRadius: '8px',
+                                                                        border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                                                    }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                                <div style={{
+                                                                                    ...styles.badge(comment.context === 'DIRECT COMMENT ON POST' ? 'success' : 'info'),
+                                                                                    fontSize: '9px',
+                                                                                    padding: '2px 6px',
+                                                                                } as React.CSSProperties}>
+                                                                                    {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct' : 'Reply'}
+                                                                                </div>
+                                                                                <div style={{
+                                                                                    color: 'rgba(255,255,255,0.8)',
+                                                                                    fontSize: '11px',
+                                                                                    lineHeight: '1.4',
+                                                                                    marginTop: '6px',
+                                                                                    overflow: 'hidden',
+                                                                                    textOverflow: 'ellipsis',
+                                                                                    display: '-webkit-box',
+                                                                                    WebkitLineClamp: 2,
+                                                                                    WebkitBoxOrient: 'vertical',
+                                                                                }}>
+                                                                                    {comment.commentText}
+                                                                                </div>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => toggleCommentTop(comment.id)}
+                                                                                style={{
+                                                                                    background: comment.isTopComment ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)',
+                                                                                    border: 'none',
+                                                                                    borderRadius: '6px',
+                                                                                    padding: '4px',
+                                                                                    cursor: 'pointer',
+                                                                                    flexShrink: 0,
+                                                                                }}
+                                                                            >
+                                                                                {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', comment.isTopComment ? '#fbbf24' : 'rgba(255,255,255,0.3)', 10)}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                {commentStyleComments.length > 5 && (
+                                                                    <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '11px', paddingTop: '4px' }}>
+                                                                        +{commentStyleComments.length - 5} more comments
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </>
+                    )}
             </div>
+        </div>
         </div>
 
     );

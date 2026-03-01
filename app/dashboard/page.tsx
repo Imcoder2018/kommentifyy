@@ -76,6 +76,8 @@ function DashboardContent() {
     const [showReferrals, setShowReferrals] = useState(false);
     const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'overview');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [showSettingsSidebar, setShowSettingsSidebar] = useState(false);
+    const [showSourcesSidebar, setShowSourcesSidebar] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const { signOut } = useClerk();
@@ -365,6 +367,7 @@ function DashboardContent() {
     const [commentStyleStatus, setCommentStyleStatus] = useState('');
     const [commentStyleExpanded, setCommentStyleExpanded] = useState<string | null>(null);
     const [commentStyleComments, setCommentStyleComments] = useState<any[]>([]);
+    const [profileCommentsModal, setProfileCommentsModal] = useState<{ profile: any; comments: any[] } | null>(null);
     const [commentStyleCommentsLoading, setCommentStyleCommentsLoading] = useState(false);
 
     // Comment settings state (synced to server)
@@ -378,6 +381,7 @@ function DashboardContent() {
     const [csExpertise, setCsExpertise] = useState('');
     const [csBackground, setCsBackground] = useState('');
     const [csAutoPost, setCsAutoPost] = useState('manual');
+    const [autoDecideEnabled, setAutoDecideEnabled] = useState(false);
     const [csSettingsLoading, setCsSettingsLoading] = useState(false);
     const [csSettingsSaving, setCsSettingsSaving] = useState(false);
 
@@ -1254,7 +1258,8 @@ function DashboardContent() {
                     model: csModel,
                     userExpertise: csExpertise,
                     userBackground: csBackground,
-                    aiAutoPost: csAutoPost
+                    aiAutoPost: csAutoPost,
+                    autoDecide: autoDecideEnabled
                 }),
             });
             const data = await res.json();
@@ -1263,6 +1268,16 @@ function DashboardContent() {
         } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
         finally { setCsSettingsSaving(false); }
     };
+
+    // Auto-save comment settings when they change
+    useEffect(() => {
+        if (!csSettingsLoading) {
+            const timeoutId = setTimeout(() => {
+                saveCommentSettings();
+            }, 1000); // Debounce 1 second
+            return () => clearTimeout(timeoutId);
+        }
+    }, [csUseProfileStyle, csGoal, csTone, csLength, csStyle, csExpertise, csBackground, csAutoPost, autoDecideEnabled]);
 
     // LinkedIn Profile Data functions
     const loadLinkedInProfile = async () => {
@@ -3027,47 +3042,6 @@ function DashboardContent() {
                                 {miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', 'white', 12)} Get Extension
                             </button>
                             {/* LinkedIn Connect Button */}
-                            <button
-                                onClick={() => {
-                                    if (linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired) {
-                                        showToast('LinkedIn already connected!', 'success');
-                                    } else {
-                                        const token = localStorage.getItem('authToken');
-                                        fetch('/api/auth/linkedin', { headers: { 'Authorization': `Bearer ${token}` } })
-                                            .then(r => r.json())
-                                            .then(d => {
-                                                if (d.authUrl) window.location.href = d.authUrl;
-                                                else showToast('Failed to get LinkedIn auth URL', 'error');
-                                            });
-                                    }
-                                }}
-                                style={{
-                                    padding: '4px 10px',
-                                    background: linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)',
-                                    border: linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(0,119,181,0.4)',
-                                    borderRadius: '6px',
-                                    color: linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? '#34d399' : '#0ea5e9',
-                                    fontSize: '10px',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px'
-                                }}
-                                onMouseOver={e => {
-                                    e.currentTarget.style.background = linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? 'rgba(16,185,129,0.25)' : 'rgba(0,119,181,0.25)';
-                                }}
-                                onMouseOut={e => {
-                                    e.currentTarget.style.background = linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? 'rgba(16,185,129,0.15)' : 'rgba(0,119,181,0.15)';
-                                }}
-                            >
-                                {linkedInOAuth?.connected && !linkedInOAuth?.tokenExpired ? (
-                                    <>{miniIcon('M9 12l2 2 4-4', '#34d399', 11)} LinkedIn Connected</>
-                                ) : (
-                                    <>{miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#0ea5e9', 11)} Connect LinkedIn</>
-                                )}
-                            </button>
                             {/* Profile Scan Button */}
                             {extensionConnected && (
                                 <button
@@ -3100,6 +3074,53 @@ function DashboardContent() {
                                 </button>
                             )}
                         </div>
+                        {/* Sidebar Toggle Buttons */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                onClick={() => { setShowSettingsSidebar(!showSettingsSidebar); setShowSourcesSidebar(false); }}
+                                style={{
+                                    padding: '6px 10px',
+                                    background: showSettingsSidebar ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.08)',
+                                    border: `1px solid ${showSettingsSidebar ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                                    borderRadius: '8px',
+                                    color: showSettingsSidebar ? '#c4b5fd' : 'rgba(255,255,255,0.7)',
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}
+                                onMouseOver={e => { e.currentTarget.style.background = showSettingsSidebar ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.12)'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = showSettingsSidebar ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.08)'; }}
+                                title="Toggle Comment Settings"
+                            >
+                                {miniIcon('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', showSettingsSidebar ? '#c4b5fd' : 'rgba(255,255,255,0.7)', 11)} Settings
+                            </button>
+                            <button
+                                onClick={() => { setShowSourcesSidebar(!showSourcesSidebar); setShowSettingsSidebar(false); }}
+                                style={{
+                                    padding: '6px 10px',
+                                    background: showSourcesSidebar ? 'rgba(6,182,212,0.3)' : 'rgba(255,255,255,0.08)',
+                                    border: `1px solid ${showSourcesSidebar ? 'rgba(6,182,212,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                                    borderRadius: '8px',
+                                    color: showSourcesSidebar ? '#22d3ee' : 'rgba(255,255,255,0.7)',
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}
+                                onMouseOver={e => { e.currentTarget.style.background = showSourcesSidebar ? 'rgba(6,182,212,0.4)' : 'rgba(255,255,255,0.12)'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = showSourcesSidebar ? 'rgba(6,182,212,0.3)' : 'rgba(255,255,255,0.08)'; }}
+                                title="Toggle Style Sources"
+                            >
+                                {miniIcon('M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z', showSourcesSidebar ? '#22d3ee' : 'rgba(255,255,255,0.7)', 11)} Sources
+                            </button>
+                        </div>
                         {/* Theme Toggle */}
                         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
                             {(['current', 'light', 'dark'] as const).map(t => (
@@ -3109,6 +3130,471 @@ function DashboardContent() {
                                 </button>
                             ))}
                         </div>
+                    </div>
+                </div>
+
+                {/* Global Sidebars - Right Side Only */}
+                {/* Settings Sidebar */}
+                <div style={{
+                    position: 'fixed',
+                    right: showSettingsSidebar ? '24px' : '-420px',
+                    top: '100px',
+                    width: '380px',
+                    maxHeight: 'calc(100vh - 140px)',
+                    background: 'rgba(17, 24, 39, 0.98)',
+                    backdropFilter: 'blur(12px)',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRight: '3px solid #3b82f6',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                    padding: '20px',
+                    overflowY: 'auto',
+                    zIndex: 100,
+                    transition: 'right 0.3s ease',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#3b82f6', 18)}
+                            Comment Settings
+                        </h3>
+                        <button onClick={() => setShowSettingsSidebar(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>×</button>
+                    </div>
+
+                    {/* Comment Goal */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Comment Goal</label>
+                        <select value={csGoal} onChange={e => setCsGoal(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                            <option value="AddValue">Add Value</option>
+                            <option value="ShareExperience">Experience</option>
+                            <option value="AskQuestion">Question</option>
+                            <option value="DifferentPerspective">Perspective</option>
+                            <option value="BuildRelationship">Relationship</option>
+                            <option value="SubtlePitch">Subtle Pitch</option>
+                        </select>
+                    </div>
+
+                    {/* Tone of Voice */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Tone of Voice</label>
+                        <select value={csTone} onChange={e => setCsTone(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                            <option value="Professional">Professional</option>
+                            <option value="Friendly">Friendly</option>
+                            <option value="ThoughtProvoking">Thought Provoking</option>
+                            <option value="Supportive">Supportive</option>
+                            <option value="Contrarian">Contrarian</option>
+                            <option value="Humorous">Humorous</option>
+                        </select>
+                    </div>
+
+                    {/* Length */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Length</label>
+                        <select value={csLength} onChange={e => setCsLength(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                            <option value="Brief">Brief (≤100)</option>
+                            <option value="Short">Short (≤300)</option>
+                            <option value="Mid">Medium (≤600)</option>
+                            <option value="Long">Long (≤900)</option>
+                        </select>
+                    </div>
+
+                    {/* Style */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Style</label>
+                        <select value={csStyle} onChange={e => setCsStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                            <option value="direct">Direct (Single paragraph)</option>
+                            <option value="structured">Structured (2-3 paragraphs)</option>
+                            <option value="storyteller">Storyteller (Personal anecdote)</option>
+                            <option value="challenger">Challenger (Different view)</option>
+                            <option value="supporter">Supporter (Validate)</option>
+                            <option value="expert">Expert (Data refs)</option>
+                            <option value="conversational">Casual (Colleague-like)</option>
+                        </select>
+                    </div>
+
+                    {/* Expertise */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Your Expertise</label>
+                        <input type="text" value={csExpertise || ''} onChange={e => setCsExpertise(e.target.value)} placeholder="e.g., SaaS Marketing" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                    </div>
+
+                    {/* Background */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Background (Optional)</label>
+                        <input type="text" value={csBackground || ''} onChange={e => setCsBackground(e.target.value)} placeholder="e.g., Scaled 3 startups" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                    </div>
+
+                    {/* Use Selected Profiles' Comment Style */}
+                    <div style={{ marginBottom: '12px', padding: '12px', background: 'rgba(139,92,246,0.1)', borderRadius: '8px', border: '1px solid rgba(139,92,246,0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <label style={{ color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Use Selected Profiles' Comment Style</label>
+                            <div onClick={() => setCsUseProfileStyle(!csUseProfileStyle)} style={{ width: '44px', height: '24px', borderRadius: '12px', background: csUseProfileStyle ? '#8b5cf6' : 'rgba(255,255,255,0.2)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileStyle ? '22px' : '2px', transition: 'all 0.2s' }} />
+                            </div>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '6px 0 0 0' }}>
+                            Use comment styles from your selected profiles
+                        </p>
+                    </div>
+
+                    {/* Auto Decide for Each Post */}
+                    <div style={{ marginBottom: '12px', padding: '12px', background: 'rgba(168,85,247,0.1)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <label style={{ color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Auto Decide for Each Post</label>
+                            <div onClick={() => setAutoDecideEnabled(!autoDecideEnabled)} style={{ width: '44px', height: '24px', borderRadius: '12px', background: autoDecideEnabled ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255,255,255,0.2)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: autoDecideEnabled ? '22px' : '2px', transition: 'all 0.2s' }} />
+                            </div>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '6px 0 0 0' }}>
+                            Turn ON to let AI auto-select the best settings per post.
+                        </p>
+                    </div>
+
+                    {/* AI Button Behavior */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>AI Button Behavior</label>
+                        <select value={csAutoPost} onChange={e => setCsAutoPost(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                            <option value="manual" style={{ background: '#1a1a3e' }}>Manual Review</option>
+                            <option value="auto" style={{ background: '#1a1a3e' }}>Auto Post</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Sources Sidebar - Style Sources */}
+                <div style={{
+                    position: 'fixed',
+                    right: showSourcesSidebar ? '24px' : '-380px',
+                    top: '100px',
+                    width: '340px',
+                    maxHeight: 'calc(100vh - 140px)',
+                    background: 'rgba(17, 24, 39, 0.98)',
+                    backdropFilter: 'blur(12px)',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRight: '3px solid #8b5cf6',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                    padding: '20px',
+                    overflowY: 'auto',
+                    zIndex: 100,
+                    transition: 'right 0.3s ease',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#8b5cf6', 18)}
+                            Style Sources
+                            {commentStyleProfiles.length > 0 && (
+                                <span style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px', marginLeft: '4px' }}>
+                                    {commentStyleProfiles.length}
+                                </span>
+                            )}
+                        </h3>
+                        <button onClick={() => setShowSourcesSidebar(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>×</button>
+                    </div>
+
+                    {/* Add LinkedIn Profile Input */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>
+                            {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', 'rgba(255,255,255,0.5)', 12)}
+                            Add LinkedIn Profile
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>
+                                    {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', 'rgba(255,255,255,0.4)', 14)}
+                                </span>
+                                <input
+                                    type="text"
+                                    value={commentStyleUrl}
+                                    onChange={e => setCommentStyleUrl(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') scrapeCommentStyle(); }}
+                                    placeholder="linkedin.com/in/username"
+                                    style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}
+                                />
+                            </div>
+                            <button
+                                onClick={scrapeCommentStyle}
+                                disabled={commentStyleScraping}
+                                style={{ padding: '10px 16px', background: commentStyleScraping ? 'rgba(139,92,246,0.5)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: 'none', borderRadius: '8px', color: 'white', fontWeight: '600', cursor: commentStyleScraping ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                            >
+                                {commentStyleScraping ? '...' : (
+                                    <>
+                                        {miniIcon('M12 4v16m8-8H4', 'white', 14)}
+                                        Add
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Status Message */}
+                    {commentStyleStatus && (
+                        <div style={{ marginBottom: '12px', padding: '8px 12px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.1)' : 'rgba(139, 92, 246, 0.1)', border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(139, 92, 246, 0.3)'}`, borderRadius: '8px', color: commentStyleStatus.includes('Error') ? '#f87171' : '#a78bfa', fontSize: '11px' }}>
+                            {commentStyleStatus}
+                        </div>
+                    )}
+
+                    {/* Training Banner */}
+                    {commentStyleProfiles.some((p: any) => p.isSelected) && (
+                        <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(139,92,246,0.1)', borderRadius: '8px', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8b5cf6', boxShadow: '0 0 8px rgba(139,92,246,0.6)' }} />
+                            <span style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '600' }}>
+                                <strong>{commentStyleProfiles.filter((p: any) => p.isSelected).length}</strong> profile{commentStyleProfiles.filter((p: any) => p.isSelected).length > 1 ? 's' : ''} training active
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Kommentify Shared */}
+                    {sharedCommentProfiles.length > 0 && (
+                        <div style={{ marginBottom: '12px' }}>
+                            <div
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '8px 12px', background: 'rgba(245,158,11,0.1)', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(245,158,11,0.2)' }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', fontSize: '13px', fontWeight: '600' }}>
+                                    {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14)}
+                                    Kommentify Shared
+                                    <span style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px' }}>
+                                        {sharedCommentProfiles.length}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {sharedCommentProfiles.map((p: any, i: number) => {
+                                    const profileMatch = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
+                                    const isSelected = profileMatch?.isSelected || false;
+                                    return (
+                                        <div
+                                            key={i}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                padding: '6px 10px',
+                                                background: isSelected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+                                                borderRadius: '6px',
+                                                border: `1px solid ${isSelected ? 'rgba(245, 158, 11, 0.5)' : 'rgba(255,255,255,0.08)'}`,
+                                            }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}
+                                                style={{ accentColor: '#f59e0b', width: '12px', height: '12px', cursor: 'pointer', margin: 0 }}
+                                            />
+                                            <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '500', cursor: 'pointer' }} onClick={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}>
+                                                {p.profileName || p.profileId}
+                                            </span>
+                                            {/* View All Comments Popup button for shared profiles */}
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    // Try to find matching profile in saved profiles first
+                                                    const savedProfile = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
+                                                    if (savedProfile) {
+                                                        const token = localStorage.getItem('authToken');
+                                                        setCommentStyleCommentsLoading(true);
+                                                        try {
+                                                            const res = await fetch(`/api/scraped-comments?profileId=${savedProfile.id}`, {
+                                                                headers: { 'Authorization': `Bearer ${token}` }
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.success) {
+                                                                setProfileCommentsModal({ profile: p, comments: data.comments || [] });
+                                                            } else {
+                                                                showToast('Failed to load comments', 'error');
+                                                            }
+                                                        } catch (err) {
+                                                            showToast('Error loading comments', 'error');
+                                                        }
+                                                        setCommentStyleCommentsLoading(false);
+                                                    } else {
+                                                        showToast('Profile not loaded yet', 'info');
+                                                    }
+                                                }}
+                                                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', marginLeft: '4px' }}
+                                                title="View all comments"
+                                            >
+                                                {miniIcon('M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', 'rgba(255,255,255,0.5)', 12)}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Saved Profiles */}
+                    <div style={{ marginTop: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', cursor: 'pointer' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', fontSize: '13px', fontWeight: '600' }}>
+                                {miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'white', 14)}
+                                Saved Profiles
+                                <span style={{ background: 'rgba(139,92,246,0.2)', color: '#a78bfa', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px' }}>
+                                    {commentStyleProfiles.length}
+                                </span>
+                            </div>
+                        </div>
+
+                        {commentStyleProfiles.length === 0 ? (
+                            <div style={{ padding: '24px 16px', textAlign: 'center' }}>
+                                <div style={{ color: '#8b5cf6', marginBottom: '12px' }}>
+                                    {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#693fe9', 32)}
+                                </div>
+                                <h4 style={{ color: 'white', fontSize: '14px', margin: '0 0 8px 0' }}>No Profiles Yet</h4>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: 0 }}>Add a LinkedIn profile above to start.</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '350px', overflowY: 'auto' }}>
+                                {commentStyleProfiles.map((profile: any) => {
+                                    const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                                    const isExpanded = commentStyleExpanded === profile.id;
+                                    return (
+                                        <div key={profile.id}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: profile.isSelected ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.03)', borderRadius: '8px', border: profile.isSelected ? '1px solid rgba(139,92,246,0.3)' : '1px solid transparent' }}>
+                                                {/* Avatar with initials */}
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '700', flexShrink: 0 }}>
+                                                    {getInitials(profile.profileName || profile.profileId || 'U')}
+                                                </div>
+
+                                                {/* Profile info */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ color: 'white', fontSize: '13px', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {profile.profileName || profile.profileId}
+                                                    </div>
+                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
+                                                        {profile._count?.comments || profile.commentCount || 0} comments
+                                                    </div>
+                                                </div>
+
+                                                {/* Train toggle */}
+                                                <div onClick={() => toggleProfileSelect(profile.id)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '32px', height: '18px', borderRadius: '9px', background: profile.isSelected ? '#8b5cf6' : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'all 0.2s' }}>
+                                                        <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: profile.isSelected ? '16px' : '2px', transition: 'all 0.2s' }} />
+                                                    </div>
+                                                    <span style={{ fontSize: '10px', color: profile.isSelected ? '#8b5cf6' : 'rgba(255,255,255,0.4)', fontWeight: '600', whiteSpace: 'nowrap' }}>Train</span>
+                                                </div>
+
+                                                {/* View Comments button (expand inline) */}
+                                                <button
+                                                    onClick={() => {
+                                                        if (commentStyleExpanded === profile.id) {
+                                                            setCommentStyleExpanded(null);
+                                                            setCommentStyleComments([]);
+                                                        } else {
+                                                            setCommentStyleExpanded(profile.id);
+                                                            loadProfileComments(profile.id);
+                                                        }
+                                                    }}
+                                                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                                                    title="View comments inline"
+                                                >
+                                                    {isExpanded ? miniIcon('M19 9l-7 7-7-7', 'rgba(255,255,255,0.5)', 12) : miniIcon('M9 5l7 7-7 7', 'rgba(255,255,255,0.5)', 12)}
+                                                </button>
+
+                                                {/* View All Comments Popup button */}
+                                                <button
+                                                    onClick={async () => {
+                                                        // Load all comments for this profile
+                                                        const token = localStorage.getItem('authToken');
+                                                        setCommentStyleCommentsLoading(true);
+                                                        try {
+                                                            const res = await fetch(`/api/scraped-comments?profileId=${profile.id}`, {
+                                                                headers: { 'Authorization': `Bearer ${token}` }
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.success) {
+                                                                setProfileCommentsModal({ profile, comments: data.comments || [] });
+                                                            } else {
+                                                                showToast('Failed to load comments', 'error');
+                                                            }
+                                                        } catch (err) {
+                                                            showToast('Error loading comments', 'error');
+                                                        }
+                                                        setCommentStyleCommentsLoading(false);
+                                                    }}
+                                                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                                                    title="View all comments"
+                                                >
+                                                    {miniIcon('M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', 'rgba(255,255,255,0.5)', 14)}
+                                                </button>
+
+                                                {/* Delete button */}
+                                                <button
+                                                    onClick={() => deleteCommentStyleProfile(profile.id)}
+                                                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '4px' }}
+                                                >
+                                                    {miniIcon('M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', 'rgba(239,68,68,0.7)', 12)}
+                                                </button>
+                                            </div>
+
+                                            {/* Expanded comments */}
+                                            {isExpanded && (
+                                                <div style={{
+                                                    background: 'rgba(0,0,0,0.2)',
+                                                    borderRadius: '0 0 8px 8px',
+                                                    padding: '12px',
+                                                    border: '1px solid rgba(255,255,255,0.06)',
+                                                    borderTop: 'none',
+                                                    marginTop: '-1px',
+                                                    maxHeight: '300px',
+                                                    overflowY: 'auto',
+                                                    marginBottom: '8px',
+                                                }}>
+                                                    {commentStyleCommentsLoading ? (
+                                                        <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Loading...</div>
+                                                    ) : commentStyleComments.length === 0 ? (
+                                                        <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>No comments found.</div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                            {commentStyleComments.slice(0, 5).map((comment: any) => (
+                                                                <div key={comment.id} style={{
+                                                                    background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
+                                                                    padding: '10px',
+                                                                    borderRadius: '8px',
+                                                                    border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                                                }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                                            <div style={{
+                                                                                fontSize: '9px',
+                                                                                padding: '2px 6px',
+                                                                                background: comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.2)' : 'rgba(59,130,246,0.2)',
+                                                                                color: comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#60a5fa',
+                                                                                borderRadius: '4px',
+                                                                                display: 'inline-block',
+                                                                                marginBottom: '4px',
+                                                                            }}>
+                                                                                {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct' : 'Reply'}
+                                                                            </div>
+                                                                            <div style={{
+                                                                                color: 'rgba(255,255,255,0.8)',
+                                                                                fontSize: '11px',
+                                                                                lineHeight: '1.4',
+                                                                                marginTop: '4px',
+                                                                                overflow: 'hidden',
+                                                                                textOverflow: 'ellipsis',
+                                                                                display: '-webkit-box',
+                                                                                WebkitLineClamp: 2,
+                                                                                WebkitBoxOrient: 'vertical',
+                                                                            }}>
+                                                                                {comment.commentText}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                            {commentStyleComments.length > 5 && (
+                                                                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '11px', paddingTop: '4px' }}>
+                                                                    +{commentStyleComments.length - 5} more comments
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -3129,6 +3615,101 @@ function DashboardContent() {
                 {activeTab === 'referrals' && <ReferralsTab {...tabProps} />}
                 {activeTab === 'extension' && <ExtensionTab {...tabProps} />}
                 {activeTab === 'account' && <AccountTab {...tabProps} />}
+
+                {/* Profile Comments Modal */}
+                {profileCommentsModal && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.8)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                    }} onClick={() => setProfileCommentsModal(null)}>
+                        <div style={{
+                            background: 'rgba(17, 24, 39, 0.98)',
+                            borderRadius: '16px',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            width: '90%',
+                            maxWidth: '600px',
+                            maxHeight: '80vh',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }} onClick={e => e.stopPropagation()}>
+                            {/* Modal Header */}
+                            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700' }}>
+                                        {(profileCommentsModal.profile.profileName || profileCommentsModal.profile.profileId || 'U').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                                    </div>
+                                    <div>
+                                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                                            {profileCommentsModal.profile.profileName || profileCommentsModal.profile.profileId}
+                                        </h3>
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                                            {profileCommentsModal.comments.length} comments
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onClick={() => setProfileCommentsModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '24px', lineHeight: 1 }}>×</button>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div style={{ padding: '16px 20px', overflowY: 'auto', flex: 1 }}>
+                                {profileCommentsModal.comments.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.5)' }}>
+                                        No comments found for this profile.
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {profileCommentsModal.comments.map((comment: any) => (
+                                            <div key={comment.id} style={{
+                                                background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
+                                                padding: '14px',
+                                                borderRadius: '10px',
+                                                border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                                    <span style={{
+                                                        fontSize: '10px',
+                                                        padding: '3px 8px',
+                                                        borderRadius: '4px',
+                                                        background: comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.2)' : 'rgba(59,130,246,0.2)',
+                                                        color: comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#60a5fa',
+                                                        fontWeight: '600',
+                                                    }}>
+                                                        {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct Comment' : 'Reply'}
+                                                    </span>
+                                                    {comment.isTopComment && (
+                                                        <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: 'rgba(245,158,11,0.2)', color: '#fbbf24', fontWeight: '600' }}>
+                                                            Top Comment
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
+                                                    {comment.commentText}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button onClick={() => setProfileCommentsModal(null)} style={{ padding: '8px 20px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: 'white', cursor: 'pointer', fontWeight: '500' }}>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

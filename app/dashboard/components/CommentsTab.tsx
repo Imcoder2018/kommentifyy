@@ -1,4 +1,227 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+// ============================================
+// STYLE CONSTANTS (extracted from inline styles)
+// ============================================
+
+// Spacing tokens
+const SPACING = {
+    xs: '4px',
+    sm: '8px',
+    md: '12px',
+    lg: '14px',
+    xl: '16px',
+    xxl: '18px',
+    xxxl: '24px',
+};
+
+// Color constants
+const COLORS = {
+    primary: '#693fe9',
+    primaryLight: '#8b5cf6',
+    blue: '#3b82f6',
+    blueDark: '#2563eb',
+    blueLight: '#60a5fa',
+    green: '#10b981',
+    greenDark: '#059669',
+    greenLight: '#34d399',
+    purple: '#a855f7',
+    purpleDark: '#7c3aed',
+    purpleLight: '#c4b5fd',
+    violet: '#8b5cf6',
+    violetLight: '#a78bfa',
+    yellow: '#f59e0b',
+    yellowDark: '#d97706',
+    yellowLight: '#fbbf24',
+    red: '#ef4444',
+    redLight: '#f87171',
+    white: 'white',
+    whiteMuted: 'rgba(255,255,255,0.6)',
+    whiteDim: 'rgba(255,255,255,0.5)',
+    whiteDimmest: 'rgba(255,255,255,0.4)',
+    whiteSubtle: 'rgba(255,255,255,0.15)',
+    whiteSubtleBorder: 'rgba(255,255,255,0.1)',
+    bgSubtle: 'rgba(255,255,255,0.05)',
+    bgCard: 'rgba(255,255,255,0.04)',
+};
+
+// Reusable style objects
+const styles = {
+    card: {
+        background: 'rgba(255,255,255,0.05)',
+        padding: '18px',
+        borderRadius: '16px',
+        border: '1px solid rgba(255,255,255,0.1)',
+        marginBottom: '14px',
+    },
+    cardSmall: {
+        background: 'rgba(255,255,255,0.05)',
+        padding: '16px 18px',
+        borderRadius: '14px',
+        border: '1px solid rgba(255,255,255,0.1)',
+    },
+    sectionTitle: {
+        color: 'white',
+        fontSize: '15px',
+        fontWeight: '700',
+        margin: 0,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+    },
+    sectionSubtitle: {
+        color: 'rgba(255,255,255,0.4)',
+        fontSize: '11px',
+    },
+    label: {
+        display: 'block',
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: '11px',
+        fontWeight: '700',
+        marginBottom: '6px',
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.5px',
+    },
+    input: {
+        width: '100%',
+        padding: '8px 12px',
+        background: 'rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: '8px',
+        color: 'white',
+        fontSize: '12px',
+        outline: 'none',
+    },
+    select: {
+        width: '100%',
+        padding: '8px 10px',
+        background: 'rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: '8px',
+        color: 'white',
+        fontSize: '12px',
+        outline: 'none',
+    },
+    buttonPrimary: {
+        padding: '10px 24px',
+        background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)',
+        color: 'white',
+        border: 'none',
+        borderRadius: '10px',
+        fontWeight: '700',
+        fontSize: '13px',
+        cursor: 'pointer',
+        boxShadow: '0 4px 15px rgba(105,63,233,0.4)',
+    },
+    buttonSecondary: {
+        background: 'rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: '6px',
+        color: 'rgba(255,255,255,0.6)',
+        padding: '4px 10px',
+        fontSize: '10px',
+        cursor: 'pointer',
+        fontWeight: '600',
+    },
+    buttonSmall: {
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: '6px',
+        color: 'rgba(255,255,255,0.6)',
+        padding: '4px 10px',
+        fontSize: '10px',
+        cursor: 'pointer',
+    },
+    loadingText: {
+        textAlign: 'center' as const,
+        padding: '20px 0',
+        color: 'rgba(255,255,255,0.5)',
+    },
+    errorText: {
+        color: '#f87171',
+        fontSize: '12px',
+    },
+    successText: {
+        color: '#34d399',
+        fontSize: '12px',
+    },
+    toggleTrack: (isActive: boolean, color: string) => ({
+        width: '42px',
+        height: '24px',
+        borderRadius: '12px',
+        background: isActive ? color : 'rgba(255,255,255,0.15)',
+        position: 'relative' as const,
+        transition: 'all 0.3s',
+        flexShrink: 0,
+    }),
+    toggleThumb: (isActive: boolean) => ({
+        width: '20px',
+        height: '20px',
+        borderRadius: '50%',
+        background: 'white',
+        position: 'absolute' as const,
+        top: '2px',
+        left: isActive ? '20px' : '2px',
+        transition: 'all 0.3s',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    }),
+    toggleContainer: (isActive: boolean, activeColor: string, activeBgColor: string) => ({
+        background: isActive ? activeBgColor : 'rgba(255,255,255,0.04)',
+        padding: '12px 16px',
+        borderRadius: '10px',
+        border: `1px solid ${isActive ? activeColor : 'rgba(255,255,255,0.1)'}`,
+        marginBottom: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+    }),
+    focusIndicator: {
+        outline: '2px solid #60a5fa',
+        outlineOffset: '2px',
+    },
+    // Spinner animation
+    spinner: {
+        display: 'inline-block',
+        width: '14px',
+        height: '14px',
+        border: '2px solid rgba(255,255,255,0.3)',
+        borderTopColor: 'white',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+    },
+};
+
+// ============================================
+// KEYBOARD HANDLER FOR TOGGLES
+// ============================================
+const handleToggleKeyDown = (e: React.KeyboardEvent, onToggle: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onToggle();
+    }
+};
+
+// ============================================
+// CSS FOR SPINNER ANIMATION AND RESPONSIVE
+// ============================================
+const globalStyles = `
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    @media (max-width: 768px) {
+        .comment-tab-grid {
+            grid-template-columns: 1fr !important;
+        }
+        .comment-tab-toggle {
+            padding: 10px 12px !important;
+        }
+        .comment-tab-card {
+            padding: 12px 14px !important;
+        }
+    }
+`;
 
 export default function CommentsTab(props: any) {
     // Destructure everything from props to keep variable names identical to original
@@ -122,6 +345,14 @@ export default function CommentsTab(props: any) {
     const [autoDeciding, setAutoDeciding] = useState(false);
     const [autoDecideReasoning, setAutoDecideReasoning] = useState('');
 
+    // Search/filter state for comment library
+    const [commentSearchQuery, setCommentSearchQuery] = useState('');
+    const [commentFilterType, setCommentFilterType] = useState<'all' | 'direct' | 'reply'>('all');
+
+    // Auto-save state tracking
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
+    const [autoSaveError, setAutoSaveError] = useState<string | null>(null);
+
     // Auto-fill background from profile data on mount
     useEffect(() => {
         if (!csBackground && (voyagerData?.headline || linkedInProfile?.headline)) {
@@ -177,8 +408,33 @@ export default function CommentsTab(props: any) {
         }
     };
 
+    // Filtered comments based on search query
+    const getFilteredComments = useCallback((comments: any[]) => {
+        if (!commentSearchQuery && commentFilterType === 'all') return comments;
+        return comments.filter((comment: any) => {
+            const matchesSearch = !commentSearchQuery ||
+                comment.commentText?.toLowerCase().includes(commentSearchQuery.toLowerCase()) ||
+                comment.postText?.toLowerCase().includes(commentSearchQuery.toLowerCase());
+            const matchesFilter = commentFilterType === 'all' ||
+                (commentFilterType === 'direct' && comment.context === 'DIRECT COMMENT ON POST') ||
+                (commentFilterType === 'reply' && comment.context !== 'DIRECT COMMENT ON POST');
+            return matchesSearch && matchesFilter;
+        });
+    }, [commentSearchQuery, commentFilterType]);
+
+    // Copy to clipboard function
+    const handleCopyToClipboard = useCallback(async (text: string, label: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast(`${label} copied to clipboard!`, 'success');
+        } catch (err) {
+            showToast('Failed to copy to clipboard', 'error');
+        }
+    }, [showToast]);
+
     return (
         <div>
+            <style>{globalStyles}</style>
             {/* Comment Settings Section */}
             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -192,10 +448,16 @@ export default function CommentsTab(props: any) {
                 ) : (
                     <>
                         {/* Use Profile Style Toggle */}
-                        <div style={{ background: csUseProfileStyle ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: `1px solid ${csUseProfileStyle ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
-                            onClick={() => { const newVal = !csUseProfileStyle; setCsUseProfileStyle(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { if (d.success) showToast('Settings auto-saved!', 'success'); }); }, 100); }}>
-                            <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: csUseProfileStyle ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileStyle ? '20px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                        <div
+                            role="switch"
+                            aria-checked={csUseProfileStyle}
+                            aria-label="Use selected profiles comment style"
+                            tabIndex={0}
+                            onKeyDown={(e) => handleToggleKeyDown(e, () => { const newVal = !csUseProfileStyle; setCsUseProfileStyle(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; setIsAutoSaving(true); setAutoSaveError(null); fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { setIsAutoSaving(false); if (d.success) { showToast('Settings auto-saved!', 'success'); } else { setAutoSaveError(d.error || 'Failed to save'); showToast('Failed to save settings', 'error'); } }).catch(() => { setIsAutoSaving(false); setAutoSaveError('Network error'); showToast('Failed to save settings', 'error'); }); }, 100); })}
+                            style={styles.toggleContainer(csUseProfileStyle, 'rgba(59,130,246,0.3)', 'rgba(59,130,246,0.12)') as React.CSSProperties}
+                        >
+                            <div style={styles.toggleTrack(csUseProfileStyle, 'linear-gradient(135deg, #3b82f6, #2563eb)') as React.CSSProperties}>
+                                <div style={styles.toggleThumb(csUseProfileStyle) as React.CSSProperties} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>
@@ -231,10 +493,16 @@ export default function CommentsTab(props: any) {
                         )}
                         {/* Use Profile Data Toggle */}
                         {linkedInProfile ? (
-                            <div style={{ background: csUseProfileData ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: `1px solid ${csUseProfileData ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
-                                onClick={() => { const newVal = !csUseProfileData; setCsUseProfileData(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: csUseProfileStyle, useProfileData: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { if (d.success) showToast('Settings auto-saved!', 'success'); }); }, 100); }}>
-                                <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: csUseProfileData ? 'linear-gradient(135deg, #10b981, #059669)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
-                                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileData ? '20px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                            <div
+                                role="switch"
+                                aria-checked={csUseProfileData}
+                                aria-label="Use my profile data"
+                                tabIndex={0}
+                                onKeyDown={(e) => handleToggleKeyDown(e, () => { const newVal = !csUseProfileData; setCsUseProfileData(newVal); setTimeout(() => { const token = localStorage.getItem('authToken'); if (!token) return; setIsAutoSaving(true); setAutoSaveError(null); fetch('/api/comment-settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ useProfileStyle: csUseProfileStyle, useProfileData: newVal, goal: csGoal, tone: csTone, commentLength: csLength, commentStyle: csStyle, userExpertise: csExpertise, userBackground: csBackground, aiAutoPost: csAutoPost }) }).then(r => r.json()).then(d => { setIsAutoSaving(false); if (d.success) { showToast('Settings auto-saved!', 'success'); } else { setAutoSaveError(d.error || 'Failed to save'); showToast('Failed to save settings', 'error'); } }).catch(() => { setIsAutoSaving(false); setAutoSaveError('Network error'); showToast('Failed to save settings', 'error'); }); }, 100); })}
+                                style={styles.toggleContainer(csUseProfileData, 'rgba(16,185,129,0.3)', 'rgba(16,185,129,0.12)') as React.CSSProperties}
+                            >
+                                <div style={styles.toggleTrack(csUseProfileData, 'linear-gradient(135deg, #10b981, #059669)') as React.CSSProperties}>
+                                    <div style={styles.toggleThumb(csUseProfileData) as React.CSSProperties} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>
@@ -325,10 +593,16 @@ export default function CommentsTab(props: any) {
                             </div>
                         </div>
                         {/* Auto Decide Toggle */}
-                        <div style={{ background: autoDecideEnabled ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)', padding: '12px 16px', borderRadius: '10px', border: `1px solid ${autoDecideEnabled ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.1)'}`, marginTop: '14px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
-                            onClick={() => setAutoDecideEnabled(!autoDecideEnabled)}>
-                            <div style={{ width: '42px', height: '24px', borderRadius: '12px', background: autoDecideEnabled ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.3s', flexShrink: 0 }}>
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: autoDecideEnabled ? '20px' : '2px', transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                        <div
+                            role="switch"
+                            aria-checked={autoDecideEnabled}
+                            aria-label="Auto decide for each post"
+                            tabIndex={0}
+                            onKeyDown={(e) => handleToggleKeyDown(e, () => setAutoDecideEnabled(!autoDecideEnabled))}
+                            style={styles.toggleContainer(autoDecideEnabled, 'rgba(168,85,247,0.3)', 'rgba(168,85,247,0.12)') as React.CSSProperties}
+                        >
+                            <div style={styles.toggleTrack(autoDecideEnabled, 'linear-gradient(135deg, #a855f7, #7c3aed)') as React.CSSProperties}>
+                                <div style={styles.toggleThumb(autoDecideEnabled) as React.CSSProperties} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>
@@ -348,6 +622,33 @@ export default function CommentsTab(props: any) {
                             <div style={{ marginTop: '8px', padding: '8px 14px', background: 'rgba(168,85,247,0.08)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.2)' }}>
                                 <div style={{ color: '#c4b5fd', fontSize: '10px', fontWeight: '600', marginBottom: '2px' }}>AI Reasoning</div>
                                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', lineHeight: '1.4' }}>{autoDecideReasoning}</div>
+                            </div>
+                        )}
+
+                        {/* Auto-save status indicator */}
+                        {(isAutoSaving || autoSaveError) && (
+                            <div style={{
+                                marginTop: '12px',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: autoSaveError ? 'rgba(239,68,68,0.1)' : 'rgba(59,130,246,0.1)',
+                                border: `1px solid ${autoSaveError ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)'}`,
+                            }}>
+                                {isAutoSaving && (
+                                    <>
+                                        <div style={styles.spinner} />
+                                        <span style={{ color: '#60a5fa', fontSize: '11px' }}>Auto-saving settings...</span>
+                                    </>
+                                )}
+                                {autoSaveError && (
+                                    <>
+                                        <span style={{ color: '#f87171', fontSize: '12px' }}>Error: {autoSaveError}</span>
+                                        <button onClick={() => setAutoSaveError(null)} aria-label="Dismiss error" style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}>x</button>
+                                    </>
+                                )}
                             </div>
                         )}
 

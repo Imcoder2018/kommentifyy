@@ -244,69 +244,47 @@ Use their voice patterns (phrasing, energy, vocabulary) but follow the STYLE FOR
 `;
     }
 
-    return `You are a LinkedIn comment ghostwriter. Write ONE comment on the post below.
+    // HUMANIZING CHANGES: Simplified prompt to reduce AI-sounding output
+    // - Removed verbose "PRE-ANALYSIS" section that was being outputted
+    // - Removed over-structured rules that create mechanical patterns
+    // - Added anti-AI phrases to avoid "not just X but Y", "one thing I've learned"
+    // - Shortened and made instructions more conversational
 
-── POST TO COMMENT ON ──
+    // Enhanced length instructions - more explicit for each category
+    const lengthInstructions: Record<string, string> = {
+        'Brief': `STRICT LIMIT: Exactly 1 sentence. No exceptions. 50-100 chars total. Make it punchy.`,
+        'Short': `STRICT LIMIT: 1-2 sentences max. 150-300 chars total. Get in, add value, get out.`,
+        'Mid': `STRICT LIMIT: 2-3 sentences max. 400-600 chars total. One short paragraph or two.`,
+        'Long': `STRICT LIMIT: 3-4 sentences max. 700-900 chars total. Brief paragraph(s), don't ramble.`
+    };
+    const lengthInstr = lengthInstructions[commentLength] || lengthInstructions['Short'];
+
+    return `Write a LinkedIn comment as if you're genuinely reacting to this post in the moment.
+
+Post: ${postText}
 Author: ${authorName}
-Content: ${postText}
+You: ${userExpertise || 'professional'}${userBackground ? ` - ${userBackground}` : ''}
 
-── COMMENTER PROFILE ──
-Expertise: ${userExpertise || 'General professional'}
-Background: ${userBackground || 'Not specified'}
 ${styleTrainingSection}
-══════════════════════════════════════════════════
-PRE-ANALYSIS (Do this internally before writing)
-══════════════════════════════════════════════════
-
-Before writing, briefly analyze:
-1. What is the MAIN POINT of this post? (1 sentence)
-2. What SPECIFIC sentence, stat, or idea can I reference to prove I read it?
-3. What UNIQUE angle can I add based on my expertise/background that isn't already in the post?
-
-══════════════════════════════════════════════════
-MANDATORY SETTINGS - FOLLOW EACH ONE EXACTLY
-══════════════════════════════════════════════════
-
 ${selectedStyleInstr}
 
 ${selectedGoalInstr}
 
 ${selectedToneInstr}
 
-── LENGTH ──
-HARD MAXIMUM: ${limit.max} characters (${commentLength})
-Target: ${limit.target} characters (~${limit.words} words)
-${commentLength === 'Brief' ? 'Be extremely concise - one impactful sentence only.' : ''}
+${lengthInstr}
 
-══════════════════════════════════════════════════
-ENGAGEMENT RULES (NON-NEGOTIABLE)
-══════════════════════════════════════════════════
+Rules:
+- Start with a real reaction, not analysis. Like "This is solid" or "Hadn't thought of it that way"
+- Reference ONE specific thing from the post naturally
+- Add your take in 1-2 sentences. Don't over-explain.
+- Sound like a person, not a bot. Short sentences. Imperfect is fine.
+- No emojis. No hashtags. No "DM me"
+- Never use: "not just X but Y", "one thing I've learned", "the real value", "most X are generic", "game-changer", "deep dive"
+- STRICT: Your response MUST end naturally at or below the character limit. Do NOT exceed. Do NOT add ellipsis.
 
-1. REFERENCE RULE: Explicitly reference a specific sentence, stat, or idea from the post. The reader must SEE that you actually read the post. Quote or paraphrase a specific point.
-
-2. VALUE RULE: Add something NEW - an insight, data point, experience, or question not already in the post. The reader should think "good point, I hadn't considered that."
-
-3. HUMAN VOICE: Write like a real person, not a chatbot. Vary sentence lengths dramatically. Use natural phrasing and contractions.
-
-4. NO EMOJIS: Zero emojis. None.
-
-5. NO BANNED WORDS: Never use "curious", "intrigued", "fascinating", "insightful", "resonates", "love this", "game-changer", "deep dive", "unpack", "delve", "harness", "foster".
-
-6. NO BANNED PUNCTUATION: No em dashes "—" or en dashes "–". Use commas, periods, or hyphens "-" instead.
-
-7. NO GENERIC OPENERS: Never start with "Great post", "Thanks for sharing", "I agree", "Well said", "This is so true", "Love this". Start with substance.
-
-8. AUTHOR NAME: Use ${authorName}'s first name naturally ONCE (not forced into every sentence).
-
-9. LANGUAGE: Write in the SAME language as the original post. Non-negotiable.
-
-10. PROSPECT RULE: For professional contexts, subtly demonstrate expertise through your added value. No hard selling. No "DM me". No "happy to chat".
-
-══════════════════════════════════════════════════
-
-Output ONLY the comment text. No labels, no quotes, no explanation.`;
+Go.`;
 }
-
 /**
  * Generate prompt for post generation - Elite LinkedIn Content Strategy
  */

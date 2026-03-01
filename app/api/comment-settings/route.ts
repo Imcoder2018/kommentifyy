@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         userExpertise: '',
         userBackground: '',
         aiAutoPost: 'manual',
+        autoDecide: false,
       },
     });
   } catch (error: any) {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     const payload = verifyToken(token);
 
     const body = await request.json();
-    const { useProfileStyle, useProfileData, goal, tone, commentLength, commentStyle, model, userExpertise, userBackground, aiAutoPost } = body;
+    const { useProfileStyle, useProfileData, goal, tone, commentLength, commentStyle, model, userExpertise, userBackground, aiAutoPost, autoDecide } = body;
 
     const settings = await (prisma as any).commentSettings.upsert({
       where: { userId: payload.userId },
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
         userExpertise: userExpertise || '',
         userBackground: userBackground || '',
         aiAutoPost: aiAutoPost || 'manual',
+        autoDecide: autoDecide === true,
       },
       update: {
         useProfileStyle: useProfileStyle !== undefined ? useProfileStyle : undefined,
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
         userExpertise: userExpertise !== undefined ? userExpertise : undefined,
         userBackground: userBackground !== undefined ? userBackground : undefined,
         aiAutoPost: aiAutoPost !== undefined ? aiAutoPost : undefined,
+        autoDecide: autoDecide !== undefined ? autoDecide : undefined,
       },
     });
 

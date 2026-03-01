@@ -573,26 +573,68 @@ export default function OverviewTab(props: any) {
                                 </div>
                             )}
 
-                            {/* Experience Section */}
-                            {voyagerData?.experience && voyagerData.experience.length > 0 && (
-                                <div style={{ marginTop: '16px' }}>
-                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Experience</div>
-                                    <div style={{ display: 'grid', gap: '8px' }}>
-                                        {voyagerData.experience.map((exp: any, i: number) => (
-                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>💼</div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{exp.title || exp.companyName || 'Position'}</div>
-                                                    {exp.companyName && exp.title && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>{exp.companyName}</div>}
-                                                    {exp.dateRange && (
-                                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>
-                                                            {exp.dateRange.startMonth ? `${exp.dateRange.startMonth}/` : ''}{exp.dateRange.startYear || ''}
-                                                            {' — '}
-                                                            {exp.dateRange.endYear ? `${exp.dateRange.endMonth ? exp.dateRange.endMonth + '/' : ''}${exp.dateRange.endYear}` : 'Present'}
+                            {/* Recent LinkedIn Posts Card - Moved before Experience */}
+                            {voyagerData?.recentPosts && voyagerData.recentPosts.length > 0 && (
+                                <div style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    padding: '24px',
+                                    borderRadius: '20px',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    marginBottom: '20px',
+                                    marginTop: '16px'
+                                }}>
+                                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        {miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', '#a78bfa', 16)} Recent Posts Engagement ({voyagerData.recentPosts.length})
+                                    </h3>
+                                    {/* LinkedIn-style 3-column grid */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                                        {voyagerData.recentPosts.map((post: any, idx: number) => (
+                                            <div key={idx} style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e0e0e0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                                                {/* LinkedIn-style Post Header - User's Profile */}
+                                                <div style={{ padding: '12px 14px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                                    {voyagerData.profilePicture ? (
+                                                        <img src={voyagerData.profilePicture} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                                    ) : (
+                                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '16px', flexShrink: 0 }}>
+                                                            {voyagerData.name?.charAt(0) || '?'}
                                                         </div>
                                                     )}
-                                                    {exp.location && <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>📍 {exp.location}</div>}
-                                                    {exp.description && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', lineHeight: '1.4' }}>{exp.description.length > 150 ? exp.description.substring(0, 150) + '...' : exp.description}</div>}
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ color: '#0a0a0a', fontSize: '13px', fontWeight: '600', marginBottom: '1px', lineHeight: '1.3' }}>{voyagerData.name || 'Your Post'}</div>
+                                                        <div style={{ color: '#666666', fontSize: '11px', lineHeight: '1.3' }}>
+                                                            {post.date ? new Date(post.date).toLocaleDateString() : 'Recent'} · Post
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Post Content */}
+                                                <div style={{ padding: '0 14px 10px 14px' }}>
+                                                    <div style={{ color: '#1a1a1a', fontSize: '12px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '100px', overflowY: 'auto', fontFamily: '-apple-system, system-ui, sans-serif' }}>
+                                                        {post.text?.length > 200 ? post.text.substring(0, 200) + '...' : post.text || '(No content)'}
+                                                    </div>
+                                                </div>
+
+                                                {/* Engagement Stats - LinkedIn style */}
+                                                <div style={{ padding: '8px 14px', borderTop: '1px solid #e5e5e5', display: 'flex', gap: '12px', fontSize: '11px', color: '#666666' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <span>👍</span> <span>{post.likes || 0}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <span>💬</span> <span>{post.comments || 0}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <span>🔄</span> <span>{post.shares || 0}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Action Buttons */}
+                                                <div style={{ padding: '6px 8px 8px 8px', borderTop: '1px solid #e5e5e5' }}>
+                                                    {post.url && (
+                                                        <a href={post.url} target="_blank" rel="noopener noreferrer"
+                                                            style={{ padding: '6px 8px', background: '#0077b5', color: 'white', borderRadius: '4px', fontSize: '11px', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                            🔗 View on LinkedIn
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -600,32 +642,6 @@ export default function OverviewTab(props: any) {
                                 </div>
                             )}
 
-                            {/* Education Section */}
-                            {voyagerData?.education && voyagerData.education.length > 0 && (
-                                <div style={{ marginTop: '16px' }}>
-                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Education</div>
-                                    <div style={{ display: 'grid', gap: '8px' }}>
-                                        {voyagerData.education.map((edu: any, i: number) => (
-                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>🎓</div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{edu.schoolName || 'School'}</div>
-                                                    {(edu.degree || edu.fieldOfStudy) && (
-                                                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
-                                                            {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(' · ')}
-                                                        </div>
-                                                    )}
-                                                    {edu.dateRange && (
-                                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>
-                                                            {edu.dateRange.startYear || ''}{edu.dateRange.endYear ? ` — ${edu.dateRange.endYear}` : ''}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Invitations Section */}
                             {voyagerData?.invitationsData && (
@@ -713,45 +729,61 @@ export default function OverviewTab(props: any) {
                                     </div>
                                 </div>
                             )}
-                        </div>
 
-                        {/* Recent LinkedIn Posts Card */}
-                        {voyagerData?.recentPosts && voyagerData.recentPosts.length > 0 && (
-                            <div style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: '24px',
-                                borderRadius: '20px',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                marginBottom: '30px'
-                            }}>
-                                <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    {miniIcon('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', '#a78bfa', 16)} Recent Posts Engagement
-                                </h3>
-                                <div style={{ display: 'grid', gap: '10px' }}>
-                                    {voyagerData.recentPosts.map((post: any, i: number) => (
-                                        <div key={i} style={{ background: 'rgba(255,255,255,0.04)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                            {/* Experience Section - Moved after Recent Connections */}
+                            {voyagerData?.experience && voyagerData.experience.length > 0 && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Experience</div>
+                                    <div style={{ display: 'grid', gap: '8px' }}>
+                                        {voyagerData.experience.map((exp: any, i: number) => (
+                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>💼</div>
                                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                                    {post.date && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginBottom: '4px' }}>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
-                                                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
-                                                        {post.text || '(No text preview)'}
-                                                    </div>
-                                                    {post.url && (
-                                                        <a href={post.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#38bdf8', textDecoration: 'none', marginTop: '4px', display: 'inline-block' }}>View on LinkedIn →</a>
+                                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{exp.title || exp.companyName || 'Position'}</div>
+                                                    {exp.companyName && exp.title && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>{exp.companyName}</div>}
+                                                    {exp.dateRange && (
+                                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>
+                                                            {exp.dateRange.startMonth ? `${exp.dateRange.startMonth}/` : ''}{exp.dateRange.startYear || ''}
+                                                            {' — '}
+                                                            {exp.dateRange.endYear ? `${exp.dateRange.endMonth ? exp.dateRange.endMonth + '/' : ''}${exp.dateRange.endYear}` : 'Present'}
+                                                        </div>
                                                     )}
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '14px', flexShrink: 0, alignItems: 'center' }}>
-                                                    <span style={{ fontSize: '12px', color: '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>♥ {post.likes || 0}</span>
-                                                    <span style={{ fontSize: '12px', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '4px' }}>💬 {post.comments || 0}</span>
-                                                    <span style={{ fontSize: '12px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>↗ {post.shares || 0}</span>
-                                                    {post.views != null && <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}>👁 {post.views.toLocaleString()}</span>}
+                                                    {exp.location && <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>📍 {exp.location}</div>}
+                                                    {exp.description && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', lineHeight: '1.4' }}>{exp.description.length > 150 ? exp.description.substring(0, 150) + '...' : exp.description}</div>}
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+
+                            {/* Education Section - Moved after Recent Connections */}
+                            {voyagerData?.education && voyagerData.education.length > 0 && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', paddingLeft: '4px' }}>Education</div>
+                                    <div style={{ display: 'grid', gap: '8px' }}>
+                                        {voyagerData.education.map((edu: any, i: number) => (
+                                            <div key={i} style={{ background: 'rgba(0,0,0,0.12)', padding: '12px 14px', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>🎓</div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{edu.schoolName || 'School'}</div>
+                                                    {(edu.degree || edu.fieldOfStudy) && (
+                                                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                                                            {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(' · ')}
+                                                        </div>
+                                                    )}
+                                                    {edu.dateRange && (
+                                                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '3px' }}>
+                                                            {edu.dateRange.startYear || ''}{edu.dateRange.endYear ? ` — ${edu.dateRange.endYear}` : ''}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Quick Usage Summary */}
                         <div style={{

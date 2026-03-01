@@ -190,56 +190,61 @@ GUIDELINES:
       }
     }
 
-    // Fetch comment style examples from selected profiles
+    // Fetch comment style examples ONLY in Profile Style mode
+    // In Normal mode (user sets goal/tone/style manually), don't use examples from other profiles
     let styleExamples: string[] = [];
     let styleDebugInfo = { selectedProfiles: 0, topComments: 0, totalExamples: 0, useProfileStyle };
-    try {
-      const selectedProfiles = await (prisma as any).commentStyleProfile.findMany({
-        where: { userId: user.id, isSelected: true },
-        select: { id: true, profileName: true },
-      });
-      styleDebugInfo.selectedProfiles = selectedProfiles.length;
-      console.log(`🎨 STYLE: Found ${selectedProfiles.length} selected profiles, useProfileStyle=${useProfileStyle}`);
-
-      if (selectedProfiles.length > 0) {
-        const profileIds = selectedProfiles.map((p: any) => p.id);
-        const maxComments = useProfileStyle ? Math.max(20, adminCommentEmbeddingsCount * 2) : Math.max(10, adminCommentEmbeddingsCount);
-
-        // First try top-starred comments
-        let comments = await (prisma as any).scrapedComment.findMany({
-          where: {
-            profileId: { in: profileIds },
-            isTopComment: true,
-          },
-          select: { commentText: true },
-          take: maxComments,
-          orderBy: { createdAt: 'desc' },
+    if (useProfileStyle) {
+      try {
+        const selectedProfiles = await (prisma as any).commentStyleProfile.findMany({
+          where: { userId: user.id, isSelected: true },
+          select: { id: true, profileName: true },
         });
-        styleDebugInfo.topComments = comments.length;
+        styleDebugInfo.selectedProfiles = selectedProfiles.length;
+        console.log(`🎨 STYLE: Found ${selectedProfiles.length} selected profiles, useProfileStyle=${useProfileStyle}`);
 
-        // If not enough top comments, fill with recent ones
-        if (comments.length < maxComments) {
-          const existingTexts = new Set(comments.map((c: any) => c.commentText));
-          const moreComments = await (prisma as any).scrapedComment.findMany({
-            where: { profileId: { in: profileIds } },
+        if (selectedProfiles.length > 0) {
+          const profileIds = selectedProfiles.map((p: any) => p.id);
+          // In Profile Style mode, use 20+ examples since that's the primary learning source
+          const maxComments = Math.max(20, adminCommentEmbeddingsCount * 2);
+          console.log(`🎨 STYLE: Max examples: ${maxComments} (useProfileStyle=${useProfileStyle})`);
+
+          // First try top-starred comments
+          let comments = await (prisma as any).scrapedComment.findMany({
+            where: {
+              profileId: { in: profileIds },
+              isTopComment: true,
+            },
             select: { commentText: true },
             take: maxComments,
             orderBy: { createdAt: 'desc' },
           });
-          for (const c of moreComments) {
-            if (!existingTexts.has(c.commentText) && comments.length < maxComments) {
-              comments.push(c);
-              existingTexts.add(c.commentText);
+          styleDebugInfo.topComments = comments.length;
+
+          // If not enough top comments, fill with recent ones
+          if (comments.length < maxComments) {
+            const existingTexts = new Set(comments.map((c: any) => c.commentText));
+            const moreComments = await (prisma as any).scrapedComment.findMany({
+              where: { profileId: { in: profileIds } },
+              select: { commentText: true },
+              take: maxComments,
+              orderBy: { createdAt: 'desc' },
+            });
+            for (const c of moreComments) {
+              if (!existingTexts.has(c.commentText) && comments.length < maxComments) {
+                comments.push(c);
+                existingTexts.add(c.commentText);
+              }
             }
           }
-        }
 
-        styleExamples = comments.map((c: any) => c.commentText).filter((t: string) => t.length > 10);
-        styleDebugInfo.totalExamples = styleExamples.length;
-        console.log(`🎨 STYLE: Using ${styleExamples.length} examples (max ${maxComments})`);
+          styleExamples = comments.map((c: any) => c.commentText).filter((t: string) => t.length > 10);
+          styleDebugInfo.totalExamples = styleExamples.length;
+          console.log(`🎨 STYLE: Using ${styleExamples.length} examples (max ${maxComments})`);
+        }
+      } catch (styleError) {
+        console.error('🎨 STYLE ERROR:', styleError);
       }
-    } catch (styleError) {
-      console.error('🎨 STYLE ERROR:', styleError);
     }
 
     // Build prompt based on mode
@@ -425,28 +430,8 @@ Post: ${postText}
       }
     }
 
-    // HARD enforce character limit - truncate if AI exceeded it
-    const charLimits: Record<string, number> = {
-      Brief: 100,
-      Short: 300,
-      Mid: 600,
-      Long: 900
-    };
-    const hardLimit = charLimits[finalLength || 'Short'] || 300;
-    if (!useProfileStyle && content.length > hardLimit) {
-      console.log(`⚠️ Comment exceeded ${hardLimit} char limit (${content.length} chars), truncating...`);
-      // Try to truncate at a natural sentence boundary
-      let truncated = content.substring(0, hardLimit);
-      const lastPeriod = truncated.lastIndexOf('.');
-      const lastQuestion = truncated.lastIndexOf('?');
-      const lastExclaim = truncated.lastIndexOf('!');
-      const lastBreak = Math.max(lastPeriod, lastQuestion, lastExclaim);
-      if (lastBreak > hardLimit * 0.5) {
-        truncated = truncated.substring(0, lastBreak + 1);
-      }
-      content = truncated.trim();
-    }
-    console.log(`Comment formatted for LinkedIn (${content.length} chars, limit: ${hardLimit})`);
+    // No truncation - rely on prompt to enforce length. This prevents cropped output.
+    // Length is enforced in the prompt via "Max X chars" instruction.
 
     // Note: Usage already incremented on successful AI generation above
 

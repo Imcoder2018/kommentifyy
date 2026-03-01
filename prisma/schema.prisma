@@ -434,6 +434,7 @@ model CommentSettings {
   userExpertise   String   @default("")
   userBackground  String   @default("")
   aiAutoPost      String   @default("manual")
+  autoDecide      Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

@@ -234,7 +234,7 @@ export default function CommenterTab(props: any) {
                             if (!token) return;
                             const kw = commenterCfg?.searchKeywords?.split('\n')?.[0]?.trim() || '';
                             if (!kw) { showToast('Enter search keywords first', 'error'); return; }
-                            showToast(`Searching "${kw}"...`, 'info');
+                            showToast(`Searching posts for "${kw}"...`, 'info');
                             try {
                                 const res = await fetch('/api/extension/command', {
                                     method: 'POST',
@@ -242,7 +242,7 @@ export default function CommenterTab(props: any) {
                                     body: JSON.stringify({ command: 'linkedin_search_posts_api', data: { keyword: kw, count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Search sent!', 'success');
+                                if (data.success) showToast('Search capture sent! Check results in a moment.', 'success');
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
@@ -252,16 +252,15 @@ export default function CommenterTab(props: any) {
                         <button onClick={async () => {
                             const token = localStorage.getItem('authToken');
                             if (!token) return;
-                            const kw = commenterCfg?.searchKeywords?.split('\n')?.[0]?.trim() || 'trending';
-                            showToast(`Fetching trending...`, 'info');
+                            showToast('Fetching trending posts...', 'info');
                             try {
                                 const res = await fetch('/api/extension/command', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                    body: JSON.stringify({ command: 'linkedin_get_trending_api', data: { keyword: kw, count: 20 } })
+                                    body: JSON.stringify({ command: 'linkedin_get_trending_api', data: { count: 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Trending sent!', 'success');
+                                if (data.success) showToast('Trending capture sent! Check results in a moment.', 'success');
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}

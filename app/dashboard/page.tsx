@@ -489,12 +489,15 @@ function DashboardContent() {
     useEffect(() => {
         // Prevent multiple validations
         if (hasValidated.current) return;
-        hasValidated.current = true;
 
         if (loggingOut) return;
 
         // Wait for Clerk to load
         if (!isClerkLoaded) return;
+
+        // Only mark as validated AFTER passing all early return checks
+        // This ensures the effect can re-run when Clerk finishes loading
+        hasValidated.current = true;
 
         // If not signed in with Clerk, redirect to login
         if (!isClerkSignedIn) {
@@ -1236,6 +1239,7 @@ function DashboardContent() {
                 setCsExpertise(data.settings.userExpertise || '');
                 setCsBackground(data.settings.userBackground || '');
                 setCsAutoPost(data.settings.aiAutoPost || 'manual');
+                setAutoDecideEnabled(data.settings.autoDecide === true);
             }
         } catch (e) { console.error('Failed to load comment settings:', e); } finally { setCsSettingsLoading(false); }
     };
@@ -3041,38 +3045,6 @@ function DashboardContent() {
                             >
                                 {miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', 'white', 12)} Get Extension
                             </button>
-                            {/* LinkedIn Connect Button */}
-                            {/* Profile Scan Button */}
-                            {extensionConnected && (
-                                <button
-                                    onClick={linkedInProfile ? () => setShowLinkedInDataModal(true) : () => scanLinkedInProfile()}
-                                    disabled={linkedInProfileScanning}
-                                    style={{
-                                        padding: '4px 10px',
-                                        background: linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
-                                        border: linkedInProfile ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(245,158,11,0.4)',
-                                        borderRadius: '6px',
-                                        color: linkedInProfile ? '#34d399' : '#fbbf24',
-                                        fontSize: '10px',
-                                        fontWeight: '600',
-                                        cursor: linkedInProfileScanning ? 'wait' : 'pointer',
-                                        transition: 'all 0.2s',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
-                                    }}
-                                    onMouseOver={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = linkedInProfile ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'; }}
-                                >
-                                    {linkedInProfileScanning ? (
-                                        <>Scanning...</>
-                                    ) : linkedInProfile ? (
-                                        <>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', '#34d399', 11)} View Data</>
-                                    ) : (
-                                        <>{miniIcon('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#fbbf24', 11)} Scan Profile</>
-                                    )}
-                                </button>
-                            )}
                         </div>
                         {/* Sidebar Toggle Buttons */}
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -3376,38 +3348,75 @@ function DashboardContent() {
                                             <input
                                                 type="checkbox"
                                                 checked={isSelected}
-                                                onChange={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}
+                                                onChange={async () => {
+                                                    // If profileMatch exists, toggle it; otherwise add shared profile to saved
+                                                    if (profileMatch) {
+                                                        toggleProfileSelect(profileMatch.id);
+                                                    } else {
+                                                        // Add shared profile directly - call API to save it as selected
+                                                        const token = localStorage.getItem('authToken');
+                                                        try {
+                                                            const res = await fetch('/api/profiles/select-shared', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                                body: JSON.stringify({ profileId: p.profileId, profileName: p.profileName })
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.success) {
+                                                                // Refresh profiles
+                                                                const profilesRes = await fetch('/api/profiles?type=comment_style', { headers: { 'Authorization': `Bearer ${token}` } });
+                                                                const profilesData = await profilesRes.json();
+                                                                if (profilesData.success) setCommentStyleProfiles(profilesData.profiles || []);
+                                                                showToast('Profile added to training!', 'success');
+                                                            } else {
+                                                                showToast('Failed to add profile', 'error');
+                                                            }
+                                                        } catch (err) {
+                                                            showToast('Error adding profile', 'error');
+                                                        }
+                                                    }
+                                                }}
                                                 style={{ accentColor: '#f59e0b', width: '12px', height: '12px', cursor: 'pointer', margin: 0 }}
                                             />
-                                            <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '500', cursor: 'pointer' }} onClick={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}>
+                                            <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '500', cursor: 'pointer' }}>
                                                 {p.profileName || p.profileId}
                                             </span>
                                             {/* View All Comments Popup button for shared profiles */}
                                             <button
                                                 onClick={async (e) => {
                                                     e.stopPropagation();
-                                                    // Try to find matching profile in saved profiles first
-                                                    const savedProfile = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
-                                                    if (savedProfile) {
-                                                        const token = localStorage.getItem('authToken');
-                                                        setCommentStyleCommentsLoading(true);
-                                                        try {
-                                                            const res = await fetch(`/api/scraped-comments?profileId=${savedProfile.id}`, {
-                                                                headers: { 'Authorization': `Bearer ${token}` }
-                                                            });
-                                                            const data = await res.json();
-                                                            if (data.success) {
-                                                                setProfileCommentsModal({ profile: p, comments: data.comments || [] });
+                                                    // Use shared profile's comments directly if available
+                                                    const token = localStorage.getItem('authToken');
+                                                    setCommentStyleCommentsLoading(true);
+                                                    try {
+                                                        // Try to get comments from shared profile endpoint
+                                                        const res = await fetch(`/api/shared-profiles/${p.profileId}/comments`, {
+                                                            headers: { 'Authorization': `Bearer ${token}` }
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.success) {
+                                                            setProfileCommentsModal({ profile: p, comments: data.comments || [] });
+                                                        } else {
+                                                            // Fallback: try saved profile
+                                                            const savedProfile = commentStyleProfiles.find((cp: any) => cp.profileId === p.profileId || cp.profileName === (p.profileName || p.profileId));
+                                                            if (savedProfile) {
+                                                                const res2 = await fetch(`/api/scraped-comments?profileId=${savedProfile.id}`, {
+                                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                                });
+                                                                const data2 = await res2.json();
+                                                                if (data2.success) {
+                                                                    setProfileCommentsModal({ profile: p, comments: data2.comments || [] });
+                                                                } else {
+                                                                    showToast('Failed to load comments', 'error');
+                                                                }
                                                             } else {
-                                                                showToast('Failed to load comments', 'error');
+                                                                showToast('No comments available for this profile', 'info');
                                                             }
-                                                        } catch (err) {
-                                                            showToast('Error loading comments', 'error');
                                                         }
-                                                        setCommentStyleCommentsLoading(false);
-                                                    } else {
-                                                        showToast('Profile not loaded yet', 'info');
+                                                    } catch (err) {
+                                                        showToast('Error loading comments', 'error');
                                                     }
+                                                    setCommentStyleCommentsLoading(false);
                                                 }}
                                                 style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', marginLeft: '4px' }}
                                                 title="View all comments"

@@ -114,6 +114,107 @@ export default function WriterTabNew(props: any) {
     const chatEndRef = useRef<HTMLDivElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
+    // LinkedIn Preview Edit state
+    const [isEditingPost, setIsEditingPost] = useState(false);
+    const [editedPostContent, setEditedPostContent] = useState('');
+    const [originalPostContent, setOriginalPostContent] = useState('');
+    const [inlineEditMode, setInlineEditMode] = useState(false);
+    const [showEditHint, setShowEditHint] = useState(true);
+
+    // Start editing - capture current content
+    const startEditingPost = () => {
+        setEditedPostContent(writerContent);
+        setOriginalPostContent(writerContent);
+        setIsEditingPost(true);
+    };
+
+    // Cancel editing
+    const cancelEditingPost = () => {
+        setIsEditingPost(false);
+        setEditedPostContent('');
+    };
+
+    // Save edited content
+    const saveEditedPost = () => {
+        setWriterContent(editedPostContent);
+        setIsEditingPost(false);
+        setOriginalPostContent(editedPostContent);
+        showToast('Post updated successfully', 'success');
+    };
+
+    // Handle inline edit (contenteditable blur)
+    const handleInlineEdit = (e: React.FocusEvent<HTMLDivElement>) => {
+        const newContent = e.currentTarget.textContent || '';
+        if (newContent !== writerContent) {
+            const oldLength = writerContent.length;
+            setWriterContent(newContent);
+            setOriginalPostContent(newContent);
+            const changeDesc = newContent.length > oldLength ? 'expanded' : newContent.length < oldLength ? 'shortened' : 'modified';
+            showToast(`Post ${changeDesc}: ${newContent.length} characters`, 'success');
+        }
+        setInlineEditMode(false);
+    };
+
+    // Toggle inline edit mode
+    const toggleInlineEdit = () => {
+        if (inlineEditMode) {
+            // Save current content from writerContent
+            setInlineEditMode(false);
+        } else {
+            setEditedPostContent(writerContent);
+            setOriginalPostContent(writerContent);
+            setInlineEditMode(true);
+            setShowEditHint(false);
+        }
+    };
+
+    // Auto-save inline edit on Escape key
+    const handleInlineKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === 'Escape') {
+            setInlineEditMode(false);
+            setEditedPostContent(writerContent);
+        } else if (e.key === 'Enter' && e.ctrlKey) {
+            // Ctrl+Enter to save
+            const newContent = (e.target as HTMLDivElement).textContent || '';
+            if (newContent !== writerContent) {
+                setWriterContent(newContent);
+                setOriginalPostContent(newContent);
+                showToast('Post updated successfully', 'success');
+            }
+            setInlineEditMode(false);
+        }
+    };
+
+    // Expose functions for chatbot integration via window (or props callback)
+    useEffect(() => {
+        // Make these functions available globally for chatbot integration
+        (window as any).getLinkedInPostContent = () => writerContent;
+        (window as any).updateLinkedInPostContent = (newContent: string) => {
+            setWriterContent(newContent);
+            return { success: true, content: newContent };
+        };
+        (window as any).getEditedPostContent = () => editedPostContent;
+        (window as any).applyPostEdit = (newContent: string) => {
+            setEditedPostContent(newContent);
+            setWriterContent(newContent);
+            return { success: true, originalContent: originalPostContent, newContent };
+        };
+        // Inline edit functions
+        (window as any).getInlineEditMode = () => inlineEditMode;
+        (window as any).setInlineEditMode = (enabled: boolean) => setInlineEditMode(enabled);
+        (window as any).getInlineEditContent = () => writerContent;
+
+        return () => {
+            delete (window as any).getLinkedInPostContent;
+            delete (window as any).updateLinkedInPostContent;
+            delete (window as any).getEditedPostContent;
+            delete (window as any).applyPostEdit;
+            delete (window as any).getInlineEditMode;
+            delete (window as any).setInlineEditMode;
+            delete (window as any).getInlineEditContent;
+        };
+    }, [writerContent, editedPostContent, originalPostContent, inlineEditMode]);
+
     // Auto-fill from profile data
     const [writerTargetAudience, setWriterTargetAudience] = useState(userTargetAudience || '');
     const [writerKeyMessage, setWriterKeyMessage] = useState('');
@@ -368,7 +469,7 @@ export default function WriterTabNew(props: any) {
         setChatMessages([...chatMessages, userMsg]);
         setChatInput('');
         setChatSending(true);
-        
+
         // Scroll to bottom immediately when sending
         setTimeout(() => {
             if (chatContainerRef.current) {
@@ -389,7 +490,19 @@ export default function WriterTabNew(props: any) {
             });
             const data = await res.json();
             if (data.success) {
-                setChatMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+                // Check if the chatbot modified the post
+                if (data.modifiedPost) {
+                    setWriterContent(data.modifiedPost);
+                    // Add a message about the changes made with detailed description
+                    const changeDetails = data.changeDescription
+                        ? `**Changes made:** ${data.changeDescription}`
+                        : `**Post updated:** ${data.originalLength || writerContent.length} → ${data.newLength || data.modifiedPost.length} characters`;
+                    const changeMessage = `\n\n---\n${changeDetails}`;
+                    setChatMessages(prev => [...prev, { role: 'assistant', content: data.response + changeMessage }]);
+                    showToast(`Post updated: ${data.changeDescription || 'modified'}`, 'success');
+                } else {
+                    setChatMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+                }
                 // Scroll to bottom within chat container
                 setTimeout(() => {
                     if (chatContainerRef.current) {
@@ -435,16 +548,7 @@ export default function WriterTabNew(props: any) {
                                 style={{ width: '14px', height: '14px', accentColor: '#0077b5' }} />
                             <span style={{ color: 'white', fontSize: '13px' }}>Profile Data Active</span>
                         </label>
-                        {voyagerData && <button onClick={generateTopicSuggestions} disabled={linkedInGeneratingTopics}
-                            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                            {linkedInGeneratingTopics ? '...' : <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'white', 11)} Topics</span>}
-                        </button>}
-                        {voyagerData && <button onClick={() => setShowLinkedInDataModal(true)}
-                            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', padding: '5px 10px', color: 'white', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>{miniIcon('M18 20V10 M12 20V4 M6 20v-6', 'white', 10)} Data</button>}
-                        <button onClick={() => loadVoyagerData()} disabled={voyagerLoading}
-                            style={{ background: 'white', color: '#0077b5', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: voyagerLoading ? 'wait' : 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {voyagerLoading ? '...' : <>{miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', '#0077b5', 12)} Sync</>}
-                        </button>
+                        {/* Topics, Data, Sync buttons removed per user request */}
                     </div>
                 </div>
             </div>
@@ -777,16 +881,16 @@ export default function WriterTabNew(props: any) {
                         </div>
                         
                         {/* Options row - hashtags & emojis only */}
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                <input type="checkbox" checked={writerHashtags} onChange={e => setWriterHashtags(e.target.checked)} 
-                                    style={{ width: '12px', height: '12px', accentColor: '#a78bfa', cursor: 'pointer' }} />
-                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '12px' }}>#</span>
+                        <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', alignItems: 'center' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={writerHashtags} onChange={e => setWriterHashtags(e.target.checked)}
+                                    style={{ width: '14px', height: '14px', accentColor: '#a78bfa', cursor: 'pointer' }} />
+                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: '500' }}>Hashtags</span>
                             </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                <input type="checkbox" checked={writerEmojis} onChange={e => setWriterEmojis(e.target.checked)} 
-                                    style={{ width: '12px', height: '12px', accentColor: '#a78bfa', cursor: 'pointer' }} />
-                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '12px' }}>😊</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={writerEmojis} onChange={e => setWriterEmojis(e.target.checked)}
+                                    style={{ width: '14px', height: '14px', accentColor: '#a78bfa', cursor: 'pointer' }} />
+                                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: '500' }}>Emojis</span>
                             </label>
                         </div>
 
@@ -808,15 +912,48 @@ export default function WriterTabNew(props: any) {
 
                 {/* Column 3: LinkedIn Preview */}
                 <div style={{ background: 'rgba(255,255,255,0.03)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', maxHeight: '650px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexShrink: 0 }}>
-                        <span style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>LinkedIn Preview</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            {(['desktop', 'mobile'] as const).map(mode => (
-                                <button key={mode} onClick={() => setWriterPreviewMode(writerPreviewMode === mode ? 'desktop' : mode)}
-                                    style={{ padding: '3px 8px', background: writerPreviewMode === mode ? 'rgba(0,119,181,0.3)' : 'rgba(255,255,255,0.06)', border: writerPreviewMode === mode ? '1px solid rgba(0,119,181,0.5)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '4px', color: writerPreviewMode === mode ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
-                                    {mode === 'desktop' ? '🖥 Desktop' : '📱 Mobile'}
-                                </button>
-                            ))}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>LinkedIn Preview</span>
+                            {showEditHint && writerContent.trim() && !inlineEditMode && (
+                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
+                                    Click edit to modify
+                                </span>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            {isEditingPost ? (
+                                <>
+                                    <button onClick={saveEditedPost}
+                                        style={{ padding: '4px 10px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', border: 'none', borderRadius: '4px', color: 'white', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                        Save
+                                    </button>
+                                    <button onClick={cancelEditingPost}
+                                        style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                        Cancel
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Inline Edit Toggle */}
+                                    <button onClick={toggleInlineEdit}
+                                        style={{ padding: '4px 10px', background: inlineEditMode ? 'rgba(34,197,94,0.3)' : 'rgba(139,92,246,0.3)', border: `1px solid ${inlineEditMode ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.5)'}`, borderRadius: '4px', color: inlineEditMode ? '#4ade80' : '#c4b5fd', fontSize: '12px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        {inlineEditMode ? 'Done' : 'Edit'}
+                                    </button>
+                                    {/* Legacy Edit Button (opens modal) */}
+                                    <button onClick={startEditingPost}
+                                        style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '12px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        title="Open in editor">
+                                        Full Editor
+                                    </button>
+                                    {(['desktop', 'mobile'] as const).map(mode => (
+                                        <button key={mode} onClick={() => setWriterPreviewMode(writerPreviewMode === mode ? 'desktop' : mode)}
+                                            style={{ padding: '3px 8px', background: writerPreviewMode === mode ? 'rgba(0,119,181,0.3)' : 'rgba(255,255,255,0.06)', border: writerPreviewMode === mode ? '1px solid rgba(0,119,181,0.5)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '4px', color: writerPreviewMode === mode ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
+                                            {mode === 'desktop' ? 'Desktop' : 'Mobile'}
+                                        </button>
+                                    ))}
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -836,9 +973,13 @@ export default function WriterTabNew(props: any) {
                                 <div style={{ maxWidth: maxW, margin: '0 auto', background: '#ffffff', borderRadius: '8px', border: '1px solid #e0dfdc', overflow: 'hidden', fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', flex: 1, overflowY: 'auto', boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }}>
                                     {/* Profile Header - LinkedIn Style */}
                                     <div style={{ padding: isMobile ? '12px' : '16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                                        <div style={{ width: isMobile ? '48px' : '56px', height: isMobile ? '48px' : '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '600', fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }}>
-                                            {(profileName?.[0] || 'U').toUpperCase()}
-                                        </div>
+                                        {voyagerData?.profilePicture ? (
+                                            <img src={voyagerData.profilePicture} alt="" style={{ width: isMobile ? '48px' : '56px', height: isMobile ? '48px' : '56px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                        ) : (
+                                            <div style={{ width: isMobile ? '48px' : '56px', height: isMobile ? '48px' : '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '600', fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }}>
+                                                {(profileName?.[0] || 'U').toUpperCase()}
+                                            </div>
+                                        )}
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <span style={{ color: 'rgba(0,0,0,0.9)', fontWeight: '600', fontSize: isMobile ? '14px' : '16px', lineHeight: '1.2' }}>{profileName}</span>
@@ -856,14 +997,105 @@ export default function WriterTabNew(props: any) {
                                         </button>
                                     </div>
 
-                                    {/* Post Content */}
+                                    {/* Post Content - Edit Mode, Inline Edit, or Preview Mode */}
                                     <div style={{ padding: isMobile ? '0 12px 12px' : '0 16px 12px' }}>
-                                        <div style={{ color: 'rgba(0,0,0,0.9)', fontSize: isMobile ? '14px' : '16px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                            {displayText}
-                                            {truncated && <span onClick={() => setWriterPreviewExpanded(true)} style={{ color: '#0a66c2', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>...see more</span>}
-                                        </div>
-                                        {writerPreviewExpanded && writerContent.length > TRUNCATE_CHARS && (
-                                            <span onClick={() => setWriterPreviewExpanded(false)} style={{ color: '#0a66c2', cursor: 'pointer', fontSize: '14px', display: 'block', marginTop: '4px', fontWeight: '500' }}>show less</span>
+                                        {isEditingPost ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <textarea
+                                                    value={editedPostContent}
+                                                    onChange={(e) => setEditedPostContent(e.target.value)}
+                                                    placeholder="Write your post content here..."
+                                                    style={{
+                                                        width: '100%',
+                                                        minHeight: '150px',
+                                                        padding: '12px',
+                                                        background: 'rgba(0,0,0,0.03)',
+                                                        border: '1px solid #e0dfdc',
+                                                        borderRadius: '8px',
+                                                        color: '#000',
+                                                        fontSize: isMobile ? '14px' : '16px',
+                                                        lineHeight: '1.5',
+                                                        fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                                        resize: 'vertical',
+                                                        outline: 'none',
+                                                    }}
+                                                    autoFocus
+                                                />
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                    <span style={{ color: 'rgba(0,0,0,0.5)', fontSize: '12px', alignSelf: 'center' }}>
+                                                        {editedPostContent.length} characters
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : inlineEditMode ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <div
+                                                    contentEditable
+                                                    suppressContentEditableWarning
+                                                    onBlur={handleInlineEdit}
+                                                    onKeyDown={handleInlineKeyDown}
+                                                    style={{
+                                                        width: '100%',
+                                                        minHeight: '100px',
+                                                        padding: '12px',
+                                                        background: 'rgba(0,0,0,0.03)',
+                                                        border: '2px solid #0a66c2',
+                                                        borderRadius: '8px',
+                                                        color: '#000',
+                                                        fontSize: isMobile ? '14px' : '16px',
+                                                        lineHeight: '1.5',
+                                                        fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                                        outline: 'none',
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordBreak: 'break-word',
+                                                    }}
+                                                    ref={(el) => {
+                                                        if (el) {
+                                                            el.textContent = writerContent;
+                                                            el.focus();
+                                                        }
+                                                    }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ color: 'rgba(0,0,0,0.5)', fontSize: '12px' }}>
+                                                        Click outside to save, or press Ctrl+Enter
+                                                    </span>
+                                                    <span style={{ color: 'rgba(0,0,0,0.5)', fontSize: '12px' }}>
+                                                        {writerContent.length} characters
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div
+                                                    onClick={() => setInlineEditMode(true)}
+                                                    style={{
+                                                        color: 'rgba(0,0,0,0.9)',
+                                                        fontSize: isMobile ? '14px' : '16px',
+                                                        lineHeight: '1.5',
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordBreak: 'break-word',
+                                                        cursor: 'text',
+                                                        borderRadius: '4px',
+                                                        padding: '4px',
+                                                        margin: '-4px',
+                                                        transition: 'background 0.2s',
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.background = 'rgba(10,102,194,0.05)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.background = 'transparent';
+                                                    }}
+                                                    title="Click to edit inline"
+                                                >
+                                                    {displayText}
+                                                    {truncated && <span onClick={(e) => { e.stopPropagation(); setWriterPreviewExpanded(true); }} style={{ color: '#0a66c2', cursor: 'pointer', fontWeight: '500', fontSize: '14px' }}>...see more</span>}
+                                                </div>
+                                                {writerPreviewExpanded && writerContent.length > TRUNCATE_CHARS && (
+                                                    <span onClick={() => setWriterPreviewExpanded(false)} style={{ color: '#0a66c2', cursor: 'pointer', fontSize: '14px', display: 'block', marginTop: '4px', fontWeight: '500' }}>show less</span>
+                                                )}
+                                            </>
                                         )}
                                     </div>
 

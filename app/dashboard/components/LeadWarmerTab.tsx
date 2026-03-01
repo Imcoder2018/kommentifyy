@@ -708,7 +708,7 @@ export default function ImportTab(props: Props) {
 
   // Download CSV template
   const downloadTemplate = useCallback(() => {
-    const csvContent = 'linkedin_url\nhttps://linkedin.com/in/example-profile-1\nhttps://linkedin.com/in/example-profile-2';
+    const csvContent = 'linkedin_url\nhttps://linkedin.com/in/elon-musk\nhttps://linkedin.com/in/billgates\nhttps://linkedin.com/in/jeffweiner\nhttps://linkedin.com/in/satyanadella\nhttps://linkedin.com/in/tim-cook';
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1990,29 +1990,56 @@ export default function ImportTab(props: Props) {
             justifyContent: 'space-between',
             padding: SPACING.lg + ' ' + SPACING.xl,
             borderBottom: COLORS.surface.border,
+            background: 'linear-gradient(135deg, rgba(10,102,194,0.1) 0%, rgba(5,118,66,0.08) 100%)',
+            flexWrap: 'wrap',
+            gap: SPACING.md,
           }}>
+            {/* Left side - Leads count */}
             <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.lg }}>
               <div style={{
-                width: '44px',
-                height: '44px',
+                width: '56px',
+                height: '56px',
                 borderRadius: RADIUS.lg,
                 background: 'linear-gradient(135deg, #0a66c2, #057642)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(10,102,194,0.3)',
+                boxShadow: '0 4px 16px rgba(10,102,194,0.4)',
               }}>
-                <Users size={20} color="#FFFFFF" />
+                <Users size={26} color="#FFFFFF" />
               </div>
               <div>
-                <div style={{ color: COLORS.text.primary, fontWeight: '800', fontSize: TYPOGRAPHY.xxl - 2, letterSpacing: '-0.5px' }}>
-                  {filteredLeads.length} Lead{filteredLeads.length !== 1 ? 's' : ''}
+                <div style={{
+                  color: COLORS.text.primary,
+                  fontWeight: '800',
+                  fontSize: '26px',
+                  letterSpacing: '-0.5px',
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: SPACING.sm,
+                }}>
+                  <span>{filteredLeads.length}</span>
+                  <span style={{ fontSize: '18px', fontWeight: '600', color: COLORS.text.secondary }}>Lead{filteredLeads.length !== 1 ? 's' : ''}</span>
                 </div>
-                <div style={{ color: COLORS.text.muted, fontSize: TYPOGRAPHY.md, fontWeight: '500', marginTop: '6px' }}>
-                  {selectedLeads.size > 0 ? `${selectedLeads.size} selected` : 'Select leads to take action'}
+                <div style={{
+                  color: COLORS.text.muted,
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  marginTop: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: SPACING.xs,
+                }}>
+                  {selectedLeads.size > 0 ? (
+                    <span style={{ color: '#34d399', fontWeight: '600' }}>{selectedLeads.size} selected</span>
+                  ) : (
+                    <span>Select leads to take action</span>
+                  )}
                 </div>
               </div>
             </div>
+
+            {/* Right side - Action buttons */}
             <div style={{ display: 'flex', gap: SPACING.sm + 2 }}>
               {selectedLeads.size > 0 && (
                 <button
@@ -2023,9 +2050,11 @@ export default function ImportTab(props: Props) {
                     display: 'flex',
                     alignItems: 'center',
                     gap: SPACING.sm,
+                    padding: '14px 24px',
+                    fontSize: '15px',
                   }}
                 >
-                  <Download size={16} /> Fetch Posts
+                  <Download size={18} /> Fetch Posts ({selectedLeads.size})
                 </button>
               )}
             </div>
@@ -2033,20 +2062,41 @@ export default function ImportTab(props: Props) {
 
           <div style={{ maxHeight: '600px', overflowY: 'auto' }} role="region" aria-label="Leads list">
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: TYPOGRAPHY.sm + 1, minWidth: '900px' }} role="table">
-                <thead style={{ zIndex: 10 }}>
-                  <tr style={{ borderBottom: COLORS.surface.border }}>
-                    <th style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg, width: '48px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px', minWidth: '900px' }} role="table">
+                <thead style={{ zIndex: 10, background: 'rgba(255,255,255,0.02)' }}>
+                  <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.1)' }}>
+                    <th style={{ padding: SPACING.lg + ' ' + SPACING.xl, width: '56px' }}>
                       <input
                         type="checkbox"
                         checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
                         onChange={toggleAllSelection}
-                        style={{ accentColor: '#0a66c2', cursor: 'pointer', width: '18px', height: '18px' }}
+                        style={{ accentColor: '#0a66c2', cursor: 'pointer', width: '20px', height: '20px' }}
                         aria-label="Select all"
                       />
                     </th>
-                    {['Name', 'Status & Activity', 'Recent Posts', ''].map(h => (
-                      <th key={h} style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg, color: COLORS.text.muted, fontWeight: '600', textAlign: 'left', fontSize: TYPOGRAPHY.sm + 1, textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: COLORS.surface.border }}>{h}</th>
+                    {[
+                      { label: 'Name', icon: '👤' },
+                      { label: 'Status & Activity', icon: '📊' },
+                      { label: 'Recent Posts', icon: '📝' },
+                      { label: '', icon: '' }
+                    ].map(h => (
+                      <th key={h.label} style={{
+                        padding: SPACING.lg + ' ' + SPACING.xl,
+                        color: h.label ? COLORS.brand.primaryLight : 'transparent',
+                        fontWeight: '700',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.8px',
+                        borderBottom: '2px solid rgba(255,255,255,0.1)',
+                      }}>
+                        {h.label && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
+                            <span style={{ fontSize: '16px' }}>{h.icon}</span>
+                            {h.label}
+                          </span>
+                        )}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -2060,19 +2110,21 @@ export default function ImportTab(props: Props) {
                       <>
                         <tr key={lead.id}
                           style={{
-                            background: isAlternate ? 'rgba(255,255,255,0.03)' : 'transparent',
-                            borderBottom: COLORS.surface.border,
+                            background: isSelected ? 'rgba(105,63,234,0.15)' : isAlternate ? 'rgba(255,255,255,0.03)' : 'transparent',
+                            borderBottom: '1px solid rgba(255,255,255,0.06)',
                             cursor: 'pointer',
-                            transition: 'background 0.15s ease',
+                            transition: 'all 0.15s ease',
                           }}
-                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = COLORS.surface.cardHover; }}
+                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(105,63,234,0.08)'; }}
                           onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = isAlternate ? 'rgba(255,255,255,0.03)' : 'transparent'; }}
                           onClick={() => setExpandedLeadId(isExpanded ? null : lead.id)}
                           role="row"
+                          aria-selected={isSelected}
+                          aria-expanded={isExpanded}
                           tabIndex={0}
                           onKeyDown={(e) => e.key === 'Enter' && setExpandedLeadId(isExpanded ? null : lead.id)}
                         >
-                          <td style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg }} onClick={e => e.stopPropagation()}>
+                          <td style={{ padding: SPACING.lg + ' ' + SPACING.xl }} onClick={e => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -2081,29 +2133,60 @@ export default function ImportTab(props: Props) {
                               aria-label={`Select ${lead.firstName || lead.vanityId}`}
                             />
                           </td>
-                          <td style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg, minWidth: '180px' }}>
-                            <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{ color: COLORS.text.primary, textDecoration: 'none', fontWeight: '600', fontSize: TYPOGRAPHY.md }}
-                              onClick={e => e.stopPropagation()}>
+                          <td style={{ padding: SPACING.lg + ' ' + SPACING.xl, minWidth: '200px' }}>
+                            <a
+                              href={lead.linkedinUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: COLORS.text.primary,
+                                textDecoration: 'none',
+                                fontWeight: '700',
+                                fontSize: '16px',
+                                display: 'block',
+                              }}
+                              onClick={e => e.stopPropagation()}
+                            >
                               {lead.firstName || lead.vanityId || 'Unknown'} {lead.lastName || ''}
                             </a>
-                            {lead.headline && <div style={{ color: COLORS.text.muted, fontSize: TYPOGRAPHY.xs + 1, marginTop: SPACING.xs, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.headline}</div>}
+                            {lead.headline && (
+                              <div style={{
+                                color: COLORS.text.muted,
+                                fontSize: '13px',
+                                marginTop: '6px',
+                                maxWidth: '200px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {lead.headline}
+                              </div>
+                            )}
                           </td>
-                          <td style={{ padding: SPACING.md + 2 + ' ' + SPACING.lg }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm + 2 }}>
-                              {/* Status Badge - LinkedIn Style */}
+                          <td style={{ padding: SPACING.lg + ' ' + SPACING.xl }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.md, flexWrap: 'wrap' }}>
+                              {/* Status Badge - Enhanced */}
                               <span style={{
-                                padding: SPACING.xs + 1 + ' ' + SPACING.sm + 2,
+                                padding: '8px 16px',
                                 background: sc.bg,
                                 border: `1px solid ${sc.border}`,
-                                borderRadius: '16px',
+                                borderRadius: '20px',
                                 color: sc.text,
-                                fontSize: TYPOGRAPHY.xs + 1,
-                                fontWeight: '600',
+                                fontSize: '14px',
+                                fontWeight: '700',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: SPACING.xs,
+                                gap: '8px',
                                 transition: 'all 0.2s ease',
+                                boxShadow: `0 2px 8px ${sc.bg}`,
                               }}>
+                                <span style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  background: sc.text,
+                                  boxShadow: `0 0 8px ${sc.text}`,
+                                }} />
                                 {sc.label}
                               </span>
                               {/* Touches Counter */}

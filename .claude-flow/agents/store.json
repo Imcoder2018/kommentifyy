@@ -1,0 +1,79 @@
+{
+  "agents": {
+    "agent-1772367691438-5es2jn": {
+      "agentId": "agent-1772367691438-5es2jn",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-01T12:21:31.438Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1772367779339-xququ2": {
+      "agentId": "agent-1772367779339-xququ2",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-01T12:22:59.339Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1772367940236-u5fsub": {
+      "agentId": "agent-1772367940236-u5fsub",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-01T12:25:40.236Z",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1772368088692-xa7dm7": {
+      "agentId": "agent-1772368088692-xa7dm7",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "MiniMax-M2.5"
+      },
+      "createdAt": "2026-03-01T12:28:08.769Z",
+      "model": "opus",
+      "modelRoutedBy": "router"
+    },
+    "agent-1772368447186-a8brol": {
+      "agentId": "agent-1772368447186-a8brol",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "MiniMax-M2.5"
+      },
+      "createdAt": "2026-03-01T12:34:07.187Z",
+      "model": "opus",
+      "modelRoutedBy": "router"
+    },
+    "agent-1772368624689-iyzl4z": {
+      "agentId": "agent-1772368624689-iyzl4z",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "anthropic",
+        "model": "MiniMax-M2.5"
+      },
+      "createdAt": "2026-03-01T12:37:04.689Z",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    }
+  },
+  "version": "3.0.0"
+}

@@ -1,0 +1,21 @@
+{
+  "tasks": {
+    "task-1772368557956-qiaj4w": {
+      "taskId": "task-1772368557956-qiaj4w",
+      "type": "feature",
+      "description": "Write PROJECT_DIAGRAMS.md",
+      "priority": "normal",
+      "status": "pending",
+      "progress": 0,
+      "assignedTo": [],
+      "tags": [
+        "documentation",
+        "diagrams"
+      ],
+      "createdAt": "2026-03-01T12:35:57.956Z",
+      "startedAt": null,
+      "completedAt": null
+    }
+  },
+  "version": "3.0.0"
+}

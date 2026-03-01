@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
     let finalBackground = userBackground;
     // Use admin global setting as default, user/request can override
     let useProfileStyle = reqUseProfileStyle === true ? true : adminProfileStyleMode;
-    let useProfileData = false;
+    // Always use profile data for personalized comments (required for better AI output)
+    let useProfileData = true;
     try {
       const savedSettings = await (prisma as any).commentSettings.findUnique({
         where: { userId: user.id },
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
       if (savedSettings) {
         // Request body override takes priority, then DB value, then admin global setting
         useProfileStyle = reqUseProfileStyle === true ? true : (savedSettings.useProfileStyle != null ? savedSettings.useProfileStyle === true : adminProfileStyleMode);
-        useProfileData = savedSettings.useProfileData === true;
+        // Always use profile data - no longer a user toggle (line removed: useProfileData = savedSettings.useProfileData === true;)
         finalTone = finalTone || savedSettings.tone;
         finalGoal = finalGoal || savedSettings.goal;
         finalLength = finalLength || savedSettings.commentLength;

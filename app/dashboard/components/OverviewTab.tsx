@@ -1,4 +1,117 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+
+// Default theme tokens for consistent styling
+const defaultTheme = {
+    colors: {
+        primary: '#8b5cf6',
+        primaryLight: '#a78bfa',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        info: '#3b82f6',
+        surface: {
+            primary: 'rgba(255,255,255,0.08)',
+            secondary: 'rgba(255,255,255,0.05)',
+            hover: 'rgba(255,255,255,0.12)'
+        },
+        border: {
+            subtle: 'rgba(255,255,255,0.08)',
+            default: 'rgba(255,255,255,0.12)',
+            strong: 'rgba(255,255,255,0.2)'
+        },
+        text: {
+            primary: '#ffffff',
+            secondary: 'rgba(255,255,255,0.7)',
+            tertiary: 'rgba(255,255,255,0.5)'
+        }
+    }
+};
+
+// Check for reduced motion preference
+const usePrefersReducedMotion = () => {
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        setPrefersReducedMotion(mediaQuery.matches);
+
+        const handler = (event: MediaQueryListEvent) => {
+            setPrefersReducedMotion(event.matches);
+        };
+
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+    }, []);
+
+    return prefersReducedMotion;
+};
+
 export default function OverviewTab(props: any) {
+    // Hover state for cards
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+
+    // Check for reduced motion
+    const prefersReducedMotion = usePrefersReducedMotion();
+
+    // Animated counter hook
+    const useAnimatedValue = (targetValue: number, duration: number = 1000) => {
+        const [displayValue, setDisplayValue] = useState(0);
+
+        useEffect(() => {
+            const startTime = Date.now();
+            const startValue = displayValue;
+            const difference = targetValue - startValue;
+
+            const animate = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                setDisplayValue(startValue + difference * easeOut);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            };
+
+            requestAnimationFrame(animate);
+        }, [targetValue, duration]);
+
+        return displayValue;
+    };
+
+    // Icon components for stats cards
+    const CardIcons = {
+        plan: () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+            </svg>
+        ),
+        earnings: () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        ),
+        referrals: () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        ),
+        member: () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+        )
+    };
+
     // Destructure everything from props to keep variable names identical to original
     const {
         // Core
@@ -115,66 +228,244 @@ export default function OverviewTab(props: any) {
         handleTabChange, cleanLinkedInProfileUrls,
     } = props;
 
+    // Click handler for stats cards
+    const handleCardClick = useCallback((cardType: string) => {
+        // Navigate to relevant section based on card type
+        if (cardType === 'plan') {
+            handleTabChange?.('settings');
+        } else if (cardType === 'earnings' || cardType === 'referrals') {
+            handleTabChange?.('referrals');
+        } else if (cardType === 'member') {
+            handleTabChange?.('settings');
+        }
+    }, [handleTabChange]);
+
+    // Check if data is loading
+    const isLoading = referralData === undefined;
+
     return (
                     <>
                         {/* Stats Cards Row */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '30px' }}>
-                            {/* Plan Card */}
-                            <div style={{
-                                background: 'linear-gradient(135deg, rgba(105,63,233,0.2) 0%, rgba(139,92,246,0.1) 100%)',
-                                padding: '24px',
-                                borderRadius: '20px',
-                                border: '1px solid rgba(105,63,233,0.3)'
-                            }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.currentPlan')}</div>
-                                <div style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>{user?.plan?.name || 'Free'}</div>
-                                <div style={{ fontSize: '14px', color: '#10b981' }}>{t('overviewTab.activePlan')}</div>
-                            </div>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                            gap: '20px',
+                            marginBottom: '32px'
+                        }}>
+                            {/* Loading Skeletons */}
+                            {isLoading ? (
+                                <>
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div key={i} style={{
+                                            background: 'rgba(255, 255, 255, 0.05)',
+                                            padding: '24px',
+                                            borderRadius: '24px',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            animation: 'pulse 1.5s ease-in-out infinite',
+                                            animationDelay: `${i * 0.15}s`
+                                        }}>
+                                            <div style={{
+                                                height: '12px',
+                                                width: '80px',
+                                                background: 'rgba(255, 255, 255, 0.1)',
+                                                borderRadius: '4px',
+                                                marginBottom: '12px'
+                                            }} />
+                                            <div style={{
+                                                height: '28px',
+                                                width: '120px',
+                                                background: 'rgba(255, 255, 255, 0.1)',
+                                                borderRadius: '4px',
+                                                marginBottom: '4px'
+                                            }} />
+                                            <div style={{
+                                                height: '14px',
+                                                width: '60px',
+                                                background: 'rgba(255, 255, 255, 0.1)',
+                                                borderRadius: '4px'
+                                            }} />
+                                        </div>
+                                    ))}
+                                </>
+                            ) : (
+                                <>
+                                    {/* Plan Card */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={`Current Plan: ${user?.plan?.name || 'Free'}. Click to view settings.`}
+                                        onClick={() => handleCardClick('plan')}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleCardClick('plan')}
+                                        onMouseEnter={() => setHoveredCard('plan')}
+                                        onMouseLeave={() => setHoveredCard(null)}
+                                        style={{
+                                            background: 'linear-gradient(135deg, rgba(139,92,246,0.35) 0%, rgba(167,139,250,0.15) 100%)',
+                                            backdropFilter: 'blur(10px)',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                            padding: '24px',
+                                            borderRadius: '24px',
+                                            border: '1px solid rgba(139,92,246,0.3)',
+                                            cursor: 'pointer',
+                                            transform: prefersReducedMotion ? 'none' : (hoveredCard === 'plan' ? 'translateY(-4px) scale(1.01)' : 'translateY(0)'),
+                                            boxShadow: hoveredCard === 'plan' ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2), 0 8px 32px rgba(139, 92, 246, 0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2)',
+                                            transition: prefersReducedMotion ? 'none' : 'all 0.3s ease'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <span style={{ fontSize: '12px', color: defaultTheme.colors.text.tertiary, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>{t('overviewTab.currentPlan')}</span>
+                                            <CardIcons.plan />
+                                        </div>
+                                        <div style={{ fontSize: '32px', fontWeight: '700', color: defaultTheme.colors.text.primary, marginBottom: '8px' }}>{user?.plan?.name || 'Free'}</div>
+                                        <div style={{ fontSize: '14px', color: defaultTheme.colors.text.secondary, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{
+                                                background: 'rgba(16,185,129,0.15)',
+                                                color: defaultTheme.colors.success,
+                                                padding: '4px 10px',
+                                                borderRadius: '12px',
+                                                fontSize: '11px',
+                                                fontWeight: '600'
+                                            }}>Active</span>
+                                            {hoveredCard === 'plan' && !prefersReducedMotion && (
+                                                <span style={{ fontSize: '12px', color: defaultTheme.colors.text.secondary }}>Click to view →</span>
+                                            )}
+                                        </div>
+                                    </div>
 
-                            {/* Referral Earnings */}
-                            <div style={{
-                                background: 'linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(217,119,6,0.1) 100%)',
-                                padding: '24px',
-                                borderRadius: '20px',
-                                border: '1px solid rgba(245,158,11,0.3)'
-                            }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.referralEarnings')}</div>
-                                <div style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>${(referralData?.stats.commission || 0).toFixed(2)}</div>
-                                <div style={{ fontSize: '14px', color: '#f59e0b' }}>{referralData?.stats.totalPaidReferrals || 0} {t('overviewTab.paidUsers')}</div>
-                            </div>
+                                    {/* Referral Earnings */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={`Referral Earnings: $${(referralData?.stats.commission || 0).toFixed(2)}. Click to view referrals.`}
+                                        onClick={() => handleCardClick('earnings')}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleCardClick('earnings')}
+                                        onMouseEnter={() => setHoveredCard('earnings')}
+                                        onMouseLeave={() => setHoveredCard(null)}
+                                        style={{
+                                            background: 'linear-gradient(135deg, rgba(245,158,11,0.35) 0%, rgba(251,191,36,0.15) 100%)',
+                                            backdropFilter: 'blur(10px)',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                            padding: '24px',
+                                            borderRadius: '24px',
+                                            border: '1px solid rgba(245,158,11,0.3)',
+                                            cursor: 'pointer',
+                                            transform: prefersReducedMotion ? 'none' : (hoveredCard === 'earnings' ? 'translateY(-4px) scale(1.01)' : 'translateY(0)'),
+                                            boxShadow: hoveredCard === 'earnings' ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2), 0 8px 32px rgba(245, 158, 11, 0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2)',
+                                            transition: prefersReducedMotion ? 'none' : 'all 0.3s ease'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <span style={{ fontSize: '12px', color: defaultTheme.colors.text.tertiary, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>{t('overviewTab.referralEarnings')}</span>
+                                            <CardIcons.earnings />
+                                        </div>
+                                        <div style={{ fontSize: '32px', fontWeight: '700', color: defaultTheme.colors.text.primary, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            ${(referralData?.stats.commission || 0).toFixed(2)}
+                                            {(referralData?.stats.commission || 0) > 0 && (
+                                                <span style={{ fontSize: '14px', color: defaultTheme.colors.success, display: 'flex', alignItems: 'center' }}>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                                        <polyline points="17 6 23 6 23 12"/>
+                                                    </svg>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: defaultTheme.colors.warning, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span>{referralData?.stats.totalPaidReferrals || 0} {t('overviewTab.paidUsers')}</span>
+                                            {hoveredCard === 'earnings' && !prefersReducedMotion && (
+                                                <span style={{ fontSize: '12px', color: defaultTheme.colors.text.secondary }}>Click to view →</span>
+                                            )}
+                                        </div>
+                                    </div>
 
-                            {/* Total Referrals */}
-                            <div style={{
-                                background: 'linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.1) 100%)',
-                                padding: '24px',
-                                borderRadius: '20px',
-                                border: '1px solid rgba(16,185,129,0.3)'
-                            }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.totalReferrals')}</div>
-                                <div style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>{referralData?.stats.totalReferrals || 0}</div>
-                                <div style={{ fontSize: '14px', color: '#10b981' }}>{t('overviewTab.usersJoined')}</div>
-                            </div>
+                                    {/* Total Referrals */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={`Total Referrals: ${referralData?.stats.totalReferrals || 0}. Click to view referrals.`}
+                                        onClick={() => handleCardClick('referrals')}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleCardClick('referrals')}
+                                        onMouseEnter={() => setHoveredCard('referrals')}
+                                        onMouseLeave={() => setHoveredCard(null)}
+                                        style={{
+                                            background: 'linear-gradient(135deg, rgba(16,185,129,0.35) 0%, rgba(52,211,153,0.15) 100%)',
+                                            backdropFilter: 'blur(10px)',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                            padding: '24px',
+                                            borderRadius: '24px',
+                                            border: '1px solid rgba(16,185,129,0.3)',
+                                            cursor: 'pointer',
+                                            transform: prefersReducedMotion ? 'none' : (hoveredCard === 'referrals' ? 'translateY(-4px) scale(1.01)' : 'translateY(0)'),
+                                            boxShadow: hoveredCard === 'referrals' ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2), 0 8px 32px rgba(16, 185, 129, 0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2)',
+                                            transition: prefersReducedMotion ? 'none' : 'all 0.3s ease'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <span style={{ fontSize: '12px', color: defaultTheme.colors.text.tertiary, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>{t('overviewTab.totalReferrals')}</span>
+                                            <CardIcons.referrals />
+                                        </div>
+                                        <div style={{ fontSize: '32px', fontWeight: '700', color: defaultTheme.colors.text.primary, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {referralData?.stats.totalReferrals || 0}
+                                            {(referralData?.stats.totalReferrals || 0) > 0 && (
+                                                <span style={{ fontSize: '14px', color: defaultTheme.colors.success, display: 'flex', alignItems: 'center' }}>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                                        <polyline points="17 6 23 6 23 12"/>
+                                                    </svg>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: '14px', color: defaultTheme.colors.success, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span>{t('overviewTab.usersJoined')}</span>
+                                            {hoveredCard === 'referrals' && !prefersReducedMotion && (
+                                                <span style={{ fontSize: '12px', color: defaultTheme.colors.text.secondary }}>Click to view →</span>
+                                            )}
+                                        </div>
+                                    </div>
 
-                            {/* Member Since */}
-                            <div style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: '24px',
-                                borderRadius: '20px',
-                                border: '1px solid rgba(255,255,255,0.1)'
-                            }}>
-                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('overviewTab.memberSince')}</div>
-                                <div style={{ fontSize: '20px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</div>
-                                <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>{user?.email}</div>
-                            </div>
+                                    {/* Member Since */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={`Member since: ${user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}. Click to view settings.`}
+                                        onClick={() => handleCardClick('member')}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleCardClick('member')}
+                                        onMouseEnter={() => setHoveredCard('member')}
+                                        onMouseLeave={() => setHoveredCard(null)}
+                                        style={{
+                                            background: 'linear-gradient(135deg, rgba(59,130,246,0.35) 0%, rgba(96,165,250,0.15) 100%)',
+                                            backdropFilter: 'blur(10px)',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                            padding: '24px',
+                                            borderRadius: '24px',
+                                            border: '1px solid rgba(59,130,246,0.3)',
+                                            cursor: 'pointer',
+                                            transform: prefersReducedMotion ? 'none' : (hoveredCard === 'member' ? 'translateY(-4px) scale(1.01)' : 'translateY(0)'),
+                                            boxShadow: hoveredCard === 'member' ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2), 0 8px 32px rgba(59, 130, 246, 0.3)' : 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.2)',
+                                            transition: prefersReducedMotion ? 'none' : 'all 0.3s ease'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <span style={{ fontSize: '12px', color: defaultTheme.colors.text.tertiary, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '600' }}>{t('overviewTab.memberSince')}</span>
+                                            <CardIcons.member />
+                                        </div>
+                                        <div style={{ fontSize: '28px', fontWeight: '700', color: defaultTheme.colors.text.primary, marginBottom: '4px' }}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</div>
+                                        <div style={{ fontSize: '14px', color: defaultTheme.colors.text.secondary, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>{user?.email}</span>
+                                            {hoveredCard === 'member' && !prefersReducedMotion && (
+                                                <span style={{ fontSize: '12px', color: defaultTheme.colors.text.secondary }}>Click to view →</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* LinkedIn Profile Stats (Voyager Data) */}
                         <div style={{
                             background: 'linear-gradient(135deg, rgba(0,119,181,0.15) 0%, rgba(0,77,128,0.08) 100%)',
                             padding: '24px',
-                            borderRadius: '20px',
+                            borderRadius: '24px',
                             border: '1px solid rgba(0,119,181,0.25)',
-                            marginBottom: '30px'
+                            marginBottom: '32px'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                 <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>

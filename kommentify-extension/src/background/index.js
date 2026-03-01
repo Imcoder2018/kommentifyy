@@ -2593,7 +2593,7 @@ async function pollCommandsDirectly() {
                         const minLikes = payload.minLikes || 0;
                         const minComments = payload.minComments || 0;
 
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
+                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/most-recent/', active: true });
                         globalThis._commandLinkedInTabs.add(apiTab.id);
                         await new Promise((resolve) => {
                             const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
@@ -2603,7 +2603,6 @@ async function pollCommandsDirectly() {
                         await new Promise(r => setTimeout(r, 3000));
 
                         // Inject live status overlay
-                        await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
                             func: () => {
                                 const overlay = document.createElement('div');
@@ -2745,7 +2744,8 @@ async function pollCommandsDirectly() {
                         const minLikes = payload.minLikes || 0;
                         const minComments = payload.minComments || 0;
 
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
+                        const searchUrl = keyword ? `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(keyword)}` : 'https://www.linkedin.com/search/';
+                        apiTab = await chrome.tabs.create({ url: searchUrl, active: true });
                         globalThis._commandLinkedInTabs.add(apiTab.id);
                         await new Promise((resolve) => {
                             const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
@@ -2871,7 +2871,8 @@ async function pollCommandsDirectly() {
                         const keyword = payload.keyword || 'trending';
                         const count = payload.count || 20;
 
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
+                        const trendingUrl = `https://www.linkedin.com/feed/?keywords=${encodeURIComponent(keyword)}`;
+                        apiTab = await chrome.tabs.create({ url: trendingUrl, active: true });
                         globalThis._commandLinkedInTabs.add(apiTab.id);
                         await new Promise((resolve) => {
                             const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };

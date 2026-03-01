@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-03-01T15:42:55.612Z",
+  "projectRoot": "C:\\New-folder-4\\Arman-SaaS\\Kommentify",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": true,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1772379775612
+}

@@ -7,6 +7,7 @@ export default function CommenterTab(props: any) {
         csGoal, setCsGoal, csTone, setCsTone, csLength, setCsLength, csStyle, setCsStyle,
         csModel, setCsModel, csExpertise, setCsExpertise, csBackground, setCsBackground,
         csAutoPost, setCsAutoPost, csSettingsLoading, csSettingsSaving, saveCommentSettings,
+        autoDecideEnabled,
     } = props;
 
     const [capturedPosts, setCapturedPosts] = useState<any[]>([]);
@@ -19,6 +20,9 @@ export default function CommenterTab(props: any) {
     const [actionStates, setActionStates] = useState<Record<string, any>>({});
     const [aiGeneratedComments, setAiGeneratedComments] = useState<Record<string, string>>({});
     const [generatingComment, setGeneratingComment] = useState<string | null>(null);
+    const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
+    const [pendingCommentData, setPendingCommentData] = useState<{ postId: string; post: any } | null>(null);
+    const [overlaySettings, setOverlaySettings] = useState<{ mode: string; goal?: string; tone?: string; length?: string; style?: string; reasoning?: string } | null>(null);
 
     useEffect(() => {
         loadCapturedPosts();
@@ -79,24 +83,84 @@ export default function CommenterTab(props: any) {
         return postUrl;
     };
 
-    // Generate AI comment and send to LinkedIn via Voyager API
-    const generateAiComment = async (postId: string, post: any) => {
+    // Show settings overlay before generating comment
+    const showSettingsPreview = (postId: string, post: any) => {
+        if (autoDecideEnabled) {
+            // Auto-decide mode - will call auto-decide API first
+            setOverlaySettings({ mode: 'auto-decide', reasoning: 'AI will analyze this specific post and your profile to pick optimal settings automatically.' });
+        } else {
+            // Manual mode - show current user settings
+            setOverlaySettings({
+                mode: 'manual',
+                goal: csGoal || 'AddValue',
+                tone: csTone || 'Friendly',
+                length: csLength || 'Short',
+                style: csStyle || 'direct',
+            });
+        }
+        setPendingCommentData({ postId, post });
+        setShowSettingsOverlay(true);
+    };
+
+    // Proceed with actual comment generation after overlay确认
+    const proceedToGenerate = async () => {
+        setShowSettingsOverlay(false);
+        const { postId, post } = pendingCommentData!;
         const token = localStorage.getItem('authToken');
         if (!token) return;
 
         setGeneratingComment(postId);
+        setPendingCommentData(null);
+
         try {
-            // Step 1: Generate AI comment
+            let finalGoal = csGoal || 'AddValue';
+            let finalTone = csTone || 'Friendly';
+            let finalLength = csLength || 'Short';
+            let finalStyle = csStyle || 'direct';
+
+            // If auto-decide is-decide API first
+            if (autoDecideEnabled) {
+                showToast('AI is analyzing this post to find optimal settings...', 'info');
+                try {
+                    const autoDecideRes = await fetch('/api/ai/auto-decide-comment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ postText: post.postContent || '', authorName: post.authorName || '', model: csModel }),
+                    });
+                    const autoDecideData = await autoDecideRes.json();
+                    if (autoDecideData.success && autoDecideData.settings) {
+                        finalGoal = autoDecideData.settings.goal || finalGoal;
+                        finalTone = autoDecideData.settings.tone || finalTone;
+                        finalLength = autoDecideData.settings.length || finalLength;
+                        finalStyle = autoDecideData.settings.style || finalStyle;
+                        // Update overlay with final settings for user to see
+                        setOverlaySettings({
+                            mode: 'auto-decide',
+                            goal: finalGoal,
+                            tone: finalTone,
+                            length: finalLength,
+                            style: finalStyle,
+                            reasoning: autoDecideData.settings.reasoning || 'AI analyzed this post and chose optimal settings.'
+                        });
+                        showToast('Auto-decide complete! Generating comment with: ' + finalGoal + ' goal, ' + finalTone + ' tone', 'success');
+                    }
+                } catch (e) {
+                    console.error('Auto-decide failed, using manual settings:', e);
+                    showToast('Auto-decide failed, using your saved settings', 'warning');
+                }
+            }
+
+            // Step 1: Generate AI comment with final settings
             const res = await fetch('/api/ai/generate-comment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     postText: post.postContent || '',
                     authorName: post.authorName || '',
-                    goal: csGoal || 'AddValue',
-                    tone: csTone || 'Friendly',
-                    commentLength: csLength || 'Short',
-                    commentStyle: csStyle || 'direct',
+                    goal: finalGoal,
+                    tone: finalTone,
+                    commentLength: finalLength,
+                    commentStyle: finalStyle,
                     userExpertise: csExpertise || '',
                     userBackground: csBackground || '',
                     model: csModel || '',
@@ -139,6 +203,12 @@ export default function CommenterTab(props: any) {
         } finally {
             setGeneratingComment(null);
         }
+    };
+
+    // Generate AI comment and send to LinkedIn via Voyager API
+    const generateAiComment = async (postId: string, post: any) => {
+        // Show settings preview overlay first
+        showSettingsPreview(postId, post);
     };
 
     const deletePost = async (postId: string) => {
@@ -201,6 +271,105 @@ export default function CommenterTab(props: any) {
 
     return (
         <>
+            {/* Settings Preview Overlay */}
+            {showSettingsOverlay && overlaySettings && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 9999
+                }} onClick={() => setShowSettingsOverlay(false)}>
+                    <div style={{
+                        background: 'linear-gradient(135deg, #1a1a3e, #2d2d5a)', padding: '24px', borderRadius: '16px',
+                        maxWidth: '420px', width: '90%', border: '1px solid rgba(168,85,247,0.3)',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                            <div style={{
+                                width: '40px', height: '40px', borderRadius: '10px',
+                                background: overlaySettings.mode === 'auto-decide' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'linear-gradient(135deg, #0077b5, #00a0dc)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px'
+                            }}>
+                                {overlaySettings.mode === 'auto-decide' ? '🤖' : '⚙️'}
+                            </div>
+                            <div>
+                                <h3 style={{ color: 'white', margin: 0, fontSize: '18px', fontWeight: '700' }}>
+                                    {overlaySettings.mode === 'auto-decide' ? 'Auto Decide Mode' : 'Your Comment Settings'}
+                                </h3>
+                                <p style={{ color: 'rgba(255,255,255,0.6)', margin: '4px 0 0 0', fontSize: '12px' }}>
+                                    {overlaySettings.mode === 'auto-decide' ? 'AI will optimize settings for this specific post' : 'These settings will be used for the comment'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {overlaySettings.mode === 'manual' ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>GOAL</div>
+                                    <div style={{ color: '#a855f7', fontWeight: '600', fontSize: '13px' }}>{overlaySettings.goal}</div>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>TONE</div>
+                                    <div style={{ color: '#22c55e', fontWeight: '600', fontSize: '13px' }}>{overlaySettings.tone}</div>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>LENGTH</div>
+                                    <div style={{ color: '#f59e0b', fontWeight: '600', fontSize: '13px' }}>{overlaySettings.length}</div>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '4px' }}>STYLE</div>
+                                    <div style={{ color: '#3b82f6', fontWeight: '600', fontSize: '13px' }}>{overlaySettings.style}</div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ background: 'rgba(168,85,247,0.1)', padding: '16px', borderRadius: '12px', marginBottom: '20px', border: '1px solid rgba(168,85,247,0.2)' }}>
+                                <div style={{ color: '#c4b5fd', fontSize: '12px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>✨</span> AI will analyze this post and your profile
+                                </div>
+                                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontStyle: 'italic' }}>
+                                    "{overlaySettings.reasoning || 'Selecting optimal goal, tone, length, and style for maximum engagement'}"
+                                </div>
+                                {overlaySettings.goal && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>GOAL</div>
+                                            <div style={{ color: '#a855f7', fontWeight: '600', fontSize: '12px' }}>{overlaySettings.goal}</div>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>TONE</div>
+                                            <div style={{ color: '#22c55e', fontWeight: '600', fontSize: '12px' }}>{overlaySettings.tone}</div>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>LENGTH</div>
+                                            <div style={{ color: '#f59e0b', fontWeight: '600', fontSize: '12px' }}>{overlaySettings.length}</div>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>STYLE</div>
+                                            <div style={{ color: '#3b82f6', fontWeight: '600', fontSize: '12px' }}>{overlaySettings.style}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => setShowSettingsOverlay(false)} style={{
+                                flex: 1, padding: '12px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '10px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
+                            }}>
+                                Cancel
+                            </button>
+                            <button onClick={proceedToGenerate} disabled={generatingComment !== null} style={{
+                                flex: 1, padding: '12px', background: overlaySettings.mode === 'auto-decide' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'linear-gradient(135deg, #0077b5, #00a0dc)',
+                                border: 'none', borderRadius: '10px', color: 'white', fontSize: '14px', fontWeight: '700', cursor: generatingComment !== null ? 'wait' : 'pointer',
+                                opacity: generatingComment !== null ? 0.7 : 1
+                            }}>
+                                {generatingComment !== null ? 'Generating...' : 'Generate Comment'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {(commenterCfgLoading || csSettingsLoading) ? (
                 <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div>
             ) : commenterCfg && (<>

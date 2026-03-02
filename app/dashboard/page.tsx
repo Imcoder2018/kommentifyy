@@ -163,6 +163,7 @@ function DashboardContent() {
     const [taskStatusExpanded, setTaskStatusExpanded] = useState<string | null>(null);
     const prevTasksRef = useRef<any[]>([]);
     const notifiedTaskIds = useRef<Set<string>>(new Set());
+    const [pendingCountdown, setPendingCountdown] = useState<string>('');
 
     // Trending Posts AI generation state
     const [trendingPeriod, setTrendingPeriod] = useState<string>('all');
@@ -1834,6 +1835,36 @@ function DashboardContent() {
         return () => { clearInterval(taskInterval); clearInterval(heartbeatInterval); };
     }, []);
 
+    // Pending task countdown timer - updates every second
+    useEffect(() => {
+        const updateCountdown = () => {
+            const pendingTasks = tasks.filter(t => t.status === 'pending');
+            if (pendingTasks.length === 0) {
+                setPendingCountdown('');
+                return;
+            }
+            // Find the oldest pending task to show countdown for
+            const oldestPending = pendingTasks.reduce((oldest, task) => {
+                const taskTime = new Date(task.createdAt).getTime();
+                const oldestTime = oldest ? new Date(oldest.createdAt).getTime() : Infinity;
+                return taskTime < oldestTime ? task : oldest;
+            }, null);
+
+            if (oldestPending && oldestPending.createdAt) {
+                const startDelaySec = autoSettings?.automationStartDelay ?? 30;
+                const created = new Date(oldestPending.createdAt).getTime();
+                const executeAt = created + (startDelaySec * 1000);
+                const remaining = Math.max(0, Math.round((executeAt - Date.now()) / 1000));
+                const countdownText = remaining > 0 ? `Starts in ${remaining}s` : 'Starting soon...';
+                setPendingCountdown(countdownText);
+            }
+        };
+
+        updateCountdown(); // Initial update
+        const countdownInterval = setInterval(updateCountdown, 1000);
+        return () => clearInterval(countdownInterval);
+    }, [tasks, autoSettings]);
+
     // Load LinkedIn OAuth status on mount
     useEffect(() => {
         const token = localStorage.getItem('authToken');
@@ -2497,9 +2528,12 @@ function DashboardContent() {
                     { key: 'failed', label: 'Failed', count: tasks.filter(t => t.status === 'failed' || t.status === 'cancelled').length, color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
                 ].map(s => (
                     <div key={s.key} onClick={() => setTaskStatusExpanded(taskStatusExpanded === s.key ? null : s.key)}
-                        style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: taskStatusExpanded === s.key ? 'scale(1.05)' : 'scale(1)' }}>
+                        style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '10px', padding: s.key === 'pending' && pendingCountdown ? '4px 12px' : '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: taskStatusExpanded === s.key ? 'scale(1.05)' : 'scale(1)' }}>
                         <div style={{ fontSize: '16px', fontWeight: '800', color: s.color, lineHeight: 1 }}>{s.count}</div>
                         <div style={{ fontSize: '9px', color: s.color, fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>{s.label}</div>
+                        {s.key === 'pending' && pendingCountdown && (
+                            <div style={{ fontSize: '8px', color: '#fbbf24', fontWeight: '700', marginTop: '2px', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{pendingCountdown}</div>
+                        )}
                     </div>
                 ))}
                 {/* Logs box */}

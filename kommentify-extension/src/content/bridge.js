@@ -21,8 +21,9 @@ function bridgeSendToMainWorld(payload) {
 }
 
 window.addEventListener('message', (event) => {
-    // We only accept messages from ourselves and of the correct type
-    if (event.source !== window || !event.data.type || !event.data.type.startsWith('COMMENTRON_')) {
+    // We only accept messages of the correct type (removed event.source !== window check
+    // to allow messages from ES module content script)
+    if (!event.data.type || !event.data.type.startsWith('COMMENTRON_')) {
         return;
     }
 

@@ -141,11 +141,17 @@ export default function WriterTabNew(props: any) {
 
     // Open history popup - load AI generated posts specifically
     const openHistoryPopup = () => {
+        console.log('Opening history popup, calling loadHistory...');
         if (props.loadHistory) {
             props.loadHistory(1, 'ai_generated');
         }
         setShowHistoryPopup(true);
     };
+
+    // Debug: log when history items change
+    useEffect(() => {
+        console.log('History items updated:', historyItems);
+    }, [historyItems]);
     const [inlineEditMode, setInlineEditMode] = useState(false);
     const [showEditHint, setShowEditHint] = useState(true);
 
@@ -295,6 +301,80 @@ export default function WriterTabNew(props: any) {
             setWriterTargetAudience(userTargetAudience);
         }
     }, [userTargetAudience]);
+
+    // Auto-save strategy fields with debounce
+    const strategyFieldsRef = useRef({
+        userGoal: '',
+        userTargetAudience: '',
+        writerBackground: '',
+        userWritingStyle: ''
+    });
+    const strategySaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Update refs when fields change
+    useEffect(() => {
+        strategyFieldsRef.current = {
+            userGoal,
+            userTargetAudience,
+            writerBackground,
+            userWritingStyle
+        };
+    }, [userGoal, userTargetAudience, writerBackground, userWritingStyle]);
+
+    // Auto-save strategy when fields change
+    useEffect(() => {
+        // Clear previous timeout
+        if (strategySaveTimeoutRef.current) {
+            clearTimeout(strategySaveTimeoutRef.current);
+        }
+
+        // Skip if all fields are empty
+        if (!userGoal && !userTargetAudience && !writerBackground && !userWritingStyle) {
+            return;
+        }
+
+        // Skip if currently suggesting goals (will save after)
+        if (goalsSuggesting) {
+            return;
+        }
+
+        // Set up debounced auto-save - saves after 2 seconds of no changes
+        strategySaveTimeoutRef.current = setTimeout(async () => {
+            const current = strategyFieldsRef.current;
+            // Only save if there are actual values
+            if (current.userGoal || current.userTargetAudience || current.writerBackground || current.userWritingStyle) {
+                try {
+                    // Save to localStorage for persistence
+                    localStorage.setItem('savedWriterTargetAudience', current.userTargetAudience);
+                    localStorage.setItem('savedWriterKeyMessage', current.userWritingStyle);
+
+                    // Save to database via API
+                    const token = localStorage.getItem('authToken');
+                    if (token) {
+                        await fetch('/api/user-goals', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({
+                                goal: current.userGoal,
+                                targetAudience: current.userTargetAudience,
+                                writingStyle: current.userWritingStyle,
+                                writingStyleSource: userWritingStyleSource
+                            }),
+                        });
+                        showToast?.('Strategy auto-saved', 'success');
+                    }
+                } catch (e) {
+                    console.error('Auto-save strategy failed:', e);
+                }
+            }
+        }, 2000);
+
+        return () => {
+            if (strategySaveTimeoutRef.current) {
+                clearTimeout(strategySaveTimeoutRef.current);
+            }
+        };
+    }, [userGoal, userTargetAudience, writerBackground, userWritingStyle, userWritingStyleSource, goalsSuggesting]);
 
     // Sync depth to length
     useEffect(() => {
@@ -518,6 +598,25 @@ export default function WriterTabNew(props: any) {
                 setWriterPreviewMode('desktop');
                 setWriterPreviewExpanded(false);
                 showToast('Post generated successfully!', 'success');
+
+                // Auto-save to history
+                const token = localStorage.getItem('authToken');
+                if (token) {
+                    try {
+                        await fetch('/api/history/ai-generated', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({
+                                title: `AI Generated Post: ${writerTopic}`,
+                                content: JSON.stringify(data.content),
+                                metadata: JSON.stringify({ template: writerTemplate, tone: writerTone, length: writerLength, model: data.model })
+                            }),
+                        });
+                        console.log('Post saved to AI generated history');
+                    } catch (e) {
+                        console.error('Failed to save to history:', e);
+                    }
+                }
             } else {
                 const errorMsg = data.error || 'Generation failed - no content returned';
                 currentSetWriterStatus(errorMsg);

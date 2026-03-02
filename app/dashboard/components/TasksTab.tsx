@@ -188,7 +188,7 @@ export default function TasksTab(props: any) {
                                     // Calculate pending countdown
                                     let pendingCountdown = '';
                                     if (task.status === 'pending' && task.createdAt) {
-                                        const startDelaySec = autoSettings?.automationStartDelay ?? 30;
+                                        const startDelaySec = autoSettings?.automationStartDelay ?? 5;
                                         const created = new Date(task.createdAt).getTime();
                                         const executeAt = created + (startDelaySec * 1000);
                                         const remaining = Math.max(0, Math.round((executeAt - Date.now()) / 1000));

@@ -164,6 +164,11 @@ function DashboardContent() {
     const prevTasksRef = useRef<any[]>([]);
     const notifiedTaskIds = useRef<Set<string>>(new Set());
     const [pendingCountdown, setPendingCountdown] = useState<string>('');
+    const [inProgressCountdown, setInProgressCountdown] = useState<string>('');
+    const [showStartingSoonNotification, setShowStartingSoonNotification] = useState<boolean>(false);
+    const [taskTimeoutNotification, setTaskTimeoutNotification] = useState<{ show: boolean; reason: string; suggestion: string } | null>(null);
+    const pendingTaskTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+    const inProgressTaskTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
     // Trending Posts AI generation state
     const [trendingPeriod, setTrendingPeriod] = useState<string>('all');
@@ -677,7 +682,10 @@ function DashboardContent() {
             });
             const data = await res.json();
             if (data.success) {
-                if (data.goal) setUserGoal(data.goal);
+                if (data.goal) {
+                    setUserGoal(data.goal);
+                    localStorage.setItem('savedWriterUserGoal', data.goal);
+                }
                 if (data.targetAudience) {
                     setUserTargetAudience(data.targetAudience);
                     // Also save to localStorage for immediate persistence
@@ -827,15 +835,15 @@ function DashboardContent() {
 
             const data = await res.json();
             if (data.success) {
-                setWriterStatus('✅ Posting... Check Tasks for status.');
-                showToast('Post command sent! Extension will post to LinkedIn.', 'success');
+                setWriterStatus('✅ Post queued! Check Tasks for real-time status.');
+                showToast('Post queued! Task is now pending. Check Tasks tab for status.', 'info');
                 await saveToHistory('published_post', 'LinkedIn Post', { content: writerContent, source: 'linkedin', hasImage: !!writerImageUrl || !!writerMediaBlobUrl });
-                // Clear content after successful send
-                setWriterContent('');
-                setWriterImageFile(null);
-                setWriterImageUrl('');
-                setWriterMediaBlobUrl('');
-                setWriterMediaType('');
+                // Keep content visible - user can manually clear if needed
+                // setWriterContent('');
+                // setWriterImageFile(null);
+                // setWriterImageUrl('');
+                // setWriterMediaBlobUrl('');
+                // setWriterMediaType('');
             } else {
                 setWriterStatus(data.error || 'Failed to send');
                 showToast(data.error || 'Failed to send', 'error');
@@ -881,18 +889,19 @@ function DashboardContent() {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor, mediaUrl: writerMediaBlobUrl || null, mediaType: writerMediaType || null, status: 'scheduled_via_linkedin' }),
                 });
-                
-                setWriterStatus('✅ Post scheduled via LinkedIn! Check Tasks for status.');
-                showToast('Post scheduled via LinkedIn!', 'success');
+
+                setWriterStatus('✅ Post queued! Task is pending. Check Tasks for real-time status.');
+                showToast('Post scheduled! Task sent to extension. Check Tasks tab for progress.', 'info');
                 loadScheduledPosts();
+                // Keep content visible - user can manually clear if needed
                 setWriterScheduleDate('');
                 setWriterScheduleTime('');
-                setWriterContent('');
-                setWriterTopic('');
-                setWriterImageFile(null);
-                setWriterImageUrl('');
-                setWriterMediaBlobUrl('');
-                setWriterMediaType('');
+                // setWriterContent('');
+                // setWriterTopic('');
+                // setWriterImageFile(null);
+                // setWriterImageUrl('');
+                // setWriterMediaBlobUrl('');
+                // setWriterMediaType('');
             } else {
                 setWriterStatus(cmdData.error || 'Failed to schedule');
                 showToast(cmdData.error || 'Failed to schedule', 'error');
@@ -1845,28 +1854,50 @@ function DashboardContent() {
         return () => { clearInterval(taskInterval); clearInterval(heartbeatInterval); };
     }, []);
 
-    // Pending task countdown timer - updates every second
+    // Pending and In Progress task countdown timer - updates every second
     useEffect(() => {
         const updateCountdown = () => {
             const pendingTasks = tasks.filter(t => t.status === 'pending');
-            if (pendingTasks.length === 0) {
-                setPendingCountdown('');
-                return;
-            }
-            // Find the oldest pending task to show countdown for
-            const oldestPending = pendingTasks.reduce((oldest, task) => {
-                const taskTime = new Date(task.createdAt).getTime();
-                const oldestTime = oldest ? new Date(oldest.createdAt).getTime() : Infinity;
-                return taskTime < oldestTime ? task : oldest;
-            }, null);
+            const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
 
-            if (oldestPending && oldestPending.createdAt) {
-                const startDelaySec = autoSettings?.automationStartDelay ?? 30;
-                const created = new Date(oldestPending.createdAt).getTime();
-                const executeAt = created + (startDelaySec * 1000);
-                const remaining = Math.max(0, Math.round((executeAt - Date.now()) / 1000));
-                const countdownText = remaining > 0 ? `Starts in ${remaining}s` : 'Starting soon...';
-                setPendingCountdown(countdownText);
+            // Handle pending countdown
+            if (pendingTasks.length > 0) {
+                const oldestPending = pendingTasks.reduce((oldest, task) => {
+                    const taskTime = new Date(task.createdAt).getTime();
+                    const oldestTime = oldest ? new Date(oldest.createdAt).getTime() : Infinity;
+                    return taskTime < oldestTime ? task : oldest;
+                }, null);
+
+                if (oldestPending && oldestPending.createdAt) {
+                    const startDelaySec = autoSettings?.automationStartDelay ?? 5;
+                    const created = new Date(oldestPending.createdAt).getTime();
+                    const executeAt = created + (startDelaySec * 1000);
+                    const remaining = Math.max(0, Math.round((executeAt - Date.now()) / 1000));
+                    const countdownText = remaining > 0 ? `Starts in ${remaining}s` : 'Starting soon...';
+                    setPendingCountdown(countdownText);
+                }
+            } else {
+                setPendingCountdown('');
+            }
+
+            // Handle in_progress countdown - show how long it's been running
+            if (inProgressTasks.length > 0) {
+                const oldestInProgress = inProgressTasks.reduce((oldest, task) => {
+                    const taskTime = new Date(task.createdAt).getTime();
+                    const oldestTime = oldest ? new Date(oldest.createdAt).getTime() : Infinity;
+                    return taskTime < oldestTime ? task : oldest;
+                }, null);
+
+                if (oldestInProgress && oldestInProgress.createdAt) {
+                    const created = new Date(oldestInProgress.createdAt).getTime();
+                    const elapsed = Math.round((Date.now() - created) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    const countdownText = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                    setInProgressCountdown(`Running ${countdownText}`);
+                }
+            } else {
+                setInProgressCountdown('');
             }
         };
 
@@ -1874,6 +1905,185 @@ function DashboardContent() {
         const countdownInterval = setInterval(updateCountdown, 1000);
         return () => clearInterval(countdownInterval);
     }, [tasks, autoSettings]);
+
+    // Handle "Starting soon..." notification and auto-fail tasks after timeout
+    useEffect(() => {
+        const checkPendingTasks = () => {
+            const pendingTasks = tasks.filter(t => t.status === 'pending');
+            const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
+            const now = Date.now();
+            const PENDING_TIMEOUT_MS = 30000; // 30 seconds timeout for pending tasks
+            const IN_PROGRESS_TIMEOUT_MS = 30000; // 30 seconds timeout for in_progress tasks
+
+            // Check for "Starting soon..." notification
+            if (pendingTasks.length > 0) {
+                const oldestPending = pendingTasks.reduce((oldest, task) => {
+                    const taskTime = new Date(task.createdAt).getTime();
+                    const oldestTime = oldest ? new Date(oldest.createdAt).getTime() : Infinity;
+                    return taskTime < oldestTime ? task : oldest;
+                }, null);
+
+                if (oldestPending && oldestPending.createdAt) {
+                    const startDelaySec = autoSettings?.automationStartDelay ?? 5;
+                    const created = new Date(oldestPending.createdAt).getTime();
+                    const executeAt = created + (startDelaySec * 1000);
+                    const remaining = Math.max(0, Math.round((executeAt - now) / 1000));
+
+                    // Show notification when countdown reaches 0 (Starting soon...)
+                    if (remaining <= 0) {
+                        setShowStartingSoonNotification(true);
+                    } else {
+                        setShowStartingSoonNotification(false);
+                    }
+                }
+            } else {
+                setShowStartingSoonNotification(false);
+            }
+
+            // Check for timed out pending tasks (30 seconds without being picked up)
+            pendingTasks.forEach(task => {
+                if (task.createdAt) {
+                    const created = new Date(task.createdAt).getTime();
+                    const elapsed = now - created;
+
+                    if (elapsed > PENDING_TIMEOUT_MS && !pendingTaskTimeoutsRef.current.has(task.id)) {
+                        // Task has been pending for more than 30 seconds - mark as failed
+                        const timeoutId = setTimeout(async () => {
+                            const token = localStorage.getItem('authToken');
+                            if (!token) return;
+
+                            try {
+                                // Mark task as failed
+                                await fetch('/api/extension/command', {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: task.id, status: 'failed' }),
+                                });
+
+                                // Determine reason based on extension connectivity
+                                let reason = 'Extension not responding for 30s';
+                                let suggestion = 'Check if extension is connected. Try reloading the extension.';
+
+                                if (!extensionConnected) {
+                                    reason = 'Extension offline';
+                                    suggestion = 'Check if extension is connected. Try reloading the extension.';
+                                }
+
+                                // Show failure notification
+                                const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
+                                    task.command === 'scrape_feed_now' ? 'Scrape Feed' :
+                                        task.command === 'scrape_profile' ? 'Scrape Profile' :
+                                            task.command === 'bulk_comment' ? 'Bulk Comment' :
+                                                task.command === 'networking' ? 'Networking' :
+                                                    task.command === 'import_profiles' ? 'Import Profiles' : task.command;
+
+                                addTaskNotification(`Failed: ${cmdLabel} - ${reason}`, 'error');
+                                setTaskTimeoutNotification({ show: true, reason, suggestion });
+
+                                // Auto-stop all pending tasks
+                                await stopAllTasks();
+
+                                // Reload tasks
+                                loadTasks(true);
+
+                                // Clear notification after 10 seconds
+                                setTimeout(() => setTaskTimeoutNotification(null), 10000);
+                            } catch (e) {
+                                console.error('Failed to auto-fail task:', e);
+                            }
+
+                            pendingTaskTimeoutsRef.current.delete(task.id);
+                        }, 500); // Small delay to ensure we don't fail immediately
+
+                        pendingTaskTimeoutsRef.current.set(task.id, timeoutId);
+                    }
+                }
+            });
+
+            // Check for timed out in_progress tasks (5 minutes without completion)
+            inProgressTasks.forEach(task => {
+                if (task.createdAt) {
+                    const created = new Date(task.createdAt).getTime();
+                    const elapsed = now - created;
+
+                    if (elapsed > IN_PROGRESS_TIMEOUT_MS && !inProgressTaskTimeoutsRef.current.has(task.id)) {
+                        // Task has been in progress for more than 5 minutes - mark as failed
+                        const timeoutId = setTimeout(async () => {
+                            const token = localStorage.getItem('authToken');
+                            if (!token) return;
+
+                            // Only fail if extension is not connected/responding
+                            if (!extensionConnected) {
+                                try {
+                                    // Mark task as failed
+                                    await fetch('/api/extension/command', {
+                                        method: 'PUT',
+                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ commandId: task.id, status: 'failed' }),
+                                    });
+
+                                    const reason = 'Extension not responding for 30s';
+                                    const suggestion = 'Check if extension is connected. Try reloading the extension.';
+
+                                    // Show failure notification
+                                    const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
+                                        task.command === 'scrape_feed_now' ? 'Scrape Feed' :
+                                            task.command === 'scrape_profile' ? 'Scrape Profile' :
+                                                task.command === 'bulk_comment' ? 'Bulk Comment' :
+                                                    task.command === 'networking' ? 'Networking' :
+                                                        task.command === 'import_profiles' ? 'Import Profiles' : task.command;
+
+                                    addTaskNotification(`Failed: ${cmdLabel} - ${reason}`, 'error');
+                                    setTaskTimeoutNotification({ show: true, reason, suggestion });
+
+                                    // Reload tasks
+                                    loadTasks(true);
+
+                                    // Clear notification after 10 seconds
+                                    setTimeout(() => setTaskTimeoutNotification(null), 10000);
+                                } catch (e) {
+                                    console.error('Failed to auto-fail in_progress task:', e);
+                                }
+                            }
+
+                            inProgressTaskTimeoutsRef.current.delete(task.id);
+                        }, 500);
+
+                        inProgressTaskTimeoutsRef.current.set(task.id, timeoutId);
+                    }
+                }
+            });
+
+            // Clean up timeouts for tasks that are no longer pending
+            pendingTaskTimeoutsRef.current.forEach((timeoutId, taskId) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task || task.status !== 'pending') {
+                    clearTimeout(timeoutId);
+                    pendingTaskTimeoutsRef.current.delete(taskId);
+                }
+            });
+
+            // Clean up timeouts for tasks that are no longer in_progress
+            inProgressTaskTimeoutsRef.current.forEach((timeoutId, taskId) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task || task.status !== 'in_progress') {
+                    clearTimeout(timeoutId);
+                    inProgressTaskTimeoutsRef.current.delete(taskId);
+                }
+            });
+        };
+
+        checkPendingTasks();
+        const timeoutCheckInterval = setInterval(checkPendingTasks, 1000);
+        return () => {
+            clearInterval(timeoutCheckInterval);
+            // Clean up all timeouts
+            pendingTaskTimeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+            pendingTaskTimeoutsRef.current.clear();
+            inProgressTaskTimeoutsRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+            inProgressTaskTimeoutsRef.current.clear();
+        };
+    }, [tasks, autoSettings, extensionConnected]);
 
     // Load LinkedIn OAuth status on mount
     useEffect(() => {
@@ -1892,6 +2102,7 @@ function DashboardContent() {
         const savedTopic = localStorage.getItem('savedWriterTopic');
         const savedTargetAudience = localStorage.getItem('savedWriterTargetAudience');
         const savedWritingStyle = localStorage.getItem('savedWriterKeyMessage');
+        const savedUserGoal = localStorage.getItem('savedWriterUserGoal');
         if (savedContent) setWriterContent(savedContent);
         if (savedTopic) setWriterTopic(savedTopic);
         if (savedTargetAudience) {
@@ -1900,6 +2111,9 @@ function DashboardContent() {
         }
         if (savedWritingStyle) {
             setUserWritingStyle(savedWritingStyle);
+        }
+        if (savedUserGoal) {
+            setUserGoal(savedUserGoal);
         }
     }, []);
 
@@ -2131,13 +2345,18 @@ function DashboardContent() {
     // History functions
     const loadHistory = async (page = 1, typeFilter?: string) => {
         const token = localStorage.getItem('authToken');
-        if (!token) return;
+        if (!token) {
+            console.log('No auth token for loadHistory');
+            return;
+        }
         setHistoryLoading(true);
+        console.log('loadHistory called with typeFilter:', typeFilter);
         try {
             // Use dedicated AI generated endpoint when filtering for ai_generated
             let url = '/api/history';
             if (typeFilter === 'ai_generated') {
                 url = `/api/history/ai-generated?page=${page}&limit=50`;
+                console.log('Using AI generated endpoint:', url);
             } else {
                 const activeFilter = typeFilter !== undefined ? typeFilter : historyFilter;
                 const typeParam = activeFilter && activeFilter !== 'all' ? `&type=${activeFilter}` : '';
@@ -2158,18 +2377,24 @@ function DashboardContent() {
 
     const saveToHistory = async (type: string, title: string, content: any, metadata?: any) => {
         const token = localStorage.getItem('authToken');
-        if (!token) return;
+        if (!token) {
+            console.log('No auth token for saveToHistory');
+            return;
+        }
         try {
             // Use dedicated AI generated endpoint when saving ai_generated
             let url = '/api/history';
             if (type === 'ai_generated') {
                 url = '/api/history/ai-generated';
+                console.log('Saving to AI generated endpoint:', url, 'title:', title);
             }
-            await fetch(url, {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ type, title, content: JSON.stringify(content), metadata: metadata ? JSON.stringify(metadata) : null }),
             });
+            const data = await res.json();
+            console.log('Save to history response:', data);
         } catch (e) { console.error('Failed to save to history:', e); }
     };
 
@@ -2547,6 +2772,61 @@ function DashboardContent() {
                 </div>
             ))}
 
+            {/* "Starting soon..." Notification - Top Right */}
+            {showStartingSoonNotification && (
+                <div style={{
+                    position: 'fixed', top: '24px', right: '24px', zIndex: 9998,
+                    padding: '12px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: '600',
+                    color: 'white', boxShadow: '0 4px 20px rgba(251, 191, 36, 0.3)',
+                    animation: 'slideIn 0.3s ease-out',
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    border: '1px solid rgba(251, 191, 36, 0.5)',
+                    display: 'flex', alignItems: 'center', gap: '10px', maxWidth: '320px',
+                }}>
+                    {miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', 'white', 16)}
+                    <span>Task starting soon...</span>
+                </div>
+            )}
+
+            {/* Task Timeout Failure Notification - Top Right */}
+            {taskTimeoutNotification && taskTimeoutNotification.show && (
+                <div style={{
+                    position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
+                    padding: '16px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: '600',
+                    color: 'white', boxShadow: '0 8px 30px rgba(239, 68, 68, 0.4)',
+                    animation: 'slideIn 0.3s ease-out',
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                    display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '360px',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {miniIcon('M18 6L6 18 M6 6l12 12', 'white', 16)}
+                        <span style={{ fontWeight: '700' }}>Task Failed</span>
+                    </div>
+                    <div style={{ fontSize: '13px', opacity: 0.9, marginLeft: '26px' }}>
+                        Reason: {taskTimeoutNotification.reason}
+                    </div>
+                    <div style={{ fontSize: '12px', opacity: 0.7, marginLeft: '26px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'white', 12)}
+                        {taskTimeoutNotification.suggestion}
+                    </div>
+                    <button
+                        onClick={() => { setTaskTimeoutNotification(null); loadTasks(true); }}
+                        style={{
+                            marginTop: '8px', marginLeft: '26px', padding: '6px 14px',
+                            background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)',
+                            borderRadius: '6px', color: 'white', fontSize: '12px', fontWeight: '600',
+                            cursor: 'pointer', alignSelf: 'flex-start', transition: 'all 0.15s ease'
+                        }}
+                        onMouseDown={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.3)')}
+                        onMouseUp={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
+                    >
+                        Dismiss
+                    </button>
+                </div>
+            )}
+
             {/* Persistent Task Status Boxes (top-center) */}
             <div style={{
                 position: 'fixed',
@@ -2566,16 +2846,23 @@ function DashboardContent() {
                     { key: 'in_progress', label: 'In Progress', count: tasks.filter(t => t.status === 'in_progress').length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)' },
                     { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed' || t.status === 'completed_manual').length, color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)' },
                     { key: 'failed', label: 'Failed', count: tasks.filter(t => t.status === 'failed' || t.status === 'cancelled').length, color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
-                ].map(s => (
+                ].map(s => {
+                    const isPendingWithCountdown = s.key === 'pending' && pendingCountdown;
+                    const isInProgressWithCountdown = s.key === 'in_progress' && pendingCountdown;
+                    return (
                     <div key={s.key} onClick={() => setTaskStatusExpanded(taskStatusExpanded === s.key ? null : s.key)}
-                        style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '10px', padding: s.key === 'pending' && pendingCountdown ? '4px 12px' : '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: taskStatusExpanded === s.key ? 'scale(1.05)' : 'scale(1)' }}>
-                        <div style={{ fontSize: '16px', fontWeight: '800', color: s.color, lineHeight: 1 }}>{s.count}</div>
-                        <div style={{ fontSize: '9px', color: s.color, fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>{s.label}</div>
-                        {s.key === 'pending' && pendingCountdown && (
-                            <div style={{ fontSize: '8px', color: '#fbbf24', fontWeight: '700', marginTop: '2px', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{pendingCountdown}</div>
+                        style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: '10px', padding: isPendingWithCountdown || isInProgressWithCountdown ? '6px 10px' : '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '70px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: taskStatusExpanded === s.key ? 'scale(1.05)' : 'scale(1)' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: s.color, lineHeight: 1.2 }}>{s.count}</div>
+                        <div style={{ fontSize: '10px', color: s.color, fontWeight: '600', opacity: 0.9, whiteSpace: 'nowrap' }}>{s.label}</div>
+                        {isPendingWithCountdown && (
+                            <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '700', marginTop: '4px', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)', background: 'rgba(251,191,36,0.2)', padding: '2px 6px', borderRadius: '4px' }}>{pendingCountdown}</div>
+                        )}
+                        {isInProgressWithCountdown && (
+                            <div style={{ fontSize: '11px', color: '#60a5fa', fontWeight: '700', marginTop: '4px', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)', background: 'rgba(96,165,250,0.2)', padding: '2px 6px', borderRadius: '4px' }}>{pendingCountdown}</div>
                         )}
                     </div>
-                ))}
+                    );
+                })}
                 {/* Logs box */}
                 <div onClick={() => { if (liveActivityLogs.length === 0) loadLiveActivity(); setShowLogsPopup(true); }}
                     style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: showLogsPopup ? 'scale(1.05)' : 'scale(1)' }}>

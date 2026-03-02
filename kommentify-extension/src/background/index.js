@@ -2619,17 +2619,11 @@ async function pollCommandsDirectly() {
                                 const overlay = document.createElement('div');
                                 overlay.id = 'kommentify-capture-overlay';
                                 overlay.innerHTML = `
-                                    <div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:320px">
-                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                                    <div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:250px">
+                                        <div style="display:flex;align-items:center;gap:10px">
                                             <div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div>
                                             <div style="font-size:16px;font-weight:700" id="komm-status">Capturing Posts...</div>
                                         </div>
-                                        <div style="font-size:13px;opacity:0.9;margin-bottom:12px" id="komm-method">Scraping LinkedIn Feed via DOM</div>
-                                        <div style="display:flex;gap:20px;font-size:13px;font-weight:600">
-                                            <div><span style="opacity:0.7">Found:</span> <span id="komm-found" style="font-weight:700;color:#fff">0</span></div>
-                                            <div><span style="opacity:0.7">Qualified:</span> <span id="komm-qualified" style="font-weight:700;color:#90EE90">0</span></div>
-                                        </div>
-                                        <div style="margin-top:10px;font-size:11px;opacity:0.7" id="komm-last-post"></div>
                                     </div>
                                     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
                                 document.body.appendChild(overlay);
@@ -3211,45 +3205,40 @@ async function pollCommandsDirectly() {
 
                         console.log(`📰 POLL-ALARM: DOM scraping got ${posts.length} posts`);
 
-                        // Get debug info for proper counts
-                        const debugInfo = scriptResult?.debug || {};
-                        const foundCount = debugInfo.foundCount || posts.length;
-                        const qualifiedCount = debugInfo.postsLen || posts.length;
+                        // Update overlay with actual post count - directly update DOM
+                        try {
+                            await chrome.scripting.executeScript({
+                                target: { tabId: apiTab.id },
+                                func: (foundPosts, qualifiedPosts) => {
+                                    console.log('📰 FINAL OVERLAY: Found=' + foundPosts + ', Qualified=' + qualifiedPosts);
 
-                        // Update final overlay status with correct counts
-                        await chrome.scripting.executeScript({
-                            target: { tabId: apiTab.id },
-                            func: (found, qualified) => {
-                                console.log('📰 OVERLAY UPDATE: Found=' + found + ', Qualified=' + qualified);
+                                    // Direct DOM update - no global function needed
+                                    const foundEl = document.getElementById('komm-found');
+                                    const qualEl = document.getElementById('komm-qualified');
+                                    const statusEl = document.getElementById('komm-status');
+                                    const methodEl = document.getElementById('komm-method');
 
-                                // Try global function first
-                                if (window.__kommentifyUpdateOverlay) {
-                                    window.__kommentifyUpdateOverlay(found, qualified, 'Complete!', 'DOM Scraping', '');
-                                }
-
-                                // Direct DOM update
-                                const foundEl = document.getElementById('komm-found');
-                                const qualEl = document.getElementById('komm-qualified');
-                                const statusEl = document.getElementById('komm-status');
-                                const methodEl = document.getElementById('komm-method');
-
-                                if (foundEl) {
-                                    foundEl.textContent = found;
-                                    console.log('📰 OVERLAY: Updated found to ' + found);
-                                }
-                                if (qualEl) {
-                                    qualEl.textContent = qualified;
-                                    console.log('📰 OVERLAY: Updated qualified to ' + qualified);
-                                }
-                                if (statusEl) {
-                                    statusEl.textContent = `Found ${qualified} posts!`;
-                                }
-                                if (methodEl) {
-                                    methodEl.textContent = 'Done - saved to dashboard';
-                                }
-                            },
-                            args: [foundCount, qualifiedCount]
-                        });
+                                    if (foundEl) {
+                                        foundEl.textContent = foundPosts;
+                                        foundEl.style.color = '#90EE90';
+                                    }
+                                    if (qualEl) {
+                                        qualEl.textContent = qualifiedPosts;
+                                    }
+                                    if (statusEl) {
+                                        statusEl.textContent = 'Complete! Found ' + qualifiedPosts + ' posts';
+                                        statusEl.style.color = '#90EE90';
+                                    }
+                                    if (methodEl) {
+                                        methodEl.textContent = 'Saved to dashboard';
+                                    }
+                                    console.log('📰 OVERLAY UPDATED!');
+                                },
+                                args: [posts.length, posts.length]
+                            });
+                        } catch (e) {
+                            console.log('📰 OVERLAY update error:', e.message);
+                        }
 
                         // Save posts to backend
                         if (posts.length > 0) {
@@ -3310,7 +3299,7 @@ async function pollCommandsDirectly() {
                             func: () => {
                                 const overlay = document.createElement('div');
                                 overlay.id = 'kommentify-capture-overlay';
-                                overlay.innerHTML = `<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:280px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="font-size:16px;font-weight:700">Searching Posts...</div></div><div style="font-size:13px;opacity:0.9;margin-bottom:8px">Searching via DOM Scraping</div><div style="display:flex;gap:16px;font-size:12px"><div><span style="opacity:0.7">Found:</span> <span id="komm-found" style="font-weight:700">0</span></div><div><span style="opacity:0.7">Qualified:</span> <span id="komm-qualified" style="font-weight:700">0</span></div></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+                                overlay.innerHTML = `<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:220px"><div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="font-size:16px;font-weight:700" id="komm-status">Searching Posts...</div></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
                                 document.body.appendChild(overlay);
                             }
                         });
@@ -3657,6 +3646,20 @@ async function pollCommandsDirectly() {
 
                         console.log(`🔍 POLL-ALARM: DOM scraping found ${posts.length} posts for "${keyword}"`);
 
+                        // Update overlay with final count
+                        try {
+                            await chrome.scripting.executeScript({
+                                target: { tabId: apiTab.id },
+                                func: (count) => {
+                                    const qualEl = document.getElementById('komm-qualified');
+                                    const statusEl = document.getElementById('komm-status');
+                                    if (qualEl) qualEl.textContent = count;
+                                    if (statusEl) statusEl.textContent = 'Complete! Found ' + count + ' posts';
+                                },
+                                args: [posts.length]
+                            });
+                        } catch (e) {}
+
                         if (posts.length > 0) {
                             try {
                                 await fetch(`${apiUrl}/api/scraped-posts`, {
@@ -3715,7 +3718,7 @@ async function pollCommandsDirectly() {
                             func: () => {
                                 const overlay = document.createElement('div');
                                 overlay.id = 'kommentify-capture-overlay';
-                                overlay.innerHTML = `<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:280px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="font-size:16px;font-weight:700">Finding Trending...</div></div><div style="font-size:13px;opacity:0.9;margin-bottom:8px">Fetching trending via DOM Scraping</div><div style="display:flex;gap:16px;font-size:12px"><div><span style="opacity:0.7">Found:</span> <span id="komm-found" style="font-weight:700">0</span></div><div><span style="opacity:0.7">Qualified:</span> <span id="komm-qualified" style="font-weight:700">0</span></div></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+                                overlay.innerHTML = `<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:220px"><div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="font-size:16px;font-weight:700" id="komm-status">Finding Trending...</div></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
                                 document.body.appendChild(overlay);
                             }
                         });
@@ -4062,6 +4065,20 @@ async function pollCommandsDirectly() {
                         }
 
                         console.log(`🔥 POLL-ALARM: DOM scraping found ${posts.length} trending posts`);
+
+                        // Update overlay with final count
+                        try {
+                            await chrome.scripting.executeScript({
+                                target: { tabId: apiTab.id },
+                                func: (count) => {
+                                    const qualEl = document.getElementById('komm-qualified');
+                                    const statusEl = document.getElementById('komm-status');
+                                    if (qualEl) qualEl.textContent = count;
+                                    if (statusEl) statusEl.textContent = 'Complete! Found ' + count + ' trending posts';
+                                },
+                                args: [posts.length]
+                            });
+                        } catch (e) {}
 
                         if (posts.length > 0) {
                             try {

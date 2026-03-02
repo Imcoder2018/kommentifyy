@@ -712,7 +712,8 @@ async function pollCommandsDirectly() {
                                             if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
                                             const commentsEl = el.querySelector('button[aria-label*="comment"]');
                                             if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
-                                            if (likes < minL || comments < minC) continue;
+                                            // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
                                             if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
                                             qualifiedPosts++;
                                         }
@@ -769,7 +770,8 @@ async function pollCommandsDirectly() {
                                     if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
                                     const commentsEl = el.querySelector('button[aria-label*="comment"]');
                                     if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
-                                    if (likes < minL || comments < minC) continue;
+                                    // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
                                     if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
                                     let authorName = 'Unknown';
                                     const authorEl = el.querySelector('.update-components-actor__title span[aria-hidden="true"], .feed-shared-actor__title span[aria-hidden="true"]');
@@ -837,7 +839,7 @@ async function pollCommandsDirectly() {
                                 for (const card of postCards) {
                                     const postTextEl = card.querySelector('.update-components-text, .feed-shared-text');
                                     const postText = postTextEl ? postTextEl.innerText?.trim() : '';
-                                    if (!postText || postText.length < 20) continue;
+                                    if (!postText || postText.length < 5) continue;
                                     const commentEls = card.querySelectorAll('.comments-comment-item, .comments-comment-entity');
                                     for (const cEl of commentEls) {
                                         const commentTextEl = cEl.querySelector('.comments-comment-item__main-content, .update-components-text');
@@ -2534,6 +2536,9 @@ async function pollCommandsDirectly() {
                         });
                         await new Promise(r => setTimeout(r, 3000));
 
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
+
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
                             func: async (urn) => {
@@ -2594,7 +2599,7 @@ async function pollCommandsDirectly() {
                         const minLikes = payload.minLikes || 0;
                         const minComments = payload.minComments || 0;
 
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/most-recent/', active: true });
+                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed', active: true });
                         globalThis._commandLinkedInTabs.add(apiTab.id);
                         await new Promise((resolve) => {
                             const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
@@ -2603,127 +2608,648 @@ async function pollCommandsDirectly() {
                         });
                         await new Promise(r => setTimeout(r, 3000));
 
-                        // Inject live status overlay
+                        // Inject live status overlay AT START (before scraping)
+                        await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
                             func: () => {
+                                // Remove old overlay if exists
+                                const old = document.getElementById('kommentify-capture-overlay');
+                                if (old) old.remove();
+
                                 const overlay = document.createElement('div');
                                 overlay.id = 'kommentify-capture-overlay';
-                                overlay.innerHTML = `<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:280px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="font-size:16px;font-weight:700">Capturing Posts...</div></div><div style="font-size:13px;opacity:0.9;margin-bottom:8px">Fetching feed via Voyager API</div><div style="display:flex;gap:16px;font-size:12px"><div><span style="opacity:0.7">Found:</span> <span id="komm-found" style="font-weight:700">0</span></div><div><span style="opacity:0.7">Qualified:</span> <span id="komm-qualified" style="font-weight:700">0</span></div></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+                                overlay.innerHTML = `
+                                    <div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:320px">
+                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                                            <div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div>
+                                            <div style="font-size:16px;font-weight:700" id="komm-status">Capturing Posts...</div>
+                                        </div>
+                                        <div style="font-size:13px;opacity:0.9;margin-bottom:12px" id="komm-method">Scraping LinkedIn Feed via DOM</div>
+                                        <div style="display:flex;gap:20px;font-size:13px;font-weight:600">
+                                            <div><span style="opacity:0.7">Found:</span> <span id="komm-found" style="font-weight:700;color:#fff">0</span></div>
+                                            <div><span style="opacity:0.7">Qualified:</span> <span id="komm-qualified" style="font-weight:700;color:#90EE90">0</span></div>
+                                        </div>
+                                        <div style="margin-top:10px;font-size:11px;opacity:0.7" id="komm-last-post"></div>
+                                    </div>
+                                    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
                                 document.body.appendChild(overlay);
+
+                                // Global function to update overlay from anywhere
+                                window.__kommentifyUpdateOverlay = (found, qualified, status, method, lastPost) => {
+                                    console.log('📰 [GLOBAL OVERLAY] Called: found=' + found + ', qualified=' + qualified);
+                                    const foundEl = document.getElementById('komm-found');
+                                    const qualEl = document.getElementById('komm-qualified');
+                                    const statusEl = document.getElementById('komm-status');
+                                    const methodEl = document.getElementById('komm-method');
+                                    const lastEl = document.getElementById('komm-last-post');
+                                    if (foundEl) {
+                                        foundEl.textContent = found;
+                                        console.log('📰 [GLOBAL OVERLAY] Updated found to ' + found);
+                                    }
+                                    if (qualEl) {
+                                        qualEl.textContent = qualified;
+                                        console.log('📰 [GLOBAL OVERLAY] Updated qualified to ' + qualified);
+                                    }
+                                    if (statusEl && status) statusEl.textContent = status;
+                                    if (methodEl && method) methodEl.textContent = method;
+                                    if (lastEl && lastPost) lastEl.textContent = 'Last: ' + lastPost.substring(0, 40) + '...';
+                                };
+                                console.log('📰 [OVERLAY] Global function registered');
                             }
                         });
 
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
+
+                        // Simple DOM scraping only
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
-                            func: async (postCount, minL, minC) => {
-                                try {
-                                    // Update overlay
-                                    const updateOverlay = (found, qualified) => {
-                                        const foundEl = document.getElementById('komm-found');
-                                        const qualEl = document.getElementById('komm-qualified');
-                                        if (foundEl) foundEl.textContent = found;
-                                        if (qualEl) qualEl.textContent = qualified;
+                            func: async (postCount) => {
+                                console.log('📰 [DOM] Simple DOM scraping started, looking for ' + postCount + ' posts');
+
+                                    // Get CSRF token
+                                    const csrf = ('; ' + document.cookie).split('; JSESSIONID=').pop().split(';')[0].replace(/"/g, '');
+                                    console.log('🎯 SCRAPER: CSRF token:', csrf ? 'FOUND' : 'NOT FOUND');
+                                    console.log('🎯 SCRAPER: Cookies:', document.cookie.substring(0, 100));
+
+                                    // Check code elements
+                                    const codeEls = document.querySelectorAll('code[id^="bpr-guid-"]');
+                                    console.log('🎯 SCRAPER: Found code elements:', codeEls.length);
+
+                                    // Try extract page entities
+                                    const extractPageEntities = () => {
+                                        const codeElements = document.querySelectorAll('code[id^="bpr-guid-"]');
+                                        const entities = [];
+                                        for (const el of codeElements) {
+                                            try {
+                                                const data = JSON.parse(el.textContent);
+                                                if (data.included && data.included.length > 0) {
+                                                    entities.push(...data.included);
+                                                }
+                                                if (data.data) {
+                                                    if (Array.isArray(data.data)) {
+                                                        entities.push(...data.data);
+                                                    } else if (data.data.included) {
+                                                        entities.push(...data.data.included);
+                                                    }
+                                                }
+                                            } catch (_) { }
+                                        }
+                                        return entities;
                                     };
 
-                                    const csrf = ('; ' + document.cookie).split('; JSESSIONID=').pop().split(';')[0].replace(/"/g, '');
-                                    // Use the working endpoint: /feed/updatesV2 (same as linkedinActions.js linkedinGetFeed)
-                                    const res = await fetch('https://www.linkedin.com/voyager/api/feed/updatesV2?count=' + postCount + '&q=FEED_TYPE&moduleKey=creator_home&paginationToken=', {
-                                        headers: {
-                                            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
-                                            'csrf-token': csrf,
-                                            'x-restli-protocol-version': '2.0.0'
+                                    const pageEntities = extractPageEntities();
+                                    console.log('🎯 SCRAPER: Page entities extracted:', pageEntities.length);
+
+                                    // Try API
+                                    let apiData = { included: [] };
+                                    try {
+                                        const FEED_UPDATES_URL = "https://www.linkedin.com/voyager/api/feed/dash/feedUpdates";
+                                        const params = { q: "DECORATED_FEED", count: String(Math.min(postCount, 50)), start: "0" };
+                                        const url = FEED_UPDATES_URL + '?' + new URLSearchParams(params);
+                                        console.log('🎯 SCRAPER: Fetching API:', url);
+
+                                        const res = await fetch(url, {
+                                            headers: {
+                                                "Accept": "application/vnd.linkedin.normalized+json+2.1",
+                                                "csrf-token": csrf,
+                                                "x-restli-protocol-version": "2.0.0"
+                                            },
+                                            credentials: "include"
+                                        });
+                                        console.log('🎯 SCRAPER: API response status:', res.status);
+                                        if (res.ok) {
+                                            apiData = await res.json();
+                                            console.log('🎯 SCRAPER: API included length:', apiData?.included?.length || 0);
                                         }
-                                    });
-                                    if (!res.ok) throw new Error('Feed fetch failed: ' + res.status);
-                                    const data = await res.json();
+                                    } catch (e) {
+                                        console.log('🎯 SCRAPER: API error:', e.message);
+                                    }
+
+                                    const allIncluded = [...(apiData.included || []), ...pageEntities];
+                                    console.log('🎯 SCRAPER: Total entities:', allIncluded.length);
+
+                                    // Return early with what we have
+                                    if (allIncluded.length === 0) {
+                                        return { success: true, posts: [], debug: 'no entities found' };
+                                    }
+
+                                    // Log ALL entities to see what's available
+                                    console.log('🎯 ALL ENTITY TYPES:');
+                                    const typeCounts = {};
+                                    for (const e of allIncluded) {
+                                        const t = e.$type || 'unknown';
+                                        typeCounts[t] = (typeCounts[t] || 0) + 1;
+                                    }
+                                    console.log('🎯 Entity type counts:', typeCounts);
+
+                                try {
+                                    // Update overlay - use global function if available
+                                    const updateOverlay = (found, qualified, status, method, lastPost) => {
+                                        console.log('📰 [OVERLAY] updateOverlay called: found=' + found + ', qualified=' + qualified);
+                                        // Try global function first
+                                        if (window.__kommentifyUpdateOverlay) {
+                                            console.log('📰 [OVERLAY] Calling global function');
+                                            window.__kommentifyUpdateOverlay(found, qualified, status, method, lastPost);
+                                        } else {
+                                            console.log('📰 [OVERLAY] Global function NOT found!');
+                                        }
+                                        // Fallback to direct DOM manipulation
+                                        const foundEl = document.getElementById('komm-found');
+                                        const qualEl = document.getElementById('komm-qualified');
+                                        const statusEl = document.getElementById('komm-status');
+                                        const methodEl = document.getElementById('komm-method');
+                                        if (foundEl) {
+                                            foundEl.textContent = found;
+                                            console.log('📰 [OVERLAY] Updated found element to ' + found);
+                                        }
+                                        if (qualEl) {
+                                            qualEl.textContent = qualified;
+                                            console.log('📰 [OVERLAY] Updated qualified element to ' + qualified);
+                                        }
+                                        if (statusEl && status) statusEl.textContent = status;
+                                        if (methodEl && method) methodEl.textContent = method;
+                                    };
+
+                                    console.log('📰 [SCRAPER] Starting feed extraction...');
+                                    console.log('📰 [SCRAPER] Will log each post with likes/comments...');
+
+                                    // === EXACT IMPLEMENTATION FROM WORKING SCRIPT ===
+
+                                    // Helper: extractInnerUrn
+                                    const extractInnerUrn = (updateUrn) => {
+                                        for (const prefix of ["urn:li:activity:", "urn:li:ugcPost:"]) {
+                                            const idx = updateUrn.indexOf(prefix);
+                                            if (idx >= 0) {
+                                                const rest = updateUrn.substring(idx);
+                                                let end = rest.length;
+                                                for (const sep of [",", ")"]) {
+                                                    const pos = rest.indexOf(sep);
+                                                    if (pos >= 0 && pos < end) end = pos;
+                                                }
+                                                return rest.substring(0, end);
+                                            }
+                                        }
+                                        return "";
+                                    };
+
+                                    // Helper: extractText
+                                    const extractText = (entity) => {
+                                        const comm = entity.commentary;
+                                        if (comm?.text) {
+                                            const text = typeof comm.text === "string" ? comm.text : (comm.text?.text || "");
+                                            if (text) return text;
+                                        }
+                                        const sc = entity.specificContent?.["com.linkedin.ugc.ShareContent"];
+                                        if (sc?.shareCommentary?.text) return sc.shareCommentary.text;
+                                        if (entity.message?.text) {
+                                            return typeof entity.message.text === "string" ? entity.message.text : (entity.message.text?.text || "");
+                                        }
+                                        if (entity.value?.text) return entity.value.text;
+                                        return "";
+                                    };
+
+                                    // Helper: extractAuthor
+                                    const extractAuthor = (entity, profiles) => {
+                                        const actor = entity.actor;
+                                        if (actor && typeof actor === "object") {
+                                            const nameObj = actor.name;
+                                            const fullName = (typeof nameObj === "string") ? nameObj : (nameObj && nameObj.text) || "";
+                                            if (fullName) {
+                                                return { name: fullName, url: actor.navigationUrl || "" };
+                                            }
+                                        }
+                                        return { name: "Unknown", url: "" };
+                                    };
+
+                                    // Helper: extractSocialCounts - with socialDetails map like working script
+                                    const extractSocialCounts = (urn, entity, socialCounts, socialDetails) => {
+                                        let likes = 0, comments = 0, reposts = 0;
+                                        const innerUrn = extractInnerUrn(urn);
+                                        const socialKey = innerUrn || urn;
+
+                                        // Source 1: socialCounts map
+                                        const counts = socialCounts[socialKey] || entity.socialDetail || {};
+                                        likes = counts.numLikes || counts.totalSocialActivityCounts?.numLikes || 0;
+                                        comments = counts.numComments || counts.totalSocialActivityCounts?.numComments || 0;
+                                        reposts = counts.numShares || counts.totalSocialActivityCounts?.numShares || 0;
+
+                                        // Source 2: socialDetails map
+                                        const details = socialDetails[socialKey];
+                                        if (details) {
+                                            likes = details.totalSocialActivityCounts?.numLikes || likes;
+                                            comments = details.totalSocialActivityCounts?.numComments || comments;
+                                            reposts = details.totalSocialActivityCounts?.numShares || reposts;
+                                        }
+
+                                        // Source 3: Direct entity fields
+                                        if (entity.socialActivityCounts) {
+                                            likes = entity.socialActivityCounts.numLikes || likes;
+                                            comments = entity.socialActivityCounts.numComments || comments;
+                                            reposts = entity.socialActivityCounts.numShares || reposts;
+                                        }
+
+                                        // Source 4: totalSocialActivityCounts on entity
+                                        if (entity.totalSocialActivityCounts) {
+                                            likes = entity.totalSocialActivityCounts.numLikes || likes;
+                                            comments = entity.totalSocialActivityCounts.numComments || comments;
+                                            reposts = entity.totalSocialActivityCounts.numShares || reposts;
+                                        }
+
+                                        return { likes, comments, reposts };
+                                    };
+
+                                    // Helper: isPostEntity
+                                    const isPostEntity = (entityType) => {
+                                        return [
+                                            "com.linkedin.voyager.feed.render.UpdateV2",
+                                            "com.linkedin.voyager.feed.Update",
+                                            "com.linkedin.voyager.dash.feed.Update",
+                                            "com.linkedin.voyager.identity.profile.ProfileUpdate",
+                                            "com.linkedin.voyager.feed.FeedUpdate",
+                                            "com.linkedin.feed.update",
+                                            "Update",
+                                        ].some(pt => {
+                                            if (!entityType) return false;
+                                            const normalized = entityType.toLowerCase();
+                                            return normalized.includes("update") || normalized.includes("post") || normalized.includes("share");
+                                        });
+                                    };
+
+                                    // extractPageEntities - exact from working script
+                                    const extractPageEntities = () => {
+                                        const codeElements = document.querySelectorAll('code[id^="bpr-guid-"]');
+                                        const entities = [];
+                                        for (const el of codeElements) {
+                                            try {
+                                                const data = JSON.parse(el.textContent);
+                                                if (data.included && data.included.length > 0) {
+                                                    entities.push(...data.included);
+                                                }
+                                                if (data.data) {
+                                                    if (Array.isArray(data.data)) {
+                                                        entities.push(...data.data);
+                                                    } else if (data.data.included) {
+                                                        entities.push(...data.data.included);
+                                                    }
+                                                }
+                                            } catch (_) { }
+                                        }
+                                        console.log('📰 [SCRAPER] Page entities:', entities.length);
+                                        return entities;
+                                    };
+
+                                    // Strategy 1: Extract from code elements (primary)
+                                    const pageEntities = extractPageEntities();
+
+                                    // Strategy 2: REST API with credentials: "include"
+                                    let apiData = { included: [] };
+                                    try {
+                                        const csrf = ('; ' + document.cookie).split('; JSESSIONID=').pop().split(';')[0].replace(/"/g, '');
+                                        const FEED_UPDATES_URL = "https://www.linkedin.com/voyager/api/feed/dash/feedUpdates";
+                                        const params = { q: "DECORATED_FEED", count: String(Math.min(postCount, 50)), start: "0" };
+                                        const res = await fetch(FEED_UPDATES_URL + '?' + new URLSearchParams(params), {
+                                            headers: {
+                                                "Accept": "application/vnd.linkedin.normalized+json+2.1",
+                                                "csrf-token": csrf,
+                                                "x-restli-protocol-version": "2.0.0"
+                                            },
+                                            credentials: "include"
+                                        });
+                                        if (res.ok) {
+                                            apiData = await res.json();
+                                            console.log('📰 [SCRAPER] API included:', apiData?.included?.length || 0);
+                                        }
+                                    } catch (e) {
+                                        console.log('📰 [SCRAPER] API error:', e.message);
+                                    }
+
+                                    // Combine all entities
+                                    const allIncluded = [...(apiData.included || []), ...pageEntities];
+                                    console.log('📰 [SCRAPER] Total entities:', allIncluded.length);
+
+                                    // Build lookup maps - exact from working script
+                                    const profiles = {}, socialCounts = {}, socialDetails = {}, threadUrnMap = {};
+                                    for (const entity of allIncluded) {
+                                        const entityType = entity.$type || "";
+                                        const entityUrn = entity.entityUrn || entity.urn || "";
+
+                                        if (entityType.includes("MiniProfile") || entityType.includes("Profile")) {
+                                            profiles[entityUrn] = entity;
+                                        } else if (entityType.includes("SocialActivityCounts")) {
+                                            const parts = entityUrn.split("fsd_socialActivityCounts:");
+                                            if (parts.length === 2) socialCounts[parts[1]] = entity;
+                                            socialCounts[entityUrn] = entity;
+                                        } else if (entityType.includes("SocialDetail")) {
+                                            const threadId = entity.threadId || entityUrn;
+                                            socialDetails[threadId] = entity;
+                                            const ugcUrn = entity.threadUrn || "";
+                                            if (ugcUrn.startsWith("urn:li:ugcPost:")) {
+                                                const activityUrn = extractInnerUrn(entityUrn);
+                                                if (activityUrn) threadUrnMap[activityUrn] = ugcUrn;
+                                            }
+                                        }
+                                    }
+
                                     const posts = [];
-                                    // Use elements array (same as working linkedinGetFeed in linkedinActions.js)
-                                    const elements = data?.elements || [];
-                                    const included = data?.included || [];
-
-                                    // Build lookup maps for included data
-                                    const profiles = {}, socialCounts = {}, socialDetails = {};
-                                    for (const entity of included) {
-                                        const entityType = entity.$type || '';
-                                        const entityUrn = entity.entityUrn || entity.urn || '';
-                                        if (entityType.includes('MiniProfile') || entityType.includes('Profile')) profiles[entityUrn] = entity;
-                                        else if (entityType.includes('SocialActivityCounts')) socialCounts[entityUrn] = entity;
-                                        else if (entityType.includes('SocialDetail')) socialDetails[entity.threadId || entityUrn] = entity;
-                                    }
-
                                     let foundCount = 0;
-                                    // Iterate over elements array (not included) - matching working implementation
-                                    for (const el of elements) {
-                                        try {
-                                            // Extract text from commentary - matching linkedinGetFeed logic
-                                            let postText = el?.commentary?.text?.text || '';
-                                            if (!postText) {
-                                                // Look up in included array if not found directly
-                                                const elUrn = el?.entityUrn;
-                                                for (const inc of included) {
-                                                    if (inc?.entityUrn === elUrn && inc?.commentary?.text?.text) {
-                                                        postText = inc.commentary.text.text;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                            if (!postText || postText.length < 20) continue;
 
-                                            foundCount++;
-                                            updateOverlay(foundCount, posts.length);
+                                    // Iterate over included - exact from working script
+                                    for (const entity of allIncluded) {
+                                        if (posts.length >= postCount) break;
 
-                                            // Extract author - matching linkedinGetFeed logic
-                                            let authorName = 'Unknown', authorUrl = '';
-                                            const actorUrn = el?.actor?.urn;
-                                            if (el?.actor?.name?.text) {
-                                                authorName = el.actor.name.text;
-                                            } else {
-                                                // Look up in included array
-                                                for (const inc of included) {
-                                                    if (inc?.urn === actorUrn && inc?.name?.text) {
-                                                        authorName = inc.name.text;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                            if (el?.actor?.navigationContext?.actionTarget) {
-                                                authorUrl = el.actor.navigationContext.actionTarget;
-                                            }
+                                        const entityType = entity.$type || "";
+                                        if (!isPostEntity(entityType)) continue;
 
-                                            // Extract engagement counts - matching linkedinGetFeed logic
-                                            const sc = el?.socialDetail?.totalSocialActivityCounts;
-                                            const likes = sc?.numLikes || 0;
-                                            const comments = sc?.numComments || 0;
-                                            const shares = sc?.numShares || 0;
+                                        const urn = entity.entityUrn || entity.urn || "";
+                                        if (!urn) continue;
 
-                                            if (likes < minL || comments < minC) continue;
+                                        const text = extractText(entity);
+                                        if (!text || text.length < 5) continue;
 
-                                            // Build post URL - matching linkedinGetFeed logic
-                                            const activityMatch = (el?.entityUrn || '').match(/activity:(\d+)/);
-                                            const postUrl = activityMatch ? 'https://www.linkedin.com/feed/update/urn:li:activity:' + activityMatch[1] + '/' : '';
+                                        foundCount++;
 
-                                            posts.push({
-                                                postContent: postText.substring(0, 5000),
-                                                authorName,
-                                                authorUrl,
-                                                likes,
-                                                comments,
-                                                shares,
-                                                postUrl,
-                                                urn: el?.entityUrn || ''
-                                            });
-                                            updateOverlay(foundCount, posts.length);
-                                        } catch (e) { console.error('Parse error:', e); }
+                                        // Log EVERY post found with all details
+                                        const author = extractAuthor(entity, profiles);
+                                        const counts = extractSocialCounts(urn, entity, socialCounts, socialDetails);
+
+                                        // Detailed log for EACH post with FULL text preview
+                                        const textPreview = text.substring(0, 100).replace(/\n/g, ' ');
+                                        console.log('══════════════════════════════════════════════════════════');
+                                        console.log('🎯 POST #' + foundCount + ' | Likes: ' + counts.likes + ' | Comments: ' + counts.comments + ' | Shares: ' + counts.reposts);
+                                        console.log('📝 Text: ' + textPreview + (text.length > 100 ? '...' : ''));
+                                        console.log('👤 Author: ' + (author.name || 'Unknown'));
+                                        console.log('🔗 URN: ' + urn);
+                                        console.log('══════════════════════════════════════════════════════════');
+
+                                        // Update overlay after each post
+                                        updateOverlay(foundCount, posts.length, 'Scanning posts...', 'DOM Scraping', textPreview);
+
+                                        // Apply filters - temporarily disabled
+                                        // if (counts.likes < minL || counts.comments < minC) continue;
+
+                                        // Build post URL
+                                        let postUrl = '';
+                                        const activityMatch = urn.match(/activity:(\d+)/);
+                                        if (activityMatch) {
+                                            postUrl = 'https://www.linkedin.com/feed/update/urn:li:activity:' + activityMatch[1] + '/';
+                                        }
+
+                                        posts.push({
+                                            postContent: text.substring(0, 5000),
+                                            authorName: author.name,
+                                            authorProfileUrl: author.url,
+                                            likes: counts.likes,
+                                            comments: counts.comments,
+                                            shares: counts.reposts,
+                                            postUrl,
+                                            urn: urn
+                                        });
+
+                                        // Update overlay after adding to qualified
+                                        updateOverlay(foundCount, posts.length, 'Scanning posts...', 'DOM Scraping', textPreview);
                                     }
-                                    return { success: true, posts };
+
+                                    console.log('📰 [SCRAPER] Found:', foundCount, 'Qualified:', posts.length);
+                                    return { success: true, posts, debug: { pageEntities: pageEntities.length, apiIncluded: (apiData.included || []).length, foundCount, postsLen: posts.length } };
                                 } catch (e) { return { success: false, error: e.message, posts: [] }; }
                             },
                             args: [count, minLikes, minComments]
                         });
 
-                        const scriptResult = result?.[0]?.result;
-                        const posts = scriptResult?.posts || [];
-                        console.log(`📰 POLL-ALARM: linkedin_get_feed_api got ${posts.length} posts`);
+                        let scriptResult = result?.[0]?.result;
+                        let posts = scriptResult?.posts || [];
+
+                        // Log result status with debug info
+                        if (!scriptResult?.success) {
+                            console.log('📰 POLL-ALARM: Script error:', scriptResult?.error);
+                        }
+                        console.log('📰 POLL-ALARM: DOM scrape result:', posts.length, 'posts');
+                        console.log('📰 POLL-ALARM: DEBUG:', scriptResult?.debug);
+
+                        // If API returned 0 posts, try DOM scraping fallback
+                        if (posts.length === 0) {
+                            console.log('📰 POLL-ALARM: API returned 0 posts, trying DOM scraping fallback...');
+
+                            // Update overlay to show DOM fallback
+                            await chrome.scripting.executeScript({
+                                target: { tabId: apiTab.id },
+                                func: () => {
+                                    if (window.__kommentifyUpdateOverlay) {
+                                        window.__kommentifyUpdateOverlay(0, 0, 'Trying DOM fallback...', 'DOM Scraping', '');
+                                    }
+                                    const methodEl = document.getElementById('komm-method');
+                                    if (methodEl) methodEl.textContent = 'API failed - using DOM fallback';
+                                    const statusEl = document.getElementById('komm-status');
+                                    if (statusEl) statusEl.textContent = 'Scraping page...';
+                                }
+                            });
+
+                            try {
+                                const domResult = await chrome.scripting.executeScript({
+                                    target: { tabId: apiTab.id },
+                                    func: async (postCount, minL = 0, minC = 0) => {
+                                        const posts = [];
+                                        console.log('📰 [DOM] Starting DOM scrape...');
+
+                                        // First check for code elements (they might have data)
+                                        const codeEls = document.querySelectorAll('code[id^="bpr-guid-"]');
+                                        console.log('📰 [DOM] Found code elements:', codeEls.length);
+
+                                        // Try multiple selector strategies - check all at once
+                                        const selectors = [
+                                            '.feed-shared-update-v2',
+                                            '.profile-creator-shared-feed-update__container',
+                                            '[data-urn*="activity"]',
+                                            '[data-urn*="ugcPost"]',
+                                            '.update-components-update-v2',
+                                            '.scaffold-finite-update',
+                                            'article[data-id]',
+                                            '.feed-shared-feed-update-v2'
+                                        ];
+
+                                        let postElements = [];
+                                        for (const sel of selectors) {
+                                            const found = document.querySelectorAll(sel);
+                                            if (found.length > 0) {
+                                                console.log('📰 [DOM] Selector', sel, 'found', found.length);
+                                                postElements = Array.from(found);
+                                                break;
+                                            }
+                                        }
+
+                                        console.log('📰 [DOM] Total post elements found:', postElements.length);
+
+                                        // Update overlay function for DOM
+                                        const updateOverlay = (found, qualified, status, method, lastPost) => {
+                                            if (window.__kommentifyUpdateOverlay) {
+                                                window.__kommentifyUpdateOverlay(found, qualified, status, method, lastPost);
+                                            }
+                                        };
+
+                                        let domFoundCount = 0;
+                                        for (const el of postElements) {
+                                            try {
+                                                // Extract post text
+                                                let postText = '';
+                                                const textEl = el.querySelector('.update-components-text') ||
+                                                              el.querySelector('.feed-shared-update-v2__description') ||
+                                                              el.querySelector('.feed-shared-text');
+                                                if (textEl) postText = textEl.textContent?.trim() || '';
+                                                if (!postText) {
+                                                    const mainText = el.querySelector('.feed-shared-update-v2__main-content');
+                                                    if (mainText) postText = mainText.textContent?.trim() || '';
+                                                }
+                                                if (!postText || postText.length < 5) continue;
+
+                                                domFoundCount++;
+
+                                                // Extract author
+                                                let authorName = 'Unknown';
+                                                const authorEl = el.querySelector('.feed-shared-actor__name') ||
+                                                               el.querySelector('.update-components-actor__name');
+                                                if (authorEl) authorName = authorEl.textContent?.trim() || 'Unknown';
+
+                                                // Extract author URL
+                                                let authorUrl = '';
+                                                const authorLink = el.querySelector('.feed-shared-actor__link a') ||
+                                                                 el.querySelector('a[href*="/in/"]');
+                                                if (authorLink) authorUrl = authorLink.href || '';
+
+                                                // Extract engagement from DOM
+                                                let likes = 0, comments = 0, shares = 0;
+                                                const reactionContainer = el.querySelector('.feed-shared-social-details') ||
+                                                                         el.querySelector('.social-details-social-activity');
+                                                if (reactionContainer) {
+                                                    // Likes
+                                                    const likeEl = reactionContainer.querySelector('[class*="like"], [class*="reaction"]');
+                                                    if (likeEl) {
+                                                        const likeText = likeEl.textContent?.trim() || '';
+                                                        const likeMatch = likeText.match(/[\d,]+/);
+                                                        if (likeMatch) likes = parseInt(likeMatch[0].replace(/,/g, ''));
+                                                    }
+                                                    // Comments
+                                                    const commentEl = reactionContainer.querySelector('[class*="comment"]');
+                                                    if (commentEl) {
+                                                        const commentText = commentEl.textContent?.trim() || '';
+                                                        const commentMatch = commentText.match(/[\d,]+/);
+                                                        if (commentMatch) comments = parseInt(commentMatch[0].replace(/,/g, ''));
+                                                    }
+                                                    // Shares
+                                                    const shareEl = reactionContainer.querySelector('[class*="repost"], [class*="share"]');
+                                                    if (shareEl) {
+                                                        const shareText = shareEl.textContent?.trim() || '';
+                                                        const shareMatch = shareText.match(/[\d,]+/);
+                                                        if (shareMatch) shares = parseInt(shareMatch[0].replace(/,/g, ''));
+                                                    }
+                                                }
+
+                                                // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
+
+                                                // Extract post URL
+                                                let postUrl = '';
+                                                const urn = el.getAttribute('data-urn') || '';
+                                                const activityMatch = urn.match(/activity:(\d+)/);
+                                                if (activityMatch) {
+                                                    postUrl = 'https://www.linkedin.com/feed/update/urn:li:activity:' + activityMatch[1] + '/';
+                                                } else {
+                                                    const linkEl = el.querySelector('a[href*="linkedin.com/feed/update"]');
+                                                    if (linkEl) postUrl = linkEl.href || '';
+                                                }
+
+                                                posts.push({
+                                                    postContent: postText.substring(0, 5000),
+                                                    authorName,
+                                                    authorProfileUrl: authorUrl,
+                                                    likes,
+                                                    comments,
+                                                    shares,
+                                                    postUrl,
+                                                    urn
+                                                });
+
+                                                // Detailed log for EACH DOM post
+                                                const textPreview = postText.substring(0, 100).replace(/\n/g, ' ');
+                                                console.log('══════════════════════════════════════════════════════════');
+                                                console.log('🎯 DOM POST #' + domFoundCount + ' | Likes: ' + likes + ' | Comments: ' + comments + ' | Shares: ' + shares);
+                                                console.log('📝 Text: ' + textPreview + (postText.length > 100 ? '...' : ''));
+                                                console.log('👤 Author: ' + authorName);
+                                                console.log('══════════════════════════════════════════════════════════');
+
+                                                // Update overlay after each post
+                                                updateOverlay(domFoundCount, posts.length, 'Scanning posts...', 'DOM Scraping', textPreview);
+                                            } catch (e) { }
+                                        }
+                                        return { success: true, posts, domFoundCount };
+                                    },
+                                    args: [count, minLikes, minComments]
+                                });
+                                const domPosts = domResult?.[0]?.result?.posts || [];
+                                const domFound = domResult?.[0]?.result?.domFoundCount || 0;
+                                if (domPosts.length > 0) {
+                                    posts = domPosts;
+                                    scriptResult = { success: true };
+                                    console.log(`📰 POLL-ALARM: DOM fallback found ${domFound} posts, qualified: ${posts.length}`);
+
+                                    // Update final overlay status
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: apiTab.id },
+                                        func: () => {
+                                            if (window.__kommentifyUpdateOverlay) {
+                                                window.__kommentifyUpdateOverlay(domFound, posts.length, 'Complete!', 'DOM Scraping', '');
+                                            }
+                                            const statusEl = document.getElementById('komm-status');
+                                            if (statusEl) statusEl.textContent = 'Complete!';
+                                        }
+                                    });
+                                }
+                            } catch (e) {
+                                console.error('📰 POLL-ALARM: DOM fallback failed:', e);
+                            }
+                        }
+
+                        console.log(`📰 POLL-ALARM: DOM scraping got ${posts.length} posts`);
+
+                        // Get debug info for proper counts
+                        const debugInfo = scriptResult?.debug || {};
+                        const foundCount = debugInfo.foundCount || posts.length;
+                        const qualifiedCount = debugInfo.postsLen || posts.length;
+
+                        // Update final overlay status with correct counts
+                        await chrome.scripting.executeScript({
+                            target: { tabId: apiTab.id },
+                            func: (found, qualified) => {
+                                console.log('📰 OVERLAY UPDATE: Found=' + found + ', Qualified=' + qualified);
+
+                                // Try global function first
+                                if (window.__kommentifyUpdateOverlay) {
+                                    window.__kommentifyUpdateOverlay(found, qualified, 'Complete!', 'DOM Scraping', '');
+                                }
+
+                                // Direct DOM update
+                                const foundEl = document.getElementById('komm-found');
+                                const qualEl = document.getElementById('komm-qualified');
+                                const statusEl = document.getElementById('komm-status');
+                                const methodEl = document.getElementById('komm-method');
+
+                                if (foundEl) {
+                                    foundEl.textContent = found;
+                                    console.log('📰 OVERLAY: Updated found to ' + found);
+                                }
+                                if (qualEl) {
+                                    qualEl.textContent = qualified;
+                                    console.log('📰 OVERLAY: Updated qualified to ' + qualified);
+                                }
+                                if (statusEl) {
+                                    statusEl.textContent = `Found ${qualified} posts!`;
+                                }
+                                if (methodEl) {
+                                    methodEl.textContent = 'Done - saved to dashboard';
+                                }
+                            },
+                            args: [foundCount, qualifiedCount]
+                        });
 
                         // Save posts to backend
                         if (posts.length > 0) {
@@ -2778,36 +3304,56 @@ async function pollCommandsDirectly() {
                         });
                         await new Promise(r => setTimeout(r, 3000));
 
+                        // Inject live status overlay AT START (before scraping)
+                        await chrome.scripting.executeScript({
+                            target: { tabId: apiTab.id },
+                            func: () => {
+                                const overlay = document.createElement('div');
+                                overlay.id = 'kommentify-capture-overlay';
+                                overlay.innerHTML = `<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:280px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="font-size:16px;font-weight:700">Searching Posts...</div></div><div style="font-size:13px;opacity:0.9;margin-bottom:8px">Searching via DOM Scraping</div><div style="display:flex;gap:16px;font-size:12px"><div><span style="opacity:0.7">Found:</span> <span id="komm-found" style="font-weight:700">0</span></div><div><span style="opacity:0.7">Qualified:</span> <span id="komm-qualified" style="font-weight:700">0</span></div></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+                                document.body.appendChild(overlay);
+                            }
+                        });
+
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
+
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
                             func: async (kw, maxCount, minL, minC) => {
                                 // Helper: DOM-based scraping fallback
                                 const scrapeFromDOM = () => {
                                     const posts = [];
-                                    // Try multiple selectors for post containers
+                                    // Try multiple selectors for post containers (modern LinkedIn UI) - fixed order
                                     let postElements = document.querySelectorAll('.feed-shared-update-v2');
                                     if (!postElements.length) postElements = document.querySelectorAll('[data-urn*="activity"]');
+                                    if (!postElements.length) postElements = document.querySelectorAll('[data-urn*="ugcPost"]');
+                                    if (!postElements.length) postElements = document.querySelectorAll('.profile-creator-shared-feed-update__container');
+                                    if (!postElements.length) postElements = document.querySelectorAll('.update-components-update-v2');
                                     if (!postElements.length) postElements = document.querySelectorAll('.feed-shared-feed-update-v2');
                                     if (!postElements.length) postElements = document.querySelectorAll('.scaffold-finite-update');
+                                    if (!postElements.length) postElements = document.querySelectorAll('.social-details-social-activity');
 
                                     for (const el of postElements) {
                                         try {
-                                            // Extract post text
+                                            // Extract post text (modern LinkedIn UI selectors)
                                             let postText = '';
-                                            const textEl = el.querySelector('.feed-shared-update-v2__description') ||
+                                            const textEl = el.querySelector('.update-components-text') ||
+                                                          el.querySelector('.feed-shared-update-v2__description') ||
                                                           el.querySelector('.feed-shared-text') ||
                                                           el.querySelector('.feed-shared-actor__description') ||
-                                                          el.querySelector('[data-urn*="activity"]');
+                                                          el.querySelector('.update-v2-post-theme__description');
                                             if (textEl) {
                                                 postText = textEl.textContent?.trim() || '';
                                             }
                                             if (!postText) {
                                                 // Try to get from innerText of the main element
                                                 const mainText = el.querySelector('.feed-shared-update-v2__main-content') ||
-                                                                el.querySelector('.feed-shared-text__content');
+                                                                el.querySelector('.feed-shared-text__content') ||
+                                                                el.querySelector('.update-components-text');
                                                 if (mainText) postText = mainText.textContent?.trim() || '';
                                             }
-                                            if (!postText || postText.length < 20) continue;
+                                            if (!postText || postText.length < 5) continue;
 
                                             // Extract author name
                                             let authorName = 'Unknown';
@@ -2848,7 +3394,8 @@ async function pollCommandsDirectly() {
                                                 }
                                             }
 
-                                            if (likes < minL || comments < minC) continue;
+                                            // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
 
                                             // Extract post URL from data-urn or link
                                             let postUrl = '';
@@ -2876,28 +3423,66 @@ async function pollCommandsDirectly() {
                                     return posts;
                                 };
 
+                                // Update overlay helper
+                                const updateOverlay = (found, qualified, status, method, lastPost) => {
+                                    if (window.__kommentifyUpdateOverlay) {
+                                        window.__kommentifyUpdateOverlay(found, qualified, status, method, lastPost);
+                                    }
+                                    const foundEl = document.getElementById('komm-found');
+                                    const qualEl = document.getElementById('komm-qualified');
+                                    if (foundEl) foundEl.textContent = found;
+                                    if (qualEl) qualEl.textContent = qualified;
+                                };
+
                                 // Try API first
                                 let posts = [];
                                 let apiSuccess = false;
                                 try {
                                     const csrf = ('; ' + document.cookie).split('; JSESSIONID=').pop().split(';')[0].replace(/"/g, '');
-                                    const encodedKw = encodeURIComponent(kw);
-                                    const url = 'https://www.linkedin.com/voyager/api/graphql?variables=(start:0,origin:SWITCH_TAB_ALL,query:(keywords:' + encodedKw + ',flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:resultType,value:List(CONTENT))),includeFiltersInResponse:false))&queryId=voyagerSearchDashClusters.66109b4d93ab08e24c4dc08e77d5d699';
-                                    const res = await fetch(url, {
+
+                                    // Strategy 1: Extract from <code id="bpr-guid-*> elements (primary method)
+                                    const extractPageEntities = () => {
+                                        const codeElements = document.querySelectorAll('code[id^="bpr-guid-"]');
+                                        const entities = [];
+                                        for (const el of codeElements) {
+                                            try {
+                                                const data = JSON.parse(el.textContent);
+                                                if (data.included && data.included.length > 0) {
+                                                    entities.push(...data.included);
+                                                }
+                                            } catch (_) { }
+                                        }
+                                        return entities;
+                                    };
+
+                                    // Strategy 2: Voyager REST API with search params
+                                    const FEED_SEARCH_URL = "https://www.linkedin.com/voyager/api/feed/dash/feedUpdates";
+                                    const searchParams = {
+                                        q: "DECORATED_FEED",
+                                        count: String(maxCount),
+                                        start: "0",
+                                        keywords: kw,
+                                        queryContext: "(searchDashHumanAccessibleFilters:List())"
+                                    };
+                                    const res = await fetch(FEED_SEARCH_URL + '?' + new URLSearchParams(searchParams), {
                                         headers: {
-                                            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
-                                            'csrf-token': csrf,
-                                            'x-li-graphql-pegasus-client': 'true',
-                                            'x-restli-protocol-version': '2.0.0'
+                                            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+                                            "csrf-token": csrf,
+                                            "x-restli-protocol-version": "2.0.0"
                                         }
                                     });
+
                                     if (res.ok) {
                                         const data = await res.json();
                                         const included = data?.included || [];
 
+                                        // Also extract entities from <code> elements
+                                        const pageEntities = extractPageEntities();
+                                        const allIncluded = [...included, ...pageEntities];
+
                                         // Build lookup maps
                                         const profiles = {}, socialCounts = {}, socialDetails = {};
-                                        for (const entity of included) {
+                                        for (const entity of allIncluded) {
                                             const entityType = entity.$type || '';
                                             const entityUrn = entity.entityUrn || entity.urn || '';
                                             if (entityType.includes('MiniProfile') || entityType.includes('Profile')) profiles[entityUrn] = entity;
@@ -2905,7 +3490,20 @@ async function pollCommandsDirectly() {
                                             else if (entityType.includes('SocialDetail')) socialDetails[entity.threadId || entityUrn] = entity;
                                         }
 
-                                        for (const entity of included) {
+                                        // Helper to extract social counts
+                                        const extractSocialCounts = (urn, entity, socialCounts, socialDetails) => {
+                                            let likes = 0, comments = 0, reposts = 0;
+                                            const counts = socialCounts[urn] || entity.socialDetail || {};
+                                            likes = counts.numLikes || counts.totalSocialActivityCounts?.numLikes || 0;
+                                            comments = counts.numComments || counts.totalSocialActivityCounts?.numComments || 0;
+                                            reposts = counts.numShares || counts.totalSocialActivityCounts?.numShares || 0;
+                                            return { likes, comments, reposts };
+                                        };
+
+                                        const elements = data?.elements || [];
+                                        let foundCount = 0;
+
+                                        for (const entity of elements) {
                                             try {
                                                 const entityType = entity.$type || '';
                                                 if (!entityType.toLowerCase().includes('update')) continue;
@@ -2914,7 +3512,10 @@ async function pollCommandsDirectly() {
                                                 const comm = entity.commentary;
                                                 if (comm?.text) postText = typeof comm.text === 'string' ? comm.text : (comm.text?.text || '');
                                                 if (!postText && entity.message?.text) postText = typeof entity.message.text === 'string' ? entity.message.text : (entity.message.text?.text || '');
-                                                if (!postText || postText.length < 20) continue;
+                                                if (!postText || postText.length < 5) continue;
+
+                                                foundCount++;
+                                                updateOverlay(foundCount, posts.length, 'Scanning...', 'Search API', '');
 
                                                 let authorName = 'Unknown', authorUrl = '';
                                                 const actor = entity.actor;
@@ -2925,18 +3526,19 @@ async function pollCommandsDirectly() {
                                                 }
 
                                                 const entityUrn = entity.entityUrn || '';
-                                                const socialDetail = socialDetails[entityUrn] || entity.socialDetail || {};
-                                                const counts = socialDetail.totalSocialActivityCounts || {};
-                                                const likes = counts.numLikes || 0;
-                                                const comments = counts.numComments || 0;
-                                                const shares = counts.numShares || 0;
+                                                const socialCountsData = extractSocialCounts(entityUrn, entity, socialCounts, socialDetails);
+                                                const likes = socialCountsData.likes;
+                                                const comments = socialCountsData.comments;
+                                                const shares = socialCountsData.reposts;
 
-                                                if (likes < minL || comments < minC) continue;
+                                                // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
 
                                                 const activityMatch = entityUrn.match(/activity:(\d+)/);
                                                 const postUrl = activityMatch ? 'https://www.linkedin.com/feed/update/urn:li:activity:' + activityMatch[1] + '/' : '';
 
                                                 posts.push({ postContent: postText.substring(0, 5000), authorName, authorUrl, likes, comments, shares, postUrl, urn: entityUrn });
+                                                updateOverlay(foundCount, posts.length, 'Scanning...', 'Search API', '');
                                             } catch (e) { console.error('Parse error:', e); }
                                         }
                                         if (posts.length > 0) apiSuccess = true;
@@ -2957,9 +3559,103 @@ async function pollCommandsDirectly() {
                             args: [keyword, count, minLikes, minComments]
                         });
 
-                        const scriptResult = result?.[0]?.result;
-                        const posts = scriptResult?.posts || [];
-                        console.log(`🔍 POLL-ALARM: linkedin_search_posts_api got ${posts.length} posts for "${keyword}"`);
+                        let scriptResult = result?.[0]?.result;
+                        let posts = scriptResult?.posts || [];
+
+                        // Log result status with debug info
+                        if (!scriptResult?.success) {
+                            console.log('📰 POLL-ALARM: Script error:', scriptResult?.error);
+                        }
+                        console.log('📰 POLL-ALARM: DOM scrape result:', posts.length, 'posts');
+                        console.log('📰 POLL-ALARM: DEBUG:', scriptResult?.debug);
+
+                        // If API returned 0 posts, try DOM scraping fallback
+                        if (posts.length === 0) {
+                            console.log('🔍 POLL-ALARM: API returned 0 posts, trying DOM scraping fallback...');
+                            try {
+                                const domResult = await chrome.scripting.executeScript({
+                                    target: { tabId: apiTab.id },
+                                    func: async (kw, maxCount, minL = 0, minC = 0) => {
+                                        const posts = [];
+                                        let postElements = document.querySelectorAll('.profile-creator-shared-feed-update__container');
+                                        if (!postElements.length) postElements = document.querySelectorAll('[data-urn*="activity"]');
+                                        if (!postElements.length) postElements = document.querySelectorAll('.feed-shared-update-v2');
+                                        if (!postElements.length) postElements = document.querySelectorAll('.update-components-update-v2');
+
+                                        for (const el of postElements) {
+                                            try {
+                                                let postText = '';
+                                                const textEl = el.querySelector('.update-components-text') ||
+                                                              el.querySelector('.feed-shared-update-v2__description') ||
+                                                              el.querySelector('.feed-shared-text');
+                                                if (textEl) postText = textEl.textContent?.trim() || '';
+                                                if (!postText) {
+                                                    const mainText = el.querySelector('.feed-shared-update-v2__main-content');
+                                                    if (mainText) postText = mainText.textContent?.trim() || '';
+                                                }
+                                                if (!postText || postText.length < 5) continue;
+
+                                                let authorName = 'Unknown';
+                                                const authorEl = el.querySelector('.feed-shared-actor__name');
+                                                if (authorEl) authorName = authorEl.textContent?.trim() || 'Unknown';
+
+                                                let authorUrl = '';
+                                                const authorLink = el.querySelector('.feed-shared-actor__link a');
+                                                if (authorLink) authorUrl = authorLink.href || '';
+
+                                                let likes = 0, comments = 0, shares = 0;
+                                                const reactionContainer = el.querySelector('.feed-shared-social-details');
+                                                if (reactionContainer) {
+                                                    const likeEl = reactionContainer.querySelector('[class*="like"], [class*="reaction"]');
+                                                    if (likeEl) {
+                                                        const likeMatch = (likeEl.textContent?.trim() || '').match(/[\d,]+/);
+                                                        if (likeMatch) likes = parseInt(likeMatch[0].replace(/,/g, ''));
+                                                    }
+                                                    const commentEl = reactionContainer.querySelector('[class*="comment"]');
+                                                    if (commentEl) {
+                                                        const commentMatch = (commentEl.textContent?.trim() || '').match(/[\d,]+/);
+                                                        if (commentMatch) comments = parseInt(commentMatch[0].replace(/,/g, ''));
+                                                    }
+                                                    const shareEl = reactionContainer.querySelector('[class*="repost"], [class*="share"]');
+                                                    if (shareEl) {
+                                                        const shareMatch = (shareEl.textContent?.trim() || '').match(/[\d,]+/);
+                                                        if (shareMatch) shares = parseInt(shareMatch[0].replace(/,/g, ''));
+                                                    }
+                                                }
+
+                                                // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
+
+                                                let postUrl = '';
+                                                const urn = el.getAttribute('data-urn') || '';
+                                                const activityMatch = urn.match(/activity:(\d+)/);
+                                                if (activityMatch) postUrl = 'https://www.linkedin.com/feed/update/urn:li:activity:' + activityMatch[1] + '/';
+
+                                                posts.push({
+                                                    postContent: postText.substring(0, 5000),
+                                                    authorName,
+                                                    authorProfileUrl: authorUrl,
+                                                    likes, comments, shares,
+                                                    postUrl, urn
+                                                });
+                                            } catch (e) { }
+                                        }
+                                        return { success: true, posts };
+                                    },
+                                    args: [keyword, count, minLikes, minComments]
+                                });
+                                const domPosts = domResult?.[0]?.result?.posts || [];
+                                if (domPosts.length > 0) {
+                                    posts = domPosts;
+                                    scriptResult = { success: true };
+                                    console.log(`🔍 POLL-ALARM: DOM fallback got ${posts.length} posts`);
+                                }
+                            } catch (e) {
+                                console.error('🔍 POLL-ALARM: DOM fallback failed:', e);
+                            }
+                        }
+
+                        console.log(`🔍 POLL-ALARM: DOM scraping found ${posts.length} posts for "${keyword}"`);
 
                         if (posts.length > 0) {
                             try {
@@ -3013,35 +3709,54 @@ async function pollCommandsDirectly() {
                         });
                         await new Promise(r => setTimeout(r, 3000));
 
+                        // Inject live status overlay AT START (before scraping)
+                        await chrome.scripting.executeScript({
+                            target: { tabId: apiTab.id },
+                            func: () => {
+                                const overlay = document.createElement('div');
+                                overlay.id = 'kommentify-capture-overlay';
+                                overlay.innerHTML = `<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0077b5,#00a0dc);color:white;padding:20px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:999999;font-family:system-ui,-apple-system,sans-serif;min-width:280px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:24px;height:24px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 1s linear infinite"></div><div style="font-size:16px;font-weight:700">Finding Trending...</div></div><div style="font-size:13px;opacity:0.9;margin-bottom:8px">Fetching trending via DOM Scraping</div><div style="display:flex;gap:16px;font-size:12px"><div><span style="opacity:0.7">Found:</span> <span id="komm-found" style="font-weight:700">0</span></div><div><span style="opacity:0.7">Qualified:</span> <span id="komm-qualified" style="font-weight:700">0</span></div></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+                                document.body.appendChild(overlay);
+                            }
+                        });
+
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
+
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
                             func: async (kw, maxCount, minL = 0, minC = 0) => {
                                 // Helper: DOM-based scraping fallback for trending
                                 const scrapeFromDOM = () => {
                                     const posts = [];
-                                    // Try multiple selectors for post containers
+                                    // Try multiple selectors for post containers (modern LinkedIn UI) - fixed order
                                     let postElements = document.querySelectorAll('.feed-shared-update-v2');
                                     if (!postElements.length) postElements = document.querySelectorAll('[data-urn*="activity"]');
+                                    if (!postElements.length) postElements = document.querySelectorAll('[data-urn*="ugcPost"]');
+                                    if (!postElements.length) postElements = document.querySelectorAll('.profile-creator-shared-feed-update__container');
+                                    if (!postElements.length) postElements = document.querySelectorAll('.update-components-update-v2');
                                     if (!postElements.length) postElements = document.querySelectorAll('.feed-shared-feed-update-v2');
                                     if (!postElements.length) postElements = document.querySelectorAll('.scaffold-finite-update');
 
                                     for (const el of postElements) {
                                         try {
-                                            // Extract post text
+                                            // Extract post text (modern LinkedIn UI selectors)
                                             let postText = '';
-                                            const textEl = el.querySelector('.feed-shared-update-v2__description') ||
+                                            const textEl = el.querySelector('.update-components-text') ||
+                                                          el.querySelector('.feed-shared-update-v2__description') ||
                                                           el.querySelector('.feed-shared-text') ||
                                                           el.querySelector('.feed-shared-actor__description') ||
-                                                          el.querySelector('[data-urn*="activity"]');
+                                                          el.querySelector('.update-v2-post-theme__description');
                                             if (textEl) {
                                                 postText = textEl.textContent?.trim() || '';
                                             }
                                             if (!postText) {
                                                 const mainText = el.querySelector('.feed-shared-update-v2__main-content') ||
-                                                                el.querySelector('.feed-shared-text__content');
+                                                                el.querySelector('.feed-shared-text__content') ||
+                                                                el.querySelector('.update-components-text');
                                                 if (mainText) postText = mainText.textContent?.trim() || '';
                                             }
-                                            if (!postText || postText.length < 20) continue;
+                                            if (!postText || postText.length < 5) continue;
 
                                             // Extract author name
                                             let authorName = 'Unknown';
@@ -3094,7 +3809,8 @@ async function pollCommandsDirectly() {
                                             }
 
                                             // Filter by min engagement
-                                            if (likes < minL || comments < minC) continue;
+                                            // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
 
                                             const engagement = likes + comments * 3 + shares * 2;
                                             posts.push({
@@ -3113,27 +3829,65 @@ async function pollCommandsDirectly() {
                                     return posts;
                                 };
 
+                                // Update overlay helper
+                                const updateOverlay = (found, qualified, status, method, lastPost) => {
+                                    if (window.__kommentifyUpdateOverlay) {
+                                        window.__kommentifyUpdateOverlay(found, qualified, status, method, lastPost);
+                                    }
+                                    const foundEl = document.getElementById('komm-found');
+                                    const qualEl = document.getElementById('komm-qualified');
+                                    if (foundEl) foundEl.textContent = found;
+                                    if (qualEl) qualEl.textContent = qualified;
+                                };
+
                                 // Try API first
                                 let posts = [];
                                 let apiSuccess = false;
                                 try {
                                     const csrf = ('; ' + document.cookie).split('; JSESSIONID=').pop().split(';')[0].replace(/"/g, '');
-                                    const encodedKw = encodeURIComponent(kw);
-                                    const url = 'https://www.linkedin.com/voyager/api/graphql?variables=(start:0,origin:SWITCH_TAB_ALL,query:(keywords:' + encodedKw + ',flagshipSearchIntent:SEARCH_SRP,queryParameters:List((key:resultType,value:List(CONTENT)),(key:datePosted,value:List(past-week))),includeFiltersInResponse:false))&queryId=voyagerSearchDashClusters.66109b4d93ab08e24c4dc08e77d5d699';
-                                    const res = await fetch(url, {
+
+                                    // Strategy 1: Extract from <code id="bpr-guid-*> elements (primary method)
+                                    const extractPageEntities = () => {
+                                        const codeElements = document.querySelectorAll('code[id^="bpr-guid-"]');
+                                        const entities = [];
+                                        for (const el of codeElements) {
+                                            try {
+                                                const data = JSON.parse(el.textContent);
+                                                if (data.included && data.included.length > 0) {
+                                                    entities.push(...data.included);
+                                                }
+                                            } catch (_) { }
+                                        }
+                                        return entities;
+                                    };
+
+                                    // Strategy 2: Voyager REST API with trending params
+                                    const FEED_TRENDING_URL = "https://www.linkedin.com/voyager/api/feed/dash/feedUpdates";
+                                    const trendingParams = {
+                                        q: "DECORATED_FEED",
+                                        count: String(maxCount),
+                                        start: "0",
+                                        keywords: kw || 'trending',
+                                        queryContext: "(searchDashHumanAccessibleFilters:List())"
+                                    };
+                                    const res = await fetch(FEED_TRENDING_URL + '?' + new URLSearchParams(trendingParams), {
                                         headers: {
-                                            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
-                                            'csrf-token': csrf,
-                                            'x-li-graphql-pegasus-client': 'true',
-                                            'x-restli-protocol-version': '2.0.0'
+                                            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+                                            "csrf-token": csrf,
+                                            "x-restli-protocol-version": "2.0.0"
                                         }
                                     });
+
                                     if (res.ok) {
                                         const data = await res.json();
                                         const included = data?.included || [];
 
+                                        // Also extract entities from <code> elements
+                                        const pageEntities = extractPageEntities();
+                                        const allIncluded = [...included, ...pageEntities];
+
                                         const profiles = {}, socialCounts = {}, socialDetails = {};
-                                        for (const entity of included) {
+                                        for (const entity of allIncluded) {
                                             const entityType = entity.$type || '';
                                             const entityUrn = entity.entityUrn || entity.urn || '';
                                             if (entityType.includes('MiniProfile') || entityType.includes('Profile')) profiles[entityUrn] = entity;
@@ -3141,7 +3895,20 @@ async function pollCommandsDirectly() {
                                             else if (entityType.includes('SocialDetail')) socialDetails[entity.threadId || entityUrn] = entity;
                                         }
 
-                                        for (const entity of included) {
+                                        // Helper to extract social counts
+                                        const extractSocialCounts = (urn, entity, socialCounts, socialDetails) => {
+                                            let likes = 0, comments = 0, reposts = 0;
+                                            const counts = socialCounts[urn] || entity.socialDetail || {};
+                                            likes = counts.numLikes || counts.totalSocialActivityCounts?.numLikes || 0;
+                                            comments = counts.numComments || counts.totalSocialActivityCounts?.numComments || 0;
+                                            reposts = counts.numShares || counts.totalSocialActivityCounts?.numShares || 0;
+                                            return { likes, comments, reposts };
+                                        };
+
+                                        const elements = data?.elements || [];
+                                        let foundCount = 0;
+
+                                        for (const entity of elements) {
                                             try {
                                                 const entityType = entity.$type || '';
                                                 if (!entityType.toLowerCase().includes('update')) continue;
@@ -3150,7 +3917,10 @@ async function pollCommandsDirectly() {
                                                 const comm = entity.commentary;
                                                 if (comm?.text) postText = typeof comm.text === 'string' ? comm.text : (comm.text?.text || '');
                                                 if (!postText && entity.message?.text) postText = typeof entity.message.text === 'string' ? entity.message.text : (entity.message.text?.text || '');
-                                                if (!postText || postText.length < 20) continue;
+                                                if (!postText || postText.length < 5) continue;
+
+                                                foundCount++;
+                                                updateOverlay(foundCount, posts.length, 'Scanning...', 'Search API', '');
 
                                                 let authorName = 'Unknown', authorUrl = '';
                                                 const actor = entity.actor;
@@ -3161,17 +3931,20 @@ async function pollCommandsDirectly() {
                                                 }
 
                                                 const entityUrn = entity.entityUrn || '';
-                                                const socialDetail = socialDetails[entityUrn] || entity.socialDetail || {};
-                                                const counts = socialDetail.totalSocialActivityCounts || {};
-                                                const likes = counts.numLikes || 0;
-                                                const comments = counts.numComments || 0;
-                                                const shares = counts.numShares || 0;
+                                                const socialCountsData = extractSocialCounts(entityUrn, entity, socialCounts, socialDetails);
+                                                const likes = socialCountsData.likes;
+                                                const comments = socialCountsData.comments;
+                                                const shares = socialCountsData.reposts;
                                                 const engagement = likes + comments * 3 + shares * 2;
+
+                                                // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
 
                                                 const activityMatch = entityUrn.match(/activity:(\d+)/);
                                                 const postUrl = activityMatch ? 'https://www.linkedin.com/feed/update/urn:li:activity:' + activityMatch[1] + '/' : '';
 
                                                 posts.push({ postContent: postText.substring(0, 5000), authorName, authorUrl, likes, comments, shares, engagement, postUrl, urn: entityUrn });
+                                                updateOverlay(foundCount, posts.length, 'Scanning...', 'Search API', '');
                                             } catch (e) { console.error('Parse error:', e); }
                                         }
                                         if (posts.length > 0) apiSuccess = true;
@@ -3192,9 +3965,103 @@ async function pollCommandsDirectly() {
                             args: [keyword, count, minLikes, minComments]
                         });
 
-                        const scriptResult = result?.[0]?.result;
-                        const posts = scriptResult?.posts || [];
-                        console.log(`🔥 POLL-ALARM: linkedin_get_trending_api got ${posts.length} trending posts`);
+                        let scriptResult = result?.[0]?.result;
+                        let posts = scriptResult?.posts || [];
+
+                        // Log result status with debug info
+                        if (!scriptResult?.success) {
+                            console.log('📰 POLL-ALARM: Script error:', scriptResult?.error);
+                        }
+                        console.log('📰 POLL-ALARM: DOM scrape result:', posts.length, 'posts');
+                        console.log('📰 POLL-ALARM: DEBUG:', scriptResult?.debug);
+
+                        // If API returned 0 posts, try DOM scraping fallback
+                        if (posts.length === 0) {
+                            console.log('🔥 POLL-ALARM: API returned 0 posts, trying DOM scraping fallback...');
+                            try {
+                                const domResult = await chrome.scripting.executeScript({
+                                    target: { tabId: apiTab.id },
+                                    func: async (maxCount, minL = 0, minC = 0) => {
+                                        const posts = [];
+                                        let postElements = document.querySelectorAll('.profile-creator-shared-feed-update__container');
+                                        if (!postElements.length) postElements = document.querySelectorAll('[data-urn*="activity"]');
+                                        if (!postElements.length) postElements = document.querySelectorAll('.feed-shared-update-v2');
+                                        if (!postElements.length) postElements = document.querySelectorAll('.update-components-update-v2');
+
+                                        for (const el of postElements) {
+                                            try {
+                                                let postText = '';
+                                                const textEl = el.querySelector('.update-components-text') ||
+                                                              el.querySelector('.feed-shared-update-v2__description') ||
+                                                              el.querySelector('.feed-shared-text');
+                                                if (textEl) postText = textEl.textContent?.trim() || '';
+                                                if (!postText) {
+                                                    const mainText = el.querySelector('.feed-shared-update-v2__main-content');
+                                                    if (mainText) postText = mainText.textContent?.trim() || '';
+                                                }
+                                                if (!postText || postText.length < 5) continue;
+
+                                                let authorName = 'Unknown';
+                                                const authorEl = el.querySelector('.feed-shared-actor__name');
+                                                if (authorEl) authorName = authorEl.textContent?.trim() || 'Unknown';
+
+                                                let authorUrl = '';
+                                                const authorLink = el.querySelector('.feed-shared-actor__link a');
+                                                if (authorLink) authorUrl = authorLink.href || '';
+
+                                                let likes = 0, comments = 0, shares = 0;
+                                                const reactionContainer = el.querySelector('.feed-shared-social-details');
+                                                if (reactionContainer) {
+                                                    const likeEl = reactionContainer.querySelector('[class*="like"], [class*="reaction"]');
+                                                    if (likeEl) {
+                                                        const likeMatch = (likeEl.textContent?.trim() || '').match(/[\d,]+/);
+                                                        if (likeMatch) likes = parseInt(likeMatch[0].replace(/,/g, ''));
+                                                    }
+                                                    const commentEl = reactionContainer.querySelector('[class*="comment"]');
+                                                    if (commentEl) {
+                                                        const commentMatch = (commentEl.textContent?.trim() || '').match(/[\d,]+/);
+                                                        if (commentMatch) comments = parseInt(commentMatch[0].replace(/,/g, ''));
+                                                    }
+                                                    const shareEl = reactionContainer.querySelector('[class*="repost"], [class*="share"]');
+                                                    if (shareEl) {
+                                                        const shareMatch = (shareEl.textContent?.trim() || '').match(/[\d,]+/);
+                                                        if (shareMatch) shares = parseInt(shareMatch[0].replace(/,/g, ''));
+                                                    }
+                                                }
+
+                                                // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
+
+                                                let postUrl = '';
+                                                const urn = el.getAttribute('data-urn') || '';
+                                                const activityMatch = urn.match(/activity:(\d+)/);
+                                                if (activityMatch) postUrl = 'https://www.linkedin.com/feed/update/urn:li:activity:' + activityMatch[1] + '/';
+
+                                                posts.push({
+                                                    postContent: postText.substring(0, 5000),
+                                                    authorName,
+                                                    authorProfileUrl: authorUrl,
+                                                    likes, comments, shares,
+                                                    postUrl, urn
+                                                });
+                                            } catch (e) { }
+                                        }
+                                        return { success: true, posts };
+                                    },
+                                    args: [count, minLikes, minComments]
+                                });
+                                const domPosts = domResult?.[0]?.result?.posts || [];
+                                if (domPosts.length > 0) {
+                                    posts = domPosts;
+                                    scriptResult = { success: true };
+                                    console.log(`🔥 POLL-ALARM: DOM fallback got ${posts.length} posts`);
+                                }
+                            } catch (e) {
+                                console.error('🔥 POLL-ALARM: DOM fallback failed:', e);
+                            }
+                        }
+
+                        console.log(`🔥 POLL-ALARM: DOM scraping found ${posts.length} trending posts`);
 
                         if (posts.length > 0) {
                             try {
@@ -3244,6 +4111,9 @@ async function pollCommandsDirectly() {
                             setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
                         });
                         await new Promise(r => setTimeout(r, 3000));
+
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
 
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
@@ -3321,6 +4191,9 @@ async function pollCommandsDirectly() {
                         });
                         await new Promise(r => setTimeout(r, 3000));
 
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
+
                         // Navigate to the post URL
                         const postUrl = activityUrn.includes('http') ? activityUrn : `https://www.linkedin.com/feed/update/${encodeURIComponent(activityUrn)}/`;
                         await chrome.tabs.update(apiTab.id, { url: postUrl });
@@ -3375,6 +4248,9 @@ async function pollCommandsDirectly() {
                         });
                         await new Promise(r => setTimeout(r, 3000));
 
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
+
                         // Navigate to the post URL
                         const postUrl = activityUrn.includes('http') ? activityUrn : `https://www.linkedin.com/feed/update/${encodeURIComponent(activityUrn)}/`;
                         await chrome.tabs.update(apiTab.id, { url: postUrl });
@@ -3428,6 +4304,9 @@ async function pollCommandsDirectly() {
                             setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
                         });
                         await new Promise(r => setTimeout(r, 3000));
+
+                        // Auto-scroll to load more posts
+                        await autoScrollFeedPage(apiTab.id);
 
                         for (let i = 0; i < profiles.length; i++) {
                             if (globalThis._stopAllTasks) break;
@@ -4128,6 +5007,70 @@ async function pollCommandsDirectly() {
         console.error('POLL-ALARM: Error polling commands:', error);
     } finally {
         globalThis._pollCommandsRunning = false;
+    }
+}
+
+// Auto-scroll feed/search/trending pages to load all content
+async function autoScrollFeedPage(tabId) {
+    try {
+        console.log('🔗 FEED SCROLL: Starting auto-scroll for feed/search...');
+
+        const maxScrollAttempts = 8;
+        let lastHeight = 0;
+        let noChangeCount = 0;
+
+        for (let i = 0; i < maxScrollAttempts; i++) {
+            // Get current scroll height
+            const heightResult = await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => document.body.scrollHeight
+            });
+            const currentHeight = heightResult?.[0]?.result || 0;
+
+            // Scroll down
+            await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => {
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+
+            // Wait for content to load
+            await new Promise(resolve => setTimeout(resolve, 2500));
+
+            // Check if new content loaded
+            const newHeightResult = await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => document.body.scrollHeight
+            });
+            const newHeight = newHeightResult?.[0]?.result || 0;
+
+            console.log(`🔗 FEED SCROLL: Attempt ${i + 1}, height: ${currentHeight} -> ${newHeight}`);
+
+            if (newHeight === lastHeight) {
+                noChangeCount++;
+                if (noChangeCount >= 2) {
+                    console.log('🔗 FEED SCROLL: No new content, stopping');
+                    break;
+                }
+            } else {
+                noChangeCount = 0;
+            }
+            lastHeight = newHeight;
+        }
+
+        // Scroll back to top
+        await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: () => window.scrollTo(0, 0)
+        });
+
+        console.log('🔗 FEED SCROLL: Auto-scroll complete');
+    } catch (error) {
+        console.error('🔗 FEED SCROLL: Error during auto-scroll:', error);
     }
 }
 
@@ -5883,7 +6826,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                                     if (likesEl) { const m = likesEl.textContent?.match(/(\d+(?:,\d+)*)/); if (m) likes = parseInt(m[1].replace(/,/g, '')); }
                                                     const commentsEl = el.querySelector('button[aria-label*="comment"]');
                                                     if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
-                                                    if (likes < minL || comments < minC) continue;
+                                                    // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
                                                     if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
                                                     qualifiedPosts++;
                                                 }
@@ -5942,7 +6886,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                             const commentsEl = el.querySelector('button[aria-label*="comment"]');
                                             if (commentsEl) { const m = commentsEl.getAttribute('aria-label')?.match(/(\d+)/); if (m) comments = parseInt(m[1]); }
 
-                                            if (likes < minL || comments < minC) continue;
+                                            // Filter disabled - capture all posts regardless of likes/comments
+                                        // if (likes < minL || comments < minC) continue;
                                             if (kws.length > 0 && !kws.some(kw => content.toLowerCase().includes(kw))) continue;
 
                                             let authorName = 'Unknown';

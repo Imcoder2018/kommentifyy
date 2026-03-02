@@ -3,7 +3,7 @@ import {
   Settings, Download, Upload, Search, X, Users, FileText, Heart, MessageCircle,
   ThumbsUp, Trash2, ChevronDown, ChevronRight, ChevronUp, Check, AlertCircle, Loader2,
   Sparkles, RefreshCw, ExternalLink, HelpCircle, UserPlus, Send, Plus, Minus,
-  Clock, GripVertical, Edit2
+  Clock, GripVertical, Edit2, Wand2
 } from 'lucide-react';
 
 // ============= TYPES =============
@@ -516,6 +516,12 @@ export default function ImportTab(props: Props) {
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [recentlyDeleted, setRecentlyDeleted] = useState<Lead | null>(null);
 
+  // AI Comment generation settings
+  const [csGoal, setCsGoal] = useState('AddValue');
+  const [csTone, setCsTone] = useState('Friendly');
+  const [csLength, setCsLength] = useState('Short');
+  const [generatingComment, setGeneratingComment] = useState<string | null>(null);
+
   const [importText, setImportText] = useState('');
   const csvFileRef = useRef<HTMLInputElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -828,6 +834,68 @@ export default function ImportTab(props: Props) {
       } else { showToast?.(data.error || 'Failed', 'error'); setEngagingPost(null); }
     } catch (e: any) { showToast?.('Error: ' + e.message, 'error'); setEngagingPost(null); }
   }, [extensionConnected, getAuthToken, loadLeads, showToast]);
+
+  // Generate AI comment and send to LinkedIn via Voyager API
+  const generateAiCommentAndSend = useCallback(async (lead: Lead, post: Post) => {
+    if (!extensionConnected) { showToast?.('Extension not connected', 'error'); return; }
+
+    setGeneratingComment(post.id);
+    try {
+      // Step 1: Generate AI comment
+      const res = await fetch('/api/ai/generate-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` },
+        body: JSON.stringify({
+          postText: post.postText || '',
+          authorName: lead.firstName || lead.vanityId || '',
+          goal: csGoal,
+          tone: csTone,
+          commentLength: csLength,
+          commentStyle: 'direct',
+          userExpertise: '',
+          userBackground: businessContext,
+        })
+      });
+      const data = await res.json();
+
+      if (!data.success || !data.content) {
+        showToast?.(data.error || 'Failed to generate comment', 'error');
+        return;
+      }
+
+      const commentText = data.content;
+      showToast?.('AI comment generated! Sending to LinkedIn...', 'info');
+
+      // Step 2: Send comment to LinkedIn via extension (uses Voyager API)
+      const commandRes = await fetch('/api/extension/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` },
+        body: JSON.stringify({
+          command: 'engage_lead_post',
+          data: {
+            postUrn: post.postUrn,
+            enableLike: false,
+            enableComment: true,
+            commentText: commentText,
+            leadId: lead.id,
+            postId: post.id
+          }
+        })
+      });
+
+      const commandData = await commandRes.json();
+      if (commandData.success) {
+        showToast?.('Comment sent to LinkedIn via Voyager API!', 'success');
+        setTimeout(() => { loadLeads(); }, DEFAULTS.ENGAGEMENT_DELAY_MS);
+      } else {
+        showToast?.('Failed to send comment: ' + (commandData.error || 'Unknown error'), 'error');
+      }
+    } catch (e: any) {
+      showToast?.('Error: ' + e.message, 'error');
+    } finally {
+      setGeneratingComment(null);
+    }
+  }, [extensionConnected, getAuthToken, loadLeads, showToast, csGoal, csTone, csLength, businessContext]);
 
   // Delete lead with undo functionality
   const deleteLead = useCallback((lead: Lead) => {
@@ -2301,27 +2369,53 @@ export default function ImportTab(props: Props) {
                                           </button>
                                         )}
                                         {!post.isCommented && (
-                                          <button
-                                            onClick={(e) => { e.stopPropagation(); setCommentInput({ postId: post.id, text: '' }); }}
-                                            disabled={engagingPost === post.id}
-                                            style={{
-                                              background: '#f3f6f8',
-                                              border: '1px solid #e0e0e0',
-                                              borderRadius: '16px',
-                                              color: '#666666',
-                                              fontSize: TYPOGRAPHY.xs,
-                                              padding: '6px 14px',
-                                              cursor: engagingPost === post.id ? 'not-allowed' : 'pointer',
-                                              opacity: engagingPost === post.id ? 0.5 : 1,
-                                              fontWeight: '600',
-                                              transition: 'all 0.2s ease',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              gap: '4px',
-                                            }}
-                                          >
-                                            <MessageCircle size={14} color="#666666" /> Comment
-                                          </button>
+                                          <div style={{ display: 'flex', gap: '4px' }}>
+                                            {/* Generate + Send AI Comment Button */}
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); generateAiCommentAndSend(lead, post); }}
+                                              disabled={engagingPost === post.id || generatingComment === post.id}
+                                              style={{
+                                                background: generatingComment === post.id ? '#f3e8ff' : '#9333ea',
+                                                border: 'none',
+                                                borderRadius: '16px',
+                                                color: 'white',
+                                                fontSize: TYPOGRAPHY.xs,
+                                                padding: '6px 12px',
+                                                cursor: engagingPost === post.id || generatingComment === post.id ? 'not-allowed' : 'pointer',
+                                                opacity: engagingPost === post.id || generatingComment === post.id ? 0.6 : 1,
+                                                fontWeight: '600',
+                                                transition: 'all 0.2s ease',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                              }}
+                                              title="Generate AI comment and send to LinkedIn"
+                                            >
+                                              <Sparkles size={14} color="white" /> {generatingComment === post.id ? 'Sending...' : 'AI Comment'}
+                                            </button>
+                                            {/* Manual Comment Button */}
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); setCommentInput({ postId: post.id, text: '' }); }}
+                                              disabled={engagingPost === post.id || generatingComment === post.id}
+                                              style={{
+                                                background: '#f3f6f8',
+                                                border: '1px solid #e0e0e0',
+                                                borderRadius: '16px',
+                                                color: '#666666',
+                                                fontSize: TYPOGRAPHY.xs,
+                                                padding: '6px 14px',
+                                                cursor: engagingPost === post.id || generatingComment === post.id ? 'not-allowed' : 'pointer',
+                                                opacity: engagingPost === post.id || generatingComment === post.id ? 0.5 : 1,
+                                                fontWeight: '600',
+                                                transition: 'all 0.2s ease',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                              }}
+                                            >
+                                              <MessageCircle size={14} color="#666666" /> Manual
+                                            </button>
+                                          </div>
                                         )}
                                       </div>
                                     </div>

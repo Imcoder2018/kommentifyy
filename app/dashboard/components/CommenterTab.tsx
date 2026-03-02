@@ -79,12 +79,14 @@ export default function CommenterTab(props: any) {
         return postUrl;
     };
 
+    // Generate AI comment and send to LinkedIn via Voyager API
     const generateAiComment = async (postId: string, post: any) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
 
         setGeneratingComment(postId);
         try {
+            // Step 1: Generate AI comment
             const res = await fetch('/api/ai/generate-comment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -101,11 +103,36 @@ export default function CommenterTab(props: any) {
                 })
             });
             const data = await res.json();
-            if (data.success && data.content) {
-                setAiGeneratedComments(prev => ({ ...prev, [postId]: data.content }));
-                showToast('AI comment generated!', 'success');
-            } else {
+
+            if (!data.success || !data.content) {
                 showToast(data.error || 'Failed to generate comment', 'error');
+                return;
+            }
+
+            const commentText = data.content;
+            setAiGeneratedComments(prev => ({ ...prev, [postId]: commentText }));
+
+            // Step 2: Send comment to LinkedIn via extension command (uses Voyager API)
+            showToast('AI comment generated! Sending to LinkedIn...', 'info');
+
+            const activityUrn = extractUrnFromUrl(post.postUrl);
+            const commandRes = await fetch('/api/extension/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    command: 'linkedin_comment_on_post',
+                    data: {
+                        activityUrn: activityUrn,
+                        commentText: commentText
+                    }
+                })
+            });
+
+            const commandData = await commandRes.json();
+            if (commandData.success) {
+                showToast('Comment sent to LinkedIn via Voyager API!', 'success');
+            } else {
+                showToast('Failed to send comment: ' + (commandData.error || 'Unknown error'), 'error');
             }
         } catch (e: any) {
             showToast('Error: ' + e.message, 'error');
@@ -376,12 +403,21 @@ export default function CommenterTab(props: any) {
                                                 style={{ padding: '6px 8px', background: likeState === 'success' ? '#e8f4fd' : '#f3f6f8', color: '#0077b5', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: likeState === 'loading' || likeState === 'success' ? 'not-allowed' : 'pointer', opacity: likeState === 'success' ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                                 {likeState === 'loading' ? '...' : likeState === 'success' ? '✓' : '👍'} Like
                                             </button>
-                                            <button
-                                                onClick={() => generateAiComment(postId, post)}
-                                                disabled={generatingComment === postId}
-                                                style={{ padding: '6px 8px', background: generatingComment === postId ? '#f3e8ff' : '#f3f6f8', color: '#9333ea', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: generatingComment === postId ? 'not-allowed' : 'pointer', opacity: generatingComment === postId ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                {generatingComment === postId ? '...' : '🤖'} Comment
-                                            </button>
+                                            {aiGeneratedComments[postId] ? (
+                                                <button
+                                                    onClick={() => handleAction(postId, 'comment', post, aiGeneratedComments[postId])}
+                                                    disabled={actionStates[`${postId}-comment`] === 'loading'}
+                                                    style={{ padding: '6px 8px', background: actionStates[`${postId}-comment`] === 'loading' ? '#f3e8ff' : '#22c55e', color: actionStates[`${postId}-comment`] === 'loading' ? '#9333ea' : 'white', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: actionStates[`${postId}-comment`] === 'loading' ? 'not-allowed' : 'pointer', opacity: actionStates[`${postId}-comment`] === 'loading' ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                    {actionStates[`${postId}-comment`] === 'loading' ? '...' : '🚀'} Send Comment
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => generateAiComment(postId, post)}
+                                                    disabled={generatingComment === postId}
+                                                    style={{ padding: '6px 8px', background: generatingComment === postId ? '#f3e8ff' : '#f3f6f8', color: '#9333ea', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: generatingComment === postId ? 'not-allowed' : 'pointer', opacity: generatingComment === postId ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                    {generatingComment === postId ? '...' : '🤖'} Generate + Send
+                                                </button>
+                                            )}
                                             <button onClick={() => deletePost(post.id)}
                                                 style={{ gridColumn: 'span 2', padding: '6px 8px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                                 🗑 Delete

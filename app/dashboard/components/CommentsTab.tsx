@@ -760,7 +760,7 @@ export default function CommentsTab(props: any) {
         csUseProfileStyle, setCsUseProfileStyle,
         csGoal, setCsGoal, csTone, setCsTone, csLength, setCsLength, csStyle, setCsStyle,
         csModel, setCsModel, csExpertise, setCsExpertise, csBackground, setCsBackground,
-        csAutoPost, setCsAutoPost, csSettingsLoading, csSettingsSaving,
+        csAutoPost, setCsAutoPost, csSettingsLoading, csSettingsSaving, autoDecideEnabled, setAutoDecideEnabled,
         loadCommentStyleProfiles, scrapeCommentStyle, loadProfileComments, toggleCommentTop,
         toggleProfileSelect, deleteCommentStyleProfile, loadCommentSettings, saveCommentSettings,
         handleCommentModelChange,
@@ -815,8 +815,7 @@ export default function CommentsTab(props: any) {
         handleTabChange, cleanLinkedInProfileUrls,
     } = props;
 
-    // Auto Decide state
-    const [autoDecideEnabled, setAutoDecideEnabled] = useState(false);
+    // Auto Decide state - use props from parent (page.tsx manages this state)
     const [autoDeciding, setAutoDeciding] = useState(false);
     const [autoDecideReasoning, setAutoDecideReasoning] = useState('');
 

@@ -382,7 +382,7 @@ function DashboardContent() {
     const [csBackground, setCsBackground] = useState('');
     const [csAutoPost, setCsAutoPost] = useState('manual');
     const [autoDecideEnabled, setAutoDecideEnabled] = useState(false);
-    const [csSettingsLoading, setCsSettingsLoading] = useState(false);
+    const [csSettingsLoading, setCsSettingsLoading] = useState(true);
     const [csSettingsSaving, setCsSettingsSaving] = useState(false);
 
     // Kommentify shared content state
@@ -1273,15 +1273,17 @@ function DashboardContent() {
         finally { setCsSettingsSaving(false); }
     };
 
-    // Auto-save comment settings when they change
+    // Auto-save comment settings when they change (only after initial load completes)
     useEffect(() => {
-        if (!csSettingsLoading) {
-            const timeoutId = setTimeout(() => {
-                saveCommentSettings();
-            }, 1000); // Debounce 1 second
-            return () => clearTimeout(timeoutId);
-        }
-    }, [csUseProfileStyle, csGoal, csTone, csLength, csStyle, csExpertise, csBackground, csAutoPost, autoDecideEnabled]);
+        // Don't save on initial mount before settings are loaded
+        const hasLoaded = csSettingsLoading === false;
+        if (!hasLoaded) return;
+
+        const timeoutId = setTimeout(() => {
+            saveCommentSettings();
+        }, 1000); // Debounce 1 second
+        return () => clearTimeout(timeoutId);
+    }, [csSettingsLoading, csUseProfileStyle, csGoal, csTone, csLength, csStyle, csExpertise, csBackground, csAutoPost, autoDecideEnabled]);
 
     // LinkedIn Profile Data functions
     const loadLinkedInProfile = async () => {
@@ -2331,7 +2333,7 @@ function DashboardContent() {
         csUseProfileStyle, setCsUseProfileStyle, csUseProfileData, setCsUseProfileData,
         csGoal, setCsGoal, csTone, setCsTone, csLength, setCsLength, csStyle, setCsStyle,
         csModel, setCsModel, csExpertise, setCsExpertise, csBackground, setCsBackground,
-        csAutoPost, setCsAutoPost, csSettingsLoading, csSettingsSaving,
+        csAutoPost, setCsAutoPost, csSettingsLoading, csSettingsSaving, autoDecideEnabled, setAutoDecideEnabled,
         loadCommentStyleProfiles, scrapeCommentStyle, loadProfileComments, toggleCommentTop,
         toggleProfileSelect, deleteCommentStyleProfile, loadCommentSettings, saveCommentSettings,
         handleCommentModelChange,

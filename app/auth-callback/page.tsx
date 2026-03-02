@@ -11,11 +11,20 @@ export default function AuthCallbackPage() {
     const [status, setStatus] = useState('Authenticating...');
     const [error, setError] = useState('');
     const hasSynced = useRef(false);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         // Prevent multiple syncs
         if (hasSynced.current) return;
-        hasSynced.current = true;
 
         if (!isLoaded) return;
 
@@ -24,18 +33,28 @@ export default function AuthCallbackPage() {
             return;
         }
 
-        // Skip if already has valid token
+        // Skip if already has valid token - redirect to dashboard immediately
         const existingToken = localStorage.getItem('authToken');
         if (existingToken) {
             router.push('/dashboard');
             return;
         }
 
+        // Mark as synced to prevent multiple syncs
+        hasSynced.current = true;
+
+        // Set a timeout to redirect to dashboard after 10 seconds
+        // This ensures users don't get stuck if the sync hangs
+        timeoutRef.current = setTimeout(() => {
+            console.log('Auth callback timeout - redirecting to dashboard');
+            router.push('/dashboard');
+        }, 10000);
+
         // Sync with our backend
         const syncUser = async () => {
             try {
                 setStatus('Syncing your account...');
-                
+
                 const email = clerkUser?.primaryEmailAddress?.emailAddress;
                 const name = clerkUser?.fullName || clerkUser?.firstName || email?.split('@')[0];
 
@@ -66,9 +85,14 @@ export default function AuthCallbackPage() {
                     localStorage.setItem('authToken', data.token);
                     // Clean up referral code after successful sync
                     localStorage.removeItem('referralCode');
-                    
+
                     setStatus('Success! Redirecting...');
-                    
+
+                    // Clear the timeout since we're about to redirect
+                    if (timeoutRef.current) {
+                        clearTimeout(timeoutRef.current);
+                    }
+
                     // Always redirect to dashboard - dashboard will handle plan checks
                     router.push('/dashboard');
                 } else {
@@ -76,7 +100,9 @@ export default function AuthCallbackPage() {
                 }
             } catch (err) {
                 console.error('Sync error:', err);
-                setError('Failed to sync your account. Please try again.');
+                // On error, redirect to dashboard anyway - the user is authenticated with Clerk
+                // and can still use the app. The sync will be retried on next visit.
+                router.push('/dashboard');
             }
         };
 

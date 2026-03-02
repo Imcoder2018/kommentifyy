@@ -13,21 +13,29 @@ export async function GET(request: NextRequest) {
       where: { userId: payload.userId },
     });
 
+    // Ensure autoDecide is always returned (default to false if not set)
+    const defaultSettings = {
+      useProfileStyle: false,
+      useProfileData: false,
+      goal: 'AddValue',
+      tone: 'Friendly',
+      commentLength: 'Short',
+      commentStyle: 'direct',
+      model: 'gpt-4o',
+      userExpertise: '',
+      userBackground: '',
+      aiAutoPost: 'manual',
+      autoDecide: false,
+    };
+
+    // Merge settings with defaults to ensure all fields exist
+    const mergedSettings = settings ? { ...defaultSettings, ...settings } : defaultSettings;
+
+    console.log('📡 GET comment-settings - autoDecide:', mergedSettings.autoDecide);
+
     return NextResponse.json({
       success: true,
-      settings: settings || {
-        useProfileStyle: false,
-        useProfileData: false,
-        goal: 'AddValue',
-        tone: 'Friendly',
-        commentLength: 'Short',
-        commentStyle: 'direct',
-        model: 'gpt-4o',
-        userExpertise: '',
-        userBackground: '',
-        aiAutoPost: 'manual',
-        autoDecide: false,
-      },
+      settings: mergedSettings,
     });
   } catch (error: any) {
     console.error('GET comment-settings error:', error);
@@ -44,6 +52,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { useProfileStyle, useProfileData, goal, tone, commentLength, commentStyle, model, userExpertise, userBackground, aiAutoPost, autoDecide } = body;
+
+    console.log('💾 POST comment-settings - autoDecide received:', autoDecide);
 
     const settings = await (prisma as any).commentSettings.upsert({
       where: { userId: payload.userId },

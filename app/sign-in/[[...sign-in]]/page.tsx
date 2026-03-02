@@ -19,7 +19,9 @@ export default function SignInPage() {
             <div style={{ position: 'absolute', top: '10%', left: '10%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', filter: 'blur(60px)' }}></div>
             <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: '400px', height: '400px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', filter: 'blur(80px)' }}></div>
             
-            <SignIn 
+            <SignIn
+                routing="path"
+                path="/sign-in"
                 appearance={{
                     elements: {
                         rootBox: {

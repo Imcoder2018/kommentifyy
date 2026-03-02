@@ -395,10 +395,44 @@ class AICommentButtonManager {
             // Get user settings
             const settings = await this.getUserSettings();
             console.log('[AI Comment] Got settings:', settings);
-            
+
+            // Check if auto-decide is enabled
+            console.log('[AI Comment] autoDecideEnabled value:', settings.autoDecideEnabled, 'type:', typeof settings.autoDecideEnabled);
+            const isAutoDecide = settings.autoDecideEnabled === true || settings.autoDecideEnabled === 'true';
+            console.log('[AI Comment] isAutoDecide:', isAutoDecide);
+            let finalSettings = { ...settings };
+            let autoDecideReasoning = '';
+
+            // If auto-decide is enabled, call the auto-decide API first
+            if (isAutoDecide) {
+                console.log('[AI Comment] Auto-decide is ON, calling auto-decide API...');
+                try {
+                    const autoDecideResult = await this.sendMessageToBackground('autoDecideComment', {
+                        authorName: postData.authorName,
+                        postText: postData.postText,
+                        model: settings.model || 'gpt-4o-mini'
+                    });
+
+                    if (autoDecideResult && autoDecideResult.success && autoDecideResult.settings) {
+                        // Override settings with auto-decided values
+                        finalSettings.goal = autoDecideResult.settings.goal || finalSettings.goal;
+                        finalSettings.tone = autoDecideResult.settings.tone || finalSettings.tone;
+                        finalSettings.length = autoDecideResult.settings.length || finalSettings.length;
+                        finalSettings.style = autoDecideResult.settings.style || finalSettings.style;
+                        autoDecideReasoning = autoDecideResult.settings.reasoning || '';
+                        console.log('[AI Comment] Auto-decide result:', autoDecideResult.settings);
+                    }
+                } catch (autoDecideErr) {
+                    console.error('[AI Comment] Auto-decide failed, using manual settings:', autoDecideErr);
+                }
+            }
+
+            // Show settings notification (top-right)
+            this.showSettingsNotification(finalSettings, isAutoDecide ? 'auto-decide' : 'manual', autoDecideReasoning);
+
             // Generate AI comment
-            console.log('[AI Comment] Calling generateComment...');
-            const comment = await this.generateComment(postData, settings);
+            console.log('[AI Comment] Calling generateComment with settings:', finalSettings);
+            const comment = await this.generateComment(postData, finalSettings);
             console.log('[AI Comment] Got comment response:', comment ? comment.substring(0, 80) + '...' : 'NULL');
             
             if (comment) {
@@ -415,8 +449,17 @@ class AICommentButtonManager {
                 }
                 
                 // Find and fill the comment input (pass settings for auto-post check)
-                await this.fillCommentInput(comment, post, settings);
-                
+                await this.fillCommentInput(comment, post, finalSettings);
+
+                // Close settings notification after comment is filled (wait 5 seconds)
+                setTimeout(() => {
+                    const notification = document.getElementById('ai-settings-notification');
+                    if (notification) {
+                        notification.style.animation = 'slideOutRight 0.3s ease';
+                        setTimeout(() => notification.remove(), 300);
+                    }
+                }, 5000);
+
                 // Show appropriate message based on auto-post setting
                 if (settings.aiAutoPost === 'manual') {
                     aiBtn.innerHTML = '✅ Ready!';
@@ -435,6 +478,8 @@ class AICommentButtonManager {
             }
         } catch (error) {
             console.error('[AI Comment] Error:', error);
+            // Show error notification (top-right)
+            this.showErrorNotification(error.message || 'Failed to generate comment. Please try again.');
             aiBtn.innerHTML = '❌ Error';
             clearTimeout(safetyTimer);
             setTimeout(() => {
@@ -494,21 +539,29 @@ class AICommentButtonManager {
             const settings = await this.sendMessageToBackground('getCommentSettings', {});
             return {
                 goal: settings?.goal || 'AddValue',
-                tone: settings?.tone || 'Friendly', 
+                tone: settings?.tone || 'Friendly',
                 length: settings?.commentLength || 'Short',
+                style: settings?.commentStyle || 'direct',
                 expertise: settings?.userExpertise || '',
                 background: settings?.userBackground || '',
-                aiAutoPost: settings?.aiAutoPost || 'manual'  // Default to manual (no auto-post)
+                aiAutoPost: settings?.aiAutoPost || 'manual',  // Default to manual (no auto-post)
+                autoDecideEnabled: settings?.autoDecide === true,  // Check for true boolean
+                model: settings?.model || 'gpt-4o-mini',
+                autoDecideReasoning: ''
             };
         } catch (error) {
             console.log('[AI Comment] Could not get settings from background, using defaults');
             return {
                 goal: 'AddValue',
-                tone: 'Friendly', 
+                tone: 'Friendly',
                 length: 'Short',
+                style: 'direct',
                 expertise: '',
                 background: '',
-                aiAutoPost: 'manual'  // Default to manual (no auto-post)
+                aiAutoPost: 'manual',  // Default to manual (no auto-post)
+                autoDecideEnabled: false,
+                model: 'gpt-4o-mini',
+                autoDecideReasoning: ''
             };
         }
     }
@@ -518,14 +571,17 @@ class AICommentButtonManager {
      */
     async generateComment(postData, settings) {
         try {
-            console.log('[AI Comment] Sending generateAIComment to background...');
+            console.log('[AI Comment] Sending generateAIComment to background with settings:', settings);
             const response = await this.sendMessageToBackground('generateAIComment', {
                 authorName: postData.authorName,
                 postText: postData.postText,
                 goal: settings.goal,
                 tone: settings.tone,
                 length: settings.length,
-                expertise: settings.expertise
+                style: settings.style,
+                expertise: settings.expertise,
+                background: settings.background,
+                model: settings.model
             });
             
             console.log('[AI Comment] Background response:', JSON.stringify(response).substring(0, 200));
@@ -762,6 +818,165 @@ class AICommentButtonManager {
                 popup.remove();
             }
         }, 5000);
+    }
+
+    /**
+     * Show notification with current comment settings (top-right)
+     * @param {Object} settings - The settings being used
+     * @param {string} mode - 'auto-decide' or 'manual'
+     * @param {string} reasoning - Auto-decide reasoning (optional)
+     */
+    showSettingsNotification(settings, mode = 'manual', reasoning = '') {
+        console.log('[AI Comment] Showing settings notification - mode:', mode, 'settings:', settings);
+        // Remove existing notification
+        const existing = document.getElementById('ai-settings-notification');
+        if (existing) existing.remove();
+
+        const popup = document.createElement('div');
+        popup.id = 'ai-settings-notification';
+        popup.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            z-index: 2147483647;
+            max-width: 350px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            animation: slideInRight 0.3s ease;
+            border: 1px solid ${mode === 'auto-decide' ? 'rgba(168,85,247,0.5)' : 'rgba(0,119,181,0.3)'};
+        `;
+
+        // Generate settings HTML based on mode
+        let settingsHtml = '';
+        if (mode === 'auto-decide') {
+            settingsHtml = `
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;">
+                    <span style="background: rgba(168,85,247,0.2); color: #c4b5fd; padding: 4px 8px; border-radius: 6px; font-size: 11px;">🤖 Auto</span>
+                    <span style="background: rgba(168,85,247,0.15); color: #a855f7; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Goal: ${settings.goal || 'AddValue'}</span>
+                    <span style="background: rgba(34,197,94,0.15); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Tone: ${settings.tone || 'Friendly'}</span>
+                    <span style="background: rgba(245,158,11,0.15); color: #f59e0b; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Length: ${settings.length || 'Short'}</span>
+                </div>
+                ${reasoning ? `<div style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 8px; font-style: italic;">"${reasoning}"</div>` : ''}
+            `;
+        } else {
+            settingsHtml = `
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;">
+                    <span style="background: rgba(0,119,181,0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Goal: ${settings.goal || 'AddValue'}</span>
+                    <span style="background: rgba(34,197,94,0.15); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Tone: ${settings.tone || 'Friendly'}</span>
+                    <span style="background: rgba(245,158,11,0.15); color: #f59e0b; padding: 4px 8px; border-radius: 6px; font-size: 11px;">${settings.length || 'Short'}</span>
+                </div>
+            `;
+        }
+
+        popup.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="font-size: 18px;">${mode === 'auto-decide' ? '🤖' : '⚙️'}</span>
+                <span style="font-weight: 600; font-size: 14px; color: white;">
+                    ${mode === 'auto-decide' ? 'Auto Decide Mode' : 'Comment Settings Applied'}
+                </span>
+            </div>
+            ${settingsHtml}
+            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: rgba(255,255,255,0.5);">
+                ${settings.aiAutoPost === 'auto' ? '📤 Will auto-post to LinkedIn' : '👀 Waiting for you to review & post'}
+            </div>
+        `;
+
+        // Add animation keyframes if not already added
+        if (!document.getElementById('ai-notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'ai-notification-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOutRight {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(popup);
+        console.log('[AI Comment] Notification popup added to DOM');
+        // Note: Notification will be closed after comment is generated and filled (see handleAIButtonClick)
+    }
+
+    /**
+     * Show error notification (top-right)
+     * @param {string} errorMessage - The error message to display
+     */
+    showErrorNotification(errorMessage) {
+        // Remove existing notification
+        const existing = document.getElementById('ai-error-notification');
+        if (existing) existing.remove();
+
+        const popup = document.createElement('div');
+        popup.id = 'ai-error-notification';
+        popup.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(220,38,38,0.4);
+            z-index: 999999;
+            max-width: 320px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            animation: slideInRight 0.3s ease;
+        `;
+
+        popup.innerHTML = `
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <span style="font-size: 20px;">❌</span>
+                <div>
+                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px;">Comment Generation Failed</div>
+                    <div style="font-size: 12px; opacity: 0.9; line-height: 1.4;">${errorMessage}</div>
+                </div>
+            </div>
+        `;
+
+        this.positionNotification(popup, 'ai-error-notification');
+
+        // Auto-close after 6 seconds
+        setTimeout(() => {
+            const el = document.getElementById('ai-error-notification');
+            if (el) {
+                el.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            }
+        }, 6000);
+    }
+
+    /**
+     * Position and show a notification with slide animation
+     */
+    positionNotification(popup, id) {
+        // Add animation keyframes if not already added
+        if (!document.getElementById('ai-notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'ai-notification-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOutRight {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(popup);
     }
 
 }

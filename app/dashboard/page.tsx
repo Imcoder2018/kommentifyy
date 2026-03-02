@@ -1249,6 +1249,7 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         setCsSettingsSaving(true);
+        console.log('💾 Saving comment settings - autoDecide:', autoDecideEnabled);
         try {
             const res = await fetch('/api/comment-settings', {
                 method: 'POST',
@@ -1906,6 +1907,14 @@ function DashboardContent() {
 
     // Load tab-specific data on initial mount when auth completes (fixes ?tab=import reload)
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Load profiles when Sources sidebar opens
+    useEffect(() => {
+        if (showSourcesSidebar && commentStyleProfiles.length === 0 && sharedCommentProfiles.length === 0) {
+            loadCommentStyleProfiles();
+            loadSharedCommentProfiles();
+        }
+    }, [showSourcesSidebar]);
+
     useEffect(() => {
         if (loading || !user) return;
         const tab = activeTab;
@@ -3426,7 +3435,7 @@ function DashboardContent() {
                                                     setCommentStyleCommentsLoading(true);
                                                     try {
                                                         // Try to get comments from shared profile endpoint
-                                                        const res = await fetch(`/api/shared-profiles/${p.profileId}/comments`, {
+                                                        const res = await fetch(`/api/shared/comment-profiles/${p.profileId}/comments`, {
                                                             headers: { 'Authorization': `Bearer ${token}` }
                                                         });
                                                         const data = await res.json();

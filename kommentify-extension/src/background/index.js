@@ -5909,8 +5909,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const finalTone = request.tone || storedSettings.tone || 'Friendly';
                 const finalLength = request.length || storedSettings.commentLength || 'Short';
                 const finalStyle = request.style || storedSettings.commentStyle || 'direct';
+                const finalModel = request.model || storedSettings.model || 'gpt-4o-mini';
+                const finalExpertise = request.expertise || storedSettings.userExpertise || '';
+                const finalBackground = request.background || storedSettings.userBackground || '';
 
-                console.log('⚙️ BACKGROUND: Using comment settings:', { goal: finalGoal, tone: finalTone, length: finalLength, style: finalStyle });
+                console.log('⚙️ BACKGROUND: Using comment settings:', { goal: finalGoal, tone: finalTone, length: finalLength, style: finalStyle, model: finalModel, expertise: finalExpertise });
 
                 // Use the same backend API as automation
                 console.log('📡 BACKGROUND: Calling AI API...');
@@ -5926,10 +5929,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         goal: finalGoal,
                         commentLength: finalLength,
                         commentStyle: finalStyle,
-                        userExpertise: storedSettings.userExpertise || '',
-                        userBackground: storedSettings.userBackground || '',
+                        userExpertise: finalExpertise,
+                        userBackground: finalBackground,
                         authorName: request.authorName || 'there',
-                        useProfileStyle: storedSettings.useProfileStyle === true
+                        useProfileStyle: storedSettings.useProfileStyle === true,
+                        model: finalModel
                     })
                 });
 
@@ -5971,6 +5975,55 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (_senderTabId && _bridgeRequestId) {
                     try { chrome.tabs.sendMessage(_senderTabId, { type: 'AI_COMMENT_RESULT', _bridgeRequestId, data: errResp }); } catch (e) { }
                 }
+            }
+        })();
+        return true;
+    }
+
+    // Auto Decide Comment Settings (for AI button when auto-decide is enabled)
+    if (request.action === "autoDecideComment") {
+        const _bridgeRequestId = request._bridgeRequestId;
+        const _senderTabId = sender?.tab?.id;
+        (async () => {
+            try {
+                console.log('🤖 BACKGROUND: Auto-decide comment settings...');
+
+                const storage = await chrome.storage.local.get(['authToken', 'apiBaseUrl']);
+                const token = await getFreshToken();
+                let apiUrl = storage.apiBaseUrl;
+                if (!apiUrl || apiUrl.includes('backend-buxx') || apiUrl.includes('backend-api-orcin') || apiUrl.includes('backend-4poj')) {
+                    apiUrl = API_CONFIG.BASE_URL;
+                }
+
+                if (!token) {
+                    sendResponse({ success: false, error: 'Please login to use this feature' });
+                    return;
+                }
+
+                console.log('📡 BACKGROUND: Calling auto-decide API...');
+                const response = await fetch(`${apiUrl}/api/ai/auto-decide-comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        postText: request.postText,
+                        authorName: request.authorName,
+                        model: request.model || 'gpt-4o-mini'
+                    })
+                });
+
+                const data = await response.json();
+                console.log('BACKGROUND: Auto-decide response:', data);
+
+                sendResponse(data);
+                if (_senderTabId && _bridgeRequestId) {
+                    try { chrome.tabs.sendMessage(_senderTabId, { type: 'AUTO_DECIDE_RESULT', _bridgeRequestId, data }); } catch (e) { }
+                }
+            } catch (error) {
+                console.error('BACKGROUND: Auto-decide error:', error);
+                sendResponse({ success: false, error: error.message });
             }
         })();
         return true;
@@ -7288,7 +7341,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 userExpertise: '',
                 userBackground: '',
                 aiAutoPost: 'manual',
-                useProfileStyle: false
+                useProfileStyle: false,
+                autoDecide: false
             };
             try {
                 // Try to fetch from website API first
@@ -7313,7 +7367,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 userBackground: data.settings.userBackground || defaults.userBackground,
                                 aiAutoPost: data.settings.aiAutoPost || defaults.aiAutoPost,
                                 useProfileStyle: data.settings.useProfileStyle === true,
+                                autoDecide: data.settings.autoDecide === true,
                             };
+                            console.log('BACKGROUND: Server autoDecide value:', data.settings.autoDecide, 'Parsed:', serverSettings.autoDecide);
                             // Cache in local storage
                             await chrome.storage.local.set({ commentSettings: serverSettings });
                             console.log('BACKGROUND: Loaded comment settings from server:', serverSettings);
@@ -7329,9 +7385,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
                 }
 
-                // Fallback to local storage
+                // Fallback to local storage - merge with defaults to ensure autoDecide exists
                 const result = await chrome.storage.local.get('commentSettings');
-                const settings = result.commentSettings || defaults;
+                const settings = { ...defaults, ...result.commentSettings };
                 console.log('BACKGROUND: Returning local comment settings:', settings);
                 sendResponse(settings);
                 if (_senderTabId && _bridgeRequestId) {

@@ -73,6 +73,8 @@ export default function WriterTabNew(props: any) {
         plannerTemplate, setPlannerTemplate, plannerTone, setPlannerTone,
         plannerLength, setPlannerLength, plannerGenerating, plannerDoneCount, plannerTotal,
         plannerStatusMsg, plannerAbortRef, generatePlannerTopics, startPlannerGeneration,
+        // History from props
+        historyItems, historyLoading, loadHistory,
     } = props;
 
     // Load scheduled post for preview
@@ -118,6 +120,32 @@ export default function WriterTabNew(props: any) {
     const [isEditingPost, setIsEditingPost] = useState(false);
     const [editedPostContent, setEditedPostContent] = useState('');
     const [originalPostContent, setOriginalPostContent] = useState('');
+
+    // History popup state
+    const [showHistoryPopup, setShowHistoryPopup] = useState(false);
+    const lastSavedContentRef = useRef<string>('');
+    const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Save to history function
+    const saveToHistory = async (type: string, title: string, content: any, metadata?: any) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        try {
+            await fetch('/api/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type, title, content: JSON.stringify(content), metadata: metadata ? JSON.stringify(metadata) : null }),
+            });
+        } catch (e) { console.error('Failed to save to history:', e); }
+    };
+
+    // Open history popup - load AI generated posts specifically
+    const openHistoryPopup = () => {
+        if (props.loadHistory) {
+            props.loadHistory(1, 'ai_generated');
+        }
+        setShowHistoryPopup(true);
+    };
     const [inlineEditMode, setInlineEditMode] = useState(false);
     const [showEditHint, setShowEditHint] = useState(true);
 
@@ -135,22 +163,26 @@ export default function WriterTabNew(props: any) {
     };
 
     // Save edited content
-    const saveEditedPost = () => {
+    const saveEditedPost = async () => {
+        // Save to history before updating content
+        await saveToHistory('edited_post', `Edited Post: ${writerTopic || 'Custom Post'}`, editedPostContent, { originalContent: originalPostContent });
         setWriterContent(editedPostContent);
         setIsEditingPost(false);
         setOriginalPostContent(editedPostContent);
-        showToast('Post updated successfully', 'success');
+        showToast('Post updated and saved to history', 'success');
     };
 
     // Handle inline edit (contenteditable blur)
-    const handleInlineEdit = (e: React.FocusEvent<HTMLDivElement>) => {
+    const handleInlineEdit = async (e: React.FocusEvent<HTMLDivElement>) => {
         const newContent = e.currentTarget.textContent || '';
         if (newContent !== writerContent) {
             const oldLength = writerContent.length;
+            // Save to history before updating content
+            await saveToHistory('edited_post', `Edited Post: ${writerTopic || 'Custom Post'}`, newContent, { originalContent: writerContent });
             setWriterContent(newContent);
             setOriginalPostContent(newContent);
             const changeDesc = newContent.length > oldLength ? 'expanded' : newContent.length < oldLength ? 'shortened' : 'modified';
-            showToast(`Post ${changeDesc}: ${newContent.length} characters`, 'success');
+            showToast(`Post ${changeDesc}: ${newContent.length} characters - saved to history`, 'success');
         }
         setInlineEditMode(false);
     };
@@ -185,6 +217,41 @@ export default function WriterTabNew(props: any) {
         }
     };
 
+    // Debounced auto-save to history when user edits content
+    useEffect(() => {
+        // Clear previous timeout
+        if (autoSaveTimeoutRef.current) {
+            clearTimeout(autoSaveTimeoutRef.current);
+        }
+
+        // Skip if no content or if content hasn't changed from last save
+        if (!writerContent.trim() || writerContent === lastSavedContentRef.current) {
+            return;
+        }
+
+        // Set up debounced auto-save - saves after 3 seconds of no changes
+        autoSaveTimeoutRef.current = setTimeout(async () => {
+            if (writerContent !== lastSavedContentRef.current && writerContent.trim()) {
+                lastSavedContentRef.current = writerContent;
+                await saveToHistory('auto_saved', `Auto-saved: ${writerTopic || 'Custom Post'}`, writerContent, { autoSaved: true });
+                console.log('Auto-saved post to history');
+            }
+        }, 3000);
+
+        return () => {
+            if (autoSaveTimeoutRef.current) {
+                clearTimeout(autoSaveTimeoutRef.current);
+            }
+        };
+    }, [writerContent, writerTopic]);
+
+    // Update last saved content when AI generates a post
+    useEffect(() => {
+        if (writerContent && writerContent !== lastSavedContentRef.current) {
+            lastSavedContentRef.current = writerContent;
+        }
+    }, [writerContent]);
+
     // Expose functions for chatbot integration via window (or props callback)
     useEffect(() => {
         // Make these functions available globally for chatbot integration
@@ -217,10 +284,17 @@ export default function WriterTabNew(props: any) {
 
     // Auto-fill from profile data
     const [writerTargetAudience, setWriterTargetAudience] = useState(userTargetAudience || '');
-    const [writerKeyMessage, setWriterKeyMessage] = useState('');
+    const [writerKeyMessage, setWriterKeyMessage] = useState(userTargetAudience || '');
     const [writerBackground, setWriterBackground] = useState(
         voyagerData?.headline || linkedInProfile?.headline || ''
     );
+
+    // Sync target audience when props change (e.g., after suggestGoals saves)
+    useEffect(() => {
+        if (userTargetAudience && userTargetAudience !== writerTargetAudience) {
+            setWriterTargetAudience(userTargetAudience);
+        }
+    }, [userTargetAudience]);
 
     // Sync depth to length
     useEffect(() => {
@@ -492,14 +566,15 @@ export default function WriterTabNew(props: any) {
             if (data.success) {
                 // Check if the chatbot modified the post
                 if (data.modifiedPost) {
-                    setWriterContent(data.modifiedPost);
-                    // Add a message about the changes made with detailed description
-                    const changeDetails = data.changeDescription
-                        ? `**Changes made:** ${data.changeDescription}`
-                        : `**Post updated:** ${data.originalLength || writerContent.length} → ${data.newLength || data.modifiedPost.length} characters`;
-                    const changeMessage = `\n\n---\n${changeDetails}`;
-                    setChatMessages(prev => [...prev, { role: 'assistant', content: data.response + changeMessage }]);
-                    showToast(`Post updated: ${data.changeDescription || 'modified'}`, 'success');
+                    // Add message with modifiedPost attached for Copy/Apply buttons - show actual post content
+                    setChatMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: data.response,
+                        modifiedPost: data.modifiedPost,
+                        originalContent: writerContent,
+                        changeDescription: data.changeDescription
+                    }]);
+                    showToast('Review changes in chat and click Apply to update post', 'info');
                 } else {
                     setChatMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
                 }
@@ -515,6 +590,18 @@ export default function WriterTabNew(props: any) {
         } finally {
             setChatSending(false);
         }
+    };
+
+    // Apply modified post from chat to LinkedIn Preview
+    const applyChatPost = (modifiedPost: string) => {
+        setWriterContent(modifiedPost);
+        showToast('Post applied to LinkedIn Preview', 'success');
+    };
+
+    // Copy modified post to clipboard
+    const copyChatPost = (modifiedPost: string) => {
+        navigator.clipboard.writeText(modifiedPost);
+        showToast('Copied to clipboard', 'success');
     };
 
     const filteredHooks = hookCategory === 'all' ? hooks : hooks.filter((h: any) => h.category === hookCategory);
@@ -560,17 +647,16 @@ export default function WriterTabNew(props: any) {
                         {miniIcon('M13 10V3L4 14h7v7l9-11h-7z', '#fbbf24', 16)} Personal Brand Strategy
                     </h3>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        {(!userGoal && !userTargetAudience) ? (
-                            <button onClick={suggestGoals} disabled={goalsSuggesting || !voyagerData}
-                                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: '8px', padding: '6px 14px', color: 'white', fontSize: '13px', fontWeight: 'bold', cursor: (goalsSuggesting || !voyagerData) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: voyagerData ? 1 : 0.5 }}>
-                                {goalsSuggesting ? 'Suggesting...' : '✨ Suggest Strategy'}
-                            </button>
-                        ) : (
-                            <button onClick={saveUserGoals}
-                                style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '6px', padding: '6px 12px', color: '#34d399', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
-                                Save Strategy
-                            </button>
-                        )}
+                        <button onClick={() => {
+                            if (!voyagerData) {
+                                showToast?.('Please sync your LinkedIn profile first', 'error');
+                                return;
+                            }
+                            suggestGoals();
+                        }} disabled={goalsSuggesting}
+                            style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: '8px', padding: '6px 14px', color: 'white', fontSize: '13px', fontWeight: 'bold', cursor: goalsSuggesting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {goalsSuggesting ? 'Suggesting...' : '✨ Suggest Strategy'}
+                        </button>
                     </div>
                 </div>
 
@@ -751,6 +837,32 @@ export default function WriterTabNew(props: any) {
                                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                                         {msg.content}
                                                     </ReactMarkdown>
+                                                </div>
+                                            )}
+                                            {/* Show modified post content with Copy and Apply buttons */}
+                                            {msg.role === 'assistant' && msg.modifiedPost && (
+                                                <div style={{ marginTop: '12px' }}>
+                                                    {/* Show what changed */}
+                                                    {msg.changeDescription && (
+                                                        <div style={{ fontSize: '12px', color: '#a78bfa', marginBottom: '8px', fontStyle: 'italic' }}>
+                                                            {msg.changeDescription}
+                                                        </div>
+                                                    )}
+                                                    {/* Show the actual modified post content */}
+                                                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '13px', lineHeight: '1.5', color: 'rgba(255,255,255,0.9)', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
+                                                        {msg.modifiedPost}
+                                                    </div>
+                                                    {/* Copy and Apply buttons */}
+                                                    <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                                                        <button onClick={() => copyChatPost(msg.modifiedPost)}
+                                                            style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                            {miniIcon('M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3', 'white', 12)} Copy
+                                                        </button>
+                                                        <button onClick={() => applyChatPost(msg.modifiedPost)}
+                                                            style={{ flex: 1, padding: '8px 12px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                            {miniIcon('M5 13l4 4L19 7', 'white', 12)} Apply
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -935,17 +1047,6 @@ export default function WriterTabNew(props: any) {
                                 </>
                             ) : (
                                 <>
-                                    {/* Inline Edit Toggle */}
-                                    <button onClick={toggleInlineEdit}
-                                        style={{ padding: '4px 10px', background: inlineEditMode ? 'rgba(34,197,94,0.3)' : 'rgba(139,92,246,0.3)', border: `1px solid ${inlineEditMode ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.5)'}`, borderRadius: '4px', color: inlineEditMode ? '#4ade80' : '#c4b5fd', fontSize: '12px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        {inlineEditMode ? 'Done' : 'Edit'}
-                                    </button>
-                                    {/* Legacy Edit Button (opens modal) */}
-                                    <button onClick={startEditingPost}
-                                        style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '12px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                        title="Open in editor">
-                                        Full Editor
-                                    </button>
                                     {(['desktop', 'mobile'] as const).map(mode => (
                                         <button key={mode} onClick={() => setWriterPreviewMode(writerPreviewMode === mode ? 'desktop' : mode)}
                                             style={{ padding: '3px 8px', background: writerPreviewMode === mode ? 'rgba(0,119,181,0.3)' : 'rgba(255,255,255,0.06)', border: writerPreviewMode === mode ? '1px solid rgba(0,119,181,0.5)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '4px', color: writerPreviewMode === mode ? '#60a5fa' : 'rgba(255,255,255,0.5)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}>
@@ -1208,11 +1309,11 @@ export default function WriterTabNew(props: any) {
                         </button>
 
                         <div style={{ display: 'flex', gap: '6px' }}>
-                            <button onClick={saveDraft}
+                            <button onClick={openHistoryPopup}
                                 style={{ flex: 1, padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                                 onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
                                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
-                                {miniIcon('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z', 'white', 10)} Draft
+                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 10)} History
                             </button>
                             <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
                                 style={{ flex: 1, padding: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '11px', minWidth: 0 }} />
@@ -1242,19 +1343,19 @@ export default function WriterTabNew(props: any) {
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={() => openPlanner?.('7days')}
+                            <button onClick={() => openPlanner?.('5days')}
                                 style={{ flex: 1, padding: '8px 12px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: '0 3px 10px rgba(105,63,233,0.4)', transition: 'transform 0.1s' }}
                                 onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
                                 onMouseUp={e => e.currentTarget.style.transform = 'none'}
                                 onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                                7 Days
+                                5 Days
                             </button>
-                            <button onClick={() => openPlanner?.('30days')}
+                            <button onClick={() => openPlanner?.('20days')}
                                 style={{ flex: 1, padding: '8px 12px', background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: '0 3px 10px rgba(16,185,129,0.4)', transition: 'transform 0.1s' }}
                                 onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
                                 onMouseUp={e => e.currentTarget.style.transform = 'none'}
                                 onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                                30 Days
+                                20 Days
                             </button>
                         </div>
                     </div>
@@ -1414,16 +1515,20 @@ export default function WriterTabNew(props: any) {
                                 {writerScheduledPosts.length} Post{writerScheduledPosts.length !== 1 ? 's' : ''} Scheduled
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
-                                {writerScheduledPosts.slice(0, 5).map((post: any, idx: number) => (
+                                {writerScheduledPosts.slice(0, 5).map((post: any, idx: number) => {
+                                    // Get first line of content (up to first newline or use full content)
+                                    const firstLine = post.content?.split('\n')[0] || post.content || '';
+                                    return (
                                     <div key={idx} onClick={() => loadScheduledPost(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', cursor: 'pointer' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                            {post.content?.substring(0, 40)}...
+                                        <span style={{ color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                                            {firstLine}
                                         </span>
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginLeft: '8px', flexShrink: 0 }}>
                                             {post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
                                         </span>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -1496,7 +1601,7 @@ export default function WriterTabNew(props: any) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <div>
                                 <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '800', margin: 0 }}>
-                                    {plannerMode === '7days' ? '7-Day' : '30-Day'} AI Content Planner
+                                    {plannerMode === '5days' ? '5-Day' : '20-Day'} AI Content Planner
                                 </h2>
                                 <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '14px', marginTop: '3px' }}>
                                     {plannerStep === 'context' && 'Step 1 of 3 — Add context & generate topics'}
@@ -1536,7 +1641,7 @@ export default function WriterTabNew(props: any) {
                                 {plannerStatusMsg && <div style={{ marginTop: '10px', color: '#f87171', fontSize: '14px' }}>{plannerStatusMsg}</div>}
                                 <button onClick={generatePlannerTopics} disabled={plannerGeneratingTopics}
                                     style={{ marginTop: '16px', width: '100%', padding: '13px', background: plannerGeneratingTopics ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: plannerGeneratingTopics ? 'wait' : 'pointer' }}>
-                                    {plannerGeneratingTopics ? `Generating ${plannerMode === '7days' ? '12' : '40'} topics...` : `Generate ${plannerMode === '7days' ? '12' : '40'} Topic Ideas`}
+                                    {plannerGeneratingTopics ? `Generating ${plannerMode === '5days' ? '8' : '25'} topics...` : `Generate ${plannerMode === '5days' ? '8' : '25'} Topic Ideas`}
                                 </button>
                             </div>
                         )}
@@ -1546,10 +1651,10 @@ export default function WriterTabNew(props: any) {
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                     <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>
-                                        {plannerSelected.filter(Boolean).length} of {plannerTopics.length} selected (need {plannerMode === '7days' ? '7' : '30'})
+                                        {plannerSelected.filter(Boolean).length} of {plannerTopics.length} selected (need {plannerMode === '5days' ? '5' : '20'})
                                     </span>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={() => setPlannerSelected(plannerTopics.map((_: any, i: number) => i < (plannerMode === '7days' ? 7 : 30)))}
+                                        <button onClick={() => setPlannerSelected(plannerTopics.map((_: any, i: number) => i < (plannerMode === '5days' ? 5 : 20)))}
                                             style={{ padding: '5px 12px', background: 'rgba(105,63,233,0.2)', border: '1px solid rgba(105,63,233,0.4)', borderRadius: '6px', color: '#a78bfa', fontSize: '13px', cursor: 'pointer' }}>Auto-select Top</button>
                                         <button onClick={() => setPlannerSelected(plannerTopics.map((_: any) => true))}
                                             style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', cursor: 'pointer' }}>All</button>
@@ -1673,6 +1778,104 @@ export default function WriterTabNew(props: any) {
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* History Popup Modal */}
+            {showHistoryPopup && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowHistoryPopup(false)}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '700px', width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 18)} AI Generated Posts History
+                            </h3>
+                            <button onClick={() => setShowHistoryPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+                        </div>
+
+                        {historyLoading ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>Loading history...</div>
+                        ) : historyItems && historyItems.length > 0 ? (
+                            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {historyItems.map((item: any, idx: number) => {
+                                    let content = '';
+                                    try {
+                                        content = typeof item.content === 'string' ? item.content : JSON.stringify(item.content);
+                                    } catch { content = String(item.content); }
+                                    return (
+                                        <div key={idx} style={{ padding: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                            onClick={() => {
+                                                try {
+                                                    let contentToLoad = '';
+                                                    const rawContent = item.content;
+
+                                                    // Try to parse as JSON first
+                                                    if (typeof rawContent === 'string') {
+                                                        try {
+                                                            const parsed = JSON.parse(rawContent);
+                                                            if (Array.isArray(parsed)) {
+                                                                contentToLoad = parsed[0] || '';
+                                                            } else if (parsed && typeof parsed === 'object' && parsed.content) {
+                                                                contentToLoad = parsed.content;
+                                                            } else if (typeof parsed === 'string') {
+                                                                contentToLoad = parsed;
+                                                            }
+                                                        } catch {
+                                                            // Not JSON, use as-is
+                                                            contentToLoad = rawContent;
+                                                        }
+                                                    } else if (rawContent && typeof rawContent === 'object') {
+                                                        if (Array.isArray(rawContent)) {
+                                                            contentToLoad = rawContent[0] || '';
+                                                        } else if (rawContent.content) {
+                                                            contentToLoad = rawContent.content;
+                                                        }
+                                                    }
+
+                                                    if (contentToLoad) {
+                                                        setWriterContent(contentToLoad);
+                                                        // Try to extract topic from metadata if available
+                                                        if (item.metadata) {
+                                                            try {
+                                                                const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+                                                                if (metadata?.template || metadata?.topic) {
+                                                                    setWriterTopic(metadata.template || metadata.topic);
+                                                                }
+                                                            } catch { /* ignore metadata parse error */ }
+                                                        }
+                                                        setShowHistoryPopup(false);
+                                                        showToast('Post loaded to LinkedIn Preview', 'success');
+                                                    } else {
+                                                        showToast('Could not extract post content', 'error');
+                                                    }
+                                                } catch { showToast('Failed to load post', 'error'); }
+                                            }}
+                                            onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                                            onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                                <span style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '600' }}>{item.title || 'AI Generated Post'}</span>
+                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>
+                                                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                                                </span>
+                                            </div>
+                                            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                {content}
+                                            </div>
+                                            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Click to load this post</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
+                                No AI generated posts in history yet.<br />
+                                <span style={{ fontSize: '12px' }}>Generate a post to see it here.</span>
+                            </div>
+                        )}
+
+                        <button onClick={() => setShowHistoryPopup(false)} style={{ marginTop: '16px', width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer' }}>Close</button>
                     </div>
                 </div>
             )}

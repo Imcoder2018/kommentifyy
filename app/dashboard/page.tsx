@@ -339,7 +339,7 @@ function DashboardContent() {
 
     // Content Planner state
     const [plannerOpen, setPlannerOpen] = useState(false);
-    const [plannerMode, setPlannerMode] = useState<'7days' | '30days'>('7days');
+    const [plannerMode, setPlannerMode] = useState<'5days' | '20days'>('5days');
     const [plannerStep, setPlannerStep] = useState<'context' | 'select' | 'time' | 'generating' | 'done'>('context');
     const [plannerContext, setPlannerContext] = useState('');
     const [plannerTopics, setPlannerTopics] = useState<string[]>([]);
@@ -678,9 +678,18 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success) {
                 if (data.goal) setUserGoal(data.goal);
-                if (data.targetAudience) setUserTargetAudience(data.targetAudience);
-                if (data.writingStyle) setUserWritingStyle(data.writingStyle);
-                showToast('Strategy suggested! Review and save.', 'success');
+                if (data.targetAudience) {
+                    setUserTargetAudience(data.targetAudience);
+                    // Also save to localStorage for immediate persistence
+                    localStorage.setItem('savedWriterTargetAudience', data.targetAudience);
+                }
+                if (data.writingStyle) {
+                    setUserWritingStyle(data.writingStyle);
+                    localStorage.setItem('savedWriterKeyMessage', data.writingStyle);
+                }
+                // Auto-save after setting values to database
+                await saveUserGoals();
+                showToast('Strategy suggested and saved!', 'success');
             } else {
                 showToast(data.error || 'Failed to suggest', 'error');
             }
@@ -1526,7 +1535,7 @@ function DashboardContent() {
     };
 
     // Content Planner functions
-    const openPlanner = (mode: '7days' | '30days') => {
+    const openPlanner = (mode: '5days' | '20days') => {
         if (isFreePlan) { setShowUpgradeModal(true); return; }
         const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
         const dd = String(tomorrow.getDate()).padStart(2, '0');
@@ -1587,7 +1596,7 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success) {
                 setPlannerTopics(data.topics);
-                const count = plannerMode === '7days' ? 7 : 30;
+                const count = plannerMode === '5days' ? 5 : 20;
                 setPlannerSelected(data.topics.map((_: string, i: number) => i < count));
                 setPlannerStep('select');
             } else {
@@ -1881,8 +1890,17 @@ function DashboardContent() {
     useEffect(() => {
         const savedContent = localStorage.getItem('savedWriterContent');
         const savedTopic = localStorage.getItem('savedWriterTopic');
+        const savedTargetAudience = localStorage.getItem('savedWriterTargetAudience');
+        const savedWritingStyle = localStorage.getItem('savedWriterKeyMessage');
         if (savedContent) setWriterContent(savedContent);
         if (savedTopic) setWriterTopic(savedTopic);
+        if (savedTargetAudience) {
+            setWriterTargetAudience(savedTargetAudience);
+            setUserTargetAudience(savedTargetAudience);
+        }
+        if (savedWritingStyle) {
+            setUserWritingStyle(savedWritingStyle);
+        }
     }, []);
 
     // Auto-fill expertise and background from LinkedIn profile data for both Writer and Comments tabs
@@ -2111,17 +2129,25 @@ function DashboardContent() {
     };
 
     // History functions
-    const loadHistory = async (page = 1, filterOverride?: string) => {
+    const loadHistory = async (page = 1, typeFilter?: string) => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         setHistoryLoading(true);
         try {
-            const activeFilter = filterOverride !== undefined ? filterOverride : historyFilter;
-            const typeParam = activeFilter === 'all' ? '' : activeFilter;
-            const res = await fetch(`/api/history?page=${page}&limit=20${typeParam ? `&type=${typeParam}` : ''}`, {
+            // Use dedicated AI generated endpoint when filtering for ai_generated
+            let url = '/api/history';
+            if (typeFilter === 'ai_generated') {
+                url = `/api/history/ai-generated?page=${page}&limit=50`;
+            } else {
+                const activeFilter = typeFilter !== undefined ? typeFilter : historyFilter;
+                const typeParam = activeFilter && activeFilter !== 'all' ? `&type=${activeFilter}` : '';
+                url = `/api/history?page=${page}&limit=50${typeParam}`;
+            }
+            const res = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             const data = await res.json();
+            console.log('History load response:', data);
             if (data.success) {
                 setHistoryItems(data.items || []);
                 setHistoryTotal(data.total || 0);
@@ -2134,7 +2160,12 @@ function DashboardContent() {
         const token = localStorage.getItem('authToken');
         if (!token) return;
         try {
-            await fetch('/api/history', {
+            // Use dedicated AI generated endpoint when saving ai_generated
+            let url = '/api/history';
+            if (type === 'ai_generated') {
+                url = '/api/history/ai-generated';
+            }
+            await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ type, title, content: JSON.stringify(content), metadata: metadata ? JSON.stringify(metadata) : null }),

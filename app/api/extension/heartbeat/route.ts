@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
 
     if (latestHeartbeat) {
       const diffMs = Date.now() - new Date(latestHeartbeat.timestamp).getTime();
-      if (diffMs < 5 * 60 * 1000) { // 5-minute window
+      if (diffMs < 2 * 60 * 1000) { // 2-minute window (heartbeat sent every 15s, generous buffer)
         connected = true;
         lastSeen = latestHeartbeat.timestamp;
         connectionType = 'heartbeat';

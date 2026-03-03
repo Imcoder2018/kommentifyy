@@ -1117,6 +1117,7 @@ function DashboardContent() {
     };
 
     const commentScrapeIntervalRef = useRef<any>(null);
+    const lastActivityRef = useRef<Record<string, number>>({});
     const scrapeCommentStyle = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
@@ -1789,14 +1790,17 @@ function DashboardContent() {
                         const notifKey = `${nt.id}_${nt.status}`;
                         if (notifiedTaskIds.current.has(notifKey)) continue;
                         const prev = prevTasksRef.current.find((t: any) => t.id === nt.id);
-                        const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Scrape Feed' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command;
+                        const cmdName = nt.command === 'post_to_linkedin' ? 'Post to LinkedIn' : nt.command === 'scrape_feed_now' ? 'Quick Capture' : nt.command === 'scrape_profile' ? 'Scrape Profile' : nt.command === 'linkedin_get_feed_api' ? 'Capture Feed' : nt.command === 'linkedin_search_posts_api' ? 'Search Posts' : nt.command === 'linkedin_get_trending_api' ? 'Trending' : nt.command;
                         if (!prev) {
                             notifiedTaskIds.current.add(notifKey);
                             addTaskNotification(`New task: ${cmdName}`, 'info');
                         } else if (prev.status !== nt.status) {
                             notifiedTaskIds.current.add(notifKey);
                             if (nt.status === 'completed' || nt.status === 'completed_manual') addTaskNotification(`Completed: ${cmdName}`, 'success');
-                            else if (nt.status === 'failed' || nt.status === 'cancelled') addTaskNotification(`Failed: ${cmdName}`, 'error');
+                            else if (nt.status === 'failed' || nt.status === 'cancelled') {
+                                const reason = nt.data?.error || nt.error || '';
+                                addTaskNotification(reason ? `Failed: ${cmdName} - ${reason}` : `Failed: ${cmdName}`, 'error');
+                            }
                             else if (nt.status === 'in_progress') addTaskNotification(`Processing: ${cmdName}`, 'info');
                         }
                     }
@@ -1845,12 +1849,17 @@ function DashboardContent() {
         } catch (e) { console.error('Failed to check extension connectivity:', e); }
     };
 
-    // Poll tasks every 15 seconds for live notifications - empty deps so interval is created once
+    // Poll tasks frequently for responsive UI — 5s when tasks are active, 15s otherwise
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         checkExtensionConnectivity();
-        const taskInterval = setInterval(() => loadTasks(true), 15000);
-        const heartbeatInterval = setInterval(() => checkExtensionConnectivity(), 15000); // Check every 15 seconds
+        const taskInterval = setInterval(() => {
+            const hasActiveTasks = tasks.some(t => t.status === 'pending' || t.status === 'in_progress');
+            loadTasks(true);
+            // Also refresh connectivity more often when tasks are active
+            if (hasActiveTasks) checkExtensionConnectivity();
+        }, 5000); // 5s polling for fast task status updates
+        const heartbeatInterval = setInterval(() => checkExtensionConnectivity(), 15000);
         return () => { clearInterval(taskInterval); clearInterval(heartbeatInterval); };
     }, []);
 
@@ -1860,7 +1869,7 @@ function DashboardContent() {
             const pendingTasks = tasks.filter(t => t.status === 'pending');
             const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
 
-            // Handle pending countdown
+            // Handle pending countdown - show elapsed time waiting for extension
             if (pendingTasks.length > 0) {
                 const oldestPending = pendingTasks.reduce((oldest, task) => {
                     const taskTime = new Date(task.createdAt).getTime();
@@ -1869,11 +1878,9 @@ function DashboardContent() {
                 }, null);
 
                 if (oldestPending && oldestPending.createdAt) {
-                    const startDelaySec = 0; // No delay
                     const created = new Date(oldestPending.createdAt).getTime();
-                    const executeAt = created + (startDelaySec * 1000);
-                    const remaining = Math.max(0, Math.round((executeAt - Date.now()) / 1000));
-                    const countdownText = remaining > 0 ? `Starts in ${remaining}s` : 'Starting soon...';
+                    const elapsed = Math.round((Date.now() - created) / 1000);
+                    const countdownText = elapsed < 3 ? 'Starting soon...' : `Waiting for extension... ${elapsed}s`;
                     setPendingCountdown(countdownText);
                 }
             } else {
@@ -1909,18 +1916,18 @@ function DashboardContent() {
     // Handle "Starting soon..." notification and auto-fail only when extension NOT active
     useEffect(() => {
         // Track last activity time for smart timeout detection
-        const lastActivityRef = useRef<Record<string, number>>({});
 
         const checkPendingTasks = () => {
             const pendingTasks = tasks.filter(t => t.status === 'pending');
             const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
             const now = Date.now();
-            // Increased timeouts: 30s for pending, 5 minutes (300s) for in_progress
-            const PENDING_TIMEOUT_MS = 30000; // 30 seconds
-            const IN_PROGRESS_TIMEOUT_MS = 300000; // 5 minutes for in_progress tasks
+            // Timeouts: 45s for pending (extension polls every 15s, dashboard polls every 5s)
+            // 10 minutes for in_progress tasks (some tasks like feed scraping take several minutes)
+            const PENDING_TIMEOUT_MS = 45000; // 45 seconds - 3 extension poll cycles
+            const IN_PROGRESS_TIMEOUT_MS = 600000; // 10 minutes for in_progress tasks
 
-            // Check if extension is TRULY active (heartbeat within last 30 seconds)
-            const isExtensionTrulyActive = extensionLastSeen && (now - extensionLastSeen.getTime()) < 30000;
+            // Check if extension is TRULY active (heartbeat within last 60 seconds - extension sends every 15s)
+            const isExtensionTrulyActive = extensionLastSeen && (now - extensionLastSeen.getTime()) < 60000;
             const isExtensionConnected = extensionConnected && isExtensionTrulyActive;
 
             // Update last activity time when tasks change status or extension is active
@@ -1938,7 +1945,8 @@ function DashboardContent() {
                 });
             }
 
-            // Check for "Starting soon..." notification
+            // Show "Starting soon..." notification only briefly (first 5 seconds)
+            // After that, the pendingCountdown shows "Waiting for extension..." which is more accurate
             if (pendingTasks.length > 0) {
                 const oldestPending = pendingTasks.reduce((oldest, task) => {
                     const taskTime = new Date(task.createdAt).getTime();
@@ -1947,17 +1955,10 @@ function DashboardContent() {
                 }, null);
 
                 if (oldestPending && oldestPending.createdAt) {
-                    const startDelaySec = 0; // No delay
                     const created = new Date(oldestPending.createdAt).getTime();
-                    const executeAt = created + (startDelaySec * 1000);
-                    const remaining = Math.max(0, Math.round((executeAt - now) / 1000));
-
-                    // Show notification when countdown reaches 0 (Starting soon...)
-                    if (remaining <= 0) {
-                        setShowStartingSoonNotification(true);
-                    } else {
-                        setShowStartingSoonNotification(false);
-                    }
+                    const elapsed = now - created;
+                    // Show notification for the first 5 seconds, then let countdown handle it
+                    setShowStartingSoonNotification(elapsed < 5000);
                 }
             } else {
                 setShowStartingSoonNotification(false);
@@ -1971,18 +1972,30 @@ function DashboardContent() {
                 return (now - lastActivity) < timeoutMs;
             };
 
-            // For pending tasks: fail only if extension disconnected AND timeout exceeded
-            if (!isExtensionConnected) {
+            // For pending tasks: fail ONLY if extension is completely disconnected AND timeout exceeded
+            // When extension is connected, NEVER auto-fail — trust the extension to pick up the task
+            if (!extensionConnected) {
                 pendingTasks.forEach(task => {
                     if (task.createdAt && !pendingTaskTimeoutsRef.current.has(task.id)) {
                         const created = new Date(task.createdAt).getTime();
                         const elapsed = now - created;
 
                         if (elapsed > PENDING_TIMEOUT_MS) {
-                            // Mark as failed
+                            // Double-check connectivity before failing - re-fetch heartbeat status
                             const timeoutId = setTimeout(async () => {
                                 const token = localStorage.getItem('authToken');
                                 if (!token) return;
+
+                                // Re-check extension connectivity before marking as failed
+                                try {
+                                    const hbRes = await fetch('/api/extension/heartbeat', { headers: { 'Authorization': `Bearer ${token}` } });
+                                    const hbData = await hbRes.json();
+                                    if (hbData.connected) {
+                                        // Extension came back online - don't fail the task
+                                        pendingTaskTimeoutsRef.current.delete(task.id);
+                                        return;
+                                    }
+                                } catch (e) { /* proceed with failing */ }
 
                                 try {
                                     await fetch('/api/extension/command', {
@@ -1991,14 +2004,17 @@ function DashboardContent() {
                                         body: JSON.stringify({ commandId: task.id, status: 'failed' }),
                                     });
 
-                                    const reason = !extensionConnected ? 'Extension disconnected' : 'Extension not receiving tasks';
-                                    const suggestion = !extensionConnected ? 'Connect your extension to start processing tasks.' : 'Extension may have stopped responding. Try reloading the extension.';
+                                    const reason = 'Extension disconnected';
+                                    const suggestion = 'Connect your extension to start processing tasks.';
 
                                     const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
-                                        task.command === 'scrape_feed_now' ? 'Scrape Feed' :
+                                        task.command === 'scrape_feed_now' ? 'Quick Capture' :
                                             task.command === 'scrape_profile' ? 'Scrape Profile' :
-                                                task.command === 'linkedin_schedule_via_api' ? 'Schedule Post' :
-                                                    task.command === 'bulk_comment' ? 'Bulk Comment' : task.command;
+                                                task.command === 'linkedin_get_feed_api' ? 'Capture Feed' :
+                                                    task.command === 'linkedin_search_posts_api' ? 'Search Posts' :
+                                                        task.command === 'linkedin_get_trending_api' ? 'Trending' :
+                                                            task.command === 'linkedin_schedule_via_api' ? 'Schedule Post' :
+                                                                task.command === 'bulk_comment' ? 'Bulk Comment' : task.command;
 
                                     addTaskNotification(`Failed: ${cmdLabel} - ${reason}`, 'error');
                                     setTaskTimeoutNotification({ show: true, reason, suggestion });
@@ -2015,7 +2031,7 @@ function DashboardContent() {
                 });
             }
 
-            // For in_progress tasks: SMART detection - only fail if NO activity for 5 minutes
+            // For in_progress tasks: only fail if extension is completely disconnected AND task stalled for timeout period
             inProgressTasks.forEach(task => {
                 if (task.createdAt && !inProgressTaskTimeoutsRef.current.has(task.id)) {
                     const created = new Date(task.createdAt).getTime();
@@ -2023,43 +2039,54 @@ function DashboardContent() {
                     const lastActivity = lastActivityRef.current[task.id] || created;
                     const timeSinceLastActivity = now - lastActivity;
 
-                    // Only fail if:
-                    // 1. Timeout exceeded (5 minutes) AND
-                    // 2. No recent activity (extension not responding)
-                    if (elapsed > IN_PROGRESS_TIMEOUT_MS && timeSinceLastActivity > IN_PROGRESS_TIMEOUT_MS) {
-                        // Only fail if extension is truly disconnected (no heartbeat)
-                        if (!isExtensionTrulyActive) {
-                            const timeoutId = setTimeout(async () => {
-                                const token = localStorage.getItem('authToken');
-                                if (!token) return;
+                    // Only fail if ALL conditions met:
+                    // 1. Total elapsed time exceeds timeout (10 minutes)
+                    // 2. No recent activity for the full timeout period
+                    // 3. Extension is NOT connected at all
+                    if (elapsed > IN_PROGRESS_TIMEOUT_MS && timeSinceLastActivity > IN_PROGRESS_TIMEOUT_MS && !extensionConnected) {
+                        const timeoutId = setTimeout(async () => {
+                            const token = localStorage.getItem('authToken');
+                            if (!token) return;
 
-                                try {
-                                    await fetch('/api/extension/command', {
-                                        method: 'PUT',
-                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ commandId: task.id, status: 'failed' }),
-                                    });
-
-                                    const reason = !extensionConnected ? 'Extension disconnected' : 'Task taking too long';
-                                    const suggestion = !extensionConnected ? 'Connect your extension to resume task processing.' : 'Task may have stalled. Check LinkedIn manually.';
-
-                                    const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
-                                        task.command === 'scrape_feed_now' ? 'Scrape Feed' :
-                                            task.command === 'scrape_profile' ? 'Scrape Profile' :
-                                                task.command === 'linkedin_schedule_via_api' ? 'Schedule Post' :
-                                                    task.command === 'bulk_comment' ? 'Bulk Comment' : task.command;
-
-                                    addTaskNotification(`Failed: ${cmdLabel} - ${reason}`, 'error');
-                                    setTaskTimeoutNotification({ show: true, reason, suggestion });
-                                    loadTasks(true);
-                                    setTimeout(() => setTaskTimeoutNotification(null), 10000);
-                                } catch (e) {
-                                    console.error('Failed to auto-fail in_progress task:', e);
+                            // Re-check extension connectivity before failing
+                            try {
+                                const hbRes = await fetch('/api/extension/heartbeat', { headers: { 'Authorization': `Bearer ${token}` } });
+                                const hbData = await hbRes.json();
+                                if (hbData.connected) {
+                                    inProgressTaskTimeoutsRef.current.delete(task.id);
+                                    return;
                                 }
-                                inProgressTaskTimeoutsRef.current.delete(task.id);
-                            }, 500);
-                            inProgressTaskTimeoutsRef.current.set(task.id, timeoutId);
-                        }
+                            } catch (e) { /* proceed with failing */ }
+
+                            try {
+                                await fetch('/api/extension/command', {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: task.id, status: 'failed' }),
+                                });
+
+                                const reason = 'Extension disconnected';
+                                const suggestion = 'Connect your extension to resume task processing.';
+
+                                const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
+                                    task.command === 'scrape_feed_now' ? 'Quick Capture' :
+                                        task.command === 'scrape_profile' ? 'Scrape Profile' :
+                                            task.command === 'linkedin_get_feed_api' ? 'Capture Feed' :
+                                                task.command === 'linkedin_search_posts_api' ? 'Search Posts' :
+                                                    task.command === 'linkedin_get_trending_api' ? 'Trending' :
+                                                        task.command === 'linkedin_schedule_via_api' ? 'Schedule Post' :
+                                                            task.command === 'bulk_comment' ? 'Bulk Comment' : task.command;
+
+                                addTaskNotification(`Failed: ${cmdLabel} - ${reason}`, 'error');
+                                setTaskTimeoutNotification({ show: true, reason, suggestion });
+                                loadTasks(true);
+                                setTimeout(() => setTaskTimeoutNotification(null), 10000);
+                            } catch (e) {
+                                console.error('Failed to auto-fail in_progress task:', e);
+                            }
+                            inProgressTaskTimeoutsRef.current.delete(task.id);
+                        }, 500);
+                        inProgressTaskTimeoutsRef.current.set(task.id, timeoutId);
                     }
                 }
             });
@@ -2958,7 +2985,7 @@ function DashboardContent() {
                                     <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '600', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command === 'scrape_profile' ? 'Scrape Profile' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}
+                                                {task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Quick Capture' : task.command === 'scrape_profile' ? 'Scrape Profile' : task.command === 'linkedin_get_feed_api' ? 'Capture Feed' : task.command === 'linkedin_search_posts_api' ? 'Search Posts' : task.command === 'linkedin_get_trending_api' ? 'Trending' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}
                                             </div>
                                             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{task.createdAt ? new Date(task.createdAt).toLocaleString() : ''}</div>
                                         </div>
@@ -2974,7 +3001,7 @@ function DashboardContent() {
                                                     window.dispatchEvent(new CustomEvent('kommentify-stop-all-tasks'));
                                                     await fetch('/api/extension/command', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: task.id, status: 'cancelled' }) });
                                                     await loadTasks(true);
-                                                    addTaskNotification(`Stopped: ${task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Scrape Feed' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}`, 'error');
+                                                    addTaskNotification(`Stopped: ${task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Quick Capture' : task.command === 'scrape_profile' ? 'Scrape Profile' : task.command === 'linkedin_get_feed_api' ? 'Capture Feed' : task.command === 'linkedin_search_posts_api' ? 'Search Posts' : task.command === 'linkedin_get_trending_api' ? 'Trending' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}`, 'error');
                                                 } catch (e) { console.error('Failed to stop task:', e); } finally { btn.style.opacity = '1'; }
                                             }}
                                                 onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.9)')}

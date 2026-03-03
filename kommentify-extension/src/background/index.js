@@ -431,11 +431,63 @@ async function getLinkedInTab() {
 
 
 // --- COMMAND POLLING VIA ALARM (independent of content scripts) ---
-// This ensures commands from the website are picked up even if the dashboard tab is not open
+// Chrome enforces minimum ~30s for alarms, so we use setInterval for faster polling
+// The alarm serves as a backup in case setInterval is killed by service worker suspension
 if (!globalThis._commandPollAlarmCreated) {
-    chrome.alarms.create('commandPoller', { periodInMinutes: 0.5 }); // every 30 seconds
+    chrome.alarms.create('commandPoller', { periodInMinutes: 0.5 }); // backup alarm every 30s
     globalThis._commandPollAlarmCreated = true;
-    console.log('BACKGROUND: Command poller alarm created (every 30s)');
+    console.log('BACKGROUND: Command poller alarm created (every 30s backup)');
+}
+
+// Fast poll via setInterval - polls every 10 seconds for responsive task pickup
+// Service worker keep-alive ensures this stays active
+if (!globalThis._fastPollIntervalCreated) {
+    globalThis._fastPollIntervalCreated = true;
+    setInterval(async () => {
+        try {
+            await pollCommandsDirectly();
+        } catch (e) { /* ignore poll errors in fast poll */ }
+    }, 10000); // every 10 seconds
+    console.log('BACKGROUND: Fast command poll interval created (every 10s)');
+}
+
+// --- INDEPENDENT HEARTBEAT ALARM + INTERVAL ---
+// Sends heartbeat even when poll lock is held by a long-running command
+if (!globalThis._heartbeatAlarmCreated) {
+    chrome.alarms.create('extensionHeartbeat', { periodInMinutes: 0.5 }); // backup alarm
+    globalThis._heartbeatAlarmCreated = true;
+    console.log('BACKGROUND: Independent heartbeat alarm created (every 30s backup)');
+}
+
+// Fast heartbeat via setInterval
+if (!globalThis._fastHeartbeatIntervalCreated) {
+    globalThis._fastHeartbeatIntervalCreated = true;
+    setInterval(async () => {
+        try {
+            await sendHeartbeatIndependent();
+        } catch (e) { /* ignore heartbeat errors */ }
+    }, 15000); // every 15 seconds
+    console.log('BACKGROUND: Fast heartbeat interval created (every 15s)');
+
+    // Immediate heartbeat + poll on startup (after 2s delay for auth to be ready)
+    setTimeout(async () => {
+        try { await sendHeartbeatIndependent(); } catch (e) { }
+        try { await pollCommandsDirectly(); } catch (e) { }
+    }, 2000);
+}
+
+async function sendHeartbeatIndependent() {
+    try {
+        const token = await getFreshToken();
+        if (!token) return;
+        const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
+        const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
+        await fetch(`${apiUrl}/api/extension/heartbeat`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ timestamp: new Date().toISOString() })
+        });
+    } catch (e) { /* heartbeat failure is non-critical */ }
 }
 
 // LinkedIn data sync alarm — every 6 hours
@@ -448,21 +500,23 @@ if (!globalThis._voyagerSyncAlarmCreated) {
 }
 
 // Standalone command polling function - called by alarm, no dependency on content scripts
+// IMPORTANT: This function only fetches commands and dispatches them.
+// The poll lock is released IMMEDIATELY after fetching so heartbeats and future polls are never blocked.
 async function pollCommandsDirectly() {
-    // Reuse the same lock as the message handler
     if (typeof globalThis._pollCommandsRunning === 'undefined') globalThis._pollCommandsRunning = false;
     if (typeof globalThis._pollLockTimestamp === 'undefined') globalThis._pollLockTimestamp = 0;
     if (!globalThis._processingCommandIds) globalThis._processingCommandIds = new Set();
     if (!globalThis._commandLinkedInTabs) globalThis._commandLinkedInTabs = new Set();
     if (typeof globalThis._stopAllTasks === 'undefined') globalThis._stopAllTasks = false;
 
+    // Only lock the FETCH phase (not command execution) to prevent duplicate fetches
     if (globalThis._pollCommandsRunning) {
         const lockAge = Date.now() - globalThis._pollLockTimestamp;
-        if (lockAge > 120000) {
-            console.log('⚠️ POLL-ALARM: Lock held >', Math.round(lockAge / 1000), 's - releasing');
+        if (lockAge > 30000) { // Reduced from 120s to 30s - fetch phase should never take this long
+            console.log('⚠️ POLL-ALARM: Fetch lock held >', Math.round(lockAge / 1000), 's - releasing');
             globalThis._pollCommandsRunning = false;
         } else {
-            return; // skip, already running
+            return; // skip, already fetching
         }
     }
     globalThis._pollCommandsRunning = true;
@@ -471,20 +525,10 @@ async function pollCommandsDirectly() {
         const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
         const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
 
-        // authToken now fetched via getFreshToken()
         if (!(await getFreshToken())) { globalThis._pollCommandsRunning = false; return; }
 
-        // Send heartbeat to let dashboard know extension is alive
-        try {
-            const freshToken = await getFreshToken();
-            await fetch(`${apiUrl}/api/extension/heartbeat`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${freshToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ timestamp: new Date().toISOString() })
-            });
-        } catch (hbErr) { /* heartbeat failure is non-critical */ }
+        // Heartbeat is now sent by independent alarm - no need to send here
 
-        // Re-fetch token before command fetch to use fresh token
         const freshTokenForCommand = await getFreshToken();
         const response = await fetch(`${apiUrl}/api/extension/command`, {
             method: 'GET',
@@ -565,11 +609,12 @@ async function pollCommandsDirectly() {
         const data = await response.json();
         console.log(`📋 POLL-ALARM: status=${response.status}, commands=${data.commands?.length || 0}, queueStatus=${data.queueStatus || 'unknown'}, pendingCount=${data.pendingCount ?? '?'}`);
 
+        // RELEASE THE FETCH LOCK IMMEDIATELY — command execution runs independently
+        // This ensures future polls and heartbeats are never blocked by long-running commands
+        globalThis._pollCommandsRunning = false;
+
         if (data.success && data.commands && data.commands.length > 0) {
             console.log(`📥 POLL-ALARM: Found ${data.commands.length} pending commands`);
-            // Trigger the message handler to process them
-            // We send a message to ourselves - but in MV3 this doesn't work for service workers
-            // So instead, process inline using the same logic
             for (const cmd of data.commands) {
                 if (globalThis._processingCommandIds.has(cmd.id)) {
                     console.log(`⏭️ POLL-ALARM: Command ${cmd.id} (${cmd.command}) already processing, skipping`);
@@ -6479,23 +6524,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // Poll for website commands (post to LinkedIn from dashboard)
+    // Triggers immediate poll via the alarm-based poller to avoid duplicate fetch/execution paths
     if (request.action === "pollWebsiteCommands") {
         (async () => {
-            // LOCK: Prevent concurrent poll executions that cause duplicate commands
-            // Safety: if lock held > 2 minutes, force release (prevents permanent deadlock)
-            if (globalThis._pollCommandsRunning) {
-                const lockAge = Date.now() - globalThis._pollLockTimestamp;
-                if (lockAge > 120000) {
-                    console.log('⚠️ BACKGROUND: Poll lock held for', Math.round(lockAge / 1000), 's - FORCE releasing');
-                    globalThis._pollCommandsRunning = false;
-                } else {
-                    console.log('⏭️ BACKGROUND: Poll already running, skipping');
-                    sendResponse({ success: true, commands: [], skipped: true });
-                    return;
-                }
+            try {
+                await pollCommandsDirectly();
+                sendResponse({ success: true, delegated: true });
+            } catch (error) {
+                console.error('BACKGROUND: Error in delegated poll:', error);
+                sendResponse({ success: false, error: error.message });
             }
-            globalThis._pollCommandsRunning = true;
-            globalThis._pollLockTimestamp = Date.now();
+        })();
+        return true;
+    }
+
+    // Legacy pollWebsiteCommands handler (kept as fallback, should not normally be reached)
+    if (request.action === "pollWebsiteCommands_legacy") {
+        (async () => {
             try {
                 const { apiBaseUrl } = await chrome.storage.local.get(['apiBaseUrl']);
                 const apiUrl = (apiBaseUrl && !apiBaseUrl.includes('backend-buxx') && !apiBaseUrl.includes('backend-api-orcin') && !apiBaseUrl.includes('backend-4poj')) ? apiBaseUrl : (API_CONFIG.BASE_URL || 'https://kommentify.com');
@@ -9234,9 +9279,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         await versionChecker.handleAlarm(alarm);
     }
 
-    // Command poller alarm - polls for website commands every 30s
+    // Command poller alarm - polls for website commands every 15s
     if (alarm.name === 'commandPoller') {
         await pollCommandsDirectly();
+    }
+
+    // Independent heartbeat alarm - sends heartbeat even when commands are running
+    if (alarm.name === 'extensionHeartbeat') {
+        await sendHeartbeatIndependent();
     }
 
     // LinkedIn data sync alarm — auto-sync LinkedIn profile data

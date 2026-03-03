@@ -438,13 +438,13 @@ if (!globalThis._commandPollAlarmCreated) {
     console.log('BACKGROUND: Command poller alarm created (every 30s)');
 }
 
-// Voyager data sync alarm — every 6 hours
+// LinkedIn data sync alarm — every 6 hours
 if (!globalThis._voyagerSyncAlarmCreated) {
     // Clear stale sync timestamp so first alarm after reload always syncs
     chrome.storage.local.remove('voyagerLastSync');
     chrome.alarms.create('voyagerSync', { delayInMinutes: 1, periodInMinutes: 360 }); // first run after 1 min, then every 6h
     globalThis._voyagerSyncAlarmCreated = true;
-    console.log('BACKGROUND: Voyager sync alarm created (every 6h)');
+    console.log('BACKGROUND: LinkedIn sync alarm created (every 6h)');
 }
 
 // Standalone command polling function - called by alarm, no dependency on content scripts
@@ -647,6 +647,15 @@ async function pollCommandsDirectly() {
                     let scrapeTab = null;
                     let scrapeWindowId = null;
                     try {
+                        // Notify user to keep tab open
+                        await chrome.notifications.create({
+                            type: 'basic',
+                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            title: 'Kommentify - Scraping Feed',
+                            message: 'A LinkedIn feed window is opening. Please keep it open and do not close it until scraping is complete.',
+                            priority: 1
+                        });
+
                         // Mark as in_progress
                         const token = await getFreshToken();
                         await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress', data: { postsFound: 0, scrollCount: 0, message: 'Opening LinkedIn feed...' } }) });
@@ -1225,7 +1234,7 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- post_via_voyager (Direct Voyager API posting - exact working implementation) ---
+                // --- post_via_voyager (Direct LinkedIn API posting) ---
                 else if (cmd.command === 'post_via_voyager' && cmd.data?.content) {
                     console.log('🚀 POLL-ALARM: Executing post_via_voyager (direct API)...');
                     let postTab = null;
@@ -1288,7 +1297,7 @@ async function pollCommandsDirectly() {
                         // Wait briefly for tab to be ready
                         await new Promise(r => setTimeout(r, 1000));
 
-                        // Execute Voyager API posting
+                        // Execute LinkedIn API posting
                         const result = await chrome.scripting.executeScript({
                             target: { tabId: linkedInTabId },
                             func: async (postContent, imgUrl, imgDataUrl, hasImg, csrf) => {
@@ -1434,7 +1443,7 @@ async function pollCommandsDirectly() {
                         });
 
                         const scriptResult = result?.[0]?.result;
-                        console.log('🚀 POLL-ALARM: Voyager post result:', scriptResult);
+                        console.log('🚀 POLL-ALARM: LinkedIn post result:', scriptResult);
 
                         if (scriptResult?.success) {
                             await fetch(`${apiUrl}/api/extension/command`, {
@@ -2244,7 +2253,7 @@ async function pollCommandsDirectly() {
                         globalThis._processingCommandIds.delete(cmd.id);
                     }
                 }
-                // --- linkedin_post_via_api: Post text/image to LinkedIn using Voyager API ---
+                // --- linkedin_post_via_api: Post text/image to LinkedIn using LinkedIn API ---
                 else if (cmd.command === 'linkedin_post_via_api') {
                     console.log('📝 POLL-ALARM: Executing linkedin_post_via_api...');
                     let apiTab = null;
@@ -2582,11 +2591,20 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_get_feed_api: Get feed posts via Voyager API ---
+                // --- linkedin_get_feed_api: Get feed posts via LinkedIn API ---
                 else if (cmd.command === 'linkedin_get_feed_api') {
                     console.log('📰 POLL-ALARM: Executing linkedin_get_feed_api...');
                     let apiTab = null;
                     try {
+                        // Notify user to keep tab open
+                        await chrome.notifications.create({
+                            type: 'basic',
+                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            title: 'Kommentify - Getting Feed Posts',
+                            message: 'A LinkedIn feed tab is opening. Please keep it open and do not close it until posts are captured.',
+                            priority: 1
+                        });
+
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
@@ -3265,11 +3283,20 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_search_posts_api: Search posts via Voyager GraphQL ---
+                // --- linkedin_search_posts_api: Search posts via LinkedIn GraphQL ---
                 else if (cmd.command === 'linkedin_search_posts_api') {
                     console.log('🔍 POLL-ALARM: Executing linkedin_search_posts_api...');
                     let apiTab = null;
                     try {
+                        // Notify user to keep tab open
+                        await chrome.notifications.create({
+                            type: 'basic',
+                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            title: 'Kommentify - Searching Posts',
+                            message: 'A LinkedIn search tab is opening. Please keep it open and do not close it until posts are captured.',
+                            priority: 1
+                        });
+
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
@@ -3444,7 +3471,7 @@ async function pollCommandsDirectly() {
                                         return entities;
                                     };
 
-                                    // Strategy 2: Voyager REST API with search params
+                                    // Strategy 2: LinkedIn REST API with search params
                                     const FEED_SEARCH_URL = "https://www.linkedin.com/voyager/api/feed/dash/feedUpdates";
                                     const searchParams = {
                                         q: "DECORATED_FEED",
@@ -3684,11 +3711,20 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_get_trending_api: Get trending/top posts via Voyager sorted by engagement ---
+                // --- linkedin_get_trending_api: Get trending/top posts via LinkedIn sorted by engagement ---
                 else if (cmd.command === 'linkedin_get_trending_api') {
                     console.log('🔥 POLL-ALARM: Executing linkedin_get_trending_api...');
                     let apiTab = null;
                     try {
+                        // Notify user to keep tab open
+                        await chrome.notifications.create({
+                            type: 'basic',
+                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            title: 'Kommentify - Getting Trending Posts',
+                            message: 'A LinkedIn trending posts tab is opening. Please keep it open and do not close it until posts are captured.',
+                            priority: 1
+                        });
+
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, {
                             method: 'PUT',
@@ -3864,7 +3900,7 @@ async function pollCommandsDirectly() {
                                         return entities;
                                     };
 
-                                    // Strategy 2: Voyager REST API with trending params
+                                    // Strategy 2: LinkedIn REST API with trending params
                                     const FEED_TRENDING_URL = "https://www.linkedin.com/voyager/api/feed/dash/feedUpdates";
                                     const trendingParams = {
                                         q: "DECORATED_FEED",
@@ -4183,9 +4219,9 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_like_post: Like a LinkedIn post (Voyager API - direct, no scrolling) ---
+                // --- linkedin_like_post: Like a LinkedIn post (LinkedIn API - direct, no scrolling) ---
                 else if (cmd.command === 'linkedin_like_post') {
-                    console.log('👍 POLL-ALARM: Executing linkedin_like_post with Voyager API...');
+                    console.log('👍 POLL-ALARM: Executing linkedin_like_post with LinkedIn API...');
                     let apiTab = null;
                     try {
                         // Mark as in_progress
@@ -4202,7 +4238,7 @@ async function pollCommandsDirectly() {
                         apiTab = await getLinkedInTab();
                         await new Promise(r => setTimeout(r, 2000));
 
-                        // Use Voyager API directly - no need to navigate to post
+                        // Use LinkedIn API directly - no need to navigate to post
                         const scriptResult = await executeVoyagerLike(apiTab.id, activityUrn);
 
                         await fetch(`${apiUrl}/api/extension/command`, {
@@ -4220,9 +4256,9 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_comment_on_post: Comment on a LinkedIn post (Voyager API - direct, no scrolling) ---
+                // --- linkedin_comment_on_post: Comment on a LinkedIn post (LinkedIn API - direct, no scrolling) ---
                 else if (cmd.command === 'linkedin_comment_on_post') {
-                    console.log('💬 POLL-ALARM: Executing linkedin_comment_on_post with Voyager API...');
+                    console.log('💬 POLL-ALARM: Executing linkedin_comment_on_post with LinkedIn API...');
                     let apiTab = null;
                     try {
                         // Mark as in_progress
@@ -4240,7 +4276,7 @@ async function pollCommandsDirectly() {
                         apiTab = await getLinkedInTab();
                         await new Promise(r => setTimeout(r, 2000));
 
-                        // Use Voyager API directly - no need to navigate to post
+                        // Use LinkedIn API directly - no need to navigate to post
                         const scriptResult = await executeVoyagerComment(apiTab.id, activityUrn, commentText);
 
                         await fetch(`${apiUrl}/api/extension/command`, {
@@ -4682,9 +4718,9 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- engage_lead_post: Like and/or comment on a specific post (Voyager API + Fallback) ---
+                // --- engage_lead_post: Like and/or comment on a specific post (LinkedIn API + Fallback) ---
                 else if (cmd.command === 'engage_lead_post') {
-                    console.log('💬 POLL-ALARM: Executing engage_lead_post with Voyager API...');
+                    console.log('💬 POLL-ALARM: Executing engage_lead_post with LinkedIn API...');
                     let apiTab = null;
                     try {
                         await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
@@ -4741,7 +4777,7 @@ async function pollCommandsDirectly() {
 
                         await new Promise(r => setTimeout(r, 2000));
 
-                        // Try Voyager API first, then fallback to DOM
+                        // Try LinkedIn API first, then fallback to DOM
                         const voyagerResult = await chrome.scripting.executeScript({
                             target: { tabId: apiTab.id },
                             func: async (config) => {
@@ -4848,9 +4884,9 @@ async function pollCommandsDirectly() {
 
                         let result = voyagerResult?.[0]?.result;
 
-                        // If Voyager failed, try DOM fallback
+                        // If LinkedIn API failed, try DOM fallback
                         if (result?.needsFallback) {
-                            console.log('💬 POLL-ALARM: Voyager API failed, using DOM fallback...');
+                            console.log('💬 POLL-ALARM: LinkedIn API failed, using browser fallback...');
                             result = await executeVoyagerEngagement(apiTab.id, targetUrn, {
                                 doLike: enableLike !== false,
                                 doComment: !!enableComment,
@@ -7433,7 +7469,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 apiTab = await getLinkedInTab();
                                 await new Promise(r => setTimeout(r, 2000));
 
-                                // Use Voyager API directly
+                                // Use LinkedIn API directly
                                 const scriptResult = await executeVoyagerLike(apiTab.id, activityUrn);
 
                                 await fetch(`${apiUrl}/api/extension/command`, {
@@ -7471,7 +7507,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 apiTab = await getLinkedInTab();
                                 await new Promise(r => setTimeout(r, 2000));
 
-                                // Use Voyager API directly
+                                // Use LinkedIn API directly
                                 const scriptResult = await executeVoyagerComment(apiTab.id, activityUrn, commentText);
 
                                 await fetch(`${apiUrl}/api/extension/command`, {
@@ -7522,7 +7558,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                                 const targetUrn = `urn:li:activity:${activityId}`;
 
-                                // Execute like and/or comment using Voyager API
+                                // Execute like and/or comment using LinkedIn API
                                 const result = await chrome.scripting.executeScript({
                                     target: { tabId: apiTab.id },
                                     func: async (config) => {
@@ -7627,7 +7663,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 apiTab = await getLinkedInTab();
                                 await new Promise(r => setTimeout(r, 2000));
 
-                                // Follow using Voyager API
+                                // Follow using LinkedIn API
                                 const result = await chrome.scripting.executeScript({
                                     target: { tabId: apiTab.id },
                                     func: async (vanity) => {
@@ -9139,15 +9175,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
-    // Handle Voyager data sync request
+    // Handle LinkedIn data sync request
     if (request.action === 'VOYAGER_SYNC') {
         (async () => {
             try {
-                console.log('[Voyager] Manual sync triggered via message');
+                console.log('[LinkedIn] Manual sync triggered via message');
                 const result = await syncVoyagerData();
                 sendResponse(result);
             } catch (err) {
-                console.error('[Voyager] Sync error:', err);
+                console.error('[LinkedIn] Sync error:', err);
                 sendResponse({ success: false, error: err.message });
             }
         })();
@@ -9203,17 +9239,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         await pollCommandsDirectly();
     }
 
-    // Voyager data sync alarm — auto-sync LinkedIn profile data
+    // LinkedIn data sync alarm — auto-sync LinkedIn profile data
     if (alarm.name === 'voyagerSync') {
         try {
             if (await shouldAutoSync()) {
-                console.log('[Voyager] Auto-sync triggered by alarm');
+                console.log('[LinkedIn] Auto-sync triggered by alarm');
                 await syncVoyagerData();
             } else {
-                console.log('[Voyager] Auto-sync skipped — synced recently');
+                console.log('[LinkedIn] Auto-sync skipped — synced recently');
             }
         } catch (err) {
-            console.warn('[Voyager] Auto-sync alarm error:', err.message);
+            console.warn('[LinkedIn] Auto-sync alarm error:', err.message);
         }
     }
 

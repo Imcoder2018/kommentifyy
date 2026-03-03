@@ -1,5 +1,5 @@
 /**
- * Lead Warmer - LinkedIn Voyager API-based profile engagement
+ * Lead Warmer - LinkedIn API-based profile engagement
  * Uses the same internal LinkedIn APIs that the browser uses.
  * Runs in background service worker context via chrome.scripting.executeScript
  * on a LinkedIn tab where the user is logged in.

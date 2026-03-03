@@ -1908,16 +1908,35 @@ function DashboardContent() {
 
     // Handle "Starting soon..." notification and auto-fail only when extension NOT active
     useEffect(() => {
+        // Track last activity time for smart timeout detection
+        const lastActivityRef = useRef<Record<string, number>>({});
+
         const checkPendingTasks = () => {
             const pendingTasks = tasks.filter(t => t.status === 'pending');
             const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
             const now = Date.now();
+            // Increased timeouts: 30s for pending, 5 minutes (300s) for in_progress
             const PENDING_TIMEOUT_MS = 30000; // 30 seconds
-            const IN_PROGRESS_TIMEOUT_MS = 60000; // 60 seconds for in_progress
+            const IN_PROGRESS_TIMEOUT_MS = 300000; // 5 minutes for in_progress tasks
 
             // Check if extension is TRULY active (heartbeat within last 30 seconds)
             const isExtensionTrulyActive = extensionLastSeen && (now - extensionLastSeen.getTime()) < 30000;
             const isExtensionConnected = extensionConnected && isExtensionTrulyActive;
+
+            // Update last activity time when tasks change status or extension is active
+            const updateActivity = (taskId: string) => {
+                lastActivityRef.current[taskId] = now;
+            };
+            tasks.forEach(t => {
+                if (t.status === 'in_progress' && !lastActivityRef.current[t.id]) {
+                    lastActivityRef.current[t.id] = now;
+                }
+            });
+            if (isExtensionTrulyActive) {
+                inProgressTasks.forEach(t => {
+                    lastActivityRef.current[t.id] = now;
+                });
+            }
 
             // Check for "Starting soon..." notification
             if (pendingTasks.length > 0) {
@@ -1944,9 +1963,16 @@ function DashboardContent() {
                 setShowStartingSoonNotification(false);
             }
 
-            // ONLY auto-fail if extension is NOT truly active (no heartbeat in last 30 seconds)
+            // SMART TIMEOUT: Only fail if NO activity for timeout period
+            // Activity = extension heartbeat OR task status change
+            const isTaskActive = (taskId: string, timeoutMs: number) => {
+                const lastActivity = lastActivityRef.current[taskId];
+                if (!lastActivity) return true; // No tracking yet, assume active
+                return (now - lastActivity) < timeoutMs;
+            };
+
+            // For pending tasks: fail only if extension disconnected AND timeout exceeded
             if (!isExtensionConnected) {
-                // Check for timed out pending tasks
                 pendingTasks.forEach(task => {
                     if (task.createdAt && !pendingTaskTimeoutsRef.current.has(task.id)) {
                         const created = new Date(task.createdAt).getTime();
@@ -1989,15 +2015,20 @@ function DashboardContent() {
                 });
             }
 
-            // Check for timed out in_progress tasks - runs ALWAYS but only fails if extension NOT truly active
+            // For in_progress tasks: SMART detection - only fail if NO activity for 5 minutes
             inProgressTasks.forEach(task => {
                 if (task.createdAt && !inProgressTaskTimeoutsRef.current.has(task.id)) {
                     const created = new Date(task.createdAt).getTime();
                     const elapsed = now - created;
+                    const lastActivity = lastActivityRef.current[task.id] || created;
+                    const timeSinceLastActivity = now - lastActivity;
 
-                    if (elapsed > IN_PROGRESS_TIMEOUT_MS) {
-                        // ONLY auto-fail if extension is not truly active
-                        if (!isExtensionConnected) {
+                    // Only fail if:
+                    // 1. Timeout exceeded (5 minutes) AND
+                    // 2. No recent activity (extension not responding)
+                    if (elapsed > IN_PROGRESS_TIMEOUT_MS && timeSinceLastActivity > IN_PROGRESS_TIMEOUT_MS) {
+                        // Only fail if extension is truly disconnected (no heartbeat)
+                        if (!isExtensionTrulyActive) {
                             const timeoutId = setTimeout(async () => {
                                 const token = localStorage.getItem('authToken');
                                 if (!token) return;
@@ -2009,8 +2040,8 @@ function DashboardContent() {
                                         body: JSON.stringify({ commandId: task.id, status: 'failed' }),
                                     });
 
-                                    const reason = !extensionConnected ? 'Extension disconnected' : 'Extension not responding';
-                                    const suggestion = !extensionConnected ? 'Connect your extension to resume task processing.' : 'Extension may have stopped responding. Try reloading the extension.';
+                                    const reason = !extensionConnected ? 'Extension disconnected' : 'Task taking too long';
+                                    const suggestion = !extensionConnected ? 'Connect your extension to resume task processing.' : 'Task may have stalled. Check LinkedIn manually.';
 
                                     const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
                                         task.command === 'scrape_feed_now' ? 'Scrape Feed' :

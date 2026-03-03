@@ -24,10 +24,11 @@ export async function GET(request: NextRequest) {
         type: { startsWith: 'extension_command_' },
         timestamp: { gte: oneDayAgo },
       },
-      orderBy: { timestamp: 'asc' },
-      take: 50,
+      orderBy: { timestamp: 'desc' },
+      take: 100,
       select: { id: true, userId: true, type: true, timestamp: true, metadata: true },
     });
+    commands.reverse();
 
     const parsed = commands.map((c: any) => {
       let meta = c.metadata;

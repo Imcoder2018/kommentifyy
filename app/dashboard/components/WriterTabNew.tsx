@@ -173,9 +173,12 @@ export default function WriterTabNew(props: any) {
         // Save to history before updating content
         await saveToHistory('edited_post', `Edited Post: ${writerTopic || 'Custom Post'}`, editedPostContent, { originalContent: originalPostContent });
         setWriterContent(editedPostContent);
+        // Save to localStorage for persistence
+        localStorage.setItem('savedWriterContent', editedPostContent);
+        lastSavedContentRef.current = editedPostContent;
         setIsEditingPost(false);
         setOriginalPostContent(editedPostContent);
-        showToast('Post updated and saved to history', 'success');
+        showToast('Post updated and saved', 'success');
     };
 
     // Handle inline edit (contenteditable blur)
@@ -185,10 +188,13 @@ export default function WriterTabNew(props: any) {
             const oldLength = writerContent.length;
             // Save to history before updating content
             await saveToHistory('edited_post', `Edited Post: ${writerTopic || 'Custom Post'}`, newContent, { originalContent: writerContent });
+            // Save to localStorage for persistence
+            localStorage.setItem('savedWriterContent', newContent);
+            lastSavedContentRef.current = newContent;
             setWriterContent(newContent);
             setOriginalPostContent(newContent);
             const changeDesc = newContent.length > oldLength ? 'expanded' : newContent.length < oldLength ? 'shortened' : 'modified';
-            showToast(`Post ${changeDesc}: ${newContent.length} characters - saved to history`, 'success');
+            showToast(`Post ${changeDesc}: ${newContent.length} characters - saved`, 'success');
         }
         setInlineEditMode(false);
     };
@@ -230,8 +236,12 @@ export default function WriterTabNew(props: any) {
             clearTimeout(autoSaveTimeoutRef.current);
         }
 
-        // Skip if no content or if content hasn't changed from last save
-        if (!writerContent.trim() || writerContent === lastSavedContentRef.current) {
+        // Skip if:
+        // - no content
+        // - content hasn't changed from last save
+        // - edit modal is open (isEditingPost)
+        // - inline edit mode is active
+        if (!writerContent.trim() || writerContent === lastSavedContentRef.current || isEditingPost || inlineEditMode) {
             return;
         }
 
@@ -239,6 +249,9 @@ export default function WriterTabNew(props: any) {
         autoSaveTimeoutRef.current = setTimeout(async () => {
             if (writerContent !== lastSavedContentRef.current && writerContent.trim()) {
                 lastSavedContentRef.current = writerContent;
+                // Save to localStorage for persistence
+                localStorage.setItem('savedWriterContent', writerContent);
+                // Save to history
                 await saveToHistory('auto_saved', `Auto-saved: ${writerTopic || 'Custom Post'}`, writerContent, { autoSaved: true });
                 console.log('Auto-saved post to history');
             }
@@ -249,7 +262,7 @@ export default function WriterTabNew(props: any) {
                 clearTimeout(autoSaveTimeoutRef.current);
             }
         };
-    }, [writerContent, writerTopic]);
+    }, [writerContent, writerTopic, isEditingPost, inlineEditMode]);
 
     // Update last saved content when AI generates a post
     useEffect(() => {
@@ -594,6 +607,11 @@ export default function WriterTabNew(props: any) {
             const data = await res.json();
             if (data.success && data.content) {
                 setWriterContent(data.content);
+                // Save to localStorage for persistence
+                localStorage.setItem('savedWriterContent', data.content);
+                localStorage.setItem('savedWriterTopic', writerTopic);
+                // Update last saved ref to prevent auto-save from trying to save immediately
+                lastSavedContentRef.current = data.content;
                 currentSetWriterStatus('Post generated! Review and edit as needed.');
                 setWriterPreviewMode('desktop');
                 setWriterPreviewExpanded(false);
@@ -1896,7 +1914,9 @@ export default function WriterTabNew(props: any) {
                             <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>Loading history...</div>
                         ) : historyItems && historyItems.length > 0 ? (
                             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {historyItems.map((item: any, idx: number) => {
+                                {historyItems
+                                    .filter((item: any) => !item.title?.match(/AI Generated \d+ Posts/)) // Filter out bulk generated posts
+                                    .map((item: any, idx: number) => {
                                     let content = '';
                                     try {
                                         content = typeof item.content === 'string' ? item.content : JSON.stringify(item.content);

@@ -157,7 +157,6 @@ export default function LimitsTab(props: any) {
                                                         beforeShareDelay: Math.max(1, Math.round(v * 0.2)), beforeFollowDelay: Math.max(1, Math.round(v * 0.2)),
                                                         postWriterPageLoad: Math.max(1, Math.round(v * 0.6)), postWriterClick: Math.max(1, Math.round(v * 0.2)),
                                                         postWriterTyping: Math.max(1, Math.round(v * 0.2)), postWriterSubmit: Math.max(1, Math.round(v * 0.4)),
-                                                        automationStartDelay: v * 2, networkingStartDelay: v * 2, importStartDelay: v * 2,
                                                         randomIntervalMin: 0, randomIntervalMax: 0
                                                     }));
                                                 }}
@@ -194,26 +193,6 @@ export default function LimitsTab(props: any) {
                                             <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', display: 'block', marginBottom: '3px' }}>{f.icon} {f.label}</label>
                                             <input type="number" min="0" max="500" value={autoSettings[f.key]} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
                                                 style={{ width: '100%', padding: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '14px', textAlign: 'center', fontWeight: '700' }} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Start Delays — before each task type begins */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <h4 style={{ color: 'white', fontSize: '12px', fontWeight: '700', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '5px' }}>{miniIcon('M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z', 'white', 12)} Start Delays — wait before task begins (sec)</h4>
-                                <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', marginBottom: '8px' }}>How long to wait before each task type starts running. Set 0 to start immediately.</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                                    {[
-                                        { key: 'automationStartDelay', label: 'Automation' },
-                                        { key: 'networkingStartDelay', label: 'Networking' },
-                                        { key: 'importStartDelay', label: 'Import' },
-                                        { key: 'taskInitDelay', label: 'Task Init' },
-                                    ].map(f => (
-                                        <div key={f.key} style={{ textAlign: 'center' }}>
-                                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '9px', marginBottom: '2px' }}>{f.label}</div>
-                                            <input type="number" min="0" max="120" value={autoSettings[f.key] ?? 0} onChange={e => setAutoSettings((p: any) => ({ ...p, [f.key]: parseInt(e.target.value) || 0 }))}
-                                                style={{ width: '100%', padding: '5px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#fbbf24', fontSize: '13px', textAlign: 'center', fontWeight: '700' }} />
                                         </div>
                                     ))}
                                 </div>

@@ -1869,7 +1869,7 @@ function DashboardContent() {
                 }, null);
 
                 if (oldestPending && oldestPending.createdAt) {
-                    const startDelaySec = autoSettings?.automationStartDelay ?? 5;
+                    const startDelaySec = 0; // No delay
                     const created = new Date(oldestPending.createdAt).getTime();
                     const executeAt = created + (startDelaySec * 1000);
                     const remaining = Math.max(0, Math.round((executeAt - Date.now()) / 1000));
@@ -1913,7 +1913,7 @@ function DashboardContent() {
             const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
             const now = Date.now();
             const PENDING_TIMEOUT_MS = 30000; // 30 seconds
-            const IN_PROGRESS_TIMEOUT_MS = 30000; // 30 seconds
+            const IN_PROGRESS_TIMEOUT_MS = 60000; // 60 seconds for in_progress
 
             // Check if extension is TRULY active (heartbeat within last 30 seconds)
             const isExtensionTrulyActive = extensionLastSeen && (now - extensionLastSeen.getTime()) < 30000;
@@ -1928,7 +1928,7 @@ function DashboardContent() {
                 }, null);
 
                 if (oldestPending && oldestPending.createdAt) {
-                    const startDelaySec = autoSettings?.automationStartDelay ?? 5;
+                    const startDelaySec = 0; // No delay
                     const created = new Date(oldestPending.createdAt).getTime();
                     const executeAt = created + (startDelaySec * 1000);
                     const remaining = Math.max(0, Math.round((executeAt - now) / 1000));
@@ -1987,15 +1987,17 @@ function DashboardContent() {
                         }
                     }
                 });
+            }
 
-                // Check for timed out in_progress tasks
-                inProgressTasks.forEach(task => {
-                    if (task.createdAt && !inProgressTaskTimeoutsRef.current.has(task.id)) {
-                        const created = new Date(task.createdAt).getTime();
-                        const elapsed = now - created;
+            // Check for timed out in_progress tasks - runs ALWAYS but only fails if extension NOT truly active
+            inProgressTasks.forEach(task => {
+                if (task.createdAt && !inProgressTaskTimeoutsRef.current.has(task.id)) {
+                    const created = new Date(task.createdAt).getTime();
+                    const elapsed = now - created;
 
-                        if (elapsed > IN_PROGRESS_TIMEOUT_MS) {
-                            // Mark as failed
+                    if (elapsed > IN_PROGRESS_TIMEOUT_MS) {
+                        // ONLY auto-fail if extension is not truly active
+                        if (!isExtensionConnected) {
                             const timeoutId = setTimeout(async () => {
                                 const token = localStorage.getItem('authToken');
                                 if (!token) return;
@@ -2007,8 +2009,8 @@ function DashboardContent() {
                                         body: JSON.stringify({ commandId: task.id, status: 'failed' }),
                                     });
 
-                                    const reason = !extensionConnected ? 'Extension disconnected' : 'Extension not processing task for 30s';
-                                    const suggestion = !extensionConnected ? 'Connect your extension to resume task processing.' : 'Extension connected but not executing. Try reloading the extension.';
+                                    const reason = !extensionConnected ? 'Extension disconnected' : 'Extension not responding';
+                                    const suggestion = !extensionConnected ? 'Connect your extension to resume task processing.' : 'Extension may have stopped responding. Try reloading the extension.';
 
                                     const cmdLabel = task.command === 'post_to_linkedin' ? 'Post to LinkedIn' :
                                         task.command === 'scrape_feed_now' ? 'Scrape Feed' :
@@ -2028,8 +2030,8 @@ function DashboardContent() {
                             inProgressTaskTimeoutsRef.current.set(task.id, timeoutId);
                         }
                     }
-                });
-            }
+                }
+            });
 
             // Clean up timeouts for tasks that are no longer pending
             pendingTaskTimeoutsRef.current.forEach((timeoutId, taskId) => {
@@ -3068,7 +3070,7 @@ function DashboardContent() {
                     justifyContent: sidebarCollapsed ? 'center' : 'space-between'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img src="/logo32x32-2.png" alt="Kommentify" style={{ width: '36px', height: '36px' }} />
+                        <img src="/kom-logo.jpeg" alt="Kommentify" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} />
                         {!sidebarCollapsed && (
                             <span style={{
                                 fontSize: '20px',
@@ -3147,9 +3149,18 @@ function DashboardContent() {
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'comments').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px', position: 'relative' }}>
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
-                            {!sidebarCollapsed && item.label}
+                            {!sidebarCollapsed && (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                    {item.label}
+                                    {(item as any).badge && (
+                                        <span style={{ padding: '2px 6px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: '4px', fontSize: '8px', fontWeight: '800', color: 'white', letterSpacing: '0.5px' }}>
+                                            {(item as any).badge}
+                                        </span>
+                                    )}
+                                </span>
+                            )}
                         </button>
                     ))}
 

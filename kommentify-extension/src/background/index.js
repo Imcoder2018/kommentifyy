@@ -4183,7 +4183,7 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_like_post: Like a LinkedIn post (Voyager API + Fallback) ---
+                // --- linkedin_like_post: Like a LinkedIn post (Voyager API - direct, no scrolling) ---
                 else if (cmd.command === 'linkedin_like_post') {
                     console.log('👍 POLL-ALARM: Executing linkedin_like_post with Voyager API...');
                     let apiTab = null;
@@ -4198,30 +4198,11 @@ async function pollCommandsDirectly() {
                         const payload = cmd.data || {};
                         const activityUrn = payload.activityUrn || payload.urn || '';
 
-                        // Open LinkedIn feed and navigate to post
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
-                        globalThis._commandLinkedInTabs.add(apiTab.id);
-                        await new Promise((resolve) => {
-                            const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
-                            chrome.tabs.onUpdated.addListener(check);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
-                        });
-                        await new Promise(r => setTimeout(r, 3000));
-
-                        // Auto-scroll to load more posts
-                        await autoScrollFeedPage(apiTab.id);
-
-                        // Navigate to the post URL
-                        const postUrl = activityUrn.includes('http') ? activityUrn : `https://www.linkedin.com/feed/update/${encodeURIComponent(activityUrn)}/`;
-                        await chrome.tabs.update(apiTab.id, { url: postUrl });
-                        await new Promise((resolve) => {
-                            const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
-                            chrome.tabs.onUpdated.addListener(check);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
-                        });
+                        // Get existing LinkedIn tab or create new one (no feed opening, no scrolling)
+                        apiTab = await getLinkedInTab();
                         await new Promise(r => setTimeout(r, 2000));
 
-                        // Use Voyager API with fallback to DOM
+                        // Use Voyager API directly - no need to navigate to post
                         const scriptResult = await executeVoyagerLike(apiTab.id, activityUrn);
 
                         await fetch(`${apiUrl}/api/extension/command`, {
@@ -4239,7 +4220,7 @@ async function pollCommandsDirectly() {
                     }
                 }
 
-                // --- linkedin_comment_on_post: Comment on a LinkedIn post (Voyager API + Fallback) ---
+                // --- linkedin_comment_on_post: Comment on a LinkedIn post (Voyager API - direct, no scrolling) ---
                 else if (cmd.command === 'linkedin_comment_on_post') {
                     console.log('💬 POLL-ALARM: Executing linkedin_comment_on_post with Voyager API...');
                     let apiTab = null;
@@ -4255,30 +4236,11 @@ async function pollCommandsDirectly() {
                         const activityUrn = payload.activityUrn || payload.urn || '';
                         const commentText = payload.commentText || '';
 
-                        // Open LinkedIn feed and navigate to post
-                        apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: true });
-                        globalThis._commandLinkedInTabs.add(apiTab.id);
-                        await new Promise((resolve) => {
-                            const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
-                            chrome.tabs.onUpdated.addListener(check);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
-                        });
-                        await new Promise(r => setTimeout(r, 3000));
-
-                        // Auto-scroll to load more posts
-                        await autoScrollFeedPage(apiTab.id);
-
-                        // Navigate to the post URL
-                        const postUrl = activityUrn.includes('http') ? activityUrn : `https://www.linkedin.com/feed/update/${encodeURIComponent(activityUrn)}/`;
-                        await chrome.tabs.update(apiTab.id, { url: postUrl });
-                        await new Promise((resolve) => {
-                            const check = (tabId, info) => { if (tabId === apiTab.id && info.status === 'complete') { chrome.tabs.onUpdated.removeListener(check); resolve(); } };
-                            chrome.tabs.onUpdated.addListener(check);
-                            setTimeout(() => { chrome.tabs.onUpdated.removeListener(check); resolve(); }, 30000);
-                        });
+                        // Get existing LinkedIn tab or create new one (no feed opening, no scrolling)
+                        apiTab = await getLinkedInTab();
                         await new Promise(r => setTimeout(r, 2000));
 
-                        // Use Voyager API with fallback to DOM
+                        // Use Voyager API directly - no need to navigate to post
                         const scriptResult = await executeVoyagerComment(apiTab.id, activityUrn, commentText);
 
                         await fetch(`${apiUrl}/api/extension/command`, {
@@ -6525,6 +6487,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     const alarmOnlyCommands = ['start_bulk_commenting', 'start_import_automation', 'AI_PROFILE_RECAPTURE'];
 
                     for (const cmd of data.commands) {
+                        console.log(`▶️ BACKGROUND: Processing command ${cmd.id} (${cmd.command})`);
+
                         // Skip commands that are handled by the alarm-based poller
                         if (alarmOnlyCommands.includes(cmd.command)) {
                             console.log(`⏭️ BACKGROUND: Skipping ${cmd.command} - handled by alarm poller`);
@@ -7283,6 +7247,442 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             } finally {
                                 globalThis._processingCommandIds.delete(cmd.id);
                             }
+                        }
+
+                        // --- linkedin_schedule_via_api ---
+                        else if (cmd.command === 'linkedin_schedule_via_api') {
+                            console.log('📅 BACKGROUND: Executing linkedin_schedule_via_api...');
+                            let apiTab = null;
+                            try {
+                                const payload = cmd.data || {};
+                                const content = payload.content || '';
+                                const scheduledTime = payload.scheduledTime || '';
+                                const imageUrl = payload.imageUrl || payload.mediaUrl || null;
+                                const hasImage = payload.hasImage || (payload.mediaType === 'image');
+
+                                const { liveLog: ll } = await import('../shared/services/liveActivityLogger.js');
+                                ll.start('post_writer', `📅 Scheduling post via LinkedIn API...`);
+
+                                // Get LinkedIn tab
+                                apiTab = await getLinkedInTab();
+
+                                const result = await chrome.scripting.executeScript({
+                                    target: { tabId: apiTab.id },
+                                    func: async (postContent, schedTime, imgUrl, hasImg) => {
+                                        const GRAPHQL_URL = "https://www.linkedin.com/voyager/api/graphql";
+                                        const RESHARE_QUERY_ID = "voyagerContentcreationDashShares.279996efa5064c01775d5aff003d9377";
+                                        const MEDIA_UPLOAD_URL = "https://www.linkedin.com/voyager/api/voyagerMediaUploadMetadata";
+
+                                        function getCsrfToken() {
+                                            for (const c of document.cookie.split("; ")) {
+                                                if (c.startsWith("JSESSIONID=")) return c.substring(11).replace(/"/g, "");
+                                            }
+                                            throw new Error("JSESSIONID not found");
+                                        }
+                                        function buildHeaders(extra = {}) {
+                                            return {
+                                                "Accept": "application/vnd.linkedin.normalized+json+2.1",
+                                                "Content-Type": "application/json",
+                                                "csrf-token": getCsrfToken(),
+                                                "x-li-lang": "en_US",
+                                                "x-restli-protocol-version": "2.0.0",
+                                                ...extra,
+                                            };
+                                        }
+                                        async function liPost(url, body) {
+                                            return fetch(url, { method: "POST", headers: buildHeaders(), credentials: "include", body: JSON.stringify(body) });
+                                        }
+                                        function snapToQuarterHourMs(date) {
+                                            const epochSec = date.getTime() / 1000;
+                                            const rounded = Math.ceil(epochSec / 900) * 900;
+                                            return String(Math.round(rounded * 1000));
+                                        }
+                                        function extractGraphqlShareUrn(data) {
+                                            let inner = data.data || {};
+                                            if (typeof inner === "object") inner = inner.data || inner;
+                                            const result = inner.createContentcreationDashShares;
+                                            if (result && typeof result === "object") {
+                                                return result.resourceKey || result.shareUrn || result["*entity"] || result.entity || "";
+                                            }
+                                            return "";
+                                        }
+
+                                        try {
+                                            const scheduledAt = new Date(schedTime);
+                                            if (isNaN(scheduledAt.getTime())) throw new Error("Invalid scheduledTime");
+                                            if (scheduledAt <= new Date()) throw new Error("scheduledTime must be in the future");
+
+                                            const scheduledAtMs = snapToQuarterHourMs(scheduledAt);
+                                            let mediaUrn = null;
+
+                                            if (hasImg && imgUrl) {
+                                                try {
+                                                    const resp = await fetch(imgUrl);
+                                                    if (!resp.ok) throw new Error(`Failed to fetch image: ${resp.status}`);
+                                                    const buf = await resp.arrayBuffer();
+                                                    const imageData = new Uint8Array(buf);
+                                                    const filename = imgUrl.split("/").pop().split("?")[0] || "image.jpg";
+
+                                                    const regResp = await liPost(`${MEDIA_UPLOAD_URL}?action=upload`, { mediaUploadType: "IMAGE_SHARING", fileSize: imageData.byteLength, filename });
+                                                    if (!regResp.ok) throw new Error(`Upload registration failed: ${regResp.status}`);
+                                                    const regData = await regResp.json();
+                                                    const d = (regData.data && typeof regData.data === "object") ? regData.data : regData;
+                                                    const value = d.value || d;
+                                                    const uploadUrl = (value.uploadMechanism?.["com.linkedin.voyager.common.MediaUploadHttpRequest"]?.uploadUrl) || value.uploadUrl || value.singleUploadUrl;
+                                                    mediaUrn = value.urn || value.mediaUrn || value.mediaArtifact;
+
+                                                    if (!uploadUrl || !mediaUrn) throw new Error("Missing uploadUrl or mediaUrn");
+                                                    await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "image/png" }, body: imageData });
+                                                } catch (imgErr) {
+                                                    console.error('Image upload error:', imgErr);
+                                                    mediaUrn = null;
+                                                }
+                                            }
+
+                                            const postPayload = {
+                                                allowedCommentersScope: "ALL",
+                                                commentary: { text: postContent, attributesV2: [] },
+                                                intendedShareLifeCycleState: "SCHEDULED",
+                                                origin: "FEED",
+                                                scheduledAt: scheduledAtMs,
+                                                visibilityDataUnion: { visibilityType: "ANYONE" },
+                                            };
+
+                                            if (mediaUrn) {
+                                                postPayload.media = { category: "IMAGE", mediaUrn: mediaUrn, tapTargets: [], altText: "" };
+                                            }
+
+                                            const payload = {
+                                                variables: { post: postPayload },
+                                                queryId: RESHARE_QUERY_ID,
+                                                includeWebMetadata: true,
+                                            };
+
+                                            const url = `${GRAPHQL_URL}?action=execute&queryId=${RESHARE_QUERY_ID}`;
+                                            const resp = await liPost(url, payload);
+                                            if (resp.status === 429) throw new Error("Rate limited by LinkedIn");
+                                            if (resp.status === 403) throw new Error("Forbidden — cookies may be expired");
+                                            if (resp.status !== 200 && resp.status !== 201) {
+                                                const body = await resp.text();
+                                                throw new Error(`Failed to create scheduled post: HTTP ${resp.status}`);
+                                            }
+
+                                            const data = await resp.json();
+                                            let urn = extractGraphqlShareUrn(data);
+                                            if (!urn) throw new Error("Scheduled post created but no URN returned");
+
+                                            return { success: true, urn, scheduledAt: new Date(parseInt(scheduledAtMs)).toISOString(), hasImage: !!mediaUrn };
+                                        } catch (e) {
+                                            return { success: false, error: e.message };
+                                        }
+                                    },
+                                    args: [content, scheduledTime, imageUrl, hasImage]
+                                });
+
+                                const scriptResult = result?.[0]?.result;
+                                console.log('📅 BACKGROUND: linkedin_schedule_via_api result:', scriptResult);
+
+                                const token = await getFreshToken();
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.success ? 'completed' : 'failed', result: scriptResult })
+                                });
+
+                                if (scriptResult?.success) {
+                                    try {
+                                        await chrome.notifications.create({
+                                            type: 'basic',
+                                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                            title: 'Kommentify - Post Scheduled',
+                                            message: `✅ Post scheduled for ${new Date(scriptResult.scheduledAt).toLocaleString()}`,
+                                            priority: 1
+                                        });
+                                    } catch (notifErr) { }
+                                }
+                            } catch (e) {
+                                console.error('❌ BACKGROUND: linkedin_schedule_via_api failed:', e);
+                                try {
+                                    await fetch(`${apiUrl}/api/extension/command`, {
+                                        method: 'PUT',
+                                        headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: e.message })
+                                    });
+                                } catch (x) { }
+                            } finally {
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // --- linkedin_like_post ---
+                        else if (cmd.command === 'linkedin_like_post') {
+                            console.log('👍 BACKGROUND: Executing linkedin_like_post...');
+                            let apiTab = null;
+                            try {
+                                const payload = cmd.data || {};
+                                const activityUrn = payload.activityUrn || payload.urn || '';
+
+                                // Mark as in_progress
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                                });
+
+                                // Get existing LinkedIn tab or create new one
+                                apiTab = await getLinkedInTab();
+                                await new Promise(r => setTimeout(r, 2000));
+
+                                // Use Voyager API directly
+                                const scriptResult = await executeVoyagerLike(apiTab.id, activityUrn);
+
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.success ? 'completed' : 'failed', data: scriptResult })
+                                });
+                                console.log(`✅ BACKGROUND: linkedin_like_post ${scriptResult?.success ? 'completed' : 'failed'}`);
+                            } catch (e) {
+                                console.error('❌ BACKGROUND: linkedin_like_post failed:', e);
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
+                            } finally {
+                                if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // --- linkedin_comment_on_post ---
+                        else if (cmd.command === 'linkedin_comment_on_post') {
+                            console.log('💬 BACKGROUND: Executing linkedin_comment_on_post...');
+                            let apiTab = null;
+                            try {
+                                const payload = cmd.data || {};
+                                const activityUrn = payload.activityUrn || payload.urn || '';
+                                const commentText = payload.commentText || '';
+
+                                // Mark as in_progress
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                                });
+
+                                // Get existing LinkedIn tab or create new one
+                                apiTab = await getLinkedInTab();
+                                await new Promise(r => setTimeout(r, 2000));
+
+                                // Use Voyager API directly
+                                const scriptResult = await executeVoyagerComment(apiTab.id, activityUrn, commentText);
+
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.success ? 'completed' : 'failed', data: scriptResult })
+                                });
+                                console.log(`✅ BACKGROUND: linkedin_comment_on_post ${scriptResult?.success ? 'completed' : 'failed'}`);
+                            } catch (e) {
+                                console.error('❌ BACKGROUND: linkedin_comment_on_post failed:', e);
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
+                            } finally {
+                                if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // --- engage_lead_post ---
+                        else if (cmd.command === 'engage_lead_post') {
+                            console.log('💬 BACKGROUND: Executing engage_lead_post...');
+                            let apiTab = null;
+                            try {
+                                const { postUrn, postUrl, enableLike, enableComment, commentText, leadId, postId } = cmd.data || {};
+                                if (!postUrn && !postUrl) throw new Error('postUrn or postUrl required');
+
+                                // Mark as in_progress
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                                });
+
+                                // Get existing LinkedIn tab or create new one
+                                apiTab = await getLinkedInTab();
+                                await new Promise(r => setTimeout(r, 2000));
+
+                                // Extract activity ID
+                                let activityId = '';
+                                if (postUrn) {
+                                    const match = postUrn.match(/(\d{19})/);
+                                    if (match) activityId = match[1];
+                                }
+                                if (!activityId && postUrl) {
+                                    const match = postUrl.match(/(\d{19})/);
+                                    if (match) activityId = match[1];
+                                }
+                                if (!activityId) throw new Error('Could not extract activity ID');
+
+                                const targetUrn = `urn:li:activity:${activityId}`;
+
+                                // Execute like and/or comment using Voyager API
+                                const result = await chrome.scripting.executeScript({
+                                    target: { tabId: apiTab.id },
+                                    func: async (config) => {
+                                        function getCsrf() {
+                                            for (const c of document.cookie.split("; "))
+                                                if (c.startsWith("JSESSIONID=")) return c.slice(11).replace(/"/g, "");
+                                            return null;
+                                        }
+                                        function genPageInstanceId() {
+                                            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+                                            return Array.from({ length: 22 }, () => chars[Math.floor(Math.random() * 64)]).join("") + "==";
+                                        }
+                                        const PAGE_INSTANCE = `urn:li:page:d_flagship3_detail_base;${genPageInstanceId()}`;
+                                        function liTrack() {
+                                            return JSON.stringify({
+                                                clientVersion: "1.13.42546", mpVersion: "1.13.42546", osName: "web",
+                                                timezoneOffset: -(new Date().getTimezoneOffset() / 60),
+                                                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                                                deviceFormFactor: "DESKTOP", mpName: "voyager-web",
+                                                displayDensity: window.devicePixelRatio || 1.25,
+                                                displayWidth: window.screen.width || 1920, displayHeight: window.screen.height || 1080,
+                                            });
+                                        }
+                                        function voyagerHeaders(extra = {}) {
+                                            const csrf = getCsrf();
+                                            if (!csrf) throw new Error("JSESSIONID not found");
+                                            return {
+                                                "accept": "application/vnd.linkedin.normalized+json+2.1",
+                                                "content-type": "application/json; charset=utf-8",
+                                                "csrf-token": csrf, "x-li-lang": "en_US", "x-li-track": liTrack(),
+                                                "x-li-page-instance": PAGE_INSTANCE, "x-restli-protocol-version": "2.0.0", ...extra,
+                                            };
+                                        }
+                                        async function liXhr(method, path, headers, bodyObj = null) {
+                                            return new Promise((resolve, reject) => {
+                                                const xhr = new XMLHttpRequest();
+                                                xhr.open(method, `https://www.linkedin.com/voyager/api${path}`);
+                                                Object.entries(voyagerHeaders(headers)).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+                                                xhr.withCredentials = true;
+                                                xhr.onload = () => resolve({ status: xhr.status, data: xhr.response ? JSON.parse(xhr.response) : null });
+                                                xhr.onerror = () => reject(new Error("Network error"));
+                                                xhr.send(bodyObj ? JSON.stringify(bodyObj) : null);
+                                            });
+                                        }
+                                        const { targetUrn, enableLike, enableComment, commentText } = config;
+                                        const results = {};
+
+                                        try {
+                                            if (enableLike) {
+                                                const likeRes = await liXhr('POST', `/feed/socialActions/${encodeURIComponent(targetUrn)}/likes`, {}, { category: "LIKE" });
+                                                results.like = likeRes.status === 200 || likeRes.status === 201;
+                                            }
+                                        } catch (e) { results.likeError = e.message; }
+
+                                        try {
+                                            if (enableComment && commentText) {
+                                                const commRes = await liXhr('POST', `/feed/socialActions/${encodeURIComponent(targetUrn)}/comments`, {}, { author: "self", commentary: commentText, attachment: null, permalink: null });
+                                                results.comment = commRes.status === 200 || commRes.status === 201;
+                                            }
+                                        } catch (e) { results.commentError = e.message; }
+
+                                        return { success: !!results.like || !!results.comment, ...results };
+                                    },
+                                    args: [{ targetUrn, enableLike: !!enableLike, enableComment: !!enableComment, commentText }]
+                                });
+
+                                const scriptResult = result?.[0]?.result;
+                                console.log('💬 BACKGROUND: engage_lead_post result:', scriptResult);
+
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.success ? 'completed' : 'failed', data: scriptResult })
+                                });
+                                console.log(`✅ BACKGROUND: engage_lead_post ${scriptResult?.success ? 'completed' : 'failed'}`);
+                            } catch (e) {
+                                console.error('❌ BACKGROUND: engage_lead_post failed:', e);
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
+                            } finally {
+                                if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // --- linkedin_follow_profile ---
+                        else if (cmd.command === 'linkedin_follow_profile') {
+                            console.log('👤 BACKGROUND: Executing linkedin_follow_profile...');
+                            let apiTab = null;
+                            try {
+                                const payload = cmd.data || {};
+                                const profileUrl = payload.profileUrl || '';
+                                const vanityName = profileUrl.match(/\/in\/([^\/\?]+)/)?.[1] || '';
+
+                                // Mark as in_progress
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                                });
+
+                                // Get existing LinkedIn tab
+                                apiTab = await getLinkedInTab();
+                                await new Promise(r => setTimeout(r, 2000));
+
+                                // Follow using Voyager API
+                                const result = await chrome.scripting.executeScript({
+                                    target: { tabId: apiTab.id },
+                                    func: async (vanity) => {
+                                        try {
+                                            const csrf = ('; ' + document.cookie).split('; JSESSIONID=').pop().split(';')[0].replace(/"/g, '');
+                                            // Get profile URN first
+                                            const profRes = await fetch('https://www.linkedin.com/voyager/api/identity/profiles/' + vanity, {
+                                                headers: { 'csrf-token': csrf, 'x-restli-protocol-version': '2.0.0' }
+                                            });
+                                            if (!profRes.ok) throw new Error('Profile fetch failed: ' + profRes.status);
+                                            const profData = await profRes.json();
+                                            const entityUrn = profData?.entityUrn || profData?.miniProfile?.entityUrn;
+                                            if (!entityUrn) throw new Error('No entity URN found');
+
+                                            // Follow using SDUI endpoint
+                                            const followRes = await fetch('https://www.linkedin.com/voyager/api/voyagerRelationshipsDashMemberRelationships?action=follow', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json; charset=UTF-8', 'csrf-token': csrf, 'x-restli-protocol-version': '2.0.0' },
+                                                body: JSON.stringify({ followerUrn: entityUrn })
+                                            });
+                                            return { success: followRes.ok || followRes.status === 201 };
+                                        } catch (e) {
+                                            return { success: false, error: e.message };
+                                        }
+                                    },
+                                    args: [vanityName]
+                                });
+
+                                const scriptResult = result?.[0]?.result;
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: scriptResult?.success ? 'completed' : 'failed', data: scriptResult })
+                                });
+                                console.log(`✅ BACKGROUND: linkedin_follow_profile ${scriptResult?.success ? 'completed' : 'failed'}`);
+                            } catch (e) {
+                                console.error('❌ BACKGROUND: linkedin_follow_profile failed:', e);
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
+                            } finally {
+                                if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // --- Unknown command handler ---
+                        else {
+                            console.warn('⚠️ BACKGROUND: Unknown command received:', cmd.command);
+                            try {
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'failed', error: `Unknown command: ${cmd.command}` })
+                                });
+                            } catch (x) { }
+                            globalThis._processingCommandIds.delete(cmd.id);
                         }
                     }
                 }

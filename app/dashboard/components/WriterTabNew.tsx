@@ -1919,8 +1919,34 @@ export default function WriterTabNew(props: any) {
                                     .map((item: any, idx: number) => {
                                     let content = '';
                                     try {
-                                        content = typeof item.content === 'string' ? item.content : JSON.stringify(item.content);
+                                        const rawContent = typeof item.content === 'string' ? item.content : JSON.stringify(item.content);
+                                        // Try to parse and extract clean content
+                                        try {
+                                            const parsed = JSON.parse(rawContent);
+                                            if (Array.isArray(parsed)) {
+                                                content = parsed[0] || '';
+                                            } else if (parsed && typeof parsed === 'object' && parsed.content) {
+                                                content = parsed.content;
+                                            } else if (typeof parsed === 'string') {
+                                                content = parsed;
+                                            } else {
+                                                content = rawContent;
+                                            }
+                                        } catch {
+                                            content = rawContent;
+                                        }
                                     } catch { content = String(item.content); }
+
+                                    // Format content for display - clean up common patterns
+                                    const formatContent = (text: string) => {
+                                        // Truncate to ~300 chars for preview
+                                        const maxLen = 280;
+                                        let formatted = text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+                                        // Clean up escaped newlines
+                                        formatted = formatted.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                                        return formatted;
+                                    };
+
                                     return (
                                         <div key={idx} style={{ padding: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s' }}
                                             onClick={() => {
@@ -1977,11 +2003,11 @@ export default function WriterTabNew(props: any) {
                                                     {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                                                 </span>
                                             </div>
-                                            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                {content}
+                                            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: '1.6', whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                {formatContent(content)}
                                             </div>
                                             <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
-                                                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>Click to load this post</span>
+                                                <span style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '500' }}>Click to load this post</span>
                                             </div>
                                         </div>
                                     );

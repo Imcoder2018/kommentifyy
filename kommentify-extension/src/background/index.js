@@ -598,7 +598,7 @@ async function pollCommandsDirectly() {
             try {
                 await chrome.notifications.create({
                     type: 'basic',
-                    iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                    iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                     title: 'Kommentify - Authentication Expired',
                     message: 'Please re-login to the extension to continue.',
                     priority: 2
@@ -660,7 +660,7 @@ async function pollCommandsDirectly() {
                             try {
                                 await chrome.notifications.create({
                                     type: 'basic',
-                                    iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                    iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                                     title: 'Kommentify - Profile Scraped',
                                     message: `✅ Successfully scraped ${result.posts.length} posts from ${result.profileData?.name || 'profile'}`,
                                     priority: 1
@@ -681,7 +681,7 @@ async function pollCommandsDirectly() {
                         try {
                             await chrome.notifications.create({
                                 type: 'basic',
-                                iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                                 title: 'Kommentify - Profile Scraping Failed',
                                 message: errorMsg,
                                 priority: 1
@@ -698,14 +698,14 @@ async function pollCommandsDirectly() {
                     let scrapeTab = null;
                     let scrapeWindowId = null;
                     try {
-                        // Notify user to keep tab open
-                        await chrome.notifications.create({
+                        // Notify user to keep tab open (non-fatal)
+                        try { await chrome.notifications.create({
                             type: 'basic',
-                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                             title: 'Kommentify - Scraping Feed',
                             message: 'A LinkedIn feed window is opening. Please keep it open and do not close it until scraping is complete.',
                             priority: 1
-                        });
+                        }); } catch (notifErr) { console.warn('Notification failed:', notifErr.message); }
 
                         // Mark as in_progress
                         const token = await getFreshToken();
@@ -948,7 +948,7 @@ async function pollCommandsDirectly() {
                         try {
                             await chrome.notifications.create({
                                 type: 'basic',
-                                iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                                 title: 'Kommentify - Comment Scraping Failed',
                                 message: errorMsg,
                                 priority: 1
@@ -2647,14 +2647,14 @@ async function pollCommandsDirectly() {
                     console.log('📰 POLL-ALARM: Executing linkedin_get_feed_api...');
                     let apiTab = null;
                     try {
-                        // Notify user to keep tab open
-                        await chrome.notifications.create({
+                        // Notify user to keep tab open (non-fatal)
+                        try { await chrome.notifications.create({
                             type: 'basic',
-                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                             title: 'Kommentify - Getting Feed Posts',
                             message: 'A LinkedIn feed tab is opening. Please keep it open and do not close it until posts are captured.',
                             priority: 1
-                        });
+                        }); } catch (notifErr) { console.warn('Notification failed:', notifErr.message); }
 
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, {
@@ -3339,14 +3339,14 @@ async function pollCommandsDirectly() {
                     console.log('🔍 POLL-ALARM: Executing linkedin_search_posts_api...');
                     let apiTab = null;
                     try {
-                        // Notify user to keep tab open
-                        await chrome.notifications.create({
+                        // Notify user to keep tab open (non-fatal)
+                        try { await chrome.notifications.create({
                             type: 'basic',
-                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                             title: 'Kommentify - Searching Posts',
                             message: 'A LinkedIn search tab is opening. Please keep it open and do not close it until posts are captured.',
                             priority: 1
-                        });
+                        }); } catch (notifErr) { console.warn('Notification failed:', notifErr.message); }
 
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, {
@@ -3767,14 +3767,14 @@ async function pollCommandsDirectly() {
                     console.log('🔥 POLL-ALARM: Executing linkedin_get_trending_api...');
                     let apiTab = null;
                     try {
-                        // Notify user to keep tab open
-                        await chrome.notifications.create({
+                        // Notify user to keep tab open (non-fatal)
+                        try { await chrome.notifications.create({
                             type: 'basic',
-                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                            iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                             title: 'Kommentify - Getting Trending Posts',
                             message: 'A LinkedIn trending posts tab is opening. Please keep it open and do not close it until posts are captured.',
                             priority: 1
-                        });
+                        }); } catch (notifErr) { console.warn('Notification failed:', notifErr.message); }
 
                         // Mark as in_progress
                         await fetch(`${apiUrl}/api/extension/command`, {
@@ -7480,7 +7480,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                     try {
                                         await chrome.notifications.create({
                                             type: 'basic',
-                                            iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                                            iconUrl: chrome.runtime.getURL('assets/icons/icon128.png'),
                                             title: 'Kommentify - Post Scheduled',
                                             message: `✅ Post scheduled for ${new Date(scriptResult.scheduledAt).toLocaleString()}`,
                                             priority: 1

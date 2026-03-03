@@ -926,6 +926,8 @@ model WarmLead {
   // Engagement tracking
   touchCount        Int      @default(0)
   lastEngagedAt     DateTime?
+  // Engagement type: instant, scheduled, unassigned
+  engagementType    String   @default("unassigned")
   // Sequence position
   currentSequenceStep Int    @default(0)
   nextActionDate    DateTime?
@@ -1047,6 +1049,9 @@ model WarmLeadsSettings {
   scheduleTimezone      String   @default("UTC")
   // Autopilot mode
   autopilotEnabled      Boolean  @default(false)
+  autopilotTime         String   @default("09:00")
+  // Delay between bulk tasks per lead (in minutes)
+  bulkTaskDelay         Int      @default(5)
   // Timestamps
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

@@ -65,9 +65,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { leads, action } = body;
 
+    // Bulk update engagementType for multiple leads
+    if (action === 'bulk_update_type') {
+      const { leadIds, engagementType } = body;
+      if (!leadIds || !Array.isArray(leadIds) || !engagementType) {
+        return NextResponse.json({ success: false, error: 'leadIds and engagementType required' }, { status: 400 });
+      }
+      await (prisma as any).warmLead.updateMany({
+        where: { id: { in: leadIds }, userId: payload.userId },
+        data: { engagementType },
+      });
+      return NextResponse.json({ success: true, updated: leadIds.length });
+    }
+
     // Save/update settings
     if (action === 'save_settings') {
-      const { campaignName, businessContext, campaignGoal, sequenceSteps, profilesPerDay, postsPerLead, bulkTaskLimit, scheduleEnabled, scheduleTimes, autopilotEnabled } = body;
+      const { campaignName, businessContext, campaignGoal, sequenceSteps, profilesPerDay, postsPerLead, bulkTaskLimit, scheduleEnabled, scheduleTimes, autopilotEnabled, bulkTaskDelay } = body;
       const settings = await (prisma as any).warmLeadsSettings.upsert({
         where: { userId: payload.userId },
         create: {
@@ -82,6 +95,7 @@ export async function POST(request: NextRequest) {
           scheduleEnabled: scheduleEnabled || false,
           scheduleTimes: typeof scheduleTimes === 'string' ? scheduleTimes : JSON.stringify(scheduleTimes || []),
           autopilotEnabled: autopilotEnabled || false,
+          bulkTaskDelay: bulkTaskDelay || 5,
         },
         update: {
           campaignName: campaignName || undefined,
@@ -94,6 +108,7 @@ export async function POST(request: NextRequest) {
           scheduleEnabled: scheduleEnabled !== undefined ? scheduleEnabled : undefined,
           scheduleTimes: scheduleTimes ? (typeof scheduleTimes === 'string' ? scheduleTimes : JSON.stringify(scheduleTimes)) : undefined,
           autopilotEnabled: autopilotEnabled !== undefined ? autopilotEnabled : undefined,
+          bulkTaskDelay: bulkTaskDelay !== undefined ? bulkTaskDelay : undefined,
         },
       });
       return NextResponse.json({ success: true, settings });

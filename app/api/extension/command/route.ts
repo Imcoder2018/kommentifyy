@@ -242,6 +242,14 @@ export async function GET(request: NextRequest) {
       commands: nextCommand,
       queueStatus: nextCommand.length > 0 ? 'dispatching' : 'idle',
       pendingCount: pendingCommands.length,
+      _debug: {
+        resolvedUserId: userId,
+        jwtUserId: payload.userId,
+        email: payload.email,
+        totalFromDB: commands.length,
+        parsedStatuses: parsed.map((c: any) => `${c.command || c.type}:${c.status}`),
+        hasInProgress: !!inProgressCommand,
+      },
     });
     // Prevent any caching of command queue responses
     resp.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');

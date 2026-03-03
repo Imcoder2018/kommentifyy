@@ -612,7 +612,8 @@ async function pollCommandsDirectly() {
         // Log the API URL being used and decode userId from token for debugging
         let debugUserId = '';
         try { const parts = freshTokenForCommand.split('.'); if (parts.length === 3) { const p = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))); debugUserId = p.userId || p.sub || ''; } } catch(e) {}
-        console.log(`📋 POLL-ALARM: url=${apiUrl}, userId=${debugUserId}, status=${response.status}, commands=${data.commands?.length || 0}, queueStatus=${data.queueStatus || 'unknown'}, pendingCount=${data.pendingCount ?? '?'}`);
+        const dbg = data._debug || {};
+        console.log(`📋 POLL-ALARM: url=${apiUrl}, userId=${debugUserId}, status=${response.status}, commands=${data.commands?.length || 0}, queueStatus=${data.queueStatus || 'unknown'}, pendingCount=${data.pendingCount ?? '?'}, serverDbg={resolvedId=${dbg.resolvedUserId||'?'}, jwtId=${dbg.jwtUserId||'?'}, email=${dbg.email||'?'}, totalFromDB=${dbg.totalFromDB??'?'}, statuses=${JSON.stringify(dbg.parsedStatuses||[])}, inProgress=${dbg.hasInProgress??'?'}}`);
 
         // RELEASE THE FETCH LOCK IMMEDIATELY — command execution runs independently
         // This ensures future polls and heartbeats are never blocked by long-running commands

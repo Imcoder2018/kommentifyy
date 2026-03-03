@@ -87,11 +87,11 @@ export async function POST(request: NextRequest) {
           data: {
             userId: payload.userId,
             type: 'extension_command_post_scheduled_content',
-            metadata: JSON.stringify({
+            metadata: {
               ...commandPayload,
               status: 'pending',
               createdAt: new Date().toISOString(),
-            }),
+            },
             timestamp: new Date(),
           }
         });

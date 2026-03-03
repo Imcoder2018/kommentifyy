@@ -58,11 +58,11 @@ async function triggerScheduledPosts(): Promise<{ triggeredCount: number }> {
           data: {
             userId: post.userId,
             type: 'extension_command_post_scheduled_content',
-            metadata: JSON.stringify({
+            metadata: {
               ...commandPayload,
               status: 'pending',
               createdAt: new Date().toISOString(),
-            }),
+            },
             timestamp: new Date(),
           }
         });

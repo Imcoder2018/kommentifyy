@@ -98,8 +98,9 @@ export async function GET(request: NextRequest) {
     // Parse command metadata to check if completed
     let commandCompleted = false;
     if (latestCommand) {
-      const meta = typeof latestCommand.metadata === 'string' ? JSON.parse(latestCommand.metadata) : latestCommand.metadata;
-      commandCompleted = meta.status === 'completed';
+      let meta: any = latestCommand.metadata;
+      if (typeof meta === 'string') { try { meta = JSON.parse(meta); if (typeof meta === 'string') meta = JSON.parse(meta); } catch(e) { meta = {}; } }
+      commandCompleted = meta?.status === 'completed';
     }
 
     // Check 3: Recent scheduled post activity

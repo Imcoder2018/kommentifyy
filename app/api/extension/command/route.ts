@@ -51,15 +51,16 @@ export async function POST(request: NextRequest) {
         data: {
           userId: userId,
           type: `extension_command_${command}`,
-          metadata: JSON.stringify({
+          metadata: {
             command,
             data,
             status: 'pending',
             createdAt: new Date().toISOString(),
-          }),
+          },
         },
       });
 
+      console.log(`📝 POST /api/extension/command (internal): created command ${activity.id} (${command}) for userId=${userId}`);
       return NextResponse.json({ success: true, commandId: activity.id, command });
     }
     
@@ -89,15 +90,16 @@ export async function POST(request: NextRequest) {
       data: {
         userId: payload.userId,
         type: `extension_command_${command}`,
-        metadata: JSON.stringify({
+        metadata: {
           command,
           data,
           status: 'pending',
           createdAt: new Date().toISOString(),
-        }),
+        },
       },
     });
 
+    console.log(`📝 POST /api/extension/command: created command ${activity.id} (${command}) for userId=${payload.userId}, email=${payload.email}`);
     return NextResponse.json({ success: true, commandId: activity.id, command });
   } catch (error: any) {
     console.error('Extension command error:', error);
@@ -160,9 +162,24 @@ export async function GET(request: NextRequest) {
     });
 
     const parsed = commands.map((c: any) => {
-      const meta = typeof c.metadata === 'string' ? JSON.parse(c.metadata) : c.metadata;
+      let meta = c.metadata;
+      // Handle all possible metadata formats:
+      // 1. Plain object (new format) — use as-is
+      // 2. JSON string (old format from JSON.stringify) — parse once
+      // 3. Double-encoded string (edge case) — parse twice
+      if (typeof meta === 'string') {
+        try {
+          meta = JSON.parse(meta);
+          if (typeof meta === 'string') meta = JSON.parse(meta); // double-encoded
+        } catch (e) { meta = {}; }
+      }
+      if (!meta || typeof meta !== 'object') meta = {};
       return { id: c.id, ...meta, createdAt: c.timestamp };
     });
+
+    // Debug: always log userId and command status for troubleshooting task pickup issues
+    const allStatuses = parsed.map((c: any) => `${c.command}:${c.status}`).join(', ');
+    console.log(`📋 GET /api/extension/command: userId=${payload.userId}, email=${payload.email}, total=${parsed.length}, statuses=[${allStatuses}]`);
 
     // Check if any command is currently in_progress
     const inProgressCommand = parsed.find((c: any) => c.status === 'in_progress');
@@ -175,11 +192,13 @@ export async function GET(request: NextRequest) {
         try {
           const activity = await prisma.activity.findFirst({ where: { id: inProgressCommand.id } });
           if (activity) {
-            const meta = typeof activity.metadata === 'string' ? JSON.parse(activity.metadata as string) : activity.metadata;
+            let meta: any = activity.metadata;
+            if (typeof meta === 'string') { try { meta = JSON.parse(meta); if (typeof meta === 'string') meta = JSON.parse(meta); } catch(e) { meta = {}; } }
+            if (!meta || typeof meta !== 'object') meta = {};
             meta.status = 'failed';
             meta.error = 'Timed out (stuck for 30+ minutes)';
             meta.completedAt = new Date().toISOString();
-            await prisma.activity.update({ where: { id: inProgressCommand.id }, data: { metadata: JSON.stringify(meta) } });
+            await prisma.activity.update({ where: { id: inProgressCommand.id }, data: { metadata: meta } });
           }
         } catch (e) {}
         // Fall through to send next pending command
@@ -198,12 +217,16 @@ export async function GET(request: NextRequest) {
       console.log('📋 GET commands: total=', parsed.length, 'pending=', pendingCommands.length, 'statuses=', parsed.map((c: any) => `${c.command}:${c.status}`).join(','));
     }
 
-    return NextResponse.json({
+    const resp = NextResponse.json({
       success: true,
       commands: nextCommand,
       queueStatus: nextCommand.length > 0 ? 'dispatching' : 'idle',
       pendingCount: pendingCommands.length,
     });
+    // Prevent any caching of command queue responses
+    resp.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    resp.headers.set('Pragma', 'no-cache');
+    return resp;
   } catch (error: any) {
     console.error('Get extension commands error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -234,7 +257,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Command not found' }, { status: 404 });
     }
 
-    const meta = typeof activity.metadata === 'string' ? JSON.parse(activity.metadata as string) : activity.metadata;
+    let meta: any = activity.metadata;
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta); if (typeof meta === 'string') meta = JSON.parse(meta); } catch (e) { meta = {}; }
+    }
+    if (!meta || typeof meta !== 'object') meta = {};
     const previousStatus = meta.status;
     meta.status = status || 'completed';
     if (data) meta.data = data;
@@ -244,7 +271,7 @@ export async function PUT(request: NextRequest) {
 
     await prisma.activity.update({
       where: { id: commandId },
-      data: { metadata: JSON.stringify(meta) },
+      data: { metadata: meta },
     });
 
     console.log('✅ Command updated successfully:', commandId);

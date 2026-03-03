@@ -25,13 +25,15 @@ export async function POST(request: NextRequest) {
 
     let cancelled = 0;
     for (const cmd of commands) {
-      const meta = typeof cmd.metadata === 'string' ? JSON.parse(cmd.metadata) : cmd.metadata;
+      let meta: any = cmd.metadata;
+      if (typeof meta === 'string') { try { meta = JSON.parse(meta); if (typeof meta === 'string') meta = JSON.parse(meta); } catch(e) { meta = {}; } }
+      if (!meta || typeof meta !== 'object') meta = {};
       if (meta.status === 'pending' || meta.status === 'in_progress') {
         meta.status = 'cancelled';
         meta.cancelledAt = new Date().toISOString();
         await prisma.activity.update({
           where: { id: cmd.id },
-          data: { metadata: JSON.stringify(meta) },
+          data: { metadata: meta },
         });
         cancelled++;
       }

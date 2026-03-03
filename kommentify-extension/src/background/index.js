@@ -530,9 +530,11 @@ async function pollCommandsDirectly() {
         // Heartbeat is now sent by independent alarm - no need to send here
 
         const freshTokenForCommand = await getFreshToken();
-        const response = await fetch(`${apiUrl}/api/extension/command`, {
+        // Add cache-buster to prevent CDN/edge caching of command responses
+        const cacheBuster = `_t=${Date.now()}`;
+        const response = await fetch(`${apiUrl}/api/extension/command?${cacheBuster}`, {
             method: 'GET',
-            headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json' }
+            headers: { 'Authorization': `Bearer ${freshTokenForCommand}`, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache, no-store' }
         });
 
         // Handle 401 authentication errors — attempt token refresh first
@@ -607,7 +609,10 @@ async function pollCommandsDirectly() {
         }
 
         const data = await response.json();
-        console.log(`📋 POLL-ALARM: status=${response.status}, commands=${data.commands?.length || 0}, queueStatus=${data.queueStatus || 'unknown'}, pendingCount=${data.pendingCount ?? '?'}`);
+        // Log the API URL being used and decode userId from token for debugging
+        let debugUserId = '';
+        try { const parts = freshTokenForCommand.split('.'); if (parts.length === 3) { const p = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))); debugUserId = p.userId || p.sub || ''; } } catch(e) {}
+        console.log(`📋 POLL-ALARM: url=${apiUrl}, userId=${debugUserId}, status=${response.status}, commands=${data.commands?.length || 0}, queueStatus=${data.queueStatus || 'unknown'}, pendingCount=${data.pendingCount ?? '?'}`);
 
         // RELEASE THE FETCH LOCK IMMEDIATELY — command execution runs independently
         // This ensures future polls and heartbeats are never blocked by long-running commands

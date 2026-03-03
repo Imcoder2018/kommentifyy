@@ -18,14 +18,14 @@ export async function POST(request: NextRequest) {
       data: {
         userId: payload.userId,
         type: 'extension_command_AI_PROFILE_RECAPTURE',
-        metadata: JSON.stringify({
+        metadata: {
           command: 'AI_PROFILE_RECAPTURE',
           data: {
             instruction: 'Capture full text from LinkedIn profile page and return for AI restructuring',
           },
           status: 'pending',
           createdAt: new Date().toISOString(),
-        }),
+        },
       },
     });
 

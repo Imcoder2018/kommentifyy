@@ -31,7 +31,14 @@ export async function GET(request: NextRequest) {
     });
 
     const allCommands = commands.map((c: any) => {
-      const meta = typeof c.metadata === 'string' ? JSON.parse(c.metadata) : c.metadata;
+      let meta = c.metadata;
+      if (typeof meta === 'string') {
+        try {
+          meta = JSON.parse(meta);
+          if (typeof meta === 'string') meta = JSON.parse(meta);
+        } catch (e) { meta = {}; }
+      }
+      if (!meta || typeof meta !== 'object') meta = {};
       return { id: c.id, ...meta, timestamp: c.timestamp };
     });
 

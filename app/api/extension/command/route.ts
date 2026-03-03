@@ -170,6 +170,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get recent commands from last 24 hours
+    // Use DESC order to always fetch the NEWEST commands first (pending commands
+    // are always the newest). Then reverse for FIFO ordering after parsing.
+    // This prevents old completed/failed commands from filling the take limit
+    // and pushing new pending commands out of the result set.
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const commands = await prisma.activity.findMany({
       where: {
@@ -177,9 +181,11 @@ export async function GET(request: NextRequest) {
         type: { startsWith: 'extension_command_' },
         timestamp: { gte: oneDayAgo },
       },
-      orderBy: { timestamp: 'asc' }, // oldest first (FIFO queue)
-      take: 50,
+      orderBy: { timestamp: 'desc' }, // newest first so pending commands are never cut off
+      take: 100,
     });
+    // Reverse to restore FIFO order (oldest pending first)
+    commands.reverse();
 
     const parsed = commands.map((c: any) => {
       let meta = c.metadata;

@@ -269,10 +269,15 @@ export default function LeadWarmerTab(props: Props) {
       const leadsList = urls.map(url => ({ linkedinUrl: url.split('?')[0].replace(/\/$/, '') }));
       const res = await apiPost('/api/warm-leads', { leads: leadsList });
       if (res.success) {
-        showToast?.(`Imported ${res.created} leads successfully`, 'success');
+        const msg = res.created > 0
+          ? `Imported ${res.created} lead${res.created !== 1 ? 's' : ''} successfully${res.skipped?.length ? `, ${res.skipped.length} skipped (duplicates)` : ''}`
+          : 'No new leads imported (already exist or invalid)';
+        showToast?.(msg, res.created > 0 ? 'success' : 'info');
         setImportText('');
         setShowImport(false);
         loadLeads();
+      } else {
+        showToast?.(res.error || 'Import failed', 'error');
       }
     } catch { showToast?.('Import failed', 'error'); }
     finally { setImporting(false); }

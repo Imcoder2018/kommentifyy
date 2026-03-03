@@ -108,6 +108,10 @@ export default function WriterTabNew(props: any) {
     const [selectedHook, setSelectedHook] = useState<string>('');
     const [hookCategory, setHookCategory] = useState<string>('all');
     const [hooksStatus, setHooksStatus] = useState('');
+    const [editingHookIndex, setEditingHookIndex] = useState<number | null>(null);
+    const [editingHookText, setEditingHookText] = useState('');
+    const [customHook, setCustomHook] = useState('');
+    const [showCustomHook, setShowCustomHook] = useState(false);
 
     // AI Chatbot state
     const [chatMessages, setChatMessages] = useState<any[]>([]);
@@ -1056,10 +1060,48 @@ export default function WriterTabNew(props: any) {
 
                             <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
                                 {filteredHooks.map((hook, i) => (
-                                    <div key={i} onClick={() => setSelectedHook(hook.text)}
-                                        style={{ padding: '8px', background: selectedHook === hook.text ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.04)', border: selectedHook === hook.text ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                        <div style={{ color: 'white', fontSize: '13px', lineHeight: '1.4' }}>{hook.text}</div>
-                                        {selectedHook === hook.text && <span style={{ color: '#34d399', fontSize: '12px' }}>✓ Selected</span>}
+                                    <div key={i} onClick={() => editingHookIndex !== i && setSelectedHook(hook.text)}
+                                        style={{ padding: '8px', background: selectedHook === hook.text ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.04)', border: selectedHook === hook.text ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', cursor: editingHookIndex !== i ? 'pointer' : 'default', transition: 'all 0.2s' }}>
+                                        {editingHookIndex === i ? (
+                                            <div>
+                                                <textarea
+                                                    value={editingHookText}
+                                                    onChange={e => setEditingHookText(e.target.value)}
+                                                    style={{ width: '100%', padding: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'white', fontSize: '13px', resize: 'none', minHeight: '50px', outline: 'none', fontFamily: 'Inter, system-ui, sans-serif' }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newHooks = [...hooks];
+                                                            newHooks[i] = { ...hook, text: editingHookText };
+                                                            setHooks(newHooks);
+                                                            setSelectedHook(editingHookText);
+                                                            setEditingHookIndex(null);
+                                                        }}
+                                                        style={{ padding: '4px 8px', background: 'rgba(16,185,129,0.3)', border: '1px solid rgba(16,185,129,0.5)', borderRadius: '4px', color: '#34d399', fontSize: '11px', cursor: 'pointer' }}
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEditingHookIndex(null)}
+                                                        style={{ padding: '4px 8px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', color: 'rgba(255,255,255,0.7)', fontSize: '11px', cursor: 'pointer' }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                                <div style={{ color: 'white', fontSize: '13px', lineHeight: '1.4', flex: 1 }}>{hook.text}</div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setEditingHookIndex(i); setEditingHookText(hook.text); }}
+                                                    style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '3px', color: 'rgba(255,255,255,0.6)', fontSize: '10px', cursor: 'pointer', flexShrink: 0 }}
+                                                >
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        )}
+                                        {selectedHook === hook.text && editingHookIndex !== i && <span style={{ color: '#34d399', fontSize: '12px', marginTop: '4px', display: 'block' }}>✓ Selected</span>}
                                     </div>
                                 ))}
                             </div>
@@ -1071,6 +1113,30 @@ export default function WriterTabNew(props: any) {
                             Enter a topic and generate hooks
                         </div>
                     )}
+
+                    {/* Custom Hook Section */}
+                    <div style={{ marginBottom: '10px' }}>
+                        <button
+                            onClick={() => { setShowCustomHook(!showCustomHook); if (!showCustomHook) setSelectedHook(customHook); }}
+                            style={{ width: '100%', padding: '8px', background: showCustomHook ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '12px', cursor: 'pointer', marginBottom: showCustomHook ? '8px' : '0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                        >
+                            {showCustomHook ? '✕ Hide Custom Hook' : '✍️ Write Your Own Hook'}
+                        </button>
+
+                        {showCustomHook && (
+                            <div>
+                                <textarea
+                                    value={customHook}
+                                    onChange={e => { setCustomHook(e.target.value); setSelectedHook(e.target.value); }}
+                                    placeholder="Write your own hook here..."
+                                    style={{ width: '100%', padding: '10px', background: 'rgba(139,92,246,0.1)', border: selectedHook === customHook && customHook ? '2px solid #8b5cf6' : '1px solid rgba(139,92,246,0.3)', borderRadius: '6px', color: 'white', fontSize: '13px', resize: 'none', minHeight: '60px', outline: 'none', fontFamily: 'Inter, system-ui, sans-serif' }}
+                                />
+                                {customHook && selectedHook === customHook && (
+                                    <span style={{ color: '#34d399', fontSize: '12px', marginTop: '4px', display: 'block' }}>✓ Using your custom hook</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Config Section with Template, Tone, Depth */}
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: 'auto' }}>
@@ -1123,12 +1189,12 @@ export default function WriterTabNew(props: any) {
                             </label>
                         </div>
 
-                        <button onClick={generatePostWithHook} 
+                        <button onClick={generatePostWithHook}
                             disabled={isWriterGenerating || !writerTopic.trim()}
                             style={{ width: '100%', padding: '12px', background: isWriterGenerating ? 'rgba(105,63,233,0.5)' : 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: (isWriterGenerating || !writerTopic.trim()) ? 'not-allowed' : 'pointer', boxShadow: '0 4px 15px rgba(105,63,233,0.4)', transition: 'all 0.2s' }}
                             onMouseOver={e => { if (!isWriterGenerating && writerTopic.trim()) e.currentTarget.style.transform = 'translateY(-1px)'; }}
                             onMouseOut={e => e.currentTarget.style.transform = 'none'}>
-                            {isWriterGenerating ? 'Generating Post...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 14)} {selectedHook ? 'Generate Full Post with Hook' : 'Generate Post'}</span>}
+                            {isWriterGenerating ? 'Generating Post...' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>{miniIcon('M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z', 'white', 14)} {(selectedHook || (showCustomHook && customHook)) ? 'Generate Full Post with Hook' : 'Generate Post'}</span>}
                         </button>
 
                         {writerStatus && (

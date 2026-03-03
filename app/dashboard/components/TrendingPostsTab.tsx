@@ -143,8 +143,10 @@ export default function TrendingPostsTab(props: any) {
                                             if (data.success && data.commandId) {
                                                 setTrendingStatus('');
                                                 startFeedScrapePolling(data.commandId);
+                                                window.dispatchEvent(new CustomEvent('kommentify-task-created'));
                                             } else if (data.success) {
                                                 setTrendingStatus('Scrape task sent! Extension will open a new window and start scraping.');
+                                                window.dispatchEvent(new CustomEvent('kommentify-task-created'));
                                             } else {
                                                 setTrendingStatus(data.error || 'Failed to send task');
                                             }

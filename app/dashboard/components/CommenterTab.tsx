@@ -195,6 +195,7 @@ export default function CommenterTab(props: any) {
             const commandData = await commandRes.json();
             if (commandData.success) {
                 showToast('Comment sent to LinkedIn via Voyager API!', 'success');
+                window.dispatchEvent(new CustomEvent('kommentify-task-created'));
             } else {
                 showToast('Failed to send comment: ' + (commandData.error || 'Unknown error'), 'error');
             }
@@ -258,6 +259,7 @@ export default function CommenterTab(props: any) {
             if (data.success) {
                 setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'success' }));
                 showToast(`${action.charAt(0).toUpperCase() + action.slice(1)} task sent!`, 'success');
+                window.dispatchEvent(new CustomEvent('kommentify-task-created'));
                 setTimeout(() => loadCapturedPosts(), 2000);
             } else {
                 setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'error' }));
@@ -418,7 +420,11 @@ export default function CommenterTab(props: any) {
                                     body: JSON.stringify({ command: 'linkedin_get_feed_api', data: { count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Feed capture sent!', 'success');
+                                console.log('📝 COMMENTER: Task created:', data.commandId, 'userId:', data._debug?.userId);
+                                if (data.success) {
+                                    showToast('Feed capture sent!', 'success');
+                                    window.dispatchEvent(new CustomEvent('kommentify-task-created'));
+                                }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
@@ -438,7 +444,10 @@ export default function CommenterTab(props: any) {
                                     body: JSON.stringify({ command: 'linkedin_search_posts_api', data: { keyword: kw, count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Search capture sent! Check results in a moment.', 'success');
+                                if (data.success) {
+                                    showToast('Search capture sent! Check results in a moment.', 'success');
+                                    window.dispatchEvent(new CustomEvent('kommentify-task-created'));
+                                }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
@@ -456,7 +465,10 @@ export default function CommenterTab(props: any) {
                                     body: JSON.stringify({ command: 'linkedin_get_trending_api', data: { count: 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
-                                if (data.success) showToast('Trending capture sent! Check results in a moment.', 'success');
+                                if (data.success) {
+                                    showToast('Trending capture sent! Check results in a moment.', 'success');
+                                    window.dispatchEvent(new CustomEvent('kommentify-task-created'));
+                                }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}

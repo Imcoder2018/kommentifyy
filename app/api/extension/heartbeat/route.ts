@@ -18,14 +18,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'token_expired', shouldReauth: true }, { status: 401 });
     }
 
+    // Resolve canonical userId from database to handle JWT userId mismatches
+    let userId = payload.userId;
+    try {
+      const user = await prisma.user.findUnique({ where: { email: payload.email }, select: { id: true } });
+      if (user) userId = user.id;
+    } catch {}
+
     const now = new Date();
 
     // Update ExtensionHeartbeat model (used by cron job to check if extension is online)
     try {
       await (prisma as any).extensionHeartbeat.upsert({
-        where: { userId: payload.userId },
+        where: { userId },
         update: { lastSeen: now, status: 'online' },
-        create: { userId: payload.userId, lastSeen: now, status: 'online' },
+        create: { userId, lastSeen: now, status: 'online' },
       });
     } catch (hbErr: any) {
       console.error('ExtensionHeartbeat upsert error:', hbErr.message);
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Also update Activity model (used by dashboard to check connectivity)
     const existing = await prisma.activity.findFirst({
-      where: { userId: payload.userId, type: 'extension_heartbeat' },
+      where: { userId, type: 'extension_heartbeat' },
       orderBy: { timestamp: 'desc' },
     });
 
@@ -45,7 +52,7 @@ export async function POST(request: NextRequest) {
     } else {
       await prisma.activity.create({
         data: {
-          userId: payload.userId,
+          userId,
           type: 'extension_heartbeat',
           timestamp: now,
           metadata: { version: 'active' },
@@ -55,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Cleanup: delete any extra old heartbeat records (keep only the latest)
     const allHeartbeats = await prisma.activity.findMany({
-      where: { userId: payload.userId, type: 'extension_heartbeat' },
+      where: { userId, type: 'extension_heartbeat' },
       orderBy: { timestamp: 'desc' },
       skip: 1,
     });
@@ -79,16 +86,23 @@ export async function GET(request: NextRequest) {
 
     const payload = verifyToken(token);
 
+    // Resolve canonical userId from database to handle JWT userId mismatches
+    let userId = payload.userId;
+    try {
+      const user = await prisma.user.findUnique({ where: { email: payload.email }, select: { id: true } });
+      if (user) userId = user.id;
+    } catch {}
+
     // Check 1: Recent heartbeat
     const latestHeartbeat = await prisma.activity.findFirst({
-      where: { userId: payload.userId, type: 'extension_heartbeat' },
+      where: { userId, type: 'extension_heartbeat' },
       orderBy: { timestamp: 'desc' },
     });
 
     // Check 2: Recent successful command completion (using Activity model)
     const latestCommand = await prisma.activity.findFirst({
       where: { 
-        userId: payload.userId,
+        userId,
         type: { startsWith: 'extension_command_' },
         timestamp: { gte: new Date(Date.now() - 10 * 60 * 1000) } // Within last 10 minutes
       },
@@ -106,7 +120,7 @@ export async function GET(request: NextRequest) {
     // Check 3: Recent scheduled post activity
     const latestScheduledPost = await (prisma as any).postDraft.findFirst({
       where: { 
-        userId: payload.userId,
+        userId,
         taskStatus: 'completed',
         taskCompletedAt: { gte: new Date(Date.now() - 10 * 60 * 1000) } // Within last 10 minutes
       },

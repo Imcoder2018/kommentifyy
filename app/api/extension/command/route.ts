@@ -6,6 +6,20 @@ import jwt from 'jsonwebtoken';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 seconds
 
+// Resolve canonical userId from database by email to handle JWT userId mismatches
+// (e.g., dashboard token vs extension token may contain different userId for the same user)
+async function resolveUserId(payload: { userId: string; email: string }): Promise<string> {
+  try {
+    const user = await prisma.user.findUnique({ where: { email: payload.email }, select: { id: true } });
+    if (user && user.id !== payload.userId) {
+      console.log(`🔄 userId resolved: JWT=${payload.userId} → DB=${user.id} (email=${payload.email})`);
+    }
+    return user?.id || payload.userId;
+  } catch {
+    return payload.userId;
+  }
+}
+
 // Helper to handle JWT errors gracefully
 function handleAuthError(error: any) {
   if (error.name === 'TokenExpiredError') {
@@ -84,11 +98,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Command is required' }, { status: 400 });
     }
 
+    // Resolve canonical userId from database to prevent userId mismatches
+    userId = await resolveUserId(payload);
+
     // Store the command for the extension to pick up
     // We use Activity model as a lightweight command queue
     const activity = await prisma.activity.create({
       data: {
-        userId: payload.userId,
+        userId,
         type: `extension_command_${command}`,
         metadata: {
           command,
@@ -99,8 +116,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`📝 POST /api/extension/command: created command ${activity.id} (${command}) for userId=${payload.userId}, email=${payload.email}`);
-    return NextResponse.json({ success: true, commandId: activity.id, command });
+    console.log(`📝 POST /api/extension/command: created command ${activity.id} (${command}) for userId=${userId}, email=${payload.email}`);
+    return NextResponse.json({ success: true, commandId: activity.id, command, _debug: { userId } });
   } catch (error: any) {
     console.error('Extension command error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -132,10 +149,13 @@ export async function GET(request: NextRequest) {
       }, { status: 401 });
     }
 
+    // Resolve canonical userId from database to prevent userId mismatches
+    const userId = await resolveUserId(payload);
+
     // If commandId is provided, return the specific command status
     if (commandId) {
       const activity = await prisma.activity.findFirst({
-        where: { id: commandId, userId: payload.userId },
+        where: { id: commandId, userId },
       });
 
       if (!activity) {
@@ -153,7 +173,7 @@ export async function GET(request: NextRequest) {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const commands = await prisma.activity.findMany({
       where: {
-        userId: payload.userId,
+        userId,
         type: { startsWith: 'extension_command_' },
         timestamp: { gte: oneDayAgo },
       },
@@ -179,7 +199,7 @@ export async function GET(request: NextRequest) {
 
     // Debug: always log userId and command status for troubleshooting task pickup issues
     const allStatuses = parsed.map((c: any) => `${c.command}:${c.status}`).join(', ');
-    console.log(`📋 GET /api/extension/command: userId=${payload.userId}, email=${payload.email}, total=${parsed.length}, statuses=[${allStatuses}]`);
+    console.log(`📋 GET /api/extension/command: resolvedUserId=${userId}, jwtUserId=${payload.userId}, email=${payload.email}, total=${parsed.length}, statuses=[${allStatuses}]`);
 
     // Check if any command is currently in_progress
     const inProgressCommand = parsed.find((c: any) => c.status === 'in_progress');
@@ -241,6 +261,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
     const payload = verifyToken(token);
+    const userId = await resolveUserId(payload);
 
     const { commandId, status, data } = await request.json();
 
@@ -249,11 +270,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const activity = await prisma.activity.findFirst({
-      where: { id: commandId, userId: payload.userId },
+      where: { id: commandId, userId },
     });
 
     if (!activity) {
-      console.error('Command not found:', commandId, 'userId:', payload.userId);
+      console.error('Command not found:', commandId, 'userId:', userId, 'jwtUserId:', payload.userId);
       return NextResponse.json({ success: false, error: 'Command not found' }, { status: 404 });
     }
 

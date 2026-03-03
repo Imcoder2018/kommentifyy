@@ -55,6 +55,24 @@
             }
         });
 
+        // FORCE AUTH SYNC: Before any task poll, ensure extension has the dashboard's token
+        async function forceSyncAuthToken() {
+            try {
+                const script = document.createElement('script');
+                script.textContent = `(function() {
+                    try {
+                        var t = localStorage.getItem('authToken');
+                        var r = localStorage.getItem('refreshToken');
+                        if (t) window.postMessage({ type: 'KOMMENTIFY_AUTH_SYNC', authToken: t, refreshToken: r || '', apiBaseUrl: window.location.origin }, '*');
+                    } catch(e) {}
+                })();`;
+                (document.head || document.documentElement).appendChild(script);
+                script.remove();
+                // Small delay to let the sync message handler process
+                await new Promise(r => setTimeout(r, 200));
+            } catch (e) { /* ignore */ }
+        }
+
         // When website dispatches a post event, store image if present and tell background to poll commands
         window.addEventListener('kommentify-post-to-linkedin', async (event) => {
             console.log('[AUTH BRIDGE] Received post-to-linkedin command from dashboard', event.detail);
@@ -68,6 +86,9 @@
                     console.error('[AUTH BRIDGE] Failed to store image:', storageError);
                 }
             }
+
+            // Force sync auth token THEN poll
+            await forceSyncAuthToken();
 
             // Small delay to let the API save the command first
             setTimeout(() => {
@@ -84,7 +105,21 @@
                 } catch (error) {
                     console.error('[AUTH BRIDGE] Error forwarding post command:', error);
                 }
-            }, 1500);
+            }, 1000);
+        });
+
+        // Generic task dispatch event - any dashboard component can fire this to trigger immediate polling
+        window.addEventListener('kommentify-task-created', async (event) => {
+            console.log('[AUTH BRIDGE] Task created on dashboard, forcing auth sync + immediate poll');
+            await forceSyncAuthToken();
+            setTimeout(() => {
+                try {
+                    chrome.runtime.sendMessage({ action: 'pollWebsiteCommands' }, (response) => {
+                        if (chrome.runtime.lastError) return;
+                        console.log('[AUTH BRIDGE] Immediate poll response:', response);
+                    });
+                } catch (e) { /* ignore */ }
+            }, 500);
         });
 
         // Listen for stop-all-tasks event from dashboard

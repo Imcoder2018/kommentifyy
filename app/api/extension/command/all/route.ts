@@ -19,10 +19,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'token_expired', shouldReauth: true }, { status: 401 });
     }
 
+    // Resolve canonical userId from database to handle JWT userId mismatches
+    let userId = payload.userId;
+    try {
+      const user = await prisma.user.findUnique({ where: { email: payload.email }, select: { id: true } });
+      if (user) userId = user.id;
+    } catch {}
+
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const commands = await prisma.activity.findMany({
       where: {
-        userId: payload.userId,
+        userId,
         type: { startsWith: 'extension_command_' },
         timestamp: { gte: oneDayAgo },
       },

@@ -921,7 +921,7 @@ export default function LeadWarmerTab(props: Props) {
                             <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '12px' }}>{session.leadCount} leads</span>
                             <span style={{ color: THEME.colors.primaryLight, fontSize: '10px', display: 'block' }}>{session.commentsGenerated} comments</span>
                           </div>
-                          <button onClick={(e) => { e.stopPropagation(); if (confirm('Delete session?')) { setAutopilotSessions(prev => prev.filter(s => s.id !== session.id)); showToast?.('Deleted', 'success'); }}} style={{ background: 'rgba(239,68,68,0.15)', border: 'none', borderRadius: '4px', padding: '6px', cursor: 'pointer' }}><Trash2 size={14} color={THEME.colors.error} /></button>
+                          <button onClick={async (e) => { e.stopPropagation(); if (confirm('Delete session? This will remove leads from autopilot.')) { try { await apiPost('/api/warm-leads', { action: 'delete_session', sessionId: session.id, leadIds: session.leadIds }); setAutopilotSessions(prev => prev.filter(s => s.id !== session.id)); loadLeads(); showToast?.('Session deleted', 'success'); } catch { showToast?.('Delete failed', 'error'); } }}} style={{ background: 'rgba(239,68,68,0.15)', border: 'none', borderRadius: '4px', padding: '6px', cursor: 'pointer' }}><Trash2 size={14} color={THEME.colors.error} /></button>
                         </div>
                       </div>
                       {isExpanded && (

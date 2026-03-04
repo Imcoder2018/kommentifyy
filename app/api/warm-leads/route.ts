@@ -292,6 +292,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, updated: leadIds.length });
     }
 
+    // Delete autopilot session - remove leads from autopilot
+    if (action === 'delete_session') {
+      const { sessionId, leadIds } = body;
+      if (!leadIds || !Array.isArray(leadIds)) {
+        return NextResponse.json({ success: false, error: 'leadIds required' }, { status: 400 });
+      }
+      // Update leads to unassigned type - effectively removing them from autopilot
+      await (prisma as any).warmLead.updateMany({
+        where: { id: { in: leadIds }, userId: payload.userId },
+        data: {
+          engagementType: 'unassigned',
+          status: 'pending_fetch',
+          nextActionDate: null,
+          currentSequenceStep: 0,
+        },
+      });
+      return NextResponse.json({ success: true, message: 'Session deleted' });
+    }
+
     // Save/update settings
     if (action === 'save_settings') {
       const { campaignName, businessContext, campaignGoal, sequenceSteps, profilesPerDay, postsPerLead, bulkTaskLimit, scheduleEnabled, scheduleTimes, autopilotEnabled, bulkTaskDelay } = body;

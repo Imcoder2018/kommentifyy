@@ -262,16 +262,32 @@ export default function LeadWarmerTab(props: Props) {
 
   // Import
   const handleImport = async () => {
-    const urls = importText.split('\n').map(l => l.trim()).filter(l => l.includes('linkedin.com/in/'));
-    if (!urls.length) return showToast?.('No valid LinkedIn URLs found', 'error');
+    // Clean URLs: extract just the profile part, remove query params and trailing slashes
+    const cleanUrl = (url: string): string | null => {
+      // Extract just the linkedin.com/in/username part
+      const match = url.match(/(https:\/\/(?:www\.)?linkedin\.com\/in\/[^/?#\s]+)/i);
+      if (match) return match[1].replace(/\/$/, '');
+      return null;
+    };
+
+    const urls = importText.split('\n')
+      .map(l => l.trim())
+      .filter(l => l.includes('linkedin.com/in/'))
+      .map(cleanUrl)
+      .filter((url): url is string => url !== null);
+
+    const uniqueUrls = [...new Set(urls)]; // Remove duplicates
+
+    if (!uniqueUrls.length) return showToast?.('No valid LinkedIn URLs found', 'error');
+
     setImporting(true);
     try {
-      const leadsList = urls.map(url => ({ linkedinUrl: url.split('?')[0].replace(/\/$/, '') }));
+      const leadsList = uniqueUrls.map(url => ({ linkedinUrl: url }));
       const res = await apiPost('/api/warm-leads', { leads: leadsList });
       if (res.success) {
         const msg = res.created > 0
           ? `Imported ${res.created} lead${res.created !== 1 ? 's' : ''} successfully${res.skipped?.length ? `, ${res.skipped.length} skipped (duplicates)` : ''}`
-          : 'No new leads imported (already exist or invalid)';
+          : `No new leads imported (${res.skipped?.length || 0} already exist or invalid)`;
         showToast?.(msg, res.created > 0 ? 'success' : 'info');
         setImportText('');
         setShowImport(false);
@@ -459,7 +475,14 @@ export default function LeadWarmerTab(props: Props) {
   }, [leads]);
 
   const filteredLeads = useMemo(() => {
-    return leads.filter(l => (l.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) || l.linkedinUrl.toLowerCase().includes(searchQuery.toLowerCase())));
+    if (!searchQuery.trim()) return leads;
+    const query = searchQuery.toLowerCase().trim();
+    return leads.filter(l =>
+      (l.firstName?.toLowerCase().includes(query) || false) ||
+      (l.lastName?.toLowerCase().includes(query) || false) ||
+      (l.linkedinUrl?.toLowerCase().includes(query) || false) ||
+      (l.vanityId?.toLowerCase().includes(query) || false)
+    );
   }, [leads, searchQuery]);
 
   return (
@@ -585,9 +608,15 @@ export default function LeadWarmerTab(props: Props) {
       {activeTab === 'pipeline' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ position: 'relative', width: '320px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: THEME.colors.text.muted }} />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search leads by name or URL..." style={{ ...styles.input, paddingLeft: '42px', background: 'rgba(30, 41, 59, 0.5)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', width: '320px' }}>
+                <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: THEME.colors.text.muted }} />
+                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search leads by name or URL..." style={{ ...styles.input, paddingLeft: '42px', background: 'rgba(30, 41, 59, 0.5)' }} />
+              </div>
+              <button onClick={() => loadLeads()} disabled={loading} style={{ ...styles.btn('ghost'), padding: '8px' }} title="Refresh leads">
+                <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              </button>
+              {stats.total > 0 && <span style={{ color: THEME.colors.text.muted, fontSize: '13px' }}>{stats.total} total</span>}
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={() => setViewMode(prev => prev === 'list' ? 'detail' : 'list')} style={styles.btn('secondary')}>
@@ -637,8 +666,9 @@ export default function LeadWarmerTab(props: Props) {
                         const reader = new FileReader();
                         reader.onload = (ev) => {
                           const urls = (ev.target?.result as string).split('\n').filter(l => l.includes('linkedin.com/in/')).map(l => {
-                            const match = l.match(/(https:\/\/(?:www\.)?linkedin\.com\/in\/[^/,"]+)/);
-                            return match ? match[1] : '';
+                            // Extract clean URL: stop at ?, #, /, ", ', or whitespace
+                            const match = l.match(/(https:\/\/(?:www\.)?linkedin\.com\/in\/[^/?#"'\s,]+)/i);
+                            return match ? match[1].replace(/\/$/, '') : '';
                           }).filter(Boolean).join('\n');
                           setImportText(urls);
                         };
@@ -661,12 +691,19 @@ export default function LeadWarmerTab(props: Props) {
                 <Loader2 className="animate-spin" size={40} style={{ margin: '0 auto 20px', color: THEME.colors.primaryLight }} />
                 <p style={{ fontSize: '16px' }}>Loading pipeline data...</p>
               </div>
-            ) : filteredLeads.length === 0 ? (
+            ) : leads.length === 0 ? (
               <div style={{ padding: '80px', textAlign: 'center', color: THEME.colors.text.muted }}>
                 <Users size={64} style={{ opacity: 0.2, margin: '0 auto 20px' }} />
                 <p style={{ fontSize: '18px', marginBottom: '8px', color: 'white', fontWeight: 600 }}>Your pipeline is empty</p>
                 <p style={{ fontSize: '14px', marginBottom: '24px' }}>Import LinkedIn URLs to start warming up leads.</p>
                 <button onClick={() => setShowImport(true)} style={styles.btn('primary')}><UserPlus size={16} /> Import Leads</button>
+              </div>
+            ) : filteredLeads.length === 0 ? (
+              <div style={{ padding: '80px', textAlign: 'center', color: THEME.colors.text.muted }}>
+                <Search size={64} style={{ opacity: 0.2, margin: '0 auto 20px' }} />
+                <p style={{ fontSize: '18px', marginBottom: '8px', color: 'white', fontWeight: 600 }}>No leads match your search</p>
+                <p style={{ fontSize: '14px', marginBottom: '24px' }}>{leads.length} lead(s) in pipeline, but none match &quot;{searchQuery}&quot;</p>
+                <button onClick={() => setSearchQuery('')} style={styles.btn('secondary')}><X size={16} /> Clear Search</button>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>

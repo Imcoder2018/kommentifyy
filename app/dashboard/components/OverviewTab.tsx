@@ -205,7 +205,7 @@ export default function OverviewTab(props: any) {
         plannerStatusMsg, plannerAbortRef,
         openPlanner, generatePlannerTopics, startPlannerGeneration,
         // Voyager
-        voyagerData, voyagerLoading, voyagerSyncing, setVoyagerSyncing, loadVoyagerData,
+        voyagerData, setVoyagerData, voyagerLoading, voyagerSyncing, setVoyagerSyncing, loadVoyagerData,
         // Analytics
         analyticsData, analyticsLoading, analyticsPeriod, setAnalyticsPeriod,
         analyticsAutoSearch, setAnalyticsAutoSearch, analyticsNetworkSearch, setAnalyticsNetworkSearch,
@@ -507,6 +507,36 @@ export default function OverviewTab(props: any) {
                                     >
                                         {voyagerSyncing ? '⟳ Syncing...' : '↻ Sync Now'}
                                     </button>
+                                    {voyagerData && (
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm('Are you sure you want to clear your LinkedIn profile data? This will allow you to sync a different profile.')) return;
+                                                try {
+                                                    await deleteLinkedInProfile();
+                                                    setVoyagerData(null);
+                                                    showToast('LinkedIn profile data cleared. You can now sync a different profile.', 'success');
+                                                } catch (e) {
+                                                    showToast('Failed to clear profile data', 'error');
+                                                }
+                                            }}
+                                            style={{
+                                                background: 'rgba(239,68,68,0.2)',
+                                                border: '1px solid rgba(239,68,68,0.4)',
+                                                color: '#fca5a5',
+                                                padding: '6px 14px',
+                                                borderRadius: '8px',
+                                                fontSize: '12px',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', gap: '6px',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+                                        >
+                                            ✕ Clear
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

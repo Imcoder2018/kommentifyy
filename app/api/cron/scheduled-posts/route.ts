@@ -7,8 +7,10 @@ export const dynamic = 'force-dynamic';
 /**
  * CRON ENDPOINT: /api/cron/scheduled-posts
  * Add this URL to cron-job.org to trigger every minute
- * 
- * This endpoint:
+ *
+ * CURRENTLY DISABLED - Automatic posting is turned off
+ *
+ * This endpoint (when enabled):
  * 1. Finds scheduled posts that are due
  * 2. Sends tasks to online extensions
  * 3. Retries failed posts when extension comes online
@@ -33,7 +35,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
+    // DISABLED: Automatic scheduled posting is temporarily disabled
+    // All processing logic below is commented out
     const now = new Date();
+
+    /*
+    // ORIGINAL CODE DISABLED - kept for reference
+
     const results = {
       processed: 0,
       sent: 0,
@@ -43,12 +51,14 @@ export async function GET(request: NextRequest) {
     };
 
     // 1. Find scheduled posts that are due (scheduledFor <= now) and not yet sent
+    // EXCLUDE posts scheduled via LinkedIn API - those are already scheduled on LinkedIn's side
     const duePosts = await (prisma as any).postDraft.findMany({
       where: {
         status: 'scheduled',
         taskStatus: 'pending',
         scheduledFor: { lte: now },
-        taskId: null
+        taskId: null,
+        NOT: { postMethod: 'linkedin_api_scheduled' }
       },
       take: 50 // Process max 50 per run
     });
@@ -56,6 +66,7 @@ export async function GET(request: NextRequest) {
     console.log(`🕐 [CRON] Found ${duePosts.length} scheduled posts due`);
 
     // 2. Find failed posts that can be retried (extension might be back online)
+    // EXCLUDE posts scheduled via LinkedIn API
     const failedPosts = await (prisma as any).postDraft.findMany({
       where: {
         status: 'scheduled',
@@ -64,12 +75,46 @@ export async function GET(request: NextRequest) {
           gte: new Date(now.getTime() - 30 * 60 * 1000) // Failed within last 30 mins
         },
         // Only retry if not too many attempts
-        taskFailureReason: { not: 'Max retries exceeded' }
+        taskFailureReason: { not: 'Max retries exceeded' },
+        NOT: { postMethod: 'linkedin_api_scheduled' }
       },
       take: 20
     });
 
     console.log(`🕐 [CRON] Found ${failedPosts.length} failed posts to retry`);
+
+    // 2b. Cleanup: Find and archive/delete LinkedIn API scheduled posts that have passed their scheduled time
+    // These posts are already scheduled on LinkedIn - just clean them up from our system after they execute
+    const linkedInScheduledDone = await (prisma as any).postDraft.findMany({
+      where: {
+        postMethod: 'linkedin_api_scheduled',
+        status: 'scheduled',
+        scheduledFor: { lt: new Date(now.getTime() - 5 * 60 * 1000) } // Passed by more than 5 minutes
+      },
+      take: 50
+    });
+
+    if (linkedInScheduledDone.length > 0) {
+      console.log(`🧹 [CRON] Cleaning up ${linkedInScheduledDone.length} LinkedIn-scheduled posts that have passed`);
+      for (const post of linkedInScheduledDone) {
+        try {
+          // Move to posted/archived status - user can still see in history
+          await (prisma as any).postDraft.update({
+            where: { id: post.id },
+            data: {
+              status: 'posted',
+              taskStatus: 'completed',
+              taskCompletedAt: now,
+              postedAt: post.scheduledFor, // Mark as posted at the scheduled time
+              postMethod: 'linkedin_api_scheduled'
+            }
+          });
+          results.processed++;
+        } catch (err: any) {
+          console.error(`❌ [CRON] Error cleaning up post ${post.id}:`, err.message);
+        }
+      }
+    }
 
     // 3. Process due posts — try LinkedIn API first, then extension fallback
     for (const post of duePosts) {
@@ -242,11 +287,14 @@ export async function GET(request: NextRequest) {
         results.errors.push(`Error retrying post ${post.id}: ${err.message}`);
       }
     }
+    */
 
+    // Endpoint disabled - returns success but does nothing
     return NextResponse.json({
       success: true,
-      timestamp: now.toISOString(),
-      results
+      disabled: true,
+      message: 'Automatic scheduled posting is currently disabled',
+      timestamp: now.toISOString()
     });
   } catch (error: any) {
     console.error('[CRON] Scheduled posts error:', error);

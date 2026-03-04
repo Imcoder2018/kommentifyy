@@ -195,152 +195,127 @@ class AICommentButtonManager {
     }
 
     /**
-     * Scan for posts and add AI comment buttons
+     * Scan for comment editors and add AI comment buttons to toolbar
      */
     scanAndAddButtons() {
-        // Try multiple selectors for comment AND reply buttons
-        // LinkedIn frequently changes their DOM, so we try many selectors
-        const selectors = [
-            // 2024-2025 LinkedIn selectors
-            '.feed-shared-social-action-bar__action-button[aria-label*="Comment"]',
-            '.feed-shared-social-action-bar button[aria-label*="Comment"]',
-            '.social-actions-button[aria-label*="Comment"]',
-            'button.comment-button',
-            'button[aria-label*="Comment"]',
-            'button[aria-label*="Reply"]',
-            // Class-based selectors
-            '.comments-comment-social-bar__reply-action-button--cr',
-            '.feed-shared-social-actions button[aria-label*="Comment"]',
-            // Data attribute selectors
-            '[data-control-name="comment"]',
-            '[data-test-id="social-actions-comment"]',
-            // Artdeco buttons
-            '.artdeco-button[aria-label*="Comment"]',
-            '.artdeco-button[aria-label*="Reply"]',
-            // Generic social action buttons
-            '.social-actions button:nth-child(2)',
-            '.feed-shared-social-action-bar > button:nth-child(2)'
+        // Use user's selectors for finding comment editors
+        const editorSelectors = [
+            '[contenteditable="true"][data-placeholder*="comment" i]',
+            '[contenteditable="true"][aria-placeholder*="comment" i]',
+            '.ql-editor[contenteditable="true"]'
         ];
-        
-        let commentButtons = [];
+
+        let commentEditors = [];
         let usedSelector = '';
-        
-        // Try each selector until we find comment buttons
-        for (const selector of selectors) {
-            const buttons = document.querySelectorAll(selector);
-            if (buttons.length > 0) {
-                commentButtons = Array.from(buttons);
+
+        // Try each selector until we find comment editors
+        for (const selector of editorSelectors) {
+            const editors = document.querySelectorAll(selector);
+            if (editors.length > 0) {
+                commentEditors = Array.from(editors);
                 usedSelector = selector;
                 break;
             }
         }
-        
-        // Also try to find by text content as fallback
-        if (commentButtons.length === 0) {
-            const allButtons = document.querySelectorAll('button');
-            commentButtons = Array.from(allButtons).filter(btn => {
-                const text = btn.textContent?.toLowerCase() || '';
-                const label = btn.getAttribute('aria-label')?.toLowerCase() || '';
-                return text.includes('comment') || label.includes('comment');
-            });
-            if (commentButtons.length > 0) {
-                usedSelector = 'text/aria-label search';
-            }
-        }
-        
-        if (commentButtons.length === 0) {
-            // Debug: Log what we can find on the page
-            const posts = document.querySelectorAll('[data-id*="urn:li:activity"]');
-            if (posts.length > 0) {
-                console.log(`[AI Comment] Found ${posts.length} posts but no comment buttons yet (Ember.js still loading)`);
-            }
+
+        if (commentEditors.length === 0) {
             return;
         }
-        
-        console.log(`[AI Comment] ✅ Found ${commentButtons.length} comment buttons using: ${usedSelector}`);
-        
+
+        console.log(`[AI Comment] ✅ Found ${commentEditors.length} comment editors using: ${usedSelector}`);
+
         let addedCount = 0;
-        commentButtons.forEach((commentBtn, index) => {
+        commentEditors.forEach((editor, index) => {
             // Skip if already processed
-            if (commentBtn.hasAttribute('data-ai-processed')) {
+            if (editor.hasAttribute('data-ai-processed')) {
                 return;
             }
-            
+
             // Mark as processed
-            commentBtn.setAttribute('data-ai-processed', 'true');
-            
+            editor.setAttribute('data-ai-processed', 'true');
+
             // Create unique ID for this button
             const buttonId = `ai-btn-${index}-${Date.now()}`;
-            
-            // Add AI button directly after comment button
-            this.addAIButtonSimple(commentBtn, buttonId);
+
+            // Add AI button to the toolbar
+            this.addAIButtonToToolbar(editor, buttonId);
             addedCount++;
         });
-        
+
         if (addedCount > 0) {
-            console.log(`[AI Comment] ✅ Added ${addedCount} new AI buttons`);
+            console.log(`[AI Comment] ✅ Added ${addedCount} new AI buttons to toolbar`);
         }
     }
 
     /**
-     * Simple method to add AI button directly after comment button
+     * Add AI button to the native toolbar (next to Emoji/Image buttons)
      */
-    addAIButtonSimple(commentBtn, buttonId) {
-        // Check if AI button already exists next to this comment button
-        if (commentBtn.nextElementSibling?.classList?.contains('ai-comment-btn')) {
+    addAIButtonToToolbar(editor, buttonId) {
+        // Find the parent form/container
+        const form = editor.closest('form') || editor.closest('.comments-comment-box') || editor.parentElement?.parentElement?.parentElement;
+        if (!form) {
+            console.log(`[AI Comment] Could not find form container`);
             return;
         }
-        
-        // Also check if AI button exists anywhere near this button
-        const parent = commentBtn.parentElement;
-        if (parent && parent.querySelector('.ai-comment-btn')) {
+
+        // Find the native Emoji or Image buttons to locate their flex container
+        const emojiBtn = form.querySelector('button[title*="Emoji" i], button[aria-label*="Emoji" i]');
+        const imageBtn = form.querySelector('button[aria-label*="photo" i]');
+
+        // Get the toolbar container holding these buttons
+        const toolbar = (emojiBtn && emojiBtn.closest('.display-flex')) || (imageBtn && imageBtn.closest('.display-flex'));
+
+        // If the toolbar hasn't rendered yet or we already injected, skip
+        if (!toolbar || toolbar.dataset.rocketInjected) {
             return;
         }
-        
+        toolbar.dataset.rocketInjected = 'true';
+
+        // Create our circular icon button matching LinkedIn's native style
         const aiBtn = document.createElement('button');
         aiBtn.className = 'ai-comment-btn';
         aiBtn.id = buttonId;
-        aiBtn.innerHTML = '🤖 AI';
+        aiBtn.innerHTML = '🚀';
         aiBtn.title = 'Generate AI Comment';
         aiBtn.type = 'button';
-        
+
+        // Style it to match LinkedIn's native circular buttons
+        aiBtn.style.cssText = `
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 50% !important;
+            background-color: transparent !important;
+            border: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 32px !important;
+            cursor: pointer !important;
+            margin-right: 4px !important;
+            transition: background-color 0.2s ease !important;
+            line-height: 1 !important;
+        `;
+
+        // Add the native grey hover effect
+        aiBtn.addEventListener('mouseenter', () => aiBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.08)');
+        aiBtn.addEventListener('mouseleave', () => aiBtn.style.backgroundColor = 'transparent');
+
         // Click handler - generate AI comment
         aiBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            await this.handleAIButtonClick(commentBtn, aiBtn);
+            await this.handleAIButtonClick(editor, aiBtn);
         });
-        
-        // Try to insert the button
-        try {
-            // Strategy 1: Insert directly after comment button
-            if (commentBtn.parentNode) {
-                commentBtn.parentNode.insertBefore(aiBtn, commentBtn.nextSibling);
-                console.log(`[AI Comment] ✅ Added AI button after comment button`);
-                return;
-            }
-        } catch (e) {
-            console.log(`[AI Comment] Strategy 1 failed:`, e.message);
-        }
-        
-        try {
-            // Strategy 2: Append to parent
-            if (commentBtn.parentElement) {
-                commentBtn.parentElement.appendChild(aiBtn);
-                console.log(`[AI Comment] ✅ Added AI button to parent element`);
-                return;
-            }
-        } catch (e) {
-            console.log(`[AI Comment] Strategy 2 failed:`, e.message);
-        }
-        
-        console.log(`[AI Comment] ❌ Failed to add AI button`);
+
+        // Insert our button at the beginning of that toolbar row
+        toolbar.prepend(aiBtn);
+        console.log(`[AI Comment] ✅ Added AI button to toolbar`);
     }
     
     /**
      * Handle AI button click - extract post data and generate comment
      */
-    async handleAIButtonClick(commentBtn, aiBtn) {
+    async handleAIButtonClick(editor, aiBtn) {
         if (this.isGenerating) {
             console.log('[AI Comment] Already generating, please wait...');
             return;
@@ -360,17 +335,22 @@ class AICommentButtonManager {
         
         this.isGenerating = true;
         const originalText = aiBtn.innerHTML;
-        aiBtn.innerHTML = '⏳ Generating...';
+        aiBtn.innerHTML = '⏳ Thinking...';
+        aiBtn.style.setProperty('color', 'black', 'important');
+        aiBtn.style.setProperty('font-size', '14px', 'important');
         aiBtn.style.opacity = '0.7';
         aiBtn.disabled = true;
         aiBtn.style.pointerEvents = 'none';
         
         // Safety timeout: reset button after 95s no matter what
         const safetyTimer = setTimeout(() => {
-            if (aiBtn.innerHTML === '⏳ Generating...') {
+            if (aiBtn.innerHTML === '⏳ Thinking...') {
                 console.warn('[AI Comment] Safety timeout reached (95s), resetting button');
                 aiBtn.innerHTML = originalText;
                 aiBtn.style.opacity = '1';
+                aiBtn.style.removeProperty('color');
+                aiBtn.style.removeProperty('font-size');
+                aiBtn.style.setProperty('font-size', '32px', 'important');
                 aiBtn.disabled = false;
                 aiBtn.style.pointerEvents = 'auto';
                 this.isGenerating = false;
@@ -378,16 +358,13 @@ class AICommentButtonManager {
         }, 95000);
         
         try {
-            // Find the post container
-            const post = commentBtn.closest('[data-id*="urn:li:activity:"]') ||
-                        commentBtn.closest('.feed-shared-update-v2') ||
-                        commentBtn.closest('.occludable-update') ||
-                        commentBtn.closest('div[data-urn]');
-            
+            // Find the post container using editor (user's approach)
+            const post = editor.closest('div[data-urn], div[data-id]');
+
             if (!post) {
                 throw new Error('Could not find post container');
             }
-            
+
             // Extract post data
             const postData = this.extractPostData(post);
             console.log('[AI Comment] Extracted post data:', postData);
@@ -436,20 +413,13 @@ class AICommentButtonManager {
             console.log('[AI Comment] Got comment response:', comment ? comment.substring(0, 80) + '...' : 'NULL');
             
             if (comment) {
-                // Click the comment button to open comment box
-                console.log('[AI Comment] Clicking comment button to open input...');
-                commentBtn.click();
-                
-                // Wait for comment box to appear
-                try {
-                    await this.waitForElement('.ql-editor, .comments-comment-box__form-container textarea, [contenteditable="true"]', post.parentElement || document.body, 8000);
-                    console.log('[AI Comment] Comment box appeared');
-                } catch (waitErr) {
-                    console.warn('[AI Comment] waitForElement timed out, trying to fill anyway:', waitErr.message);
-                }
-                
+                // The editor is already open (we're in the comment box toolbar)
+                // Just fill the comment directly
+                console.log('[AI Comment] Filling comment in open editor...');
+
                 // Find and fill the comment input (pass settings for auto-post check)
-                await this.fillCommentInput(comment, post, finalSettings);
+                // Use the editor that was clicked
+                await this.fillCommentInput(comment, editor, finalSettings);
 
                 // Close settings notification after comment is filled (wait 5 seconds)
                 setTimeout(() => {
@@ -463,13 +433,18 @@ class AICommentButtonManager {
                 // Show appropriate message based on auto-post setting
                 if (settings.aiAutoPost === 'manual') {
                     aiBtn.innerHTML = '✅ Ready!';
+                    aiBtn.style.setProperty('color', 'black', 'important');
+                    aiBtn.style.setProperty('font-size', '14px', 'important');
                 } else {
                     aiBtn.innerHTML = '✅ Posted!';
+                    aiBtn.style.setProperty('color', 'black', 'important');
+                    aiBtn.style.setProperty('font-size', '14px', 'important');
                 }
                 clearTimeout(safetyTimer);
                 setTimeout(() => {
                     aiBtn.innerHTML = originalText;
                     aiBtn.style.opacity = '1';
+                    aiBtn.style.removeProperty('color');
                     aiBtn.disabled = false;
                     aiBtn.style.pointerEvents = 'auto';
                 }, 2000);
@@ -485,6 +460,9 @@ class AICommentButtonManager {
             setTimeout(() => {
                 aiBtn.innerHTML = originalText;
                 aiBtn.style.opacity = '1';
+                aiBtn.style.removeProperty('color');
+                aiBtn.style.removeProperty('font-size');
+                aiBtn.style.setProperty('font-size', '32px', 'important');
                 aiBtn.disabled = false;
                 aiBtn.style.pointerEvents = 'auto';
             }, 2000);
@@ -520,8 +498,8 @@ class AICommentButtonManager {
             }
         }
         
-        // Get post text
-        const textElement = post.querySelector('.feed-shared-update-v2__description, .update-components-text, .feed-shared-text__text-view span');
+        // Get post text using user's selectors
+        const textElement = post.querySelector('.update-components-text, .feed-shared-update-v2__commentary, div[data-view-name="feed-commentary"]');
         const postText = textElement?.textContent?.trim() || '';
         
         return {
@@ -645,79 +623,38 @@ class AICommentButtonManager {
     /**
      * Fill the comment input with generated comment
      * @param {string} comment - The generated comment
-     * @param {Element} post - The post container element
+     * @param {Element} editor - The comment editor element
      * @param {Object} settings - User settings including aiAutoPost
      */
-    async fillCommentInput(comment, post, settings = {}) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for comment box
-        
-        // Find comment input WITHIN the post container first, then fall back to nearby elements
-        // This ensures we paste in the correct post's comment box
-        const selectors = [
-            '.ql-editor[data-placeholder]',
-            '.comments-comment-box__form-container .ql-editor',
-            '[contenteditable="true"][role="textbox"]',
-            '.ql-editor'
-        ];
-        
-        let commentInput = null;
-        
-        // Strategy 1: Search within the post container
-        for (const selector of selectors) {
-            commentInput = post.querySelector(selector);
-            if (commentInput) {
-                console.log('[AI Comment] Found comment input within post container');
-                break;
-            }
-        }
-        
-        // Strategy 2: Search in post's parent (comment section often appended after post)
-        if (!commentInput && post.parentElement) {
-            for (const selector of selectors) {
-                commentInput = post.parentElement.querySelector(selector);
-                if (commentInput) {
-                    console.log('[AI Comment] Found comment input in parent container');
-                    break;
-                }
-            }
-        }
-        
-        // Strategy 3: Find the most recently opened/focused comment box
+    async fillCommentInput(comment, editor, settings = {}) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief wait
+
+        // Use the passed editor directly - this is the editor where the button was clicked
+        let commentInput = editor;
+
+        // If editor is not available, fall back to finding it
         if (!commentInput) {
-            // Get all comment inputs and find the one that's visible and closest to viewport
-            const allInputs = document.querySelectorAll('.ql-editor[data-placeholder], .comments-comment-box__form-container .ql-editor, [contenteditable="true"][role="textbox"]');
-            let closestInput = null;
-            let closestDistance = Infinity;
-            
-            const postRect = post.getBoundingClientRect();
-            
-            allInputs.forEach(input => {
-                const inputRect = input.getBoundingClientRect();
-                // Check if input is visible
-                if (inputRect.height > 0 && inputRect.width > 0) {
-                    // Calculate distance from post to this input
-                    const distance = Math.abs(inputRect.top - postRect.bottom);
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                        closestInput = input;
-                    }
-                }
-            });
-            
-            if (closestInput && closestDistance < 500) { // Within 500px of the post
-                commentInput = closestInput;
-                console.log('[AI Comment] Found closest comment input at distance:', closestDistance);
+            const selectors = [
+                '.ql-editor[data-placeholder]',
+                '.comments-comment-box__form-container .ql-editor',
+                '[contenteditable="true"][role="textbox"]',
+                '.ql-editor'
+            ];
+
+            for (const selector of selectors) {
+                commentInput = document.querySelector(selector);
+                if (commentInput) break;
             }
         }
-        
+
         if (commentInput) {
             commentInput.focus();
             commentInput.innerHTML = `<p>${comment}</p>`;
-            
+
             // Trigger input event
             commentInput.dispatchEvent(new Event('input', { bubbles: true }));
             commentInput.dispatchEvent(new Event('change', { bubbles: true }));
-            
+
             console.log('[AI Comment] Comment filled in input box');
             
             // Check if manual review mode - if so, DON'T auto-submit
@@ -855,7 +792,7 @@ class AICommentButtonManager {
         if (mode === 'auto-decide') {
             settingsHtml = `
                 <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;">
-                    <span style="background: rgba(168,85,247,0.2); color: #c4b5fd; padding: 4px 8px; border-radius: 6px; font-size: 11px;">🤖 Auto</span>
+                    <span style="background: rgba(168,85,247,0.2); color: #c4b5fd; padding: 4px 8px; border-radius: 6px; font-size: 11px;">🚀 Auto</span>
                     <span style="background: rgba(168,85,247,0.15); color: #a855f7; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Goal: ${settings.goal || 'AddValue'}</span>
                     <span style="background: rgba(34,197,94,0.15); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Tone: ${settings.tone || 'Friendly'}</span>
                     <span style="background: rgba(245,158,11,0.15); color: #f59e0b; padding: 4px 8px; border-radius: 6px; font-size: 11px;">Length: ${settings.length || 'Short'}</span>
@@ -874,7 +811,7 @@ class AICommentButtonManager {
 
         popup.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <span style="font-size: 18px;">${mode === 'auto-decide' ? '🤖' : '⚙️'}</span>
+                <span style="font-size: 18px;">${mode === 'auto-decide' ? '🚀' : '⚙️'}</span>
                 <span style="font-weight: 600; font-size: 14px; color: white;">
                     ${mode === 'auto-decide' ? 'Auto Decide Mode' : 'Comment Settings Applied'}
                 </span>

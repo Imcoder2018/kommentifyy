@@ -16,26 +16,59 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || '';
 
-    const where: any = { 
+    const where: any = {
       userId: payload.userId,
       status: 'scheduled'
     };
-    
-    if (status) where.taskStatus = status;
 
+    // Include posts scheduled via LinkedIn API (these are already scheduled on LinkedIn)
+    // But exclude ones that have passed their scheduled time (those are auto-cleaned by cron)
+    if (status) {
+      where.taskStatus = status;
+    }
+
+    // Get regular scheduled posts (extension-based)
     const scheduledPosts = await (prisma as any).postDraft.findMany({
-      where,
+      where: {
+        ...where,
+        NOT: { postMethod: 'linkedin_api_scheduled' }
+      },
       orderBy: { scheduledFor: 'asc' },
     });
 
-    // Get task status counts
+    // Get LinkedIn API scheduled posts that haven't passed their scheduled time yet
+    const linkedInScheduledPosts = await (prisma as any).postDraft.findMany({
+      where: {
+        userId: payload.userId,
+        status: 'scheduled',
+        postMethod: 'linkedin_api_scheduled',
+        scheduledFor: { gt: new Date() } // Only future scheduled posts
+      },
+      orderBy: { scheduledFor: 'asc' },
+    });
+
+    // Merge both lists
+    const allPosts = [...scheduledPosts, ...linkedInScheduledPosts];
+
+    // Get task status counts (for extension-scheduled posts)
     const taskCounts = await (prisma as any).postDraft.groupBy({
       by: ['taskStatus'],
-      where: { 
+      where: {
         userId: payload.userId,
-        status: 'scheduled'
+        status: 'scheduled',
+        NOT: { postMethod: 'linkedin_api_scheduled' }
       },
       _count: { id: true }
+    });
+
+    // Get count of LinkedIn API scheduled posts (pending)
+    const linkedInCount = await (prisma as any).postDraft.count({
+      where: {
+        userId: payload.userId,
+        status: 'scheduled',
+        postMethod: 'linkedin_api_scheduled',
+        scheduledFor: { gt: new Date() }
+      }
     });
 
     const counts = {
@@ -49,23 +82,27 @@ export async function GET(request: NextRequest) {
       counts[group.taskStatus as keyof typeof counts] = group._count.id;
     });
 
-    // Also include posts that have been triggered (have taskId but not completed)
+    // Add LinkedIn scheduled posts to pending count
+    counts.pending += linkedInCount;
+
+    // Also include posts that have been triggered (have taskId but not completed) - exclude LinkedIn API scheduled
     const triggeredPosts = await (prisma as any).postDraft.findMany({
       where: {
         userId: payload.userId,
         status: 'scheduled',
-        taskId: { not: null }
+        taskId: { not: null },
+        NOT: { postMethod: 'linkedin_api_scheduled' }
       },
       orderBy: { scheduledFor: 'asc' },
     });
 
-    // Merge triggered posts with scheduled posts
-    const allPosts = [...scheduledPosts, ...triggeredPosts.filter((p: any) => !scheduledPosts.find((sp: any) => sp.id === p.id))];
+    // Merge triggered posts with scheduled posts (which already includes LinkedIn scheduled)
+    const mergedPosts = [...allPosts, ...triggeredPosts.filter((p: any) => !allPosts.find((sp: any) => sp.id === p.id))];
 
-    return NextResponse.json({ 
-      success: true, 
-      scheduledPosts: allPosts, 
-      taskCounts: counts 
+    return NextResponse.json({
+      success: true,
+      scheduledPosts: mergedPosts,
+      taskCounts: counts
     });
   } catch (error: any) {
     console.error('Get scheduled posts error:', error);

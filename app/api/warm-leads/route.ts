@@ -7,6 +7,13 @@ function extractVanityId(url: string): string | null {
   return m ? m[1].replace(/\/$/, '') : null;
 }
 
+function cleanLinkedInUrl(url: string): string {
+  // Extract just the base profile URL, removing query params, hash, and trailing slash
+  const match = url.match(/(https:\/\/(?:www\.)?linkedin\.com\/in\/[^/?#\s]+)/i);
+  if (match) return match[1].replace(/\/$/, '');
+  return url.split('?')[0].split('#')[0].replace(/\/$/, '');
+}
+
 // GET - List warm leads with their posts
 export async function GET(request: NextRequest) {
   try {
@@ -122,19 +129,36 @@ export async function POST(request: NextRequest) {
     let created = 0;
     let skipped: string[] = [];
 
+    // Deduplicate URLs within this batch
+    const seenUrls = new Set<string>();
+
     for (const lead of leads) {
-      const url = lead.linkedinUrl || lead.url || '';
-      if (!url.includes('linkedin.com/in/')) {
-        skipped.push(url || 'invalid');
+      const rawUrl = lead.linkedinUrl || lead.url || '';
+      if (!rawUrl.includes('linkedin.com/in/')) {
+        skipped.push(rawUrl || 'invalid');
         continue;
       }
 
-      const vanityId = extractVanityId(url);
+      // Clean the URL properly
+      const cleanUrl = cleanLinkedInUrl(rawUrl);
+      if (!cleanUrl) {
+        skipped.push(rawUrl + ' (failed to clean)');
+        continue;
+      }
+
+      // Skip duplicates within the same batch
+      if (seenUrls.has(cleanUrl)) {
+        skipped.push(cleanUrl + ' (duplicate in batch)');
+        continue;
+      }
+      seenUrls.add(cleanUrl);
+
+      const vanityId = extractVanityId(cleanUrl);
       try {
         await (prisma as any).warmLead.create({
           data: {
             userId: payload.userId,
-            linkedinUrl: url.split('?')[0].replace(/\/$/, ''),
+            linkedinUrl: cleanUrl,
             vanityId,
             firstName: lead.firstName || null,
             lastName: lead.lastName || null,
@@ -144,12 +168,17 @@ export async function POST(request: NextRequest) {
             tags: lead.tags || null,
             notes: lead.notes || null,
             status: 'pending_fetch',
+            engagementType: 'unassigned',
           },
         });
         created++;
       } catch (e: any) {
-        if (e.code === 'P2002') skipped.push(url);
-        else console.error('Create lead error:', e.message);
+        if (e.code === 'P2002') {
+          skipped.push(cleanUrl + ' (already exists)');
+        } else {
+          console.error('Create lead error:', e.message);
+          skipped.push(cleanUrl + ' (error: ' + e.message + ')');
+        }
       }
     }
 

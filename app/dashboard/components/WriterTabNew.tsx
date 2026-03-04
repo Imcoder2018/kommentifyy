@@ -84,6 +84,58 @@ export default function WriterTabNew(props: any) {
         showToast('Post loaded for preview', 'info');
     };
 
+    // State for LinkedIn scheduled post removal notification
+    const [linkedInRemovalNotification, setLinkedInRemovalNotification] = useState<{
+        show: boolean;
+        postId: string | null;
+        countdown: number;
+        linkedInOpened: boolean;
+    }>({ show: false, postId: null, countdown: 30, linkedInOpened: false });
+
+    // Handle removing a LinkedIn API scheduled post
+    const handleRemoveLinkedInScheduledPost = async (post: any) => {
+        if (!post.id) return;
+
+        // Delete the scheduled post from database
+        try {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                await fetch('/api/post-drafts', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ id: post.id }),
+                });
+                // Reload scheduled posts
+                loadScheduledPosts?.();
+            }
+        } catch (e) {
+            console.error('Failed to delete scheduled post:', e);
+        }
+
+        // Show notification for 30 seconds
+        setLinkedInRemovalNotification({ show: true, postId: post.id, countdown: 30, linkedInOpened: false });
+    };
+
+    // Countdown effect for notification
+    useEffect(() => {
+        if (linkedInRemovalNotification.show && linkedInRemovalNotification.countdown > 0) {
+            const timer = setTimeout(() => {
+                setLinkedInRemovalNotification(prev => {
+                    // At 15 seconds, open LinkedIn
+                    if (prev.countdown === 15 && !prev.linkedInOpened) {
+                        window.open('https://www.linkedin.com/share/management', '_blank');
+                        return { ...prev, countdown: prev.countdown - 1, linkedInOpened: true };
+                    }
+                    return { ...prev, countdown: prev.countdown - 1 };
+                });
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else if (linkedInRemovalNotification.show && linkedInRemovalNotification.countdown === 0) {
+            // Close notification when countdown reaches 0
+            setLinkedInRemovalNotification({ show: false, postId: null, countdown: 0, linkedInOpened: false });
+        }
+    }, [linkedInRemovalNotification.show, linkedInRemovalNotification.countdown]);
+
     // Post generation state
     const [postDepth, setPostDepth] = useState<string>('standard');
     const [localWriterGenerating, setLocalWriterGenerating] = useState<boolean>(false);
@@ -1701,13 +1753,31 @@ export default function WriterTabNew(props: any) {
                                 {writerScheduledPosts.slice(0, 5).map((post: any, idx: number) => {
                                     // Get first line of content (up to first newline or use full content)
                                     const firstLine = post.content?.split('\n')[0] || post.content || '';
+                                    // Show remove button for all scheduled posts since cron is disabled
+                                    const canRemove = true;
                                     return (
-                                    <div key={idx} onClick={() => loadScheduledPost(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', cursor: 'pointer' }}>
+                                    <div key={idx} onClick={() => canRemove ? null : loadScheduledPost(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', cursor: canRemove ? 'default' : 'pointer' }}>
                                         <span style={{ color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                                             {firstLine}
                                         </span>
-                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginLeft: '8px', flexShrink: 0 }}>
-                                            {post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                                        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginLeft: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span>{post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleRemoveLinkedInScheduledPost(post); }}
+                                                style={{
+                                                    background: 'rgba(239,68,68,0.2)',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    padding: '2px 6px',
+                                                    color: '#f87171',
+                                                    fontSize: '10px',
+                                                    cursor: 'pointer',
+                                                    fontWeight: '600',
+                                                }}
+                                                title="Remove from schedule"
+                                            >
+                                                ✕
+                                            </button>
                                         </span>
                                     </div>
                                     );
@@ -2087,6 +2157,65 @@ export default function WriterTabNew(props: any) {
                         )}
 
                         <button onClick={() => setShowHistoryPopup(false)} style={{ marginTop: '16px', width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer' }}>Close</button>
+                    </div>
+                </div>
+            )}
+
+            {/* LinkedIn Scheduled Post Removal Notification */}
+            {linkedInRemovalNotification.show && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '20px',
+                    right: '20px',
+                    background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
+                    borderRadius: '12px',
+                    padding: '16px 20px',
+                    maxWidth: '360px',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+                    zIndex: 99999,
+                    animation: 'slideIn 0.3s ease-out'
+                }}>
+                    <style>{`
+                        @keyframes slideIn {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                    `}</style>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        <div style={{ fontSize: '24px' }}>⚠️</div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>
+                                Remove from LinkedIn
+                            </div>
+                            <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.5' }}>
+                                This post was scheduled on LinkedIn. Please manually remove it from <strong>LinkedIn Share Management</strong>.
+                            </div>
+                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '8px' }}>
+                                {linkedInRemovalNotification.linkedInOpened ? (
+                                    <span style={{ color: '#4ade80', fontWeight: '600' }}>✓ LinkedIn opened for you</span>
+                                ) : (
+                                    <>Opening LinkedIn in <span style={{ fontWeight: '700', color: 'white' }}>{linkedInRemovalNotification.countdown - 15}</span> seconds...</>
+                                )}
+                            </div>
+                            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginTop: '4px' }}>
+                                This notification will close in {linkedInRemovalNotification.countdown} seconds.
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setLinkedInRemovalNotification({ show: false, postId: null, countdown: 0, linkedInOpened: false })}
+                            style={{
+                                background: 'rgba(255,255,255,0.2)',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px 8px',
+                                color: 'white',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                lineHeight: 1
+                            }}
+                        >
+                            ✕
+                        </button>
                     </div>
                 </div>
             )}

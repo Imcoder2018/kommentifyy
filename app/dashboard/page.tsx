@@ -776,9 +776,9 @@ function DashboardContent() {
             const data = await res.json();
             if (data.success) {
                 const drafts = data.drafts || [];
-                // Separate scheduled posts from regular drafts
-                const scheduled = drafts.filter((d: any) => d.status === 'scheduled' && d.scheduledFor);
-                const regularDrafts = drafts.filter((d: any) => d.status !== 'scheduled' || !d.scheduledFor);
+                // Separate scheduled posts from regular drafts (exclude LinkedIn API scheduled - those are handled by loadScheduledPosts)
+                const scheduled = drafts.filter((d: any) => d.status === 'scheduled' && d.scheduledFor && d.postMethod !== 'linkedin_api_scheduled');
+                const regularDrafts = drafts.filter((d: any) => (d.status !== 'scheduled' || !d.scheduledFor) && d.postMethod !== 'linkedin_api_scheduled');
                 setWriterScheduledPosts(scheduled);
                 setWriterDrafts(regularDrafts);
             }
@@ -883,11 +883,11 @@ function DashboardContent() {
             const cmdData = await cmdRes.json();
             
             if (cmdData.success) {
-                // Also save to database for tracking
+                // Also save to database for tracking - mark as linkedin_api_scheduled so cron skips it
                 await fetch('/api/post-drafts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor, mediaUrl: writerMediaBlobUrl || null, mediaType: writerMediaType || null, status: 'scheduled_via_linkedin' }),
+                    body: JSON.stringify({ content: writerContent, topic: writerTopic, template: writerTemplate, tone: writerTone, scheduledFor, mediaUrl: writerMediaBlobUrl || null, mediaType: writerMediaType || null, status: 'scheduled', postMethod: 'linkedin_api_scheduled' }),
                 });
 
                 setWriterStatus('✅ Post queued! Task is pending. Check Tasks for real-time status.');
@@ -2697,7 +2697,7 @@ function DashboardContent() {
         plannerStatusMsg, plannerAbortRef,
         openPlanner, generatePlannerTopics, startPlannerGeneration,
         // Voyager
-        voyagerData, voyagerLoading, voyagerSyncing, setVoyagerSyncing, loadVoyagerData,
+        voyagerData, setVoyagerData, voyagerLoading, voyagerSyncing, setVoyagerSyncing, loadVoyagerData,
         // Analytics
         analyticsData, analyticsLoading, analyticsPeriod, setAnalyticsPeriod,
         analyticsAutoSearch, setAnalyticsAutoSearch, analyticsNetworkSearch, setAnalyticsNetworkSearch,

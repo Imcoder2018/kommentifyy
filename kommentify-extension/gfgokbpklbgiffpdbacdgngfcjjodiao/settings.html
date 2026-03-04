@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings - Replya</title>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5170ff;
+            --primary-dark: #0f4d93;
+            --primary-light: rgba(20, 100, 192, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Toggle Buttons (Segmented Control) */
+        .segmented-control {
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            display: inline-flex;
+            position: relative;
+            width: 100%;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .toggle-btn:hover:not(.active) {
+            color: #334155;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .toggle-btn.active {
+            color: var(--primary);
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+        }
+
+        .toggle-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        /* Custom Form Inputs */
+        .form-input {
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(20, 100, 192, 0.1);
+        }
+
+        /* Custom Checkbox */
+        .custom-checkbox {
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.25em;
+            height: 1.25em;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375em;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .custom-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .custom-checkbox:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        .loader {
+            border-top-color: var(--primary);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay"
+        class="loading-overlay fixed inset-0 z-50 flex flex-col items-center justify-center hidden">
+        <div class="loader w-12 h-12 border-4 border-gray-200 rounded-full"></div>
+        <p class="mt-4 text-sm font-medium text-gray-600 animate-pulse">Loading profile...</p>
+    </div>
+
+    <div class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 text-center animate-fade-in">
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Profile Settings</h1>
+            <p class="mt-2 text-gray-600">Personalize your AI assistant to sound just like you.</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="glass-panel rounded-2xl overflow-hidden animate-fade-in" style="animation-delay: 0.1s;">
+            <form id="profileForm" class="p-6 sm:p-8 space-y-8">
+
+                <!-- Tone & Length Section -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-2 pb-2 border-b border-gray-100">
+                        <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="13.5" cy="6.5" r="2.5"></circle>
+                          <circle cx="17.5" cy="10.5" r="2.5"></circle>
+                          <circle cx="8.5" cy="7.5" r="2.5"></circle>
+                          <circle cx="6.5" cy="12.5" r="2.5"></circle>
+                          <path d="M12 22c4.97-4.97 7-7.03 7-10.5a7 7 0 0 0-14 0c0 3.47 2.03 5.53 7 10.5z"></path>
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900">Style Preferences</h2>
+                    </div>
+
+                    <!-- Comment Tone -->
+                    <div class="space-y-3">
+                        <label class="block text-sm font-medium text-gray-700">Default Tone</label>
+                        <input type="hidden" id="commentTone" name="commentTone" value="professional">
+                        <div class="segmented-control grid grid-cols-2 sm:grid-cols-3 gap-1">
+                            <button type="button" class="toggle-btn active" data-group="tone"
+                                data-value="professional">Professional</button>
+                            <button type="button" class="toggle-btn" data-group="tone"
+                                data-value="friendly">Friendly</button>
+                            <button type="button" class="toggle-btn" data-group="tone"
+                                data-value="casual">Casual</button>
+                            <button type="button" class="toggle-btn" data-group="tone"
+                                data-value="enthusiastic">Enthusiastic</button>
+                            <button type="button" class="toggle-btn" data-group="tone"
+                                data-value="thoughtful">Thoughtful</button>
+                        </div>
+                    </div>
+
+                    <!-- Comment Length -->
+                    <div class="space-y-3">
+                        <label class="block text-sm font-medium text-gray-700">Default Length</label>
+                        <input type="hidden" id="commentLength" name="commentLength" value="short">
+                        <div class="segmented-control grid grid-cols-3 gap-1">
+                            <button type="button" class="toggle-btn active" data-group="length"
+                                data-value="short">Short</button>
+                            <button type="button" class="toggle-btn" data-group="length"
+                                data-value="medium">Medium</button>
+                            <button type="button" class="toggle-btn" data-group="length" data-value="long">Long</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Personal Info Section -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-2 pb-2 border-b border-gray-100">
+                        <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900">Personal Details</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <label for="fullName" class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" id="fullName" name="fullName" placeholder="e.g. Sarah Smith"
+                                class="form-input w-full px-4 py-2.5 rounded-lg text-sm bg-gray-50 focus:bg-white placeholder-gray-400">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="jobTitle" class="block text-sm font-medium text-gray-700">Job Title</label>
+                            <input type="text" id="jobTitle" name="jobTitle" placeholder="e.g. Product Manager"
+                                class="form-input w-full px-4 py-2.5 rounded-lg text-sm bg-gray-50 focus:bg-white placeholder-gray-400">
+                        </div>
+
+                        <div class="space-y-2 sm:col-span-2">
+                            <label for="company" class="block text-sm font-medium text-gray-700">Company</label>
+                            <input type="text" id="company" name="company" placeholder="e.g. Tech Solutions Inc."
+                                class="form-input w-full px-4 py-2.5 rounded-lg text-sm bg-gray-50 focus:bg-white placeholder-gray-400">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Expertise Section -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-2 pb-2 border-b border-gray-100">
+                        <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900">Professional Context</h2>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label for="expertise" class="block text-sm font-medium text-gray-700">Areas of
+                                Expertise</label>
+                            <textarea id="expertise" name="expertise" rows="3"
+                                placeholder="e.g. Digital Marketing, SEO, Content Strategy..."
+                                class="form-input w-full px-4 py-3 rounded-lg text-sm bg-gray-50 focus:bg-white placeholder-gray-400 resize-none"></textarea>
+                            <p class="text-xs text-gray-500">Comma-separated list of your key skills.</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="yearsOfExperience" class="block text-sm font-medium text-gray-700">Experience
+                                Level</label>
+                            <div class="relative">
+                                <select id="yearsOfExperience" name="yearsOfExperience"
+                                    class="form-input w-full px-4 py-2.5 rounded-lg text-sm bg-gray-50 focus:bg-white appearance-none cursor-pointer">
+                                    <option value="">Select experience level...</option>
+                                    <option value="0-2">Junior (0-2 years)</option>
+                                    <option value="3-5">Mid-Level (3-5 years)</option>
+                                    <option value="6-10">Senior (6-10 years)</option>
+                                    <option value="10+">Expert (10+ years)</option>
+                                </select>
+                                <div
+                                    class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Preferences Section -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-2 pb-2 border-b border-gray-100">
+                        <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900">Extra Preferences</h2>
+                    </div>
+
+                    <div class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" id="useEmojis" name="useEmojis" class="custom-checkbox">
+                            <span class="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">Use emojis
+                                in comments</span>
+                        </label>
+
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" id="askQuestions" name="askQuestions" class="custom-checkbox">
+                            <span class="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">End comments
+                                with engaging questions</span>
+                        </label>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="additionalInfo" class="block text-sm font-medium text-gray-700">Additional
+                            Context</label>
+                        <textarea id="additionalInfo" name="additionalInfo" rows="2"
+                            placeholder="Any other details to help personalize your comments..."
+                            class="form-input w-full px-4 py-3 rounded-lg text-sm bg-gray-50 focus:bg-white placeholder-gray-400 resize-none"></textarea>
+                    </div>
+                </section>
+
+                <!-- Messages -->
+                <div id="successMessage" class="hidden transform transition-all duration-300">
+                    <div class="rounded-lg bg-green-50 border border-green-200 p-4 flex items-center gap-3">
+                        <div class="flex-shrink-0 text-green-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <p class="text-sm font-medium text-green-800">Settings saved successfully!</p>
+                    </div>
+                </div>
+
+                <div id="errorMessage" class="hidden transform transition-all duration-300">
+                    <div class="rounded-lg bg-red-50 border border-red-200 p-4 flex items-center gap-3">
+                        <div class="flex-shrink-0 text-red-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </div>
+                        <p class="text-sm font-medium text-red-800">Something went wrong. Please try again.</p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="pt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-gray-100">
+                    <button type="button" id="cancelBtn"
+                        class="px-6 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submitBtn"
+                        class="px-6 py-2.5 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        style="background-color: #5170ff;"
+                        onmouseover="this.style.backgroundColor='#0f4d93'"
+                        onmouseout="this.style.backgroundColor='#5170ff'">
+                        <span>Save Changes</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="supabase.js"></script>
+    <script src="auth.js"></script>
+    <script src="settings.js"></script>
+</body>
+
+</html>

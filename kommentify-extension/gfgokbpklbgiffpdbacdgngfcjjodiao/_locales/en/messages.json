@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Replya - #1 FREE LinkedIn Comment Generator & AI Assistant",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Generate perfect LinkedIn comments instantly with AI. Free comment suggestions, personalized tone, and one-click apply.",
+    "description": "Description of the extension"
+  }
+}

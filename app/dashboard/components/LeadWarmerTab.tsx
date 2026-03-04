@@ -75,6 +75,30 @@ interface ExecutionLog {
   status: 'completed' | 'failed' | 'running';
 }
 
+// Single scheduled task within an autopilot session
+interface ScheduledTask {
+  id: string;
+  day: number;
+  action: string;
+  scheduledFor: string;
+  status: 'pending' | 'completed' | 'failed' | 'due';
+  leadName?: string;
+  postPreview?: string;
+  targetPost?: string | null;
+  postDate?: string | null;
+}
+
+// Autopilot session - created each time user adds leads to autopilot
+interface AutopilotSession {
+  id: string;
+  createdAt: string;
+  leadIds: string[];
+  leadCount: number;
+  commentsGenerated: number;
+  status: 'generating' | 'scheduled' | 'completed' | 'partial';
+  tasks: ScheduledTask[];
+}
+
 interface Props {
   t?: any;
   user?: any;
@@ -210,6 +234,16 @@ export default function LeadWarmerTab(props: Props) {
   const [bulkEngaging, setBulkEngaging] = useState(false);
   const [autopilotGenerating, setAutopilotGenerating] = useState(false);
   const [autopilotProgress, setAutopilotProgress] = useState({ current: 0, total: 0, leadName: '' });
+  // Autopilot processing state
+  const [isProcessingPosts, setIsProcessingPosts] = useState(false);
+  const [isGeneratingComments, setIsGeneratingComments] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState({
+    stage: 'idle' as 'idle' | 'fetching' | 'generating' | 'complete',
+    current: 0,
+    total: 0,
+    message: '',
+  });
+  const [processCancelled, setProcessCancelled] = useState(false);
   const [campaignName, setCampaignName] = useState('My Warm Leads');
   const [businessContext, setBusinessContext] = useState('');
   const [profilesPerDay, setProfilesPerDay] = useState(20);
@@ -220,6 +254,10 @@ export default function LeadWarmerTab(props: Props) {
   const [savingSettings, setSavingSettings] = useState(false);
   const [genDays, setGenDays] = useState(5);
   const [genPostsPerDay, setGenPostsPerDay] = useState(2);
+  // Overview data
+  const [executionHistory, setExecutionHistory] = useState<ExecutionLog[]>([]);
+  const [autopilotSessions, setAutopilotSessions] = useState<AutopilotSession[]>([]);
+  const [upcomingTasks, setUpcomingTasks] = useState<ScheduledTask[]>([]);
 
   const csvFileRef = useRef<HTMLInputElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -248,7 +286,20 @@ export default function LeadWarmerTab(props: Props) {
     finally { if (!silent) setLoading(false); }
   }, []);
 
+  // Load Overview Data: execution history, autopilot sessions, upcoming tasks
+  const loadOverviewData = useCallback(async () => {
+    try {
+      const data = await apiGet('/api/warm-leads?action=overview');
+      if (data.success) {
+        setExecutionHistory(data.executionHistory || []);
+        setAutopilotSessions(data.autopilotSessions || []);
+        setUpcomingTasks(data.upcomingTasks || []);
+      }
+    } catch (e) { console.error('Failed to load overview data:', e); }
+  }, []);
+
   useEffect(() => { loadLeads(); }, []);
+  useEffect(() => { if (activeTab === 'overview') loadOverviewData(); }, [activeTab]);
 
   // Save Settings
   const saveSettings = async () => {
@@ -446,28 +497,169 @@ export default function LeadWarmerTab(props: Props) {
     loadLeads(true);
   };
 
-  // Schedule selected leads as autopilot with AI comment generation
+  // Schedule selected leads as autopilot with full automation
   const scheduleSelected = async () => {
     if (selectedLeads.size === 0) return;
     const selectedArr = Array.from(selectedLeads).slice(0, 20); // Max 20 leads
     const targetLeads = leads.filter(l => selectedArr.includes(l.id));
     const leadsWithPosts = targetLeads.filter(l => l.posts && l.posts.length > 0);
 
-    // Start AI comment generation in background
+    // Reset processing state - ALWAYS show progress bar
+    setProcessCancelled(false);
     setAutopilotGenerating(true);
-    setAutopilotProgress({ current: 0, total: leadsWithPosts.length, leadName: '' });
+    setProcessingProgress({
+      stage: 'fetching',
+      current: 0,
+      total: selectedArr.length,
+      message: 'Setting up autopilot...',
+    });
 
     try {
-      // Call backend to generate AI comments and schedule leads
+      // Call backend to setup autopilot and queue post fetching if needed
       const res = await apiPost('/api/warm-leads', {
         action: 'setup_autopilot',
         leadIds: selectedArr,
         businessContext,
-        postsPerLead: 3, // Generate comments for up to 3 posts per lead
+        postsPerLead: 3,
       });
 
       if (res.success) {
-        showToast?.(`Added ${selectedArr.length} leads to Autopilot Sequence. ${res.commentsGenerated} AI comments generated.`, 'success');
+        // ALWAYS start processing - show appropriate stage
+        if (res.postsFetchQueued && res.leadsNeedingPosts > 0) {
+          // Posts need to be fetched first - start polling
+          setProcessingProgress({
+            stage: 'fetching',
+            current: 0,
+            total: res.leadsNeedingPosts || selectedArr.length,
+            message: `Fetching posts for ${res.leadsNeedingPosts || selectedArr.length} leads... Keep LinkedIn open`,
+          });
+
+          // Poll for posts to be fetched and generate AI comments
+          let pollCount = 0;
+          const maxPolls = 30; // Poll for up to 5 minutes (30 * 10s)
+          const pollInterval = setInterval(async () => {
+            if (processCancelled) {
+              clearInterval(pollInterval);
+              setAutopilotGenerating(false);
+              setProcessingProgress({ stage: 'idle', current: 0, total: 0, message: '' });
+              return;
+            }
+
+            pollCount++;
+            try {
+              // Check status
+              const statusRes = await apiGet('/api/warm-leads?action=autopilot_status');
+              if (statusRes.success) {
+                const fetched = (statusRes.leadsWithPosts || 0);
+                setProcessingProgress(prev => ({
+                  ...prev,
+                  current: fetched,
+                  message: `Fetched ${fetched} leads... ${statusRes.pendingFetchCommands > 0 ? 'Waiting for extension...' : 'Processing...'}`
+                }));
+
+                // When posts are fetched, start generating AI comments
+                if (fetched > 0 && statusRes.pendingFetchCommands === 0) {
+                  clearInterval(pollInterval);
+                  // Start AI comment generation
+                  setProcessingProgress({
+                    stage: 'generating',
+                    current: 0,
+                    total: statusRes.postsWithoutComments || 0,
+                    message: 'Generating AI comments...',
+                  });
+
+                  try {
+                    const aiRes = await apiPost('/api/warm-leads', {
+                      action: 'generate_for_scheduled',
+                      postsPerLead: 3,
+                    });
+
+                    if (aiRes.success) {
+                      setProcessingProgress({
+                        stage: 'complete',
+                        current: aiRes.commentsGenerated || 0,
+                        total: aiRes.leadsProcessed || 0,
+                        message: `Complete! ${aiRes.commentsGenerated} AI comments generated.`,
+                      });
+                      showToast?.(`Autopilot setup complete! ${aiRes.commentsGenerated} AI comments generated.`, 'success');
+                    }
+                  } catch (e) {
+                    console.error('AI generation error:', e);
+                    showToast?.('Posts fetched. AI comment generation will continue in background.', 'info');
+                    setProcessingProgress({
+                      stage: 'complete',
+                      current: 0,
+                      total: 0,
+                      message: 'Posts fetched. AI generation continues in background.',
+                    });
+                  }
+                }
+              }
+
+              // Timeout after max polls
+              if (pollCount >= maxPolls) {
+                clearInterval(pollInterval);
+                showToast?.('Processing continued in background. Check back later.', 'info');
+                setProcessingProgress({ stage: 'idle', current: 0, total: 0, message: '' });
+                setAutopilotGenerating(false);
+              }
+            } catch (e) {
+              console.error('Poll error:', e);
+            }
+          }, 10000); // Poll every 10 seconds
+
+        } else if (res.commentsGenerated > 0 || leadsWithPosts.length > 0) {
+          // Posts already exist - generate AI comments now
+          setProcessingProgress({
+            stage: 'generating',
+            current: 0,
+            total: leadsWithPosts.length,
+            message: `Generating AI comments for ${leadsWithPosts.length} leads...`,
+          });
+
+          try {
+            const aiRes = await apiPost('/api/warm-leads', {
+              action: 'generate_for_scheduled',
+              postsPerLead: 3,
+            });
+
+            if (aiRes.success) {
+              setProcessingProgress({
+                stage: 'complete',
+                current: aiRes.commentsGenerated || 0,
+                total: aiRes.leadsProcessed || 0,
+                message: `Complete! ${aiRes.commentsGenerated} AI comments generated.`,
+              });
+              showToast?.(`Autopilot setup complete! ${aiRes.commentsGenerated} AI comments generated.`, 'success');
+            } else {
+              setProcessingProgress({
+                stage: 'complete',
+                current: selectedArr.length,
+                total: selectedArr.length,
+                message: 'Leads added to autopilot!',
+              });
+              showToast?.(`Added ${selectedArr.length} leads to Autopilot Sequence.`, 'success');
+            }
+          } catch (e) {
+            console.error('AI generation error:', e);
+            setProcessingProgress({
+              stage: 'complete',
+              current: selectedArr.length,
+              total: selectedArr.length,
+              message: 'Setup complete. AI generation continues in background.',
+            });
+            showToast?.('Leads added. AI comments will be generated in background.', 'info');
+          }
+        } else {
+          // Just scheduled
+          setProcessingProgress({
+            stage: 'complete',
+            current: selectedArr.length,
+            total: selectedArr.length,
+            message: `Added ${selectedArr.length} leads to autopilot!`,
+          });
+          showToast?.(`Added ${selectedArr.length} leads to Autopilot Sequence.`, 'success');
+        }
       } else {
         // Fallback: just update type
         await apiPost('/api/warm-leads', {
@@ -476,15 +668,29 @@ export default function LeadWarmerTab(props: Props) {
           engagementType: 'scheduled',
         });
         showToast?.(`Added ${selectedArr.length} leads to Autopilot Sequence`, 'success');
+        setProcessingProgress({ stage: 'complete', current: selectedArr.length, total: selectedArr.length, message: 'Complete!' });
       }
     } catch (err) {
       console.error('Autopilot setup error:', err);
       showToast?.('Failed to setup autopilot', 'error');
+      setProcessingProgress({ stage: 'idle', current: 0, total: 0, message: '' });
     }
 
-    setAutopilotGenerating(false);
-    setSelectedLeads(new Set());
-    loadLeads(true);
+    setTimeout(() => {
+      setAutopilotGenerating(false);
+      setProcessingProgress({ stage: 'idle', current: 0, total: 0, message: '' });
+      setSelectedLeads(new Set());
+      loadLeads(true);
+    }, 5000);
+  };
+
+  // Cancel/stop processing
+  const cancelProcessing = async () => {
+    setProcessCancelled(true);
+    setIsProcessingPosts(false);
+    setIsGeneratingComments(false);
+    setProcessingProgress({ stage: 'idle', current: 0, total: 0, message: 'Cancelled' });
+    showToast?.('Processing cancelled', 'info');
   };
 
   // Single Engage
@@ -607,55 +813,140 @@ export default function LeadWarmerTab(props: Props) {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <div style={styles.card}>
+          <div style={{ display: 'grid', gridTemplateColumns: '380px 380px 1fr', gap: '24px' }}>
+            {/* Upcoming Executions */}
+            <div style={{ ...styles.card, minHeight: '400px' }}>
               <h3 style={{ margin: '0 0 16px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Calendar size={18} color={THEME.colors.primaryLight} /> Upcoming Executions
               </h3>
-              {autopilotEnabled ? (
-                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: THEME.radius.md, border: `1px solid ${THEME.colors.border}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: THEME.colors.text.secondary, fontWeight: 600 }}>Next Run</span>
-                    <span style={{ color: THEME.colors.success, fontWeight: 600 }}>Today at {autopilotTime}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: THEME.colors.text.secondary }}>Target Queue</span>
-                    <span style={{ color: 'white' }}>{Math.min(stats.scheduled, profilesPerDay)} Leads</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: THEME.colors.text.secondary }}>Delay Between Tasks</span>
-                    <span style={{ color: 'white' }}>{bulkTaskDelay} min per lead</span>
-                  </div>
+              {upcomingTasks.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '550px', overflowY: 'auto' }}>
+                  {upcomingTasks.slice(0, 20).map((task, idx) => (
+                    <div key={task.id} style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: THEME.radius.sm, border: `1px solid ${THEME.colors.border}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '14px' }}>{task.leadName}</span>
+                        <span style={{ color: THEME.colors.warning, fontSize: '11px', fontWeight: 600 }}>{task.scheduledFor ? new Date(task.scheduledFor).toLocaleDateString() : 'Pending'}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: task.targetPost ? '6px' : '0' }}>
+                        <Clock size={11} color={THEME.colors.text.muted} />
+                        <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>
+                          {task.scheduledFor ? new Date(task.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''} - Day {task.day}
+                        </span>
+                      </div>
+                      {task.targetPost && (
+                        <div style={{ marginTop: '6px', padding: '8px 10px', background: 'rgba(105, 63, 233, 0.12)', borderRadius: '6px', borderLeft: `3px solid ${THEME.colors.primaryLight}` }}>
+                          <span style={{ color: 'white', fontSize: '11px', lineHeight: '1.4' }}>{task.targetPost}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div style={{ padding: '24px', textAlign: 'center', color: THEME.colors.text.muted, border: `1px dashed ${THEME.colors.border}`, borderRadius: THEME.radius.md }}>
-                  Autopilot is currently paused. Enable it in settings.
+                  {autopilotEnabled ? 'No upcoming tasks scheduled' : 'Autopilot is paused. Enable in settings.'}
                 </div>
               )}
             </div>
-            <div style={styles.card}>
+
+            {/* Recent Performance */}
+            <div style={{ ...styles.card, minHeight: '400px' }}>
               <h3 style={{ margin: '0 0 16px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Activity size={18} color={THEME.colors.info} /> Recent Performance
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {MOCK_EXECUTIONS.map(log => (
-                  <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: THEME.radius.md, border: `1px solid ${THEME.colors.border}` }}>
-                    <div>
-                      <span style={{ color: 'white', fontWeight: 600, display: 'block' }}>{log.type === 'instant' ? 'Instant Execution' : 'Autopilot Execution'}</span>
-                      <span style={{ color: THEME.colors.text.muted, fontSize: '12px' }}>{new Date(log.date).toLocaleString()}</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
-                        <span style={{ color: THEME.colors.text.secondary, fontSize: '12px' }}>Leads</span>
-                        <span style={{ color: 'white', fontWeight: 600 }}>{log.leadsProcessed}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '550px', overflowY: 'auto' }}>
+                {executionHistory.length > 0 ? (
+                  executionHistory.slice(0, 20).map(log => (
+                    <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: THEME.radius.sm, border: `1px solid ${THEME.colors.border}` }}>
+                      <div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '14px', display: 'block' }}>{log.type === 'instant' ? 'Instant Execution' : 'Autopilot'}</span>
+                        <span style={{ color: THEME.colors.text.muted, fontSize: '12px' }}>{new Date(log.date).toLocaleString()}</span>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
-                        <span style={{ color: THEME.colors.text.secondary, fontSize: '12px' }}>Engagements</span>
-                        <span style={{ color: THEME.colors.success, fontWeight: 600 }}>{log.likesGiven + log.commentsGiven}</span>
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                          <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>Leads</span>
+                          <span style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>{log.leadsProcessed}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                          <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>Engaged</span>
+                          <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '13px' }}>{log.likesGiven + log.commentsGiven}</span>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '20px', textAlign: 'center', color: THEME.colors.text.muted, fontSize: '13px' }}>
+                    No execution history yet
                   </div>
-                ))}
+                )}
+              </div>
+            </div>
+
+            {/* Full Sequence of Autopilot Tasks */}
+            <div style={{ ...styles.card, minHeight: '500px' }}>
+              <h3 style={{ margin: '0 0 16px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Target size={18} color={THEME.colors.success} /> Autopilot Sessions
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '650px', overflowY: 'auto' }}>
+                {autopilotSessions.length > 0 ? (
+                  autopilotSessions.slice(0, 10).map((session, sIdx) => (
+                    <div key={session.id} style={{ background: 'rgba(34, 197, 94, 0.05)', borderRadius: THEME.radius.md, border: `1px solid rgba(34, 197, 94, 0.2)`, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px', background: 'rgba(34, 197, 94, 0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>Session #{autopilotSessions.length - sIdx}</span>
+                          <span style={{ color: THEME.colors.text.muted, fontSize: '12px', display: 'block' }}>{new Date(session.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '13px' }}>{session.leadCount} leads</span>
+                          <span style={{ color: THEME.colors.primaryLight, fontSize: '11px', display: 'block' }}>{session.commentsGenerated} comments generated</span>
+                        </div>
+                      </div>
+                      <div style={{ padding: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                        {session.tasks && session.tasks.length > 0 ? (
+                          session.tasks.map((task, tIdx) => (
+                            <div key={task.id} style={{ padding: '12px', marginBottom: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: `1px solid ${THEME.colors.border}40` }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <span style={{ color: THEME.colors.primaryLight, fontSize: '12px', fontWeight: 700 }}>Day {task.day}</span>
+                                  <span style={{ color: 'white', fontSize: '13px', fontWeight: 600 }}>{task.action}</span>
+                                </div>
+                                <span style={{
+                                  padding: '3px 10px',
+                                  borderRadius: '12px',
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  background: task.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : task.status === 'failed' ? 'rgba(239, 68, 68, 0.2)' : task.status === 'due' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255,255,255,0.1)',
+                                  color: task.status === 'completed' ? THEME.colors.success : task.status === 'failed' ? THEME.colors.error : task.status === 'due' ? '#FBBF24' : THEME.colors.text.muted
+                                }}>
+                                  {task.status === 'completed' ? 'Done' : task.status === 'failed' ? 'Failed' : task.status === 'due' ? 'Due Now' : 'Pending'}
+                                </span>
+                              </div>
+                              {/* Scheduled time */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: task.targetPost ? '6px' : '0' }}>
+                                <Clock size={12} color={THEME.colors.text.muted} />
+                                <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>
+                                  {task.scheduledFor ? new Date(task.scheduledFor).toLocaleDateString() + ' at ' + new Date(task.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Not scheduled'}
+                                </span>
+                              </div>
+                              {/* Target post preview */}
+                              {task.targetPost && (
+                                <div style={{ marginTop: '6px', padding: '10px', background: 'rgba(105, 63, 233, 0.15)', borderRadius: '6px', borderLeft: `3px solid ${THEME.colors.primaryLight}` }}>
+                                  <span style={{ color: THEME.colors.primaryLight, fontSize: '10px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Target Post Preview:</span>
+                                  <span style={{ color: 'white', fontSize: '11px', lineHeight: '1.4' }}>{task.targetPost}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: '12px', color: THEME.colors.text.muted, fontSize: '12px', textAlign: 'center' }}>No tasks scheduled</div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '24px', textAlign: 'center', color: THEME.colors.text.muted, border: `1px dashed ${THEME.colors.border}`, borderRadius: THEME.radius.md }}>
+                    No autopilot sessions yet. Add leads to autopilot to see them here.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -700,19 +991,54 @@ export default function LeadWarmerTab(props: Props) {
                   <Target size={14} /> {autopilotGenerating ? 'Setting up...' : 'Set on Autopilot'}
                 </button>
               </div>
-              {/* Autopilot generation progress */}
-              {autopilotGenerating && (
-                <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <Loader2 size={14} className="animate-spin" color={THEME.colors.success} />
-                    <span style={{ fontSize: '13px', color: THEME.colors.success, fontWeight: 600 }}>Generating AI Comments...</span>
+              {/* Autopilot processing progress */}
+              {autopilotGenerating && processingProgress.stage !== 'idle' && (
+                <div style={{ marginTop: '12px', padding: '14px', background: processingProgress.stage === 'complete' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(105, 63, 233, 0.1)', borderRadius: '8px', border: `1px solid ${processingProgress.stage === 'complete' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(105, 63, 233, 0.3)'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {processingProgress.stage === 'complete' ? (
+                        <Check size={16} color={THEME.colors.success} />
+                      ) : (
+                        <Loader2 size={14} className="animate-spin" color={THEME.colors.primaryLight} />
+                      )}
+                      <span style={{ fontSize: '13px', color: processingProgress.stage === 'complete' ? THEME.colors.success : THEME.colors.primaryLight, fontWeight: 600 }}>
+                        {processingProgress.stage === 'fetching' && 'Fetching Posts...'}
+                        {processingProgress.stage === 'generating' && 'Generating AI Comments...'}
+                        {processingProgress.stage === 'complete' && 'Setup Complete!'}
+                      </span>
+                    </div>
+                    <button onClick={cancelProcessing} style={{ background: 'rgba(239, 68, 68, 0.2)', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <X size={12} color={THEME.colors.error} />
+                      <span style={{ color: THEME.colors.error, fontSize: '11px', fontWeight: 600 }}>Stop</span>
+                    </button>
                   </div>
-                  <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ width: '100%', height: '100%', background: THEME.colors.success, borderRadius: '3px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+
+                  {/* Progress bar */}
+                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
+                    <div style={{
+                      width: processingProgress.total > 0 ? `${(processingProgress.current / processingProgress.total) * 100}%` : '100%',
+                      height: '100%',
+                      background: processingProgress.stage === 'complete' ? THEME.colors.success : THEME.colors.primaryLight,
+                      borderRadius: '4px',
+                      transition: 'width 0.3s ease'
+                    }} />
                   </div>
-                  <p style={{ fontSize: '11px', color: THEME.colors.text.secondary, margin: '8px 0 0 0' }}>
-                    Generating AI comments for up to 20 leads. This runs in the background even if you close this page.
-                  </p>
+
+                  {/* Progress stats */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: THEME.colors.text.secondary }}>{processingProgress.message}</span>
+                    {processingProgress.total > 0 && (
+                      <span style={{ fontSize: '12px', color: 'white', fontWeight: 600 }}>
+                        {processingProgress.current} / {processingProgress.total}
+                      </span>
+                    )}
+                  </div>
+
+                  {processingProgress.stage !== 'complete' && (
+                    <p style={{ fontSize: '10px', color: THEME.colors.text.muted, margin: '8px 0 0 0' }}>
+                      Keep LinkedIn open. Processing continues even if you close this page.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

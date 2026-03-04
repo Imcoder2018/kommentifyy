@@ -25,9 +25,204 @@ export async function GET(request: NextRequest) {
     if (!payload?.userId) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
+
+    // Overview action - return execution history, autopilot sessions, upcoming tasks
+    if (action === 'overview') {
+      const now = new Date();
+
+      // Get user settings for sequence and autopilot time
+      const settings = await (prisma as any).warmLeadsSettings.findUnique({
+        where: { userId: payload.userId },
+      });
+
+      // Parse sequence steps
+      let sequenceSteps: any[] = [];
+      try { sequenceSteps = JSON.parse(settings?.sequenceSteps || '[]'); } catch {}
+      const enabledSteps = sequenceSteps.filter((s: any) => s.enabled);
+
+      // Get autopilot time (default 09:00)
+      const autopilotTime = settings?.autopilotTime || '09:00';
+      const [autopilotHour, autopilotMinute] = autopilotTime.split(':').map(Number);
+
+      // Get engagement logs as execution history
+      const engagementLogs = await (prisma as any).warmLeadEngagement.findMany({
+        where: { userId: payload.userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: { lead: { select: { firstName: true, lastName: true } } },
+      });
+
+      // Build execution history from engagement logs
+      const executionHistory: any[] = [];
+      const logsByDate: Record<string, any> = {};
+      for (const log of engagementLogs) {
+        const dateKey = new Date(log.createdAt).toISOString().split('T')[0];
+        if (!logsByDate[dateKey]) {
+          logsByDate[dateKey] = {
+            id: log.id,
+            date: log.createdAt,
+            type: log.action === 'bulk' ? 'scheduled' : 'instant',
+            leadsProcessed: 0,
+            likesGiven: 0,
+            commentsGiven: 0,
+            status: log.status === 'completed' ? 'completed' : log.status === 'failed' ? 'failed' : 'running',
+          };
+        }
+        logsByDate[dateKey].leadsProcessed++;
+        if (log.action === 'like') logsByDate[dateKey].likesGiven++;
+        if (log.action === 'comment') logsByDate[dateKey].commentsGiven++;
+      }
+      Object.values(logsByDate).forEach((e: any) => executionHistory.push(e));
+
+      // Get autopilot sessions from leads with engagementType 'scheduled'
+      // Include posts for target post info
+      const scheduledLeads = await (prisma as any).warmLead.findMany({
+        where: { userId: payload.userId, engagementType: 'scheduled' },
+        include: {
+          posts: {
+            orderBy: { postDate: 'desc' },
+            take: 3,
+            select: { id: true, postText: true, postDate: true, commentText: true }
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Count comments generated per session
+      const commentsBySession: Record<string, number> = {};
+      for (const lead of scheduledLeads) {
+        const sessionKey = new Date(lead.createdAt).toISOString().slice(0, 13);
+        const commentCount = (lead.posts || []).filter((p: any) => p.commentText).length;
+        commentsBySession[sessionKey] = (commentsBySession[sessionKey] || 0) + commentCount;
+      }
+
+      // Group leads by session (roughly by same createdAt hour)
+      const sessionsMap: Record<string, any> = {};
+      for (const lead of scheduledLeads) {
+        const sessionKey = new Date(lead.createdAt).toISOString().slice(0, 13); // Group by hour
+        if (!sessionsMap[sessionKey]) {
+          sessionsMap[sessionKey] = {
+            id: sessionKey,
+            createdAt: lead.createdAt,
+            leadIds: [],
+            leadCount: 0,
+            commentsGenerated: 0,
+            status: lead.status === 'engaged' ? 'completed' : 'scheduled',
+            tasks: [],
+          };
+        }
+        if (!sessionsMap[sessionKey].leadIds.includes(lead.id)) {
+          sessionsMap[sessionKey].leadIds.push(lead.id);
+          sessionsMap[sessionKey].leadCount++;
+        }
+      }
+
+      // Add comment counts
+      Object.keys(sessionsMap).forEach(key => {
+        sessionsMap[key].commentsGenerated = commentsBySession[key] || 0;
+      });
+
+      // Get upcoming tasks (leads with nextActionDate in future)
+      const upcomingLeads = await (prisma as any).warmLead.findMany({
+        where: {
+          userId: payload.userId,
+          engagementType: 'scheduled',
+          nextActionDate: { gte: now },
+        },
+        include: {
+          posts: {
+            orderBy: { postDate: 'desc' },
+            take: 1,
+            select: { id: true, postText: true, postDate: true }
+          }
+        },
+        orderBy: { nextActionDate: 'asc' },
+        take: 20,
+      });
+
+      const upcomingTasks = upcomingLeads.map((lead: any) => ({
+        id: lead.id,
+        day: (lead.currentSequenceStep || 0) + 1,
+        action: 'engagement',
+        scheduledFor: lead.nextActionDate,
+        status: 'pending',
+        leadName: [lead.firstName, lead.lastName].filter(Boolean).join(' ') || 'Unknown',
+        targetPost: lead.posts?.[0]?.postText ? lead.posts[0].postText.substring(0, 80) + '...' : null,
+      }));
+
+      // Build autopilot sessions with tasks based on sequence steps
+      const autopilotSessions = Object.values(sessionsMap).map((session: any) => {
+        const sessionDate = new Date(session.createdAt);
+
+        // Build tasks from sequence steps for each lead in the session
+        const tasks: any[] = [];
+
+        // For each lead in session, create tasks based on sequence steps
+        for (let leadIdx = 0; leadIdx < Math.min(session.leadIds.length, 5); leadIdx++) {
+          // Get lead info
+          const leadInfo = scheduledLeads.find((l: any) => l.id === session.leadIds[leadIdx]);
+          const leadName = leadInfo ? [leadInfo.firstName, leadInfo.lastName].filter(Boolean).join(' ') : `Lead ${leadIdx + 1}`;
+
+          // Each sequence step creates a task
+          for (let stepIdx = 0; stepIdx < enabledSteps.length; stepIdx++) {
+            const step = enabledSteps[stepIdx];
+            const stepDay = step.day || (stepIdx + 1);
+
+            // Calculate scheduled time based on autopilot time setting
+            const scheduledDate = new Date(sessionDate);
+            scheduledDate.setDate(scheduledDate.getDate() + stepDay - 1);
+            scheduledDate.setHours(autopilotHour, autopilotMinute, 0, 0);
+
+            // Get actions from step
+            const actions: string[] = [];
+            if (step.actions?.like) actions.push('like');
+            if (step.actions?.comment) actions.push('comment');
+            if (step.actions?.connect) actions.push('connect');
+
+            // Get target post info
+            const targetPost = leadInfo?.posts?.[stepIdx];
+
+            // Get AI comment if available
+            const aiComment = targetPost?.commentText;
+            const aiCommentPreview = aiComment ? (aiComment.length > 40 ? aiComment.substring(0, 40) + '...' : aiComment) : null;
+
+            tasks.push({
+              id: `${session.id}-lead${leadIdx}-step${stepIdx}`,
+              day: stepDay,
+              leadIndex: leadIdx + 1,
+              leadName: leadName,
+              action: actions.join('/') || 'engagement',
+              scheduledFor: scheduledDate.toISOString(),
+              status: scheduledDate < now ? 'due' : 'pending',
+              // Full text for hover
+              targetPostFull: targetPost?.postText || null,
+              targetPostPreview: targetPost?.postText ? (targetPost.postText.length > 50 ? targetPost.postText.substring(0, 50) + '...' : targetPost.postText) : null,
+              // AI comment
+              aiCommentFull: aiComment,
+              aiCommentPreview: aiCommentPreview,
+              postDate: targetPost?.postDate,
+            });
+          }
+        }
+
+        // Sort tasks by day
+        tasks.sort((a, b) => a.day - b.day);
+
+        session.tasks = tasks;
+        return session;
+      });
+
+      return NextResponse.json({
+        success: true,
+        executionHistory,
+        autopilotSessions,
+        upcomingTasks,
+      });
+    }
 
     const where: any = { userId: payload.userId };
     if (status && status !== 'all') where.status = status;
@@ -202,16 +397,70 @@ export async function POST(request: NextRequest) {
       });
       const context = businessContext || settings?.businessContext || '';
 
-      // Get leads with their posts
+      // Get leads - filter those that need posts fetched
       const leads = await (prisma as any).warmLead.findMany({
         where: { id: { in: leadIds }, userId: payload.userId },
         include: { posts: { orderBy: { postDate: 'desc' }, take: postsPerLead } },
       });
 
+      // Identify leads that need posts fetched
+      const leadsNeedingPosts = leads.filter((l: any) => !l.postsFetched || !l.posts || l.posts.length === 0);
+      const leadsWithPosts = leads.filter((l: any) => l.postsFetched && l.posts && l.posts.length > 0);
+
+      // Queue post fetching command for extension if there are leads needing posts
+      let postsFetchQueued = false;
+      if (leadsNeedingPosts.length > 0) {
+        const fetchData = leadsNeedingPosts.map((l: any) => ({
+          leadId: l.id,
+          vanityId: l.vanityId || l.linkedinUrl.match(/linkedin\.com\/in\/([^/?#]+)/i)?.[1],
+        })).filter((b: any) => b.vanityId);
+
+        if (fetchData.length > 0) {
+          // Create fetch_lead_posts_bulk command for extension
+          await prisma.activity.create({
+            data: {
+              userId: payload.userId,
+              type: 'extension_command_fetch_lead_posts_bulk',
+              metadata: {
+                command: 'fetch_lead_posts_bulk',
+                data: { leads: fetchData },
+                status: 'pending',
+                createdAt: new Date().toISOString(),
+              },
+            },
+          });
+          postsFetchQueued = true;
+        }
+      }
+
+      // If no leads have posts yet, return early with fetch queued
+      // The frontend will poll and trigger AI generation after posts are fetched
+      if (leadsWithPosts.length === 0) {
+        // Update leads to scheduled type but mark as pending posts
+        await (prisma as any).warmLead.updateMany({
+          where: { id: { in: leadIds }, userId: payload.userId },
+          data: {
+            engagementType: 'scheduled',
+            status: 'fetched',
+            nextActionDate: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+            currentSequenceStep: 0,
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          postsFetchQueued: true,
+          leadsNeedingPosts: leadsNeedingPosts.length,
+          commentsGenerated: 0,
+          leadsScheduled: leadIds.length,
+          message: 'Posts fetch queued. AI comments will be generated after posts are fetched.',
+        });
+      }
+
       let commentsGenerated = 0;
 
       // Generate AI comments for each lead's posts
-      for (const lead of leads) {
+      for (const lead of leadsWithPosts) {
         const posts = lead.posts || [];
         for (const post of posts) {
           if (!post.postText || post.commentText) continue; // Skip if no text or already has comment
@@ -265,6 +514,165 @@ export async function POST(request: NextRequest) {
         success: true,
         commentsGenerated,
         leadsScheduled: leadIds.length,
+        postsFetchQueued,
+      });
+    }
+
+    // Generate AI comments for scheduled leads (after posts are fetched)
+    if (action === 'generate_for_scheduled') {
+      const { postsPerLead = 3 } = body;
+
+      // Get all scheduled leads that have posts but no AI comments
+      const scheduledLeads = await (prisma as any).warmLead.findMany({
+        where: {
+          userId: payload.userId,
+          engagementType: 'scheduled',
+          postsFetched: true,
+        },
+        include: {
+          posts: {
+            where: {
+              postText: { not: '' },
+              commentText: null,
+            },
+            orderBy: { postDate: 'desc' },
+            take: postsPerLead,
+          },
+        },
+      });
+
+      const settings = await (prisma as any).warmLeadsSettings.findUnique({
+        where: { userId: payload.userId },
+      });
+      const context = settings?.businessContext || '';
+
+      let totalCommentsGenerated = 0;
+
+      // Generate AI comments for each lead's posts
+      for (const lead of scheduledLeads) {
+        const posts = lead.posts || [];
+        for (const post of posts) {
+          if (!post.postText || post.commentText) continue;
+
+          try {
+            const aiRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/ai/generate-comment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                postText: post.postText,
+                authorName: lead.firstName || '',
+                goal: 'AddValue',
+                tone: 'Professional',
+                commentLength: 'Short',
+                userBackground: context,
+              }),
+            });
+            const aiData = await aiRes.json();
+
+            if (aiData.success && aiData.content) {
+              await (prisma as any).warmLeadPost.update({
+                where: { id: post.id },
+                data: { commentText: aiData.content },
+              });
+              totalCommentsGenerated++;
+            }
+          } catch (aiErr) {
+            console.error('AI comment generation error:', aiErr);
+          }
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        commentsGenerated: totalCommentsGenerated,
+        leadsProcessed: scheduledLeads.length,
+      });
+    }
+
+    // Get autopilot processing status
+    if (action === 'autopilot_status') {
+      const scheduledLeads = await (prisma as any).warmLead.findMany({
+        where: {
+          userId: payload.userId,
+          engagementType: 'scheduled',
+        },
+        select: {
+          id: true,
+          postsFetched: true,
+          status: true,
+        },
+      });
+
+      const leadsNeedingPosts = scheduledLeads.filter((l: any) => !l.postsFetched);
+      const leadsWithPosts = scheduledLeads.filter((l: any) => l.postsFetched);
+
+      // Check for pending post fetch commands (recent ones)
+      const pendingFetchCommands = await prisma.activity.count({
+        where: {
+          userId: payload.userId,
+          type: 'extension_command_fetch_lead_posts_bulk',
+          timestamp: { gte: new Date(Date.now() - 30 * 60 * 1000) }, // Last 30 min
+        },
+      });
+
+      // Get posts with AI comments
+      const postsWithComments = await (prisma as any).warmLeadPost.count({
+        where: {
+          userId: payload.userId,
+          commentText: { not: null },
+        },
+      });
+
+      // Get posts without AI comments
+      const postsWithoutComments = await (prisma as any).warmLeadPost.count({
+        where: {
+          userId: payload.userId,
+          commentText: null,
+          postText: { not: '' },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        totalScheduledLeads: scheduledLeads.length,
+        leadsNeedingPosts: leadsNeedingPosts.length,
+        leadsWithPosts: leadsWithPosts.length,
+        pendingFetchCommands,
+        postsWithComments,
+        postsWithoutComments,
+        isProcessing: pendingFetchCommands > 0 || postsWithoutComments > 0,
+      });
+    }
+
+    // Cancel/stop autopilot processing for leads
+    if (action === 'autopilot_cancel') {
+      const { leadIds } = body;
+
+      // Delete pending fetch commands
+      if (leadIds && Array.isArray(leadIds)) {
+        // Get lead vanityIds
+        const leads = await (prisma as any).warmLead.findMany({
+          where: { id: { in: leadIds }, userId: payload.userId },
+          select: { vanityId: true },
+        });
+        const vanityIds = leads.map((l: any) => l.vanityId).filter(Boolean);
+
+        // Delete recent pending commands for these leads (simple approach)
+        await prisma.activity.deleteMany({
+          where: {
+            userId: payload.userId,
+            type: 'extension_command_fetch_lead_posts_bulk',
+            timestamp: { gte: new Date(Date.now() - 30 * 60 * 1000) }, // Last 30 min
+          },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Autopilot processing stopped',
       });
     }
 

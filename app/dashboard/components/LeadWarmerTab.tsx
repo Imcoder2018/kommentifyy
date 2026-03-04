@@ -33,6 +33,7 @@ interface Post {
   comments?: number;
   isLiked?: boolean;
   isCommented?: boolean;
+  commentText?: string;
 }
 
 interface WarmSettings {
@@ -207,6 +208,8 @@ export default function LeadWarmerTab(props: Props) {
   const [showInstantModal, setShowInstantModal] = useState(false);
   const [instantConfig, setInstantConfig] = useState({ postTarget: 'recent_1', like: true, comment: true });
   const [bulkEngaging, setBulkEngaging] = useState(false);
+  const [autopilotGenerating, setAutopilotGenerating] = useState(false);
+  const [autopilotProgress, setAutopilotProgress] = useState({ current: 0, total: 0, leadName: '' });
   const [campaignName, setCampaignName] = useState('My Warm Leads');
   const [businessContext, setBusinessContext] = useState('');
   const [profilesPerDay, setProfilesPerDay] = useState(20);
@@ -377,18 +380,48 @@ export default function LeadWarmerTab(props: Props) {
       const postTargetNum = parseInt(instantConfig.postTarget.replace('recent_', '').replace('random_', '').replace('all', '999'));
       const targetPosts = posts.slice(0, isNaN(postTargetNum) ? posts.length : postTargetNum);
 
+      // If comment is enabled, generate AI comments for each post first
+      const postsWithComments = await Promise.all(
+        targetPosts.map(async (p) => {
+          let commentText = null;
+          // Generate AI comment if enabled
+          if (instantConfig.comment && p.postText) {
+            try {
+              showToast?.(`Generating AI comment for post...`, 'info');
+              const aiRes = await apiPost('/api/ai/generate-comment', {
+                postText: p.postText || '',
+                authorName: lead.firstName || '',
+                goal: 'AddValue',
+                tone: 'Professional',
+                commentLength: 'Short',
+                userBackground: businessContext
+              });
+              if (aiRes.success && aiRes.content) {
+                commentText = aiRes.content;
+                console.log('Generated AI comment:', commentText);
+              }
+            } catch (aiErr) {
+              console.error('AI comment generation failed:', aiErr);
+            }
+          }
+          return {
+            postUrn: p.postUrn,
+            postId: p.id,
+            postText: p.postText,
+            enableLike: instantConfig.like,
+            enableComment: instantConfig.comment,
+            commentText: commentText,
+          };
+        })
+      );
+
       try {
         await apiPost('/api/extension/command', {
           command: 'warm_lead_bulk_engage',
           data: {
             leadId: lead.id,
             vanityId: lead.vanityId || lead.linkedinUrl.match(/linkedin\.com\/in\/([^/?#]+)/i)?.[1],
-            posts: targetPosts.map(p => ({
-              postUrn: p.postUrn,
-              postId: p.id,
-              enableLike: instantConfig.like,
-              enableComment: instantConfig.comment,
-            })),
+            posts: postsWithComments,
             businessContext,
             delayBetweenLeadsMs: 0,
           }
@@ -413,18 +446,43 @@ export default function LeadWarmerTab(props: Props) {
     loadLeads(true);
   };
 
-  // Schedule selected leads as autopilot
+  // Schedule selected leads as autopilot with AI comment generation
   const scheduleSelected = async () => {
     if (selectedLeads.size === 0) return;
-    const selectedArr = Array.from(selectedLeads);
+    const selectedArr = Array.from(selectedLeads).slice(0, 20); // Max 20 leads
+    const targetLeads = leads.filter(l => selectedArr.includes(l.id));
+    const leadsWithPosts = targetLeads.filter(l => l.posts && l.posts.length > 0);
+
+    // Start AI comment generation in background
+    setAutopilotGenerating(true);
+    setAutopilotProgress({ current: 0, total: leadsWithPosts.length, leadName: '' });
+
     try {
-      await apiPost('/api/warm-leads', {
-        action: 'bulk_update_type',
+      // Call backend to generate AI comments and schedule leads
+      const res = await apiPost('/api/warm-leads', {
+        action: 'setup_autopilot',
         leadIds: selectedArr,
-        engagementType: 'scheduled',
+        businessContext,
+        postsPerLead: 3, // Generate comments for up to 3 posts per lead
       });
-      showToast?.(`Added ${selectedArr.length} leads to Autopilot Sequence`, 'success');
-    } catch { showToast?.('Failed to update leads', 'error'); }
+
+      if (res.success) {
+        showToast?.(`Added ${selectedArr.length} leads to Autopilot Sequence. ${res.commentsGenerated} AI comments generated.`, 'success');
+      } else {
+        // Fallback: just update type
+        await apiPost('/api/warm-leads', {
+          action: 'bulk_update_type',
+          leadIds: selectedArr,
+          engagementType: 'scheduled',
+        });
+        showToast?.(`Added ${selectedArr.length} leads to Autopilot Sequence`, 'success');
+      }
+    } catch (err) {
+      console.error('Autopilot setup error:', err);
+      showToast?.('Failed to setup autopilot', 'error');
+    }
+
+    setAutopilotGenerating(false);
     setSelectedLeads(new Set());
     loadLeads(true);
   };
@@ -638,10 +696,25 @@ export default function LeadWarmerTab(props: Props) {
                 <button onClick={() => setShowInstantModal(true)} style={{ ...styles.btn('primary'), background: THEME.colors.warning }}>
                   <Zap size={14} /> Instant Warm Up
                 </button>
-                <button onClick={scheduleSelected} style={styles.btn('success')}>
-                  <Target size={14} /> Set on Autopilot
+                <button onClick={scheduleSelected} disabled={autopilotGenerating} style={styles.btn('success')}>
+                  <Target size={14} /> {autopilotGenerating ? 'Setting up...' : 'Set on Autopilot'}
                 </button>
               </div>
+              {/* Autopilot generation progress */}
+              {autopilotGenerating && (
+                <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <Loader2 size={14} className="animate-spin" color={THEME.colors.success} />
+                    <span style={{ fontSize: '13px', color: THEME.colors.success, fontWeight: 600 }}>Generating AI Comments...</span>
+                  </div>
+                  <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: '100%', background: THEME.colors.success, borderRadius: '3px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  </div>
+                  <p style={{ fontSize: '11px', color: THEME.colors.text.secondary, margin: '8px 0 0 0' }}>
+                    Generating AI comments for up to 20 leads. This runs in the background even if you close this page.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -773,9 +846,19 @@ export default function LeadWarmerTab(props: Props) {
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageCircle size={12} /> {post.comments}</span>
                                       </div>
                                     </div>
-                                    <p style={{ fontSize: '13px', color: THEME.colors.text.primary, lineHeight: '1.5', height: '60px', overflow: 'hidden', marginBottom: '16px', wordBreak: 'break-word' }}>
+                                    <p style={{ fontSize: '13px', color: THEME.colors.text.primary, lineHeight: '1.5', height: '60px', overflow: 'hidden', marginBottom: '8px', wordBreak: 'break-word' }}>
                                       {post.postText || 'No text content'}
                                     </p>
+                                    {/* Show generated AI comment */}
+                                    {post.commentText && (
+                                      <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                          <Wand2 size={12} color={THEME.colors.success} />
+                                          <span style={{ fontSize: '11px', color: THEME.colors.success, fontWeight: 600 }}>AI Comment Generated</span>
+                                        </div>
+                                        <p style={{ fontSize: '12px', color: THEME.colors.text.primary, margin: 0, lineHeight: '1.4' }}>{post.commentText}</p>
+                                      </div>
+                                    )}
                                     <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
                                       <button onClick={() => engage(lead, post, 'like')} disabled={engagingPostId === post.id || post.isLiked} style={{ ...styles.btn(post.isLiked ? 'ghost' : 'secondary'), padding: '6px 12px', fontSize: '12px', flex: 1, color: post.isLiked ? THEME.colors.linkedin : '' }}>
                                         <ThumbsUp size={14} /> {post.isLiked ? 'Liked' : 'Like'}

@@ -4983,6 +4983,160 @@ async function pollCommandsDirectly() {
                     }
                 }
 
+                // --- warm_lead_bulk_engage: Like and/or comment on multiple posts for a lead ---
+                else if (cmd.command === 'warm_lead_bulk_engage') {
+                    console.log('📦 POLL-ALARM: Executing warm_lead_bulk_engage...');
+                    let apiTab = null;
+                    try {
+                        await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' }) });
+
+                        const { posts = [], businessContext = '', delayBetweenLeadsMs = 0 } = cmd.data || {};
+
+                        if (!posts.length) throw new Error('No posts provided');
+
+                        console.log(`📦 POLL-ALARM: Processing ${posts.length} posts with delay ${delayBetweenLeadsMs}ms`);
+
+                        // Try to get existing LinkedIn tab
+                        try {
+                            const tabs = await chrome.tabs.query({ url: '*://*.linkedin.com/*' });
+                            if (tabs.length > 0) {
+                                apiTab = tabs[0];
+                                console.log('📦 POLL-ALARM: Reusing existing LinkedIn tab:', apiTab.id);
+                            }
+                        } catch (e) { console.log('📦 POLL-ALARM: Could not query tabs:', e.message); }
+
+                        if (!apiTab) {
+                            apiTab = await chrome.tabs.create({ url: 'https://www.linkedin.com/feed/', active: false });
+                            globalThis._commandLinkedInTabs.add(apiTab.id);
+                            await new Promise(r => setTimeout(r, 3000));
+                        }
+
+                        const results = [];
+                        for (let i = 0; i < posts.length; i++) {
+                            const post = posts[i];
+                            const { postUrn, postId, enableLike, enableComment, commentText } = post;
+
+                            console.log(`📦 POLL-ALARM: Processing post ${i + 1}/${posts.length}: ${postUrn}, like=${enableLike}, comment=${enableComment}`);
+
+                            // Extract activity ID from URN
+                            let activityId = '';
+                            if (postUrn) {
+                                const match = postUrn.match(/(\d{19})/);
+                                if (match) activityId = match[1];
+                            }
+                            if (!activityId) {
+                                console.warn(`📦 POLL-ALARM: Could not extract activity ID from ${postUrn}`);
+                                results.push({ postUrn, success: false, error: 'Could not extract activity ID' });
+                                continue;
+                            }
+
+                            const activityUrn = `urn:li:activity:${activityId}`;
+
+                            try {
+                                const postResults = { liked: false, commented: false, method: 'voyager' };
+
+                                // Do like first via Voyager API
+                                if (enableLike) {
+                                    try {
+                                        const likeResult = await executeVoyagerLike(apiTab.id, activityUrn);
+                                        postResults.liked = likeResult?.success === true;
+                                        console.log(`📦 POLL-ALARM: Like result for ${activityUrn}:`, likeResult);
+                                    } catch (likeErr) {
+                                        console.error(`📦 POLL-ALARM: Like error:`, likeErr.message);
+                                        // Try DOM fallback
+                                        try {
+                                            const domLikeResult = await chrome.scripting.executeScript({
+                                                target: { tabId: apiTab.id },
+                                                func: async () => {
+                                                    const btns = Array.from(document.querySelectorAll('button'));
+                                                    const btn = btns.find(b => b.getAttribute('aria-label')?.toLowerCase().includes('like'));
+                                                    if (btn) { btn.click(); return { success: true }; }
+                                                    return { success: false };
+                                                }
+                                            });
+                                            postResults.liked = domLikeResult?.[0]?.result?.success === true;
+                                        } catch (e) { /* ignore DOM fallback */ }
+                                    }
+                                    await new Promise(r => setTimeout(r, 800));
+                                }
+
+                                // Do comment via Voyager API
+                                if (enableComment) {
+                                    // Use provided comment text or generate a simple one
+                                    const finalCommentText = commentText || 'Great post! Thanks for sharing these insights.';
+                                    try {
+                                        const commentResult = await executeVoyagerComment(apiTab.id, activityUrn, finalCommentText);
+                                        postResults.commented = commentResult?.success === true;
+                                        console.log(`📦 POLL-ALARM: Comment result for ${activityUrn}:`, commentResult);
+                                    } catch (commentErr) {
+                                        console.error(`📦 POLL-ALARM: Comment error:`, commentErr.message);
+                                        // Try DOM fallback
+                                        try {
+                                            const domCommentResult = await chrome.scripting.executeScript({
+                                                target: { tabId: apiTab.id },
+                                                func: async (text) => {
+                                                    const btns = Array.from(document.querySelectorAll('button'));
+                                                    // Click comment button
+                                                    const cmtBtn = btns.find(b => b.getAttribute('aria-label')?.toLowerCase().includes('comment'));
+                                                    if (cmtBtn) {
+                                                        cmtBtn.click();
+                                                        await new Promise(r => setTimeout(r, 1500));
+                                                        // Find and fill comment box
+                                                        const inputs = Array.from(document.querySelectorAll('textarea, div[contenteditable="true"]'));
+                                                        const input = inputs.find(el => el.getAttribute('aria-label')?.toLowerCase().includes('comment') || el.innerHTML === '');
+                                                        if (input) {
+                                                            input.focus();
+                                                            input.innerHTML = text;
+                                                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                                                            await new Promise(r => setTimeout(r, 500));
+                                                            // Click submit
+                                                            const submitBtns = Array.from(document.querySelectorAll('button'));
+                                                            const submit = submitBtns.find(b => b.getAttribute('aria-label')?.toLowerCase().includes('post') || b.textContent?.toLowerCase().includes('post'));
+                                                            if (submit) { submit.click(); return { success: true }; }
+                                                        }
+                                                    }
+                                                    return { success: false };
+                                                },
+                                                args: [finalCommentText]
+                                            });
+                                            postResults.commented = domCommentResult?.[0]?.result?.success === true;
+                                        } catch (e) { /* ignore DOM fallback */ }
+                                    }
+                                    await new Promise(r => setTimeout(r, 1000));
+                                }
+
+                                results.push({ postUrn, success: postResults.liked || postResults.commented, ...postResults });
+                                console.log(`📦 POLL-ALARM: Post ${postUrn} result:`, postResults);
+
+                            } catch (postError) {
+                                console.error(`📦 POLL-ALARM: Error processing post ${postUrn}:`, postError);
+                                results.push({ postUrn, success: false, error: postError.message });
+                            }
+
+                            // Delay between posts
+                            if (i < posts.length - 1 && delayBetweenLeadsMs > 0) {
+                                await new Promise(r => setTimeout(r, delayBetweenLeadsMs));
+                            }
+                        }
+
+                        const successCount = results.filter(r => r.success).length;
+                        console.log(`✅ POLL-ALARM: warm_lead_bulk_engage completed: ${successCount}/${posts.length} successful`);
+
+                        await fetch(`${apiUrl}/api/extension/command`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { results, successCount, total: posts.length } })
+                        });
+
+                    } catch (e) {
+                        console.error('❌ POLL-ALARM: warm_lead_bulk_engage failed:', e);
+                        try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
+                    } finally {
+                        if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }
+                        globalThis._processingCommandIds.delete(cmd.id);
+                    }
+                }
+
                 // --- process_pending_tasks: Execute pending tasks queue (called on extension startup) ---
                 else if (cmd.command === 'process_pending_tasks') {
                     console.log('⏰ POLL-ALARM: Processing pending tasks queue...');
@@ -7687,6 +7841,85 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 console.log(`✅ BACKGROUND: engage_lead_post ${scriptResult?.success ? 'completed' : 'failed'}`);
                             } catch (e) {
                                 console.error('❌ BACKGROUND: engage_lead_post failed:', e);
+                                try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
+                            } finally {
+                                if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }
+                                globalThis._processingCommandIds.delete(cmd.id);
+                            }
+                        }
+
+                        // --- warm_lead_bulk_engage ---
+                        else if (cmd.command === 'warm_lead_bulk_engage') {
+                            console.log('📦 BACKGROUND: Executing warm_lead_bulk_engage...');
+                            let apiTab = null;
+                            try {
+                                const { posts = [], businessContext = '', delayBetweenLeadsMs = 0 } = cmd.data || {};
+                                if (!posts.length) throw new Error('No posts provided');
+
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'in_progress' })
+                                });
+
+                                // Get LinkedIn tab
+                                apiTab = await getLinkedInTab();
+                                await new Promise(r => setTimeout(r, 2000));
+
+                                const results = [];
+                                for (let i = 0; i < posts.length; i++) {
+                                    const post = posts[i];
+                                    const { postUrn, enableLike, enableComment, commentText } = post;
+
+                                    let activityId = '';
+                                    if (postUrn) {
+                                        const match = postUrn.match(/(\d{19})/);
+                                        if (match) activityId = match[1];
+                                    }
+                                    if (!activityId) {
+                                        results.push({ postUrn, success: false, error: 'Could not extract activity ID' });
+                                        continue;
+                                    }
+
+                                    const activityUrn = `urn:li:activity:${activityId}`;
+                                    const postResults = { liked: false, commented: false, method: 'voyager' };
+
+                                    // Like via Voyager API
+                                    if (enableLike) {
+                                        try {
+                                            const likeResult = await executeVoyagerLike(apiTab.id, activityUrn);
+                                            postResults.liked = likeResult?.success === true;
+                                        } catch (e) { console.log('📦 BACKGROUND: Like fallback needed'); }
+                                        await new Promise(r => setTimeout(r, 800));
+                                    }
+
+                                    // Comment via Voyager API
+                                    if (enableComment) {
+                                        const finalCommentText = commentText || 'Great post! Thanks for sharing these insights.';
+                                        try {
+                                            const commentResult = await executeVoyagerComment(apiTab.id, activityUrn, finalCommentText);
+                                            postResults.commented = commentResult?.success === true;
+                                        } catch (e) { console.log('📦 BACKGROUND: Comment fallback needed'); }
+                                        await new Promise(r => setTimeout(r, 1000));
+                                    }
+
+                                    results.push({ postUrn, success: postResults.liked || postResults.commented, ...postResults });
+
+                                    if (i < posts.length - 1 && delayBetweenLeadsMs > 0) {
+                                        await new Promise(r => setTimeout(r, delayBetweenLeadsMs));
+                                    }
+                                }
+
+                                const successCount = results.filter(r => r.success).length;
+                                console.log(`✅ BACKGROUND: warm_lead_bulk_engage completed: ${successCount}/${posts.length}`);
+
+                                await fetch(`${apiUrl}/api/extension/command`, {
+                                    method: 'PUT',
+                                    headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ commandId: cmd.id, status: 'completed', data: { results, successCount, total: posts.length } })
+                                });
+                            } catch (e) {
+                                console.error('❌ BACKGROUND: warm_lead_bulk_engage failed:', e);
                                 try { await fetch(`${apiUrl}/api/extension/command`, { method: 'PUT', headers: { 'Authorization': `Bearer ${await getFreshToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ commandId: cmd.id, status: 'failed', data: { error: e.message } }) }); } catch (x) { }
                             } finally {
                                 if (apiTab) { try { await chrome.tabs.remove(apiTab.id); } catch (e) { } globalThis._commandLinkedInTabs.delete(apiTab.id); }

@@ -121,6 +121,153 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, settings });
     }
 
+    // Generate AI comments for lead posts (when setting on autopilot)
+    if (action === 'generate_ai_comments') {
+      const { leadIds, businessContext, postsPerLead = 3 } = body;
+      if (!leadIds || !Array.isArray(leadIds)) {
+        return NextResponse.json({ success: false, error: 'leadIds array required' }, { status: 400 });
+      }
+
+      // Get settings for business context
+      const settings = await (prisma as any).warmLeadsSettings.findUnique({
+        where: { userId: payload.userId },
+      });
+      const context = businessContext || settings?.businessContext || '';
+
+      // Get leads with their posts
+      const leads = await (prisma as any).warmLead.findMany({
+        where: { id: { in: leadIds }, userId: payload.userId },
+        include: { posts: { orderBy: { postDate: 'desc' }, take: postsPerLead } },
+      });
+
+      const results = [];
+      // For each lead and their posts, generate AI comments
+      for (const lead of leads) {
+        const posts = lead.posts || [];
+        for (const post of posts) {
+          if (!post.postText || post.commentText) continue; // Skip if no text or already has comment
+
+          try {
+            // Call AI generate comment API
+            const aiRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/ai/generate-comment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                postText: post.postText,
+                authorName: lead.firstName || '',
+                goal: 'AddValue',
+                tone: 'Professional',
+                commentLength: 'Short',
+                userBackground: context,
+              }),
+            });
+            const aiData = await aiRes.json();
+
+            if (aiData.success && aiData.content) {
+              // Store the generated comment in the post
+              await (prisma as any).warmLeadPost.update({
+                where: { id: post.id },
+                data: { commentText: aiData.content },
+              });
+              results.push({ postId: post.id, leadId: lead.id, success: true, comment: aiData.content });
+            }
+          } catch (aiErr) {
+            console.error('AI comment generation error:', aiErr);
+            results.push({ postId: post.id, leadId: lead.id, success: false, error: 'AI generation failed' });
+          }
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        generated: results.filter((r: any) => r.success).length,
+        total: results.length,
+        results,
+      });
+    }
+
+    // Setup autopilot: generate AI comments and schedule leads
+    if (action === 'setup_autopilot') {
+      const { leadIds, businessContext, postsPerLead = 3 } = body;
+      if (!leadIds || !Array.isArray(leadIds)) {
+        return NextResponse.json({ success: false, error: 'leadIds array required' }, { status: 400 });
+      }
+
+      // Get settings for business context and sequence
+      const settings = await (prisma as any).warmLeadsSettings.findUnique({
+        where: { userId: payload.userId },
+      });
+      const context = businessContext || settings?.businessContext || '';
+
+      // Get leads with their posts
+      const leads = await (prisma as any).warmLead.findMany({
+        where: { id: { in: leadIds }, userId: payload.userId },
+        include: { posts: { orderBy: { postDate: 'desc' }, take: postsPerLead } },
+      });
+
+      let commentsGenerated = 0;
+
+      // Generate AI comments for each lead's posts
+      for (const lead of leads) {
+        const posts = lead.posts || [];
+        for (const post of posts) {
+          if (!post.postText || post.commentText) continue; // Skip if no text or already has comment
+
+          try {
+            // Call AI generate comment API
+            const aiRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/ai/generate-comment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                postText: post.postText,
+                authorName: lead.firstName || '',
+                goal: 'AddValue',
+                tone: 'Professional',
+                commentLength: 'Short',
+                userBackground: context,
+              }),
+            });
+            const aiData = await aiRes.json();
+
+            if (aiData.success && aiData.content) {
+              // Store the generated comment in the post
+              await (prisma as any).warmLeadPost.update({
+                where: { id: post.id },
+                data: { commentText: aiData.content },
+              });
+              commentsGenerated++;
+            }
+          } catch (aiErr) {
+            console.error('AI comment generation error:', aiErr);
+          }
+        }
+      }
+
+      // Update leads to scheduled type and set next action date
+      const now = new Date();
+      await (prisma as any).warmLead.updateMany({
+        where: { id: { in: leadIds }, userId: payload.userId },
+        data: {
+          engagementType: 'scheduled',
+          status: 'engaged',
+          nextActionDate: now,
+          currentSequenceStep: 0,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        commentsGenerated,
+        leadsScheduled: leadIds.length,
+      });
+    }
+
     // Import leads
     if (!leads || !Array.isArray(leads) || leads.length === 0) {
       return NextResponse.json({ success: false, error: 'No leads provided' }, { status: 400 });

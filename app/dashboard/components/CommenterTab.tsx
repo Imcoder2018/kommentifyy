@@ -23,6 +23,16 @@ export default function CommenterTab(props: any) {
     const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
     const [pendingCommentData, setPendingCommentData] = useState<{ postId: string; post: any } | null>(null);
     const [overlaySettings, setOverlaySettings] = useState<{ mode: string; goal?: string; tone?: string; length?: string; style?: string; reasoning?: string } | null>(null);
+    const [autoLikeEnabled, setAutoLikeEnabled] = useState(false);
+    const [autoCommentEnabled, setAutoCommentEnabled] = useState(false);
+    const [autoEngaging, setAutoEngaging] = useState(false);
+    const [engagementProgress, setEngagementProgress] = useState<{
+        phase: 'idle' | 'generating' | 'engaging';
+        total: number;
+        processed: number;
+        currentComment: string;
+    }>({ phase: 'idle', total: 0, processed: 0, currentComment: '' });
+    const [engagementDelay, setEngagementDelay] = useState(10000); // Default 10 seconds
 
     useEffect(() => {
         loadCapturedPosts();
@@ -39,6 +49,95 @@ export default function CommenterTab(props: any) {
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Listen for task completion events and auto-trigger engagement
+    useEffect(() => {
+        let pollingInterval: NodeJS.Timeout | null = null;
+        let lastCheckTime = 0;
+
+        const handleTaskCompletion = async () => {
+            if (!autoLikeEnabled && !autoCommentEnabled) return;
+            if (autoEngaging) return; // Already engaging
+
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+
+            try {
+                // Check if any capture tasks just completed (only check once per trigger)
+                const now = Date.now();
+                if (now - lastCheckTime < 5000) return; // Only check once, not repeatedly
+                lastCheckTime = now;
+
+                const res = await fetch('/api/extension/command', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success && data.commands) {
+                    // Find recently completed capture commands
+                    const captureCommands = data.commands.filter((cmd: any) =>
+                        ['linkedin_get_feed_api', 'linkedin_search_posts_api', 'linkedin_get_trending_api'].includes(cmd.command) &&
+                        cmd.status === 'completed'
+                    );
+
+                    // Check if any completed in the last 15 seconds
+                    const recentCapture = captureCommands.find((cmd: any) => {
+                        const cmdTime = new Date(cmd.createdAt).getTime();
+                        return (now - cmdTime) < 15000; // Completed within last 15 seconds
+                    });
+
+                    if (recentCapture) {
+                        console.log('📝 COMMENTER: Capture task completed, refreshing and auto-engaging...');
+                        showToast('Capture complete! Refreshing posts and auto-engaging...', 'info');
+
+                        // Small delay to let posts be saved to DB
+                        await new Promise(r => setTimeout(r, 2000));
+
+                        // Refresh posts
+                        await loadCapturedPosts();
+
+                        // Get fresh posts and trigger auto-engage
+                        const minLikes = commenterCfg?.minLikes || 0;
+                        const minComments = commenterCfg?.minComments || 0;
+
+                        const freshRes = await fetch(`/api/scraped-posts?page=1&limit=20&sortBy=scrapedAt&sortOrder=desc`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const freshData = await freshRes.json();
+
+                        if (freshData.success && freshData.posts?.length > 0) {
+                            // Filter qualifying posts
+                            const qualifyingPosts = freshData.posts.filter((p: any) =>
+                                (p.likes || 0) >= minLikes && (p.comments || 0) >= minComments
+                            );
+
+                            if (qualifyingPosts.length > 0) {
+                                showToast(`Found ${qualifyingPosts.length} qualifying posts. Starting auto-engage...`, 'info');
+                                await autoEngageWithPosts(qualifyingPosts);
+                            } else {
+                                showToast('No posts matching filters found', 'warning');
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking task completion:', e);
+            }
+        };
+
+        // Listen for task created event
+        const handleTaskCreated = () => {
+            // Check for task completion after a delay
+            setTimeout(handleTaskCompletion, 5000);
+        };
+
+        window.addEventListener('kommentify-task-created', handleTaskCreated);
+
+        return () => {
+            window.removeEventListener('kommentify-task-created', handleTaskCreated);
+            if (pollingInterval) clearInterval(pollingInterval);
+        };
+    }, [autoLikeEnabled, autoCommentEnabled, autoEngaging, commenterCfg]);
 
     const loadCapturedPosts = async () => {
         setCapturedLoading(true);
@@ -81,6 +180,186 @@ export default function CommenterTab(props: any) {
         if (activityMatch) return `urn:li:activity:${activityMatch[1]}`;
         // Return the original URL if no URN found - the extension may handle it
         return postUrl;
+    };
+
+    // Auto-engage with captured posts using BULK command (single task, single LinkedIn tab)
+    const autoEngageWithPosts = async (posts: any[]) => {
+        console.log('📝 COMMENTER: autoEngageWithPosts called with', posts.length, 'posts, autoLikeEnabled:', autoLikeEnabled, 'autoCommentEnabled:', autoCommentEnabled);
+        if (!autoLikeEnabled && !autoCommentEnabled) return;
+        if (posts.length === 0) return;
+
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        // Filter out already engaged posts (check actionStates)
+        const unengagedPosts = posts.filter(post => {
+            const postId = post.id || Math.random().toString(36).substr(2, 9);
+            const likeDone = actionStates[`${postId}-like`] === 'success';
+            const commentDone = actionStates[`${postId}-comment`] === 'success';
+
+            // Skip if already liked (when autoLike enabled) AND already commented (when autoComment enabled)
+            if (autoLikeEnabled && autoCommentEnabled) {
+                return !(likeDone && commentDone);
+            }
+            if (autoLikeEnabled) {
+                return !likeDone;
+            }
+            if (autoCommentEnabled) {
+                return !commentDone;
+            }
+            return true;
+        });
+
+        if (unengagedPosts.length === 0) {
+            showToast('All posts already engaged!', 'info');
+            return;
+        }
+
+        if (unengagedPosts.length < posts.length) {
+            showToast(`Skipping ${posts.length - unengagedPosts.length} already engaged posts`, 'info');
+        }
+
+        setAutoEngaging(true);
+        setEngagementProgress({ phase: 'generating', total: unengagedPosts.length, processed: 0, currentComment: '' });
+        showToast(`Preparing bulk engagement for ${unengagedPosts.length} posts...`, 'info');
+
+        try {
+            // Step 1: Generate AI comments for all posts first (if enabled)
+            const postsWithComments = [];
+            for (let i = 0; i < unengagedPosts.length; i++) {
+                const post = unengagedPosts[i];
+                const activityUrn = extractUrnFromUrl(post.postUrl);
+                let commentText = '';
+
+                // Generate AI comment if enabled
+                if (autoCommentEnabled) {
+                    try {
+                        setEngagementProgress(prev => ({ ...prev, phase: 'generating', processed: i, currentComment: 'Analyzing post...' }));
+                        const commentRes = await fetch('/api/ai/generate-comment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({
+                                postText: post.postContent || '',
+                                authorName: post.authorName || '',
+                                goal: csGoal || 'AddValue',
+                                tone: csTone || 'Friendly',
+                                commentLength: csLength || 'Short',
+                                commentStyle: csStyle || 'direct',
+                                userExpertise: csExpertise || '',
+                                userBackground: csBackground || '',
+                                model: csModel || '',
+                            })
+                        });
+                        const commentData = await commentRes.json();
+                        if (commentData.success && commentData.content) {
+                            commentText = commentData.content;
+                            // Store AI comment for display
+                            setAiGeneratedComments(prev => ({ ...prev, [post.id || i]: commentText }));
+                            setEngagementProgress(prev => ({ ...prev, currentComment: commentText }));
+                        }
+                    } catch (e) {
+                        console.error('Failed to generate comment for post:', post.id, e);
+                    }
+                }
+
+                postsWithComments.push({
+                    postUrn: activityUrn,
+                    postId: post.id,
+                    enableLike: autoLikeEnabled,
+                    enableComment: autoCommentEnabled,
+                    commentText: commentText,
+                });
+            }
+
+            // Step 2: Send single BULK command to extension (processes all posts in ONE LinkedIn tab)
+            setEngagementProgress(prev => ({ ...prev, phase: 'engaging', processed: 0, currentComment: '' }));
+            const bulkRes = await fetch('/api/extension/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    command: 'warm_lead_bulk_engage',
+                    data: {
+                        posts: postsWithComments,
+                        delayBetweenLeadsMs: engagementDelay, // User-configurable delay between posts
+                    }
+                })
+            });
+
+            const bulkData = await bulkRes.json();
+
+            if (bulkData.success) {
+                const { successCount, results } = bulkData.data || {};
+                showToast(`Bulk engagement task sent! Processing ${unengagedPosts.length} posts in single LinkedIn tab.`, 'success');
+
+                // Update UI with results
+                results?.forEach((result: any) => {
+                    if (result.postId) {
+                        if (result.liked) {
+                            setActionStates(prev => ({ ...prev, [`${result.postId}-like`]: 'success' }));
+                        }
+                        if (result.commented) {
+                            setActionStates(prev => ({ ...prev, [`${result.postId}-comment`]: 'success' }));
+                        }
+                    }
+                });
+
+                window.dispatchEvent(new CustomEvent('kommentify-task-created'));
+            } else {
+                showToast(bulkData.error || 'Failed to send bulk engagement', 'error');
+            }
+
+        } catch (e: any) {
+            console.error('Auto-engage error:', e);
+            showToast('Error: ' + e.message, 'error');
+        } finally {
+            setAutoEngaging(false);
+            setEngagementProgress({ phase: 'idle', total: 0, processed: 0, currentComment: '' });
+            // Refresh posts to show updated state
+            setTimeout(() => loadCapturedPosts(), 3000);
+        }
+    };
+
+    // Trigger auto-engage after capture - loads posts and starts bulk engagement
+    const triggerAutoEngageAfterCapture = async (token: string) => {
+        console.log('📝 COMMENTER: triggerAutoEngageAfterCapture called, autoLikeEnabled:', autoLikeEnabled, 'autoCommentEnabled:', autoCommentEnabled);
+
+        const minLikes = commenterCfg?.minLikes || 0;
+        const minComments = commenterCfg?.minComments || 0;
+        const count = commenterCfg?.totalPosts || 20;
+
+        console.log('📝 COMMENTER: Filters - minLikes:', minLikes, 'minComments:', minComments, 'count:', count);
+
+        try {
+            // Load captured posts with filters
+            const loadRes = await fetch(`/api/scraped-posts?page=1&limit=${count}&sortBy=scrapedAt&sortOrder=desc`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const loadData = await loadRes.json();
+            console.log('📝 COMMENTER: Loaded posts:', loadData.posts?.length || 0);
+
+            if (loadData.success && loadData.posts?.length > 0) {
+                // Filter by minLikes and minComments
+                const qualifyingPosts = loadData.posts.filter((p: any) =>
+                    (p.likes || 0) >= minLikes && (p.comments || 0) >= minComments
+                );
+
+                console.log('📝 COMMENTER: Qualifying posts:', qualifyingPosts.length);
+
+                if (qualifyingPosts.length > 0) {
+                    showToast(`Found ${qualifyingPosts.length} qualifying posts. Starting auto-engage...`, 'info');
+                    await autoEngageWithPosts(qualifyingPosts);
+                } else {
+                    console.log('📝 COMMENTER: No qualifying posts - showing warning');
+                    showToast('No posts matching your filters found', 'warning');
+                }
+            } else {
+                console.log('📝 COMMENTER: No posts loaded - showing warning');
+                showToast('No posts captured yet. Try again in a moment.', 'warning');
+            }
+        } catch (e: any) {
+            console.error('📝 COMMENTER: Error triggering auto-engage:', e);
+            showToast('Error: ' + e.message, 'error');
+        }
     };
 
     // Show settings overlay before generating comment
@@ -176,29 +455,9 @@ export default function CommenterTab(props: any) {
             const commentText = data.content;
             setAiGeneratedComments(prev => ({ ...prev, [postId]: commentText }));
 
-            // Step 2: Send comment to LinkedIn via extension command (uses Voyager API)
-            showToast('AI comment generated! Sending to LinkedIn...', 'info');
-
-            const activityUrn = extractUrnFromUrl(post.postUrl);
-            const commandRes = await fetch('/api/extension/command', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                    command: 'linkedin_comment_on_post',
-                    data: {
-                        activityUrn: activityUrn,
-                        commentText: commentText
-                    }
-                })
-            });
-
-            const commandData = await commandRes.json();
-            if (commandData.success) {
-                showToast('Comment sent to LinkedIn via Voyager API!', 'success');
-                window.dispatchEvent(new CustomEvent('kommentify-task-created'));
-            } else {
-                showToast('Failed to send comment: ' + (commandData.error || 'Unknown error'), 'error');
-            }
+            // DON'T auto-send - just show the generated comment for user to review and edit
+            // User can click "Send" button manually to send
+            showToast('AI comment generated! Edit and click Send to post.', 'success');
         } catch (e: any) {
             showToast('Error: ' + e.message, 'error');
         } finally {
@@ -376,7 +635,7 @@ export default function CommenterTab(props: any) {
                 <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading settings...</div>
             ) : commenterCfg && (<>
                 {/* Simplified Controls Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Filters</h4>
                         {[
@@ -401,12 +660,90 @@ export default function CommenterTab(props: any) {
                         <input type="number" min={1} max={50} value={commenterCfg.totalPosts || 20} onChange={e => setCommenterCfg((p: any) => ({ ...p, totalPosts: parseInt(e.target.value) || 20 }))}
                             style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
                     </div>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Auto-Engage</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <button onClick={() => setAutoLikeEnabled(!autoLikeEnabled)} disabled={autoEngaging}
+                                style={{
+                                    padding: '8px 12px', background: autoLikeEnabled ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'rgba(255,255,255,0.08)',
+                                    border: `1px solid ${autoLikeEnabled ? '#22c55e' : 'rgba(255,255,255,0.15)'}`,
+                                    borderRadius: '8px', color: 'white', fontSize: '12px', fontWeight: '600', cursor: autoEngaging ? 'wait' : 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: autoEngaging ? 0.7 : 1
+                                }}>
+                                {autoLikeEnabled ? '✓' : '○'} Auto-Like
+                            </button>
+                            <button onClick={() => setAutoCommentEnabled(!autoCommentEnabled)} disabled={autoEngaging}
+                                style={{
+                                    padding: '8px 12px', background: autoCommentEnabled ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255,255,255,0.08)',
+                                    border: `1px solid ${autoCommentEnabled ? '#a855f7' : 'rgba(255,255,255,0.15)'}`,
+                                    borderRadius: '8px', color: 'white', fontSize: '12px', fontWeight: '600', cursor: autoEngaging ? 'wait' : 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: autoEngaging ? 0.7 : 1
+                                }}>
+                                {autoCommentEnabled ? '✓' : '○'} Auto-Comment
+                            </button>
+                            {/* Delay Setting */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>Delay:</span>
+                                <input
+                                    type="number"
+                                    min={1000}
+                                    max={60000}
+                                    step={1000}
+                                    value={engagementDelay}
+                                    onChange={(e) => setEngagementDelay(parseInt(e.target.value) || 10000)}
+                                    disabled={autoEngaging}
+                                    style={{
+                                        width: '70px', padding: '6px', background: 'rgba(255,255,255,0.08)',
+                                        border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px',
+                                        color: 'white', fontSize: '11px', textAlign: 'center'
+                                    }}
+                                />
+                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>ms/post</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Progress Bar for Auto-Engage */}
+                {autoEngaging && (
+                    <div style={{ marginBottom: '12px', padding: '12px', background: 'rgba(168,85,247,0.1)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.3)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ color: '#c4b5fd', fontSize: '12px', fontWeight: '600' }}>
+                                {engagementProgress.phase === 'generating' ? '🤖 Generating AI Comments...' :
+                                 engagementProgress.phase === 'engaging' ? '🔥 Auto-Engaging Posts...' :
+                                 '⏳ Processing...'}
+                            </span>
+                            <span style={{ color: '#c4b5fd', fontSize: '12px' }}>
+                                {engagementProgress.processed}/{engagementProgress.total}
+                            </span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{
+                                width: `${(engagementProgress.processed / Math.max(engagementProgress.total, 1)) * 100}%`,
+                                height: '100%',
+                                background: 'linear-gradient(90deg, #a855f7, #7c3aed)',
+                                borderRadius: '4px',
+                                transition: 'width 0.3s ease'
+                            }} />
+                        </div>
+                        {engagementProgress.currentComment && (
+                            <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }}>
+                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '4px' }}>AI Comment:</div>
+                                <div style={{ color: 'white', fontSize: '11px', fontStyle: 'italic' }}>"{engagementProgress.currentComment.substring(0, 100)}..."</div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Quick Capture Buttons */}
                 <div style={{ background: 'linear-gradient(135deg, rgba(0,119,181,0.1), rgba(0,160,220,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.2)' }}>
                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Quick Capture
+                        {(autoLikeEnabled || autoCommentEnabled) && (
+                            <span style={{ marginLeft: 'auto', fontSize: '10px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', padding: '2px 8px', borderRadius: '10px' }}>
+                                Auto {autoLikeEnabled && autoCommentEnabled ? 'Like+Comment' : autoLikeEnabled ? 'Like' : 'Comment'} ON
+                            </span>
+                        )}
                     </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         <button onClick={async () => {
@@ -422,8 +759,14 @@ export default function CommenterTab(props: any) {
                                 const data = await res.json();
                                 console.log('📝 COMMENTER: Task created:', data.commandId, 'userId:', data._debug?.userId);
                                 if (data.success) {
-                                    showToast('Feed capture sent!', 'success');
+                                    const captureMsg = 'Feed capture sent!';
+                                    showToast((autoLikeEnabled || autoCommentEnabled) ? `${captureMsg} Auto-engage will start shortly...` : captureMsg, 'success');
                                     window.dispatchEvent(new CustomEvent('kommentify-task-created'));
+                                    // Auto-trigger engagement after capture if auto-like or auto-comment is enabled
+                                    if (autoLikeEnabled || autoCommentEnabled) {
+                                        console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 5000);
+                                    }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
@@ -445,8 +788,14 @@ export default function CommenterTab(props: any) {
                                 });
                                 const data = await res.json();
                                 if (data.success) {
-                                    showToast('Search capture sent! Check results in a moment.', 'success');
+                                    const captureMsg = 'Search capture sent! Check results in a moment.';
+                                    showToast(autoLikeEnabled ? `${captureMsg} Auto-engage will start shortly...` : captureMsg, 'success');
                                     window.dispatchEvent(new CustomEvent('kommentify-task-created'));
+                                    // Auto-trigger engagement after capture if enabled
+                                    if (autoLikeEnabled || autoCommentEnabled) {
+                                        console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 5000);
+                                    }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
@@ -466,8 +815,14 @@ export default function CommenterTab(props: any) {
                                 });
                                 const data = await res.json();
                                 if (data.success) {
-                                    showToast('Trending capture sent! Check results in a moment.', 'success');
+                                    const captureMsg = 'Trending capture sent! Check results in a moment.';
+                                    showToast(autoLikeEnabled ? `${captureMsg} Auto-engage will start shortly...` : captureMsg, 'success');
                                     window.dispatchEvent(new CustomEvent('kommentify-task-created'));
+                                    // Auto-trigger engagement after capture if enabled
+                                    if (autoLikeEnabled || autoCommentEnabled) {
+                                        console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 5000);
+                                    }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
@@ -522,7 +877,76 @@ export default function CommenterTab(props: any) {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0 }}>Captured Posts ({capturedPosts.length})</h3>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            {/* Delete All Button */}
+                            {capturedPosts.length > 0 && (
+                                <button onClick={async () => {
+                                    if (!confirm(`Delete all ${capturedPosts.length} captured posts?`)) return;
+                                    const token = localStorage.getItem('authToken');
+                                    if (!token) return;
+                                    try {
+                                        const res = await fetch('/api/scraped-posts', {
+                                            method: 'DELETE',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                            body: JSON.stringify({ deleteAll: true })
+                                        });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                            showToast('All posts deleted', 'success');
+                                            loadCapturedPosts();
+                                        } else {
+                                            showToast(data.error || 'Failed to delete', 'error');
+                                        }
+                                    } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+                                }}
+                                    style={{ padding: '8px 12px', background: 'rgba(220,38,38,0.2)', color: '#fca5a5', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '6px', fontWeight: '600', fontSize: '11px', cursor: 'pointer' }}>
+                                    🗑 Delete All
+                                </button>
+                            )}
+                            {/* Auto-Engage All Button */}
+                            {(autoLikeEnabled || autoCommentEnabled) && capturedPosts.length > 0 && (
+                                <button onClick={() => autoEngageWithPosts(capturedPosts)} disabled={autoEngaging}
+                                    style={{
+                                        padding: '8px 16px', background: autoEngaging ? 'rgba(220,38,38,0.4)' : 'linear-gradient(135deg, #dc2626, #b91c1c)',
+                                        color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px',
+                                        cursor: autoEngaging ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: autoEngaging ? 0.7 : 1
+                                    }}>
+                                    {autoEngaging ? '⏳ Engaging...' : `🔥 Auto-Engage All${autoLikeEnabled && autoCommentEnabled ? '' : (autoLikeEnabled ? ' (Like)' : ' (Comment)')}`}
+                                </button>
+                            )}
+                        </div>
                     </div>
+
+                    {/* Progress Bar for Auto-Engage in Captured Posts */}
+                    {autoEngaging && (
+                        <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(168,85,247,0.1)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.3)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <span style={{ color: '#c4b5fd', fontSize: '12px', fontWeight: '600' }}>
+                                    {engagementProgress.phase === 'generating' ? '🤖 Generating AI Comments...' :
+                                     engagementProgress.phase === 'engaging' ? '🔥 Auto-Engaging Posts...' :
+                                     '⏳ Processing...'}
+                                </span>
+                                <span style={{ color: '#c4b5fd', fontSize: '12px' }}>
+                                    {engagementProgress.processed}/{engagementProgress.total}
+                                </span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{
+                                    width: `${(engagementProgress.processed / Math.max(engagementProgress.total, 1)) * 100}%`,
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, #a855f7, #7c3aed)',
+                                    borderRadius: '4px',
+                                    transition: 'width 0.3s ease'
+                                }} />
+                            </div>
+                            {engagementProgress.currentComment && (
+                                <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '4px' }}>AI Comment:</div>
+                                    <div style={{ color: 'white', fontSize: '11px', fontStyle: 'italic' }}>"{engagementProgress.currentComment.substring(0, 100)}..."</div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {capturedLoading ? (
                         <div style={{ color: 'rgba(255,255,255,0.5)', padding: '40px', textAlign: 'center' }}>Loading posts...</div>
@@ -576,40 +1000,63 @@ export default function CommenterTab(props: any) {
                                             </div>
                                         </div>
 
-                                        {/* Action Buttons - LinkedIn style */}
-                                        <div style={{ padding: '6px 8px 8px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderTop: '1px solid #e5e5e5' }}>
+                                        {/* Action Buttons - All in one line */}
+                                        <div style={{ padding: '8px', display: 'flex', gap: '6px', borderTop: '1px solid #e5e5e5', flexWrap: 'wrap' }}>
                                             <button
                                                 onClick={() => handleAction(postId, 'like', post)}
                                                 disabled={likeState === 'loading' || likeState === 'success'}
-                                                style={{ padding: '6px 8px', background: likeState === 'success' ? '#e8f4fd' : '#f3f6f8', color: '#0077b5', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: likeState === 'loading' || likeState === 'success' ? 'not-allowed' : 'pointer', opacity: likeState === 'success' ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                style={{ flex: '1 1 auto', padding: '6px 10px', background: likeState === 'success' ? '#e8f4fd' : '#f3f6f8', color: '#0077b5', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: likeState === 'loading' || likeState === 'success' ? 'not-allowed' : 'pointer', opacity: likeState === 'success' ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', minWidth: '70px' }}>
                                                 {likeState === 'loading' ? '...' : likeState === 'success' ? '✓' : '👍'} Like
                                             </button>
-                                            {aiGeneratedComments[postId] ? (
-                                                <button
-                                                    onClick={() => handleAction(postId, 'comment', post, aiGeneratedComments[postId])}
-                                                    disabled={actionStates[`${postId}-comment`] === 'loading'}
-                                                    style={{ padding: '6px 8px', background: actionStates[`${postId}-comment`] === 'loading' ? '#f3e8ff' : '#22c55e', color: actionStates[`${postId}-comment`] === 'loading' ? '#9333ea' : 'white', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: actionStates[`${postId}-comment`] === 'loading' ? 'not-allowed' : 'pointer', opacity: actionStates[`${postId}-comment`] === 'loading' ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                    {actionStates[`${postId}-comment`] === 'loading' ? '...' : '🚀'} Send Comment
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => generateAiComment(postId, post)}
-                                                    disabled={generatingComment === postId}
-                                                    style={{ padding: '6px 8px', background: generatingComment === postId ? '#f3e8ff' : '#f3f6f8', color: '#9333ea', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: generatingComment === postId ? 'not-allowed' : 'pointer', opacity: generatingComment === postId ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                    {generatingComment === postId ? '...' : '🤖'} Generate + Send
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={() => generateAiComment(postId, post)}
+                                                disabled={generatingComment === postId || (actionStates[`${postId}-comment`] === 'success')}
+                                                style={{ flex: '1 1 auto', padding: '6px 10px', background: (actionStates[`${postId}-comment`] === 'success') ? '#e8f5e9' : (generatingComment === postId ? '#f3e8ff' : '#f3f6f8'), color: (actionStates[`${postId}-comment`] === 'success') ? '#16a34a' : '#9333ea', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: (generatingComment === postId || actionStates[`${postId}-comment`] === 'success') ? 'not-allowed' : 'pointer', opacity: (generatingComment === postId || actionStates[`${postId}-comment`] === 'success') ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', minWidth: '70px' }}>
+                                                {generatingComment === postId ? '...' : (actionStates[`${postId}-comment`] === 'success') ? '✓ Sent' : '🤖 AI Comment'}
+                                            </button>
                                             <button onClick={() => deletePost(post.id)}
-                                                style={{ gridColumn: 'span 2', padding: '6px 8px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                style={{ flex: '1 1 auto', padding: '6px 10px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', minWidth: '70px' }}>
                                                 🗑 Delete
                                             </button>
                                             {post.postUrl && (
                                                 <a href={post.postUrl} target="_blank" rel="noopener noreferrer"
-                                                    style={{ gridColumn: 'span 2', padding: '6px 8px', background: '#0077b5', color: 'white', borderRadius: '4px', fontSize: '11px', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                    🔗 View on LinkedIn
+                                                    style={{ flex: '1 1 auto', padding: '6px 10px', background: '#0077b5', color: 'white', borderRadius: '4px', fontSize: '11px', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', minWidth: '70px' }}>
+                                                    🔗 View
                                                 </a>
                                             )}
                                         </div>
+
+                                        {/* AI Generated Comment Display - Editable */}
+                                        {aiGeneratedComments[postId] && (
+                                            <div style={{ padding: '8px', background: actionStates[`${postId}-comment`] === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(168,85,247,0.1)', borderTop: `1px solid ${actionStates[`${postId}-comment`] === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(168,85,247,0.3)'}` }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                    <span style={{ color: actionStates[`${postId}-comment`] === 'success' ? '#16a34a' : '#a855f7', fontSize: '10px', fontWeight: '600' }}>
+                                                        {actionStates[`${postId}-comment`] === 'success' ? '✓ Commented' : '🤖 AI Generated Comment'}
+                                                    </span>
+                                                    {actionStates[`${postId}-comment`] !== 'success' && (
+                                                        <button
+                                                            onClick={() => handleAction(postId, 'comment', post, aiGeneratedComments[postId])}
+                                                            disabled={actionStates[`${postId}-comment`] === 'loading'}
+                                                            style={{ padding: '4px 8px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: actionStates[`${postId}-comment`] === 'loading' ? 'not-allowed' : 'pointer' }}>
+                                                            {actionStates[`${postId}-comment`] === 'loading' ? '...' : '🚀 Send'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <textarea
+                                                    value={aiGeneratedComments[postId]}
+                                                    onChange={(e) => setAiGeneratedComments(prev => ({ ...prev, [postId]: e.target.value }))}
+                                                    rows={3}
+                                                    style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '6px', color: '#1a1a1a', fontSize: '11px', fontFamily: '-apple-system,system-ui,sans-serif', resize: 'vertical' }}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Engaged Status */}
+                                        {(likeState === 'success' || actionStates[`${postId}-comment`] === 'success') && (
+                                            <div style={{ padding: '4px 8px', background: 'rgba(34,197,94,0.15)', borderTop: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span style={{ color: '#16a34a', fontSize: '10px', fontWeight: '600' }}>✓ Engaged</span>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

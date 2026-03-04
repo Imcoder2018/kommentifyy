@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - Delete a scraped post
+// DELETE - Delete a scraped post or all posts
 export async function DELETE(request: NextRequest) {
   try {
     const token = extractToken(request.headers.get('authorization'));
@@ -105,7 +105,14 @@ export async function DELETE(request: NextRequest) {
     }
     const payload = verifyToken(token);
 
-    const { id } = await request.json();
+    const { id, deleteAll } = await request.json();
+
+    // If deleteAll is true, delete all posts for this user
+    if (deleteAll) {
+      await (prisma as any).scrapedPost.deleteMany({ where: { userId: payload.userId } });
+      return NextResponse.json({ success: true, message: 'All posts deleted' });
+    }
+
     if (!id) {
       return NextResponse.json({ success: false, error: 'Post ID required' }, { status: 400 });
     }

@@ -765,10 +765,10 @@ export default function LeadWarmerTab(props: Props) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            Lead Warmer <span style={styles.badge(THEME.colors.primaryLight)}>Dashboard</span>
+            Lead Warmer <span style={styles.badge(THEME.colors.primaryLight)}>Automation</span>
           </h1>
           <p style={{ color: THEME.colors.text.secondary, margin: 0, fontSize: '15px' }}>
-            Automate personalized engagement with your prospects&apos; content.
+            Automate personalized engagement with your prospects&apos; content. Set up multi-day warming sequences and let AI handle commenting.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(30, 41, 59, 0.6)', padding: '8px 16px', borderRadius: THEME.radius.full, border: `1px solid ${THEME.colors.border}` }}>
@@ -966,6 +966,32 @@ export default function LeadWarmerTab(props: Props) {
       {/* ==================== TAB: PIPELINE ==================== */}
       {activeTab === 'pipeline' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Workflow Steps Guide */}
+          <div style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)', borderRadius: THEME.radius.lg, border: `1px solid ${THEME.colors.border}`, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <Zap size={16} color={THEME.colors.primaryLight} />
+              <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>How It Works</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0', flexWrap: 'wrap' }}>
+              {[
+                { step: 1, label: 'Select Leads', icon: Users, color: THEME.colors.primary },
+                { step: 2, label: 'Instant / Autopilot', icon: Zap, color: THEME.colors.warning },
+                { step: 3, label: 'Fetch Posts', icon: Download, color: '#3b82f6' },
+                { step: 4, label: 'AI Comments', icon: MessageCircle, color: THEME.colors.success },
+                { step: 5, label: 'Scheduled', icon: Clock, color: '#f59e0b' },
+              ].map((item, idx) => (
+                <div key={item.step} style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `${item.color}15`, padding: '6px 12px', borderRadius: '20px', border: `1px solid ${item.color}30` }}>
+                    <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: item.color, color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.step}</span>
+                    <item.icon size={12} color={item.color} />
+                    <span style={{ color: 'white', fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
+                  </div>
+                  {idx < 4 && <ChevronRight size={14} color={THEME.colors.text.muted} style={{ margin: '0 4px' }} />}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', width: '320px' }}>

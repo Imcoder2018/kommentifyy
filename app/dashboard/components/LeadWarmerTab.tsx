@@ -79,7 +79,10 @@ interface ExecutionLog {
 interface ScheduledTask {
   id: string;
   day: number;
+  leadIndex?: number;
   action: string;
+  postsPerDay?: number;
+  postsRange?: string;
   scheduledFor: string;
   status: 'pending' | 'completed' | 'failed' | 'due';
   leadName?: string;
@@ -257,6 +260,8 @@ export default function LeadWarmerTab(props: Props) {
   // Overview data
   const [executionHistory, setExecutionHistory] = useState<ExecutionLog[]>([]);
   const [autopilotSessions, setAutopilotSessions] = useState<AutopilotSession[]>([]);
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [autopilotPaused, setAutopilotPaused] = useState(false);
   const [upcomingTasks, setUpcomingTasks] = useState<ScheduledTask[]>([]);
 
   const csvFileRef = useRef<HTMLInputElement>(null);
@@ -292,8 +297,13 @@ export default function LeadWarmerTab(props: Props) {
       const data = await apiGet('/api/warm-leads?action=overview');
       if (data.success) {
         setExecutionHistory(data.executionHistory || []);
-        setAutopilotSessions(data.autopilotSessions || []);
+        const sessions = data.autopilotSessions || [];
+        setAutopilotSessions(sessions);
         setUpcomingTasks(data.upcomingTasks || []);
+        // Auto-expand most recent session
+        if (sessions.length > 0) {
+          setExpandedSession(sessions[0].id);
+        }
       }
     } catch (e) { console.error('Failed to load overview data:', e); }
   }, []);
@@ -883,65 +893,65 @@ export default function LeadWarmerTab(props: Props) {
 
             {/* Full Sequence of Autopilot Tasks */}
             <div style={{ ...styles.card, minHeight: '500px' }}>
-              <h3 style={{ margin: '0 0 16px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Target size={18} color={THEME.colors.success} /> Autopilot Sessions
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '650px', overflowY: 'auto' }}>
+              <div style={{ margin: '0 0 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Target size={18} color={THEME.colors.success} /> Autopilot Sessions
+                </h3>
+                <button onClick={() => setAutopilotPaused(!autopilotPaused)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, background: autopilotPaused ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)', color: autopilotPaused ? THEME.colors.error : THEME.colors.success }}>
+                  {autopilotPaused ? <><PlayCircle size={14} /> Resume</> : <><Timer size={14} /> Pause</>}
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '650px', overflowY: 'auto' }}>
                 {autopilotSessions.length > 0 ? (
-                  autopilotSessions.slice(0, 10).map((session, sIdx) => (
-                    <div key={session.id} style={{ background: 'rgba(34, 197, 94, 0.05)', borderRadius: THEME.radius.md, border: `1px solid rgba(34, 197, 94, 0.2)`, overflow: 'hidden' }}>
-                      <div style={{ padding: '14px', background: 'rgba(34, 197, 94, 0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>Session #{autopilotSessions.length - sIdx}</span>
-                          <span style={{ color: THEME.colors.text.muted, fontSize: '12px', display: 'block' }}>{new Date(session.createdAt).toLocaleString()}</span>
+                  autopilotSessions.slice(0, 10).map((session, sIdx) => {
+                    const isExpanded = expandedSession === session.id;
+                    const isMostRecent = sIdx === 0;
+                    return (
+                    <div key={session.id} style={{ background: 'rgba(34, 197, 94, 0.05)', borderRadius: THEME.radius.md, border: `1px solid ${isMostRecent ? 'rgba(34, 197, 94, 0.4)' : 'rgba(34, 197, 94, 0.2)'}`, overflow: 'hidden' }}>
+                      <div onClick={() => setExpandedSession(isExpanded ? null : session.id)} style={{ padding: '12px', background: isMostRecent ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {isExpanded ? <ChevronUp size={16} color={THEME.colors.success} /> : <ChevronDown size={16} color={THEME.colors.text.muted} />}
+                          <div>
+                            <span style={{ color: isMostRecent ? THEME.colors.success : 'white', fontWeight: 700, fontSize: '13px' }}>Session #{autopilotSessions.length - sIdx} {isMostRecent && '(Latest)'}</span>
+                            <span style={{ color: THEME.colors.text.muted, fontSize: '11px', display: 'block' }}>{new Date(session.createdAt).toLocaleString()}</span>
+                          </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '13px' }}>{session.leadCount} leads</span>
-                          <span style={{ color: THEME.colors.primaryLight, fontSize: '11px', display: 'block' }}>{session.commentsGenerated} comments generated</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '12px' }}>{session.leadCount} leads</span>
+                            <span style={{ color: THEME.colors.primaryLight, fontSize: '10px', display: 'block' }}>{session.commentsGenerated} comments</span>
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); if (confirm('Delete session?')) { setAutopilotSessions(prev => prev.filter(s => s.id !== session.id)); showToast?.('Deleted', 'success'); }}} style={{ background: 'rgba(239,68,68,0.15)', border: 'none', borderRadius: '4px', padding: '6px', cursor: 'pointer' }}><Trash2 size={14} color={THEME.colors.error} /></button>
                         </div>
                       </div>
-                      <div style={{ padding: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                      {isExpanded && (
+                      <div style={{ padding: '8px', maxHeight: '400px', overflowY: 'auto' }}>
                         {session.tasks && session.tasks.length > 0 ? (
                           session.tasks.map((task, tIdx) => (
-                            <div key={task.id} style={{ padding: '12px', marginBottom: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: `1px solid ${THEME.colors.border}40` }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                  <span style={{ color: THEME.colors.primaryLight, fontSize: '12px', fontWeight: 700 }}>Day {task.day}</span>
-                                  <span style={{ color: 'white', fontSize: '13px', fontWeight: 600 }}>{task.action}</span>
-                                </div>
-                                <span style={{
-                                  padding: '3px 10px',
-                                  borderRadius: '12px',
-                                  fontSize: '10px',
-                                  fontWeight: 700,
-                                  background: task.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : task.status === 'failed' ? 'rgba(239, 68, 68, 0.2)' : task.status === 'due' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255,255,255,0.1)',
-                                  color: task.status === 'completed' ? THEME.colors.success : task.status === 'failed' ? THEME.colors.error : task.status === 'due' ? '#FBBF24' : THEME.colors.text.muted
-                                }}>
-                                  {task.status === 'completed' ? 'Done' : task.status === 'failed' ? 'Failed' : task.status === 'due' ? 'Due Now' : 'Pending'}
+                            <div key={task.id} style={{ padding: '8px', marginBottom: '4px', background: 'rgba(0,0,0,0.25)', borderRadius: '6px', border: `1px solid ${THEME.colors.border}30` }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+                                <span style={{ color: THEME.colors.primaryLight, fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>#{task.leadIndex || tIdx + 1}</span>
+                                <span style={{ color: 'white', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{task.leadName || 'Unknown'}</span>
+                                <span style={{ color: THEME.colors.text.muted, fontSize: '10px', flexShrink: 0 }}>|</span>
+                                <span style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}>{task.action}</span>
+                                <span style={{ color: THEME.colors.info, fontSize: '10px', fontWeight: 600, flexShrink: 0, background: 'rgba(59, 130, 246, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>{task.postsPerDay || 1}p</span>
+                                <span style={{ color: THEME.colors.text.muted, fontSize: '9px', flexShrink: 0 }}>{task.postsRange || ''}</span>
+                                <span style={{ color: THEME.colors.text.muted, fontSize: '10px', flexShrink: 0 }}>|</span>
+                                <span style={{ color: THEME.colors.text.secondary, fontSize: '10px', flexShrink: 0 }}>{task.scheduledFor ? new Date(task.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '9px', fontWeight: 700, flexShrink: 0, background: task.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : task.status === 'failed' ? 'rgba(239, 68, 68, 0.2)' : task.status === 'due' ? 'rgba(251, 191, 36, 0.25)' : 'rgba(255,255,255,0.1)', color: task.status === 'completed' ? THEME.colors.success : task.status === 'failed' ? THEME.colors.error : task.status === 'due' ? '#FBBF24' : THEME.colors.text.muted }}>
+                                  {task.status === 'completed' ? '✓' : task.status === 'failed' ? '✗' : task.status === 'due' ? '!' : '○'}
                                 </span>
                               </div>
-                              {/* Scheduled time */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: task.targetPost ? '6px' : '0' }}>
-                                <Clock size={12} color={THEME.colors.text.muted} />
-                                <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>
-                                  {task.scheduledFor ? new Date(task.scheduledFor).toLocaleDateString() + ' at ' + new Date(task.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Not scheduled'}
-                                </span>
-                              </div>
-                              {/* Target post preview */}
-                              {task.targetPost && (
-                                <div style={{ marginTop: '6px', padding: '10px', background: 'rgba(105, 63, 233, 0.15)', borderRadius: '6px', borderLeft: `3px solid ${THEME.colors.primaryLight}` }}>
-                                  <span style={{ color: THEME.colors.primaryLight, fontSize: '10px', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Target Post Preview:</span>
-                                  <span style={{ color: 'white', fontSize: '11px', lineHeight: '1.4' }}>{task.targetPost}</span>
-                                </div>
-                              )}
                             </div>
                           ))
                         ) : (
-                          <div style={{ padding: '12px', color: THEME.colors.text.muted, fontSize: '12px', textAlign: 'center' }}>No tasks scheduled</div>
+                          <div style={{ padding: '12px', color: THEME.colors.text.muted, fontSize: '12px', textAlign: 'center' }}>No tasks</div>
                         )}
                       </div>
+                      )}
                     </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div style={{ padding: '24px', textAlign: 'center', color: THEME.colors.text.muted, border: `1px dashed ${THEME.colors.border}`, borderRadius: THEME.radius.md }}>
                     No autopilot sessions yet. Add leads to autopilot to see them here.

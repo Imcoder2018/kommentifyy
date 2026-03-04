@@ -43,63 +43,124 @@ export async function GET(request: NextRequest) {
         const context = settings.businessContext || '';
 
         // Step 1: Find scheduled leads that need posts fetched
-        const leadsNeedingPosts = await (prisma as any).warmLead.findMany({
-          where: {
-            userId,
-            engagementType: 'scheduled',
-            OR: [
-              { postsFetched: false },
-              { postsFetched: null },
-            ],
-          },
-          take: 10, // Process 10 leads at a time
-        });
+        // Use try-catch to handle if postsFetched field doesn't exist in older schemas
+        let leadsNeedingPosts: any[] = [];
+        try {
+          leadsNeedingPosts = await (prisma as any).warmLead.findMany({
+            where: {
+              userId,
+              engagementType: 'scheduled',
+              OR: [
+                { postsFetched: false },
+                { postsFetched: null },
+              ],
+            },
+            take: 10,
+          });
+        } catch (fieldError: any) {
+          // If postsFetched field doesn't exist, get all scheduled leads
+          if (fieldError.message?.includes('postsFetched')) {
+            console.log(`User ${userId}: postsFetched field not found, checking posts instead`);
+            leadsNeedingPosts = await (prisma as any).warmLead.findMany({
+              where: {
+                userId,
+                engagementType: 'scheduled',
+              },
+              include: { posts: { take: 1 } },
+              take: 10,
+            });
+            // Filter to leads without posts
+            leadsNeedingPosts = leadsNeedingPosts.filter((l: any) => !l.posts || l.posts.length === 0);
+          } else {
+            throw fieldError;
+          }
+        }
 
         if (leadsNeedingPosts.length > 0) {
-          // Queue post fetching command for extension
-          const fetchData = leadsNeedingPosts.map((l: any) => ({
-            leadId: l.id,
-            vanityId: l.vanityId || l.linkedinUrl.match(/linkedin\.com\/in\/([^/?#]+)/i)?.[1],
-          })).filter((b: any) => b.vanityId);
+          // Check if there's already a recent pending fetch command to avoid duplicates
+          const recentFetchCommand = await prisma.activity.findFirst({
+            where: {
+              userId,
+              type: 'extension_command_fetch_lead_posts_bulk',
+              timestamp: { gte: new Date(Date.now() - 5 * 60 * 1000) }, // Last 5 min
+            },
+            orderBy: { timestamp: 'desc' },
+          });
 
-          if (fetchData.length > 0) {
-            await prisma.activity.create({
-              data: {
-                userId,
-                type: 'extension_command_fetch_lead_posts_bulk',
-                metadata: {
-                  command: 'fetch_lead_posts_bulk',
-                  data: { leads: fetchData },
-                  status: 'pending',
-                  createdAt: new Date().toISOString(),
+          // Only create new command if no pending one exists
+          if (!recentFetchCommand) {
+            // Queue post fetching command for extension
+            const fetchData = leadsNeedingPosts.map((l: any) => ({
+              leadId: l.id,
+              vanityId: l.vanityId || l.linkedinUrl.match(/linkedin\.com\/in\/([^/?#]+)/i)?.[1],
+            })).filter((b: any) => b.vanityId);
+
+            if (fetchData.length > 0) {
+              await prisma.activity.create({
+                data: {
+                  userId,
+                  type: 'extension_command_fetch_lead_posts_bulk',
+                  metadata: {
+                    command: 'fetch_lead_posts_bulk',
+                    data: { leads: fetchData },
+                    status: 'pending',
+                    createdAt: new Date().toISOString(),
+                  },
                 },
-              },
-            });
-            results.postsFetchQueued += fetchData.length;
+              });
+              results.postsFetchQueued += fetchData.length;
+            }
+          } else {
+            console.log(`Skipping duplicate fetch command - recent one exists for user ${userId}`);
           }
         }
 
         // Step 2: Find scheduled leads that have posts but no AI comments
-        const leadsWithPosts = await (prisma as any).warmLead.findMany({
-          where: {
-            userId,
-            engagementType: 'scheduled',
-            postsFetched: true,
-          },
-          include: {
-            posts: {
-              where: {
-                postText: { not: '' },
-                OR: [
-                  { commentText: null },
-                  { commentText: '' },
-                ],
-              },
-              take: 3,
+        let leadsWithPosts: any[] = [];
+        try {
+          leadsWithPosts = await (prisma as any).warmLead.findMany({
+            where: {
+              userId,
+              engagementType: 'scheduled',
+              postsFetched: true,
             },
-          },
-          take: 10, // Process 10 leads at a time
-        });
+            include: {
+              posts: {
+                where: {
+                  postText: { not: '' },
+                  OR: [
+                    { commentText: null },
+                    { commentText: '' },
+                  ],
+                },
+                take: 3,
+              },
+            },
+            take: 10,
+          });
+        } catch (fieldError: any) {
+          // Fallback: get all scheduled leads and check if they have posts
+          if (fieldError.message?.includes('postsFetched')) {
+            const allScheduledLeads = await (prisma as any).warmLead.findMany({
+              where: {
+                userId,
+                engagementType: 'scheduled',
+              },
+              include: {
+                posts: {
+                  where: {
+                    postText: { not: '' },
+                  },
+                  take: 3,
+                },
+              },
+              take: 10,
+            });
+            leadsWithPosts = allScheduledLeads.filter((l: any) => l.posts && l.posts.length > 0);
+          } else {
+            throw fieldError;
+          }
+        }
 
         // Generate AI comments for each lead's posts
         for (const lead of leadsWithPosts) {
@@ -149,25 +210,50 @@ export async function GET(request: NextRequest) {
 
         // Step 3: Create pending extension tasks for leads that are ready
         // Get leads with posts and AI comments ready
-        const readyLeads = await (prisma as any).warmLead.findMany({
-          where: {
-            userId,
-            engagementType: 'scheduled',
-            postsFetched: true,
-            status: { in: ['fetched', 'engaged'] },
-            nextActionDate: { lte: now },
-          },
-          include: {
-            posts: {
-              where: {
-                commentText: { not: null },
-                isCommented: false,
-              },
-              take: 1,
+        let readyLeads: any[] = [];
+        try {
+          readyLeads = await (prisma as any).warmLead.findMany({
+            where: {
+              userId,
+              engagementType: 'scheduled',
+              postsFetched: true,
+              status: { in: ['fetched', 'engaged'] },
+              nextActionDate: { lte: now },
             },
-          },
-          take: settings.profilesPerDay || 20,
-        });
+            include: {
+              posts: {
+                where: {
+                  commentText: { not: null },
+                  isCommented: false,
+                },
+                take: 1,
+              },
+            },
+            take: settings.profilesPerDay || 20,
+          });
+        } catch (fieldError: any) {
+          // Fallback if postsFetched doesn't exist
+          if (fieldError.message?.includes('postsFetched')) {
+            readyLeads = await (prisma as any).warmLead.findMany({
+              where: {
+                userId,
+                engagementType: 'scheduled',
+                status: { in: ['fetched', 'engaged'] },
+                nextActionDate: { lte: now },
+              },
+              include: {
+                posts: {
+                  take: 5,
+                },
+              },
+              take: settings.profilesPerDay || 20,
+            });
+            // Filter to leads that have posts with comments
+            readyLeads = readyLeads.filter((l: any) => l.posts && l.posts.some((p: any) => p.commentText && !p.isCommented));
+          } else {
+            throw fieldError;
+          }
+        }
 
         for (const lead of readyLeads) {
           if (!lead.posts || lead.posts.length === 0) continue;
@@ -191,6 +277,16 @@ export async function GET(request: NextRequest) {
                 status: 'pending',
                 createdAt: new Date().toISOString(),
               },
+            },
+          });
+
+          // Log the engagement in warmLeadEngagement for Recent Performance
+          await (prisma as any).warmLeadEngagement.create({
+            data: {
+              userId,
+              leadId: lead.id,
+              action: 'scheduled_engagement',
+              status: 'completed',
             },
           });
 

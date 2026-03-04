@@ -186,8 +186,18 @@ export async function GET(request: NextRequest) {
             // Get target post info
             const targetPost = leadInfo?.posts?.[stepIdx];
 
-            // Get AI comment if available
-            const aiComment = targetPost?.commentText;
+            // Get posts per day from step config
+            const postsPerDay = step.postCount || 1;
+            const postStartIndex = step.postStartIndex || 0;
+            const postEndIndex = postStartIndex + postsPerDay - 1;
+            const postsRange = `Recent #${postStartIndex + 1} to #${postEndIndex + 1}`;
+
+            // Get first post for preview
+            const firstPost = leadInfo?.posts?.[0];
+            const firstPostPreview = firstPost?.postText ? (firstPost.postText.length > 40 ? firstPost.postText.substring(0, 40) + '...' : firstPost.postText) : null;
+
+            // Get AI comment for first post
+            const aiComment = firstPost?.commentText;
             const aiCommentPreview = aiComment ? (aiComment.length > 40 ? aiComment.substring(0, 40) + '...' : aiComment) : null;
 
             tasks.push({
@@ -196,15 +206,17 @@ export async function GET(request: NextRequest) {
               leadIndex: leadIdx + 1,
               leadName: leadName,
               action: actions.join('/') || 'engagement',
+              postsPerDay: postsPerDay,
+              postsRange: postsRange,
               scheduledFor: scheduledDate.toISOString(),
               status: scheduledDate < now ? 'due' : 'pending',
               // Full text for hover
-              targetPostFull: targetPost?.postText || null,
-              targetPostPreview: targetPost?.postText ? (targetPost.postText.length > 50 ? targetPost.postText.substring(0, 50) + '...' : targetPost.postText) : null,
+              targetPostFull: firstPost?.postText || null,
+              targetPostPreview: firstPostPreview,
               // AI comment
               aiCommentFull: aiComment,
               aiCommentPreview: aiCommentPreview,
-              postDate: targetPost?.postDate,
+              postDate: firstPost?.postDate,
             });
           }
         }
@@ -329,6 +341,17 @@ export async function POST(request: NextRequest) {
       });
       const context = businessContext || settings?.businessContext || '';
 
+      // Get user's comment settings for AI generation
+      const commentSettings = await (prisma as any).commentSettings.findUnique({
+        where: { userId: payload.userId },
+      });
+      const aiGoal = commentSettings?.goal || 'AddValue';
+      const aiTone = commentSettings?.tone || 'Friendly';
+      const aiLength = commentSettings?.commentLength || 'Short';
+      const aiStyle = commentSettings?.commentStyle || 'direct';
+      const aiExpertise = commentSettings?.userExpertise || '';
+      const aiBackground = commentSettings?.userBackground || context;
+
       // Get leads with their posts
       const leads = await (prisma as any).warmLead.findMany({
         where: { id: { in: leadIds }, userId: payload.userId },
@@ -353,10 +376,12 @@ export async function POST(request: NextRequest) {
               body: JSON.stringify({
                 postText: post.postText,
                 authorName: lead.firstName || '',
-                goal: 'AddValue',
-                tone: 'Professional',
-                commentLength: 'Short',
-                userBackground: context,
+                goal: aiGoal,
+                tone: aiTone,
+                commentLength: aiLength,
+                commentStyle: aiStyle,
+                userExpertise: aiExpertise,
+                userBackground: aiBackground,
               }),
             });
             const aiData = await aiRes.json();
@@ -403,9 +428,29 @@ export async function POST(request: NextRequest) {
         include: { posts: { orderBy: { postDate: 'desc' }, take: postsPerLead } },
       });
 
-      // Identify leads that need posts fetched
-      const leadsNeedingPosts = leads.filter((l: any) => !l.postsFetched || !l.posts || l.posts.length === 0);
-      const leadsWithPosts = leads.filter((l: any) => l.postsFetched && l.posts && l.posts.length > 0);
+      // Identify leads that need posts fetched - handle if postsFetched field doesn't exist
+      let leadsNeedingPosts: any[] = [];
+      let leadsWithPosts: any[] = [];
+      try {
+        leadsNeedingPosts = leads.filter((l: any) => !l.postsFetched || !l.posts || l.posts.length === 0);
+        leadsWithPosts = leads.filter((l: any) => l.postsFetched && l.posts && l.posts.length > 0);
+      } catch (e) {
+        // If postsFetched field doesn't exist, check posts directly
+        console.log('postsFetched field error, falling back to posts check');
+        leadsNeedingPosts = leads.filter((l: any) => !l.posts || l.posts.length === 0);
+        leadsWithPosts = leads.filter((l: any) => l.posts && l.posts.length > 0);
+      }
+
+      // Get user's comment settings for AI generation
+      const commentSettings = await (prisma as any).commentSettings.findUnique({
+        where: { userId: payload.userId },
+      });
+      const aiGoal = commentSettings?.goal || 'AddValue';
+      const aiTone = commentSettings?.tone || 'Friendly';
+      const aiLength = commentSettings?.commentLength || 'Short';
+      const aiStyle = commentSettings?.commentStyle || 'direct';
+      const aiExpertise = commentSettings?.userExpertise || '';
+      const aiBackground = commentSettings?.userBackground || context;
 
       // Queue post fetching command for extension if there are leads needing posts
       let postsFetchQueued = false;
@@ -447,6 +492,16 @@ export async function POST(request: NextRequest) {
           },
         });
 
+        // Log the autopilot setup as an execution
+        await (prisma as any).warmLeadEngagement.createMany({
+          data: leadIds.map((leadId: string) => ({
+            userId: payload.userId,
+            leadId,
+            action: 'autopilot_setup',
+            status: 'completed',
+          })),
+        });
+
         return NextResponse.json({
           success: true,
           postsFetchQueued: true,
@@ -476,10 +531,12 @@ export async function POST(request: NextRequest) {
               body: JSON.stringify({
                 postText: post.postText,
                 authorName: lead.firstName || '',
-                goal: 'AddValue',
-                tone: 'Professional',
-                commentLength: 'Short',
-                userBackground: context,
+                goal: aiGoal,
+                tone: aiTone,
+                commentLength: aiLength,
+                commentStyle: aiStyle,
+                userExpertise: aiExpertise,
+                userBackground: aiBackground,
               }),
             });
             const aiData = await aiRes.json();
@@ -491,6 +548,16 @@ export async function POST(request: NextRequest) {
                 data: { commentText: aiData.content },
               });
               commentsGenerated++;
+
+              // Log the AI comment generation
+              await (prisma as any).warmLeadEngagement.create({
+                data: {
+                  userId: payload.userId,
+                  leadId: lead.id,
+                  action: 'ai_comment_generated',
+                  status: 'completed',
+                },
+              });
             }
           } catch (aiErr) {
             console.error('AI comment generation error:', aiErr);
@@ -510,11 +577,21 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Count leads that still need AI comments generated
+      const leadsNeedingComments = leadsWithPosts.filter((l: any) => {
+        const postsWithoutComments = (l.posts || []).filter((p: any) => p.postText && !p.commentText);
+        return postsWithoutComments.length > 0;
+      });
+
       return NextResponse.json({
         success: true,
         commentsGenerated,
         leadsScheduled: leadIds.length,
         postsFetchQueued,
+        leadsNeedingPosts: leadsNeedingPosts.length,
+        leadsWithPosts: leadsWithPosts.length,
+        leadsNeedingComments: leadsNeedingComments.length,
+        message: leadsNeedingPosts.length > 0 ? 'Posts fetch queued for new leads.' : leadsNeedingComments.length > 0 ? 'Generating AI comments for existing posts.' : 'All leads already set up.',
       });
     }
 
@@ -522,23 +599,24 @@ export async function POST(request: NextRequest) {
     if (action === 'generate_for_scheduled') {
       const { postsPerLead = 3 } = body;
 
-      // Get all scheduled leads that have posts but no AI comments
+      // Get all scheduled leads that have posts but no AI comments - only process leads that need it
       const scheduledLeads = await (prisma as any).warmLead.findMany({
         where: {
           userId: payload.userId,
           engagementType: 'scheduled',
-          postsFetched: true,
         },
         include: {
           posts: {
-            where: {
-              postText: { not: '' },
-              commentText: null,
-            },
             orderBy: { postDate: 'desc' },
             take: postsPerLead,
           },
         },
+      });
+
+      // Filter to only leads that actually need comments generated
+      const leadsNeedingComments = scheduledLeads.filter((l: any) => {
+        const postsWithoutComments = (l.posts || []).filter((p: any) => p.postText && !p.commentText);
+        return postsWithoutComments.length > 0;
       });
 
       const settings = await (prisma as any).warmLeadsSettings.findUnique({
@@ -546,10 +624,21 @@ export async function POST(request: NextRequest) {
       });
       const context = settings?.businessContext || '';
 
+      // Get user's comment settings
+      const commentSettings = await (prisma as any).commentSettings.findUnique({
+        where: { userId: payload.userId },
+      });
+      const aiGoal = commentSettings?.goal || 'AddValue';
+      const aiTone = commentSettings?.tone || 'Friendly';
+      const aiLength = commentSettings?.commentLength || 'Short';
+      const aiStyle = commentSettings?.commentStyle || 'direct';
+      const aiExpertise = commentSettings?.userExpertise || '';
+      const aiBackground = commentSettings?.userBackground || context;
+
       let totalCommentsGenerated = 0;
 
-      // Generate AI comments for each lead's posts
-      for (const lead of scheduledLeads) {
+      // Generate AI comments for each lead's posts - only leads that need comments
+      for (const lead of leadsNeedingComments) {
         const posts = lead.posts || [];
         for (const post of posts) {
           if (!post.postText || post.commentText) continue;
@@ -564,10 +653,12 @@ export async function POST(request: NextRequest) {
               body: JSON.stringify({
                 postText: post.postText,
                 authorName: lead.firstName || '',
-                goal: 'AddValue',
-                tone: 'Professional',
-                commentLength: 'Short',
-                userBackground: context,
+                goal: aiGoal,
+                tone: aiTone,
+                commentLength: aiLength,
+                commentStyle: aiStyle,
+                userExpertise: aiExpertise,
+                userBackground: aiBackground,
               }),
             });
             const aiData = await aiRes.json();
@@ -588,7 +679,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         commentsGenerated: totalCommentsGenerated,
-        leadsProcessed: scheduledLeads.length,
+        leadsProcessed: leadsNeedingComments.length,
       });
     }
 
@@ -609,14 +700,29 @@ export async function POST(request: NextRequest) {
       const leadsNeedingPosts = scheduledLeads.filter((l: any) => !l.postsFetched);
       const leadsWithPosts = scheduledLeads.filter((l: any) => l.postsFetched);
 
-      // Check for pending post fetch commands (recent ones)
-      const pendingFetchCommands = await prisma.activity.count({
+      // Check for pending post fetch commands - only count truly pending ones (not completed/failed)
+      const recentCommands = await prisma.activity.findMany({
         where: {
           userId: payload.userId,
           type: 'extension_command_fetch_lead_posts_bulk',
           timestamp: { gte: new Date(Date.now() - 30 * 60 * 1000) }, // Last 30 min
         },
+        orderBy: { timestamp: 'desc' },
+        take: 20,
       });
+
+      // Filter to only count commands that are actually pending/queued (not completed or failed)
+      let pendingFetchCommands = 0;
+      for (const cmd of recentCommands) {
+        let meta: any = cmd.metadata;
+        if (typeof meta === 'string') {
+          try { meta = JSON.parse(meta); } catch { meta = {}; }
+        }
+        const status = meta?.status;
+        if (status === 'pending' || status === 'queued' || status === 'in_progress') {
+          pendingFetchCommands++;
+        }
+      }
 
       // Get posts with AI comments
       const postsWithComments = await (prisma as any).warmLeadPost.count({

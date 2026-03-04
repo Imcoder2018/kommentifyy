@@ -1,6 +1,6 @@
 /**
  * AI Comment Button - Adds AI comment generation buttons to LinkedIn posts
- * Users can click this button to generate AI comments using their settings
+ * Uses robust fallback selectors for maximum compatibility across LinkedIn versions
  */
 
 // Module-level log to confirm this file loads
@@ -15,6 +15,24 @@ class AICommentButtonManager {
     constructor() {
         this.addedButtons = new Set();
         this.isGenerating = false;
+        this.customDomSelectors = null; // Custom selectors from Having Issues wizard
+        this.loadCustomSelectors();
+    }
+
+    /**
+     * Load custom DOM selectors from storage
+     */
+    loadCustomSelectors() {
+        try {
+            chrome.storage.local.get(['customDomSelectors'], (result) => {
+                if (result.customDomSelectors) {
+                    this.customDomSelectors = result.customDomSelectors;
+                    console.log('[AI Comment] Loaded custom DOM selectors:', this.customDomSelectors);
+                }
+            });
+        } catch (e) {
+            console.log('[AI Comment] Could not load custom selectors (not in extension context)');
+        }
     }
 
     /**
@@ -183,117 +201,411 @@ class AICommentButtonManager {
             childList: true,
             subtree: true
         });
-        
+
+        // Also listen for Comment button clicks to scan when comment box opens
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            // Check if clicked on a Comment button
+            if (target.matches('button.comment-button') ||
+                target.closest('button.comment-button') ||
+                target.getAttribute('aria-label')?.includes('Comment') ||
+                target.textContent?.trim() === 'Comment') {
+                console.log('[AI Comment] Comment button clicked, scanning for comment box...');
+                // Delay slightly to let the comment box render
+                setTimeout(() => this.scanAndAddButtons(), 100);
+                setTimeout(() => this.scanAndAddButtons(), 300);
+                setTimeout(() => this.scanAndAddButtons(), 500);
+            }
+        }, true);
+
         // Scroll listener for lazy-loaded content - FAST response
         let scrollTimeout;
         window.addEventListener('scroll', () => {
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(() => this.scanAndAddButtons(), 500); // Fast 500ms debounce
         }, { passive: true });
-        
+
         console.log('[AI Comment] ✅ FAST scanning started - buttons will appear quickly!');
     }
 
     /**
-     * Scan for comment editors and add AI comment buttons to toolbar
+     * Scan for comment boxes and add AI comment buttons using robust fallback selectors
+     * Uses the same approach as the reference extension for maximum compatibility
      */
     scanAndAddButtons() {
-        // Use user's selectors for finding comment editors
-        const editorSelectors = [
-            '[contenteditable="true"][data-placeholder*="comment" i]',
-            '[contenteditable="true"][aria-placeholder*="comment" i]',
-            '.ql-editor[contenteditable="true"]'
-        ];
+        let addedCount = 0;
 
-        let commentEditors = [];
-        let usedSelector = '';
+        // Try custom iconContainer selector first (from Having Issues wizard)
+        if (this.customDomSelectors && this.customDomSelectors.iconContainer) {
+            try {
+                const customContainers = document.querySelectorAll(this.customDomSelectors.iconContainer);
+                console.log('[AI Comment] Custom iconContainer found:', customContainers.length);
+                customContainers.forEach(iconContainer => {
+                    if (iconContainer.querySelector('.ai-comment-btn')) return;
 
-        // Try each selector until we find comment editors
-        for (const selector of editorSelectors) {
-            const editors = document.querySelectorAll(selector);
-            if (editors.length > 0) {
-                commentEditors = Array.from(editors);
-                usedSelector = selector;
-                break;
+                    let postElement = this.findPostElement(iconContainer);
+                    this.addSuggestButton(postElement, iconContainer);
+                    addedCount++;
+                });
+            } catch (e) {
+                console.warn('[AI Comment] Custom iconContainer selector failed:', e);
             }
         }
 
-        if (commentEditors.length === 0) {
-            return;
-        }
+        // METHOD 1: Find emoji buttons (when comment box is open)
+        const emojiBtns = document.querySelectorAll(
+            'button[aria-label*="emoji" i], button[aria-label*="Emoji"], button[aria-label*="Show Emoji Picker"]'
+        );
+        console.log('[AI Comment] Emoji buttons found:', emojiBtns.length);
 
-        console.log(`[AI Comment] ✅ Found ${commentEditors.length} comment editors using: ${usedSelector}`);
+        emojiBtns.forEach(btn => {
+            const iconContainer = btn.parentElement;
 
-        let addedCount = 0;
-        commentEditors.forEach((editor, index) => {
-            // Skip if already processed
-            if (editor.hasAttribute('data-ai-processed')) {
+            if (iconContainer.querySelector('.ai-comment-btn')) {
                 return;
             }
 
-            // Mark as processed
-            editor.setAttribute('data-ai-processed', 'true');
+            let postElement = this.findPostElement(iconContainer);
+            this.addSuggestButton(postElement, iconContainer);
+            addedCount++;
+        });
 
-            // Create unique ID for this button
-            const buttonId = `ai-btn-${index}-${Date.now()}`;
+        // METHOD 2: Find open comment boxes with contenteditable editors
+        // This catches comment boxes that are already open (user clicked Comment on a post)
+        const commentForms = document.querySelectorAll('.comments-comment-box__form, .comments-comment-box, form[class*="comment"]');
+        console.log('[AI Comment] Comment forms found:', commentForms.length);
 
-            // Add AI button to the toolbar
-            this.addAIButtonToToolbar(editor, buttonId);
+        commentForms.forEach(form => {
+            // Find the toolbar container in this form
+            const toolbar = form.querySelector('.display-flex, .comments-comment-box__detour-container, [data-test-id="comment-box-toolbar"]');
+
+            if (toolbar && !toolbar.querySelector('.ai-comment-btn')) {
+                let postElement = this.findPostElement(toolbar);
+                this.addSuggestButton(postElement, toolbar);
+                addedCount++;
+            }
+        });
+
+        // METHOD 3: Find any flex container with buttons that's inside a comment form
+        const flexContainers = document.querySelectorAll('.comments-comment-box form .display-flex');
+        console.log('[AI Comment] Flex containers in comment forms found:', flexContainers.length);
+
+        flexContainers.forEach(container => {
+            if (container.querySelector('.ai-comment-btn')) return;
+
+            // Check if this is near a comment input
+            const hasCommentInput = container.closest('.comments-comment-box, .comments-comment-box__form');
+            if (!hasCommentInput) return;
+
+            let postElement = this.findPostElement(container);
+            this.addSuggestButton(postElement, container);
             addedCount++;
         });
 
         if (addedCount > 0) {
-            console.log(`[AI Comment] ✅ Added ${addedCount} new AI buttons to toolbar`);
+            console.log('[AI Comment] ✅ Added', addedCount, 'AI buttons to comment boxes');
         }
     }
 
     /**
-     * Add AI button to the native toolbar (next to Emoji/Image buttons)
+     * Find the post element using robust fallback chain
      */
-    addAIButtonToToolbar(editor, buttonId) {
-        // Find the parent form/container
-        const form = editor.closest('form') || editor.closest('.comments-comment-box') || editor.parentElement?.parentElement?.parentElement;
-        if (!form) {
-            console.log(`[AI Comment] Could not find form container`);
+    findPostElement(iconContainer) {
+        // Try main selectors first
+        let postElement = iconContainer.closest('.feed-shared-update-v2')
+            || iconContainer.closest('[data-urn^="urn:li:activity:"]')
+            || iconContainer.closest('.update-components-actor')?.closest('div');
+
+        if (!postElement) {
+            // Fallback: traverse up the DOM looking for data-id or LI
+            let curr = iconContainer;
+            let levels = 0;
+            while (curr && levels < 15) {
+                if (curr.hasAttribute('data-id') || curr.tagName === 'LI') {
+                    postElement = curr;
+                    break;
+                }
+                curr = curr.parentElement;
+                levels++;
+            }
+        }
+
+        if (!postElement) {
+            postElement = iconContainer.closest('div[class*="feed-shared"]') || document.body;
+        }
+
+        return postElement;
+    }
+
+    /**
+     * Extract post text from LinkedIn's DOM structure using robust fallback selectors
+     */
+    extractPostText(postElement, iconContainer = null) {
+        let text = '';
+
+        // Try custom selector first (from Having Issues wizard)
+        if (this.customDomSelectors && this.customDomSelectors.postContent && postElement && postElement !== document.body) {
+            try {
+                const customEl = postElement.querySelector(this.customDomSelectors.postContent);
+                if (customEl && customEl.textContent.trim().length > 0) {
+                    let customText = customEl.textContent
+                        .replace(/…\s*more/gi, '')
+                        .replace(/\.\.\.\s*more/gi, '')
+                        .trim()
+                        .replaceAll('hashtag#', '#');
+                    if (customText.length > 0) return customText;
+                }
+            } catch (e) {
+                console.warn('[AI Comment] Custom postContent selector failed:', e);
+            }
+        }
+
+        // Create an array of possible roots to search from
+        const rootsToSearch = [];
+        if (postElement && postElement !== document.body) rootsToSearch.push(postElement);
+
+        // If we have an icon container, its closest post wrapper is a great place to look
+        if (iconContainer) {
+            const wrapper = iconContainer.closest('.feed-shared-update-v2')
+                || iconContainer.closest('[data-urn^="urn:li:activity:"]')
+                || iconContainer.closest('[data-view-name="feed-update"]')
+                || iconContainer.closest('li')
+                || iconContainer.closest('div[data-id]');
+            if (wrapper && !rootsToSearch.includes(wrapper)) {
+                rootsToSearch.push(wrapper);
+            }
+        }
+
+        if (rootsToSearch.length === 0) return '';
+
+        for (const root of rootsToSearch) {
+            // Try new commentary block first
+            const newCommentaryElement = root.querySelector('[data-testid="expandable-text-box"]')
+                || root.querySelector('[data-view-name="feed-commentary"]');
+            if (newCommentaryElement && newCommentaryElement.textContent.trim().length > 0) {
+                text = newCommentaryElement.textContent;
+            } else {
+                // FALLBACK: Traditional elements
+                const traditionalElements = root.querySelectorAll('.feed-shared-update-v2__description span[dir="ltr"]');
+                if (traditionalElements.length > 0) {
+                    traditionalElements.forEach(el => {
+                        text += el.textContent + ' ';
+                    });
+                } else {
+                    // FALLBACK: Another variation
+                    const textWrapper = root.querySelector('.update-components-text span[dir="ltr"]')
+                        || root.querySelector('[data-update-actor-name] ~ div span[dir="ltr"]');
+                    if (textWrapper) {
+                        text = textWrapper.textContent;
+                    } else {
+                        // FALLBACK: Generic ltr spans, excluding comment boxes
+                        const ltrSpans = root.querySelectorAll('span[dir="ltr"]');
+                        for (const span of ltrSpans) {
+                            if (span.textContent.trim().length > 10
+                                && !span.closest('[data-view-name="comment-box"], .comments-comment-box__form')) {
+                                text += span.textContent + ' ';
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!text.trim()) {
+                const altText = root.querySelector('.break-words');
+                if (altText) text = altText.textContent;
+            }
+
+            if (text.trim()) break; // We found the text!
+        }
+
+        // Clean up "... more" truncation markers
+        let cleanedText = text.replace(/…\s*more/gi, '');
+        cleanedText = cleanedText.replace(/\.\.\.\s*more/gi, '');
+
+        return cleanedText.trim().replaceAll("hashtag#", "#");
+    }
+
+    /**
+     * Extract poster name from LinkedIn's DOM structure using robust fallback selectors
+     */
+    extractPosterName(postElement) {
+        if (!postElement || postElement === document.body) return null;
+        try {
+            // Try custom selector first (from Having Issues wizard)
+            if (this.customDomSelectors && this.customDomSelectors.authorName) {
+                try {
+                    const customEl = postElement.querySelector(this.customDomSelectors.authorName);
+                    if (customEl) {
+                        let name = customEl.textContent?.trim().replace(/<!---->/g, '').trim();
+                        if (name && name.length > 0) return name;
+                    }
+                } catch (e) {
+                    console.warn('[AI Comment] Custom authorName selector failed:', e);
+                }
+            }
+
+            // FALLBACK: Array of name selectors tried in order
+            const nameSelectors = [
+                '.update-components-actor__single-line-truncate span[dir="ltr"] span[aria-hidden="true"]',
+                '.update-components-actor__name span[aria-hidden="true"]',
+                '.update-components-actor__name',
+                '.feed-shared-actor__name span[aria-hidden="true"]',
+                '.feed-shared-actor__name',
+                '.feed-shared-actor__title',
+                '[data-test-update-actor-title]'
+            ];
+
+            for (const selector of nameSelectors) {
+                const nameElement = postElement.querySelector(selector);
+                if (nameElement) {
+                    let name = nameElement.textContent?.trim() || '';
+                    name = name.replace(/<!---->/g, '').trim();
+                    if (name && name.length > 0) return name;
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('[AI Comment] Error extracting poster name:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Extract existing comment text from the comment field
+     */
+    extractExistingCommentText(postElement, iconContainer = null) {
+        try {
+            let containerForSearch = postElement;
+            if (iconContainer) {
+                let wrapper = iconContainer.closest('.comments-comment-box__form')
+                    || iconContainer.closest('form')
+                    || iconContainer.parentElement;
+                if (wrapper) containerForSearch = wrapper;
+            }
+
+            if (!containerForSearch || containerForSearch === document.body) return null;
+
+            let prosemirrorEditor = containerForSearch.querySelector('.ProseMirror, [contenteditable="true"]');
+            if (!prosemirrorEditor) {
+                let curr = containerForSearch;
+                let levels = 0;
+                while (!prosemirrorEditor && curr && levels < 5) {
+                    curr = curr.parentElement;
+                    if (curr) prosemirrorEditor = curr.querySelector('.ProseMirror, [contenteditable="true"]');
+                    levels++;
+                }
+            }
+            if (prosemirrorEditor) {
+                const text = prosemirrorEditor.textContent?.trim();
+                if (text && text.length > 0
+                    && !text.toLowerCase().includes('add a comment')
+                    && !text.toLowerCase().includes('aggiungi un commento')
+                    && !text.toLowerCase().includes('ajouter un commentaire')) {
+                    return text;
+                }
+            }
+            return null;
+        } catch (e) {
+            console.warn('[AI Comment] Error extracting existing comment text:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Add AI button to the comment box toolbar using robust fallback selectors
+     * This is the main entry point for adding buttons to comment boxes
+     */
+    addSuggestButton(postElement, providedIconContainer = null) {
+        // Check if button already exists
+        if (providedIconContainer && providedIconContainer.querySelector('.ai-comment-btn')) {
             return;
         }
 
-        // Find the native Emoji or Image buttons to locate their flex container
-        const emojiBtn = form.querySelector('button[title*="Emoji" i], button[aria-label*="Emoji" i]');
-        const imageBtn = form.querySelector('button[aria-label*="photo" i]');
-
-        // Get the toolbar container holding these buttons
-        const toolbar = (emojiBtn && emojiBtn.closest('.display-flex')) || (imageBtn && imageBtn.closest('.display-flex'));
-
-        // If the toolbar hasn't rendered yet or we already injected, skip
-        if (!toolbar || toolbar.dataset.rocketInjected) {
+        if (!providedIconContainer && postElement && postElement !== document.body
+            && postElement.querySelector('.ai-comment-btn')) {
             return;
         }
-        toolbar.dataset.rocketInjected = 'true';
+
+        let iconContainer = providedIconContainer;
+
+        // FALLBACK: Find icon container if not provided
+        if (!iconContainer && postElement && postElement !== document.body) {
+            // Try these selectors in order:
+            iconContainer = postElement.querySelector('.comments-comment-box__detour-container');
+
+            if (!iconContainer) {
+                const emojiBtn = postElement.querySelector('button[aria-label*="emoji" i], button[aria-label*="Emoji"]');
+                if (emojiBtn) iconContainer = emojiBtn.parentElement;
+            }
+            if (!iconContainer) {
+                const photoBtn = postElement.querySelector('button[aria-label*="photo" i], button[aria-label*="image" i]');
+                if (photoBtn) iconContainer = photoBtn.parentElement;
+            }
+            if (!iconContainer) {
+                const testElement = postElement.querySelector('[data-test-id*="comment"], [data-test*="comment-box"]');
+                if (testElement) {
+                    const btns = testElement.querySelectorAll('button');
+                    if (btns.length > 0) iconContainer = btns[0].parentElement;
+                }
+            }
+        }
+
+        if (!iconContainer) {
+            console.log('[AI Comment] ❌ Could not find icon container for this post', { postElement: !!postElement });
+            return;
+        }
+
+        console.log('[AI Comment] ✅ Found icon container, adding button');
+
+        // Ensure iconContainer doesn't wrap and elements stay in a single row
+        iconContainer.style.display = 'flex';
+        iconContainer.style.flexDirection = 'row';
+        iconContainer.style.flexWrap = 'nowrap';
+        iconContainer.style.alignItems = 'center';
 
         // Create our circular icon button matching LinkedIn's native style
         const aiBtn = document.createElement('button');
-        aiBtn.className = 'ai-comment-btn';
-        aiBtn.id = buttonId;
-        aiBtn.innerHTML = '🚀';
-        aiBtn.title = 'Generate AI Comment';
+        aiBtn.className = 'ai-comment-btn comments-comment-box__detour-icons artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary';
         aiBtn.type = 'button';
+        aiBtn.setAttribute('aria-label', 'Generate AI Comment with Kommentify');
+        aiBtn.title = 'Kommentify - AI Comment Suggestions';
+
+        // Try to get the logo URL, fallback to emoji if not available
+        let logoUrl = '';
+        try {
+            logoUrl = chrome.runtime.getURL ? chrome.runtime.getURL('assets/kom-logo.jpeg') : '';
+        } catch (e) {
+            console.log('[AI Comment] Could not get logo URL, using fallback');
+        }
+
+        // Kommentify logo icon with white background
+        // Using inline SVG as primary (more reliable) with image as fallback
+        aiBtn.innerHTML = `
+            <span class="artdeco-button__icon" style="display: flex; align-items: center; justify-content: center; background: white; border-radius: 50%; width: 24px; height: 24px; padding: 2px; box-sizing: border-box;">
+                ${logoUrl ? `<img src="${logoUrl}" alt="K" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width: 20px; height: 20px; object-fit: contain; border-radius: 50%;" /><span style="display:none;width:16px;height:16px;background:linear-gradient(135deg, #693fe9, #7c4dff);border-radius:50%;color:white;font-size:10px;font-weight:bold;align-items:center;justify-content:center;">K</span>` : `<span style="display:flex;width:16px;height:16px;background:linear-gradient(135deg, #693fe9, #7c4dff);border-radius:50%;color:white;font-size:10px;font-weight:bold;align-items:center;justify-content:center;">K</span>`}
+            </span>
+            <span class="artdeco-button__text"></span>
+        `;
+
+        console.log('[AI Comment] Button created with logo URL:', logoUrl || '(fallback)');
 
         // Style it to match LinkedIn's native circular buttons
         aiBtn.style.cssText = `
-            width: 48px !important;
-            height: 48px !important;
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
             border-radius: 50% !important;
             background-color: transparent !important;
             border: none !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 32px !important;
             cursor: pointer !important;
             margin-right: 4px !important;
             transition: background-color 0.2s ease !important;
             line-height: 1 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
         `;
 
         // Add the native grey hover effect
@@ -304,12 +616,247 @@ class AICommentButtonManager {
         aiBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            await this.handleAIButtonClick(editor, aiBtn);
+            await this.handleAIButtonClickFromSuggest(postElement, iconContainer, aiBtn);
         });
 
         // Insert our button at the beginning of that toolbar row
-        toolbar.prepend(aiBtn);
-        console.log(`[AI Comment] ✅ Added AI button to toolbar`);
+        const firstButton = iconContainer.querySelector('button');
+        if (firstButton) {
+            iconContainer.insertBefore(aiBtn, firstButton);
+        } else {
+            iconContainer.appendChild(aiBtn);
+        }
+
+        console.log('[AI Comment] Added AI button to comment box toolbar');
+    }
+
+    /**
+     * Handle AI button click - extract post data and generate comment
+     * This is called from the suggest button (new approach)
+     */
+    async handleAIButtonClickFromSuggest(postElement, iconContainer, aiBtn) {
+        if (this.isGenerating) {
+            console.log('[AI Comment] Already generating, please wait...');
+            return;
+        }
+
+        // Check daily comment limit before proceeding
+        try {
+            const limitCheck = await this.sendMessageToBackground('checkDailyLimit', { actionType: 'comment' });
+            if (limitCheck && !limitCheck.allowed) {
+                console.log('[AI Comment] Daily comment limit reached:', limitCheck);
+                this.showLimitReachedPopup('Comments', limitCheck.limit);
+                return;
+            }
+        } catch (e) {
+            console.log('[AI Comment] Could not check limit, proceeding...');
+        }
+
+        this.isGenerating = true;
+        const originalHTML = aiBtn.innerHTML;
+        aiBtn.innerHTML = '<span>⏳</span>';
+        aiBtn.style.opacity = '0.7';
+        aiBtn.disabled = true;
+        aiBtn.style.pointerEvents = 'none';
+
+        // Safety timeout: reset button after 95s no matter what
+        const safetyTimer = setTimeout(() => {
+            if (aiBtn.innerHTML.includes('⏳')) {
+                console.warn('[AI Comment] Safety timeout reached (95s), resetting button');
+                aiBtn.innerHTML = originalHTML;
+                aiBtn.style.opacity = '1';
+                aiBtn.disabled = false;
+                aiBtn.style.pointerEvents = 'auto';
+                this.isGenerating = false;
+            }
+        }, 95000);
+
+        try {
+            // Extract post data using the robust extractors
+            console.log('═══════════════════════════════════════════════════════════════');
+            console.log('[AI Comment] 🔍 EXTRACTING POST DATA');
+            console.log('═══════════════════════════════════════════════════════════════');
+
+            const postText = this.extractPostText(postElement, iconContainer);
+            const posterName = this.extractPosterName(postElement);
+            const existingCommentText = this.extractExistingCommentText(postElement, iconContainer);
+
+            console.log('[AI Comment] 👤 POSTER NAME:');
+            console.log('   ', posterName || '(not found)');
+
+            console.log('[AI Comment] 📄 POST TEXT:');
+            console.log('   Length:', postText?.length || 0);
+            console.log('   Content:', postText?.substring(0, 300) + (postText?.length > 300 ? '\n   ...(truncated)' : ''));
+
+            console.log('[AI Comment] 💬 EXISTING COMMENT:');
+            console.log('   ', existingCommentText || '(none)');
+
+            console.log('[AI Comment] 🎯 POST ELEMENT FOUND:', !!postElement);
+            console.log('═══════════════════════════════════════════════════════════════');
+
+            if (!postText && !existingCommentText) {
+                console.error('[AI Comment] ❌ Could not extract post context!');
+                throw new Error('Could not extract post context. Please try again.');
+            }
+
+            const selectedPostText = postText || '[No specific post text detected]';
+
+            // Get user settings
+            const settings = await this.getUserSettings();
+            console.log('[AI Comment] ⚙️ Settings loaded:', {
+                goal: settings.goal,
+                tone: settings.tone,
+                length: settings.length,
+                style: settings.style,
+                aiAutoPost: settings.aiAutoPost
+            });
+
+            // Check if auto-decide is enabled
+            const isAutoDecide = settings.autoDecideEnabled === true || settings.autoDecideEnabled === 'true';
+            let finalSettings = { ...settings };
+            let autoDecideReasoning = '';
+
+            // If auto-decide is enabled, call the auto-decide API first
+            if (isAutoDecide) {
+                console.log('[AI Comment] Auto-decide is ON, calling auto-decide API...');
+                try {
+                    const autoDecideResult = await this.sendMessageToBackground('autoDecideComment', {
+                        authorName: posterName,
+                        postText: selectedPostText,
+                        model: settings.model || 'gpt-4o-mini'
+                    });
+
+                    if (autoDecideResult && autoDecideResult.success && autoDecideResult.settings) {
+                        finalSettings.goal = autoDecideResult.settings.goal || finalSettings.goal;
+                        finalSettings.tone = autoDecideResult.settings.tone || finalSettings.tone;
+                        finalSettings.length = autoDecideResult.settings.length || finalSettings.length;
+                        finalSettings.style = autoDecideResult.settings.style || finalSettings.style;
+                        autoDecideReasoning = autoDecideResult.settings.reasoning || '';
+                        console.log('[AI Comment] Auto-decide result:', autoDecideResult.settings);
+                    }
+                } catch (autoDecideErr) {
+                    console.error('[AI Comment] Auto-decide failed, using manual settings:', autoDecideErr);
+                }
+            }
+
+            // Show settings notification
+            this.showSettingsNotification(finalSettings, isAutoDecide ? 'auto-decide' : 'manual', autoDecideReasoning);
+
+            // Generate AI comment
+            const postData = {
+                authorName: posterName || 'there',
+                postText: selectedPostText
+            };
+
+            console.log('[AI Comment] Calling generateComment with settings:', finalSettings);
+            const comment = await this.generateComment(postData, finalSettings);
+            console.log('[AI Comment] Got comment response:', comment ? comment.substring(0, 80) + '...' : 'NULL');
+
+            if (comment) {
+                // Find the comment input and fill it
+                const commentInput = this.findCommentInput(iconContainer, postElement);
+
+                if (commentInput) {
+                    commentInput.focus();
+                    commentInput.innerHTML = `<p>${comment}</p>`;
+
+                    // Trigger input event
+                    commentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    commentInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    console.log('[AI Comment] Comment filled in input box');
+
+                    // Check if manual review mode
+                    if (settings.aiAutoPost === 'manual') {
+                        aiBtn.innerHTML = '✅';
+                        aiBtn.style.setProperty('color', 'black', 'important');
+                    } else {
+                        // Auto-post mode - find and click submit button
+                        setTimeout(() => {
+                            this.submitComment(iconContainer, postElement);
+                        }, 500);
+                        aiBtn.innerHTML = '✅';
+                        aiBtn.style.setProperty('color', 'black', 'important');
+                    }
+                } else {
+                    console.warn('[AI Comment] Could not find comment input, copying to clipboard');
+                    await navigator.clipboard.writeText(comment);
+                    alert('Comment copied to clipboard! Paste it in the comment box.');
+                    aiBtn.innerHTML = '📋';
+                }
+
+                clearTimeout(safetyTimer);
+                setTimeout(() => {
+                    aiBtn.innerHTML = originalHTML;
+                    aiBtn.style.opacity = '1';
+                    aiBtn.disabled = false;
+                    aiBtn.style.pointerEvents = 'auto';
+                }, 2000);
+            } else {
+                throw new Error('No comment generated (null response)');
+            }
+        } catch (error) {
+            console.error('[AI Comment] Error:', error);
+            this.showErrorNotification(error.message || 'Failed to generate comment. Please try again.');
+            aiBtn.innerHTML = '❌';
+            clearTimeout(safetyTimer);
+            setTimeout(() => {
+                aiBtn.innerHTML = originalHTML;
+                aiBtn.style.opacity = '1';
+                aiBtn.disabled = false;
+                aiBtn.style.pointerEvents = 'auto';
+            }, 2000);
+        } finally {
+            this.isGenerating = false;
+        }
+    }
+
+    /**
+     * Find the comment input element using robust selectors
+     */
+    findCommentInput(iconContainer, postElement) {
+        // First try near the icon container
+        let container = iconContainer.closest('.comments-comment-box__form')
+            || iconContainer.closest('form')
+            || iconContainer.parentElement?.parentElement;
+
+        if (container) {
+            const editor = container.querySelector('.ProseMirror, [contenteditable="true"]');
+            if (editor) return editor;
+        }
+
+        // Fallback: search in post element
+        if (postElement && postElement !== document.body) {
+            const editor = postElement.querySelector('.ProseMirror, [contenteditable="true"]');
+            if (editor) return editor;
+        }
+
+        // Global fallback
+        return document.querySelector('.ProseMirror, [contenteditable="true"]');
+    }
+
+    /**
+     * Submit the comment by clicking the submit button
+     */
+    submitComment(iconContainer, postElement) {
+        let submitBtn = null;
+
+        // Find the comment form
+        const form = iconContainer.closest('.comments-comment-box__form')
+            || iconContainer.closest('form')
+            || iconContainer.parentElement?.parentElement?.parentElement;
+
+        if (form) {
+            submitBtn = form.querySelector('.comments-comment-box__submit-button, button[type="submit"].artdeco-button--primary, button.artdeco-button--primary');
+        }
+
+        if (submitBtn && !submitBtn.disabled) {
+            submitBtn.click();
+            console.log('[AI Comment] Comment auto-submitted!');
+            // Increment daily comment count
+            this.sendMessageToBackground('incrementDailyCount', { actionType: 'comment' })
+                .catch(e => console.log('[AI Comment] Could not increment count'));
+        }
     }
     
     /**
@@ -470,38 +1017,15 @@ class AICommentButtonManager {
             this.isGenerating = false;
         }
     }
-    
+
     /**
-     * Extract post data (author name, post text)
+     * Extract post data (author name, post text) - uses robust extractors
      */
     extractPostData(post) {
-        // Get author name
-        const authorElement = post.querySelector('.update-components-actor__name span[aria-hidden="true"], .feed-shared-actor__name span[aria-hidden="true"], .update-components-actor__title span[aria-hidden="true"]') 
-            || post.querySelector('.update-components-actor__name .visually-hidden, .feed-shared-actor__name .visually-hidden');
-        let authorName = authorElement?.innerText?.trim() || authorElement?.textContent?.trim() || 'Unknown Author';
-        // Remove duplicated names (LinkedIn nests spans causing "Name Name", "NameName", "Name\nName")
-        // First: regex catch-all for exact repeats (with or without whitespace separator)
-        authorName = authorName.replace(/^(.{2,})\s*\1$/, '$1').trim();
-        // Normalize whitespace
-        authorName = authorName.replace(/\s+/g, ' ').trim();
-        const half = Math.floor(authorName.length / 2);
-        if (authorName.length > 2 && authorName.length % 2 === 0 && authorName.substring(0, half) === authorName.substring(half)) {
-            authorName = authorName.substring(0, half).trim();
-        }
-        // Also handle "Name Name" with a space separator between duplicates
-        const words = authorName.split(' ');
-        if (words.length >= 2 && words.length % 2 === 0) {
-            const firstHalf = words.slice(0, words.length / 2).join(' ');
-            const secondHalf = words.slice(words.length / 2).join(' ');
-            if (firstHalf === secondHalf) {
-                authorName = firstHalf;
-            }
-        }
-        
-        // Get post text using user's selectors
-        const textElement = post.querySelector('.update-components-text, .feed-shared-update-v2__commentary, div[data-view-name="feed-commentary"]');
-        const postText = textElement?.textContent?.trim() || '';
-        
+        // Use the robust extractors from this class
+        const authorName = this.extractPosterName(post) || 'there';
+        const postText = this.extractPostText(post) || '';
+
         return {
             authorName,
             postText: postText.substring(0, 1000) // Limit to 1000 chars
@@ -548,9 +1072,35 @@ class AICommentButtonManager {
      * Generate AI comment using background script
      */
     async generateComment(postData, settings) {
+        // DETAILED LOGGING: Show what data is captured before sending to backend
+        console.log('═══════════════════════════════════════════════════════════════');
+        console.log('[AI Comment] 📤 DATA CAPTURED FOR BACKEND');
+        console.log('═══════════════════════════════════════════════════════════════');
+
+        // Post Data
+        console.log('[AI Comment] 📝 POST DATA:');
+        console.log('   authorName:', postData.authorName);
+        console.log('   postText length:', postData.postText?.length || 0);
+        console.log('   postText preview:', postData.postText?.substring(0, 200) + (postData.postText?.length > 200 ? '...' : ''));
+
+        // Settings
+        console.log('[AI Comment] ⚙️ SETTINGS:');
+        console.log('   goal:', settings.goal);
+        console.log('   tone:', settings.tone);
+        console.log('   length:', settings.length);
+        console.log('   style:', settings.style);
+        console.log('   expertise:', settings.expertise || '(none)');
+        console.log('   background:', settings.background || '(none)');
+        console.log('   model:', settings.model);
+        console.log('   aiAutoPost:', settings.aiAutoPost);
+        console.log('   autoDecideEnabled:', settings.autoDecideEnabled);
+
+        console.log('═══════════════════════════════════════════════════════════════');
+
         try {
-            console.log('[AI Comment] Sending generateAIComment to background with settings:', settings);
-            const response = await this.sendMessageToBackground('generateAIComment', {
+            console.log('[AI Comment] 🚀 Sending request to background...');
+
+            const requestPayload = {
                 authorName: postData.authorName,
                 postText: postData.postText,
                 goal: settings.goal,
@@ -560,20 +1110,26 @@ class AICommentButtonManager {
                 expertise: settings.expertise,
                 background: settings.background,
                 model: settings.model
-            });
-            
-            console.log('[AI Comment] Background response:', JSON.stringify(response).substring(0, 200));
-            
+            };
+
+            console.log('[AI Comment] 📦 Request payload:', JSON.stringify(requestPayload, null, 2));
+
+            const response = await this.sendMessageToBackground('generateAIComment', requestPayload);
+
+            console.log('[AI Comment] 📥 Background response received:', JSON.stringify(response).substring(0, 500));
+
             if (response?.comment) {
+                console.log('[AI Comment] ✅ Generated comment:', response.comment.substring(0, 100) + '...');
                 return response.comment;
             }
             if (response?.content) {
+                console.log('[AI Comment] ✅ Generated comment (content):', response.content.substring(0, 100) + '...');
                 return response.content;
             }
-            console.warn('[AI Comment] No comment in response, keys:', Object.keys(response || {}));
+            console.warn('[AI Comment] ⚠️ No comment in response, keys:', Object.keys(response || {}));
             return null;
         } catch (error) {
-            console.error('[AI Comment] Failed to generate comment:', error);
+            console.error('[AI Comment] ❌ Failed to generate comment:', error);
             return this.generateFallbackComment(postData, settings);
         }
     }

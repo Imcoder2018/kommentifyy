@@ -33,7 +33,8 @@ export default {
         { src: 'src/components/html/*', dest: 'dist/components/html' },
         { src: 'src/assets/css/*', dest: 'dist/assets/css' },
         { src: 'src/assets/images/*', dest: 'dist/assets/images' },
-        { src: 'src/assets/spinner.gif', dest: 'dist/assets' }
+        { src: 'src/assets/spinner.gif', dest: 'dist/assets' },
+        { src: 'src/assets/kom-logo.jpeg', dest: 'dist/assets' }
       ]
     }),
     

@@ -328,15 +328,15 @@ export default function LeadWarmerTab(props: Props) {
   const handleImport = async () => {
     // Clean URLs: extract just the profile part, remove query params and trailing slashes
     const cleanUrl = (url: string): string | null => {
-      // Extract just the linkedin.com/in/username part
-      const match = url.match(/(https:\/\/(?:www\.)?linkedin\.com\/in\/[^/?#\s]+)/i);
+      // Extract just the linkedin.com/in/username part - match both http and https
+      const match = url.match(/(https?:\/\/(?:www\.)?linkedin\.com\/in\/[^/?#\s]+)/i);
       if (match) return match[1].replace(/\/$/, '');
       return null;
     };
 
     const urls = importText.split('\n')
       .map(l => l.trim())
-      .filter(l => l.includes('linkedin.com/in/'))
+      .filter(l => l.match(/linkedin\.com\/in\//i))
       .map(cleanUrl)
       .filter((url): url is string => url !== null);
 
@@ -1092,7 +1092,7 @@ export default function LeadWarmerTab(props: Props) {
                 <textarea value={importText} onChange={e => setImportText(e.target.value)} placeholder={'Paste LinkedIn Profile URLs here (one per line)...\nhttps://www.linkedin.com/in/username'} style={{ ...styles.input, minHeight: '140px', fontFamily: 'monospace' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: THEME.colors.text.muted, fontSize: '13px' }}>
-                    {importText.split('\n').filter(l => l.includes('linkedin.com')).length} valid URLs detected
+                    {importText.split('\n').filter(l => l.match(/linkedin\.com\/in\//i)).length} valid URLs detected
                   </span>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <input type="file" ref={csvFileRef} hidden accept=".csv" onChange={(e) => {
@@ -1100,9 +1100,9 @@ export default function LeadWarmerTab(props: Props) {
                       if (file) {
                         const reader = new FileReader();
                         reader.onload = (ev) => {
-                          const urls = (ev.target?.result as string).split('\n').filter(l => l.includes('linkedin.com/in/')).map(l => {
-                            // Extract clean URL: stop at ?, #, /, ", ', or whitespace
-                            const match = l.match(/(https:\/\/(?:www\.)?linkedin\.com\/in\/[^/?#"'\s,]+)/i);
+                          const urls = (ev.target?.result as string).split('\n').filter(l => l.match(/linkedin\.com\/in\//i)).map(l => {
+                            // Extract clean URL: stop at ?, #, /, ", ', or whitespace - match http and https
+                            const match = l.match(/(https?:\/\/(?:www\.)?linkedin\.com\/in\/[^/?#"'\s,]+)/i);
                             return match ? match[1].replace(/\/$/, '') : '';
                           }).filter(Boolean).join('\n');
                           setImportText(urls);

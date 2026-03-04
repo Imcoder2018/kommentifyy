@@ -61,11 +61,15 @@ export async function GET(request: NextRequest) {
       const logsByDate: Record<string, any> = {};
       for (const log of engagementLogs) {
         const dateKey = new Date(log.createdAt).toISOString().split('T')[0];
+
+        // Categorize: autopilot_setup, bulk, ai_comment_generated, scheduled_engagement are "Autopilot", everything else is "Instant Execution"
+        const isScheduled = log.action === 'bulk' || log.action === 'autopilot_setup' || log.action === 'ai_comment_generated' || log.action === 'scheduled_engagement';
+
         if (!logsByDate[dateKey]) {
           logsByDate[dateKey] = {
             id: log.id,
             date: log.createdAt,
-            type: log.action === 'bulk' ? 'scheduled' : 'instant',
+            type: isScheduled ? 'scheduled' : 'instant',
             leadsProcessed: 0,
             likesGiven: 0,
             commentsGiven: 0,
@@ -74,7 +78,7 @@ export async function GET(request: NextRequest) {
         }
         logsByDate[dateKey].leadsProcessed++;
         if (log.action === 'like') logsByDate[dateKey].likesGiven++;
-        if (log.action === 'comment') logsByDate[dateKey].commentsGiven++;
+        if (log.action === 'comment' || log.action === 'ai_comment_generated') logsByDate[dateKey].commentsGiven++;
       }
       Object.values(logsByDate).forEach((e: any) => executionHistory.push(e));
 

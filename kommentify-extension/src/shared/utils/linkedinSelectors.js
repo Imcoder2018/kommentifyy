@@ -37,6 +37,28 @@ export const LinkedInSelectors = {
     postTextSpans: 'div.fie-impression-container div.update-components-text span',
     postAuthor: 'div.update-components-actor__meta a span span:nth-child(1) span span:nth-child(1)',
     postHashtags: 'a[href*="https://www.linkedin.com/search/results/all/?keywords="]',
+
+    // Post content selectors (updated with new LinkedIn UI - 2024+)
+    postContentSelectors: [
+        '[data-testid="expandable-text-box"]',           // New LinkedIn UI
+        '[data-view-name="feed-commentary"]',              // New LinkedIn UI
+        '.feed-shared-update-v2__description span[dir="ltr"]',
+        '.update-components-text span[dir="ltr"]',
+        '[data-update-actor-name] ~ div span[dir="ltr"]',
+        '.feed-shared-update-v2__description',
+        '.feed-shared-text',
+        '.update-components-text',
+        '.break-words'
+    ],
+
+    // Post container selectors (updated with new LinkedIn UI - 2024+)
+    postContainerSelectors: [
+        '.feed-shared-update-v2',
+        '[data-urn^="urn:li:activity:"]',                 // More specific URN pattern
+        '[data-view-name="feed-update"]',                  // New feed wrapper
+        'li',
+        'div[data-id]'
+    ],
     
     // Comment elements
     commentEditor: 'div.ql-editor',

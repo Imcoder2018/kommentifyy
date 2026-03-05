@@ -17,9 +17,13 @@ class FeedScraper {
      */
     async getInputBoxElement(clickedEl) {
         log('log', 'Searching for comment input box...');
-        
+
         // Find the main container for the entire post or comment thread
-        const container = clickedEl.closest('.feed-shared-update-v2, .social-details-base-comment-item');
+        // Updated with new LinkedIn UI selectors (2024+)
+        const container = clickedEl.closest('.feed-shared-update-v2')
+                        || clickedEl.closest('[data-urn^="urn:li:activity:"]')
+                        || clickedEl.closest('[data-view-name="feed-update"]')
+                        || clickedEl.closest('.social-details-base-comment-item');
         if (!container) {
             log('error', 'Could not find a parent container for the clicked button.');
             return null;
@@ -55,7 +59,11 @@ class FeedScraper {
     
     // --- Helper & Private Methods --- //
     _getText = (el, selectors) => {
-        const container = el.closest('[data-urn]');
+        // Updated with new LinkedIn UI selectors (2024+)
+        const container = el.closest('[data-urn^="urn:li:activity:"]')
+                        || el.closest('[data-view-name="feed-update"]')
+                        || el.closest('.feed-shared-update-v2')
+                        || el.closest('[data-urn]');
         for (const selector of selectors) {
             const element = container?.querySelector(selector);
             if (element) return element.innerText.trim();
@@ -64,7 +72,11 @@ class FeedScraper {
     }
 
     _getSeat = (el, selectors) => {
-        const container = el.closest('[data-urn]');
+        // Updated with new LinkedIn UI selectors (2024+)
+        const container = el.closest('[data-urn^="urn:li:activity:"]')
+                        || el.closest('[data-view-name="feed-update"]')
+                        || el.closest('.feed-shared-update-v2')
+                        || el.closest('[data-urn]');
         for (const selector of selectors) {
             const element = container?.querySelector(selector);
             if (element?.href) {
@@ -85,8 +97,12 @@ class FeedScraper {
      */
     _getAuthorName = (el) => {
         console.log('🔍 SCRAPER: Starting author name extraction...');
-        
-        const container = el.closest('[data-urn]');
+
+        // Updated with new LinkedIn UI selectors (2024+)
+        const container = el.closest('[data-urn^="urn:li:activity:"]')
+                        || el.closest('[data-view-name="feed-update"]')
+                        || el.closest('.feed-shared-update-v2')
+                        || el.closest('[data-urn]');
         if (!container) {
             console.warn('⚠️ SCRAPER: No post container found');
             return 'there';

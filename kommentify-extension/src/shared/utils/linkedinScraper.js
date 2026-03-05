@@ -11,30 +11,62 @@ export function scrapePostContent(postElement) {
     }
     
     // Try multiple selectors for post content (LinkedIn changes these frequently)
+    // Updated with new LinkedIn UI selectors (2024+)
     const selectors = [
+        // Priority 1 - New LinkedIn UI (2024+)
+        '[data-testid="expandable-text-box"]',
+        '[data-view-name="feed-commentary"]',
+        // Priority 2 - Traditional selectors with dir="ltr" (more accurate)
+        '.feed-shared-update-v2__description span[dir="ltr"]',
+        '.update-components-text span[dir="ltr"]',
+        '[data-update-actor-name] ~ div span[dir="ltr"]',
+        // Priority 3 - Legacy selectors
         '.feed-shared-update-v2__description',
         '.feed-shared-text',
-        '[data-test-id="main-feed-activity-card__commentary"]',
         '.update-components-text',
         '.feed-shared-inline-show-more-text',
-        '[data-test-id="update-v2-social-activity"]'
+        '[data-test-id="main-feed-activity-card__commentary"]',
+        '[data-test-id="update-v2-social-activity"]',
+        // Priority 4 - Fallback selectors
+        '.break-words'
     ];
-    
+
     for (const selector of selectors) {
         const element = postElement.querySelector(selector);
         if (element) {
             // Get text content, excluding "see more" links
-            let text = element.innerText?.trim() || '';
-            
+            let text = element.innerText?.trim() || element.textContent?.trim() || '';
+
             // Clean up common artifacts
+            text = text.replace(/…\s*more/gi, '');
+            text = text.replace(/\.\.\.\s*more/gi, '');
             text = text.replace(/\.\.\.\s*see more$/i, '');
             text = text.replace(/see translation$/i, '');
-            
+
             if (text && text.length > 10) {
                 console.log('✅ Post content scraped:', text.substring(0, 100) + '...');
                 return text;
             }
         }
+    }
+
+    // Fallback: try to find any span with dir="ltr" that might be post content
+    // (excluding comment box elements)
+    const ltrSpans = postElement.querySelectorAll('span[dir="ltr"]');
+    let fallbackText = '';
+    for (const span of ltrSpans) {
+        const text = span.textContent?.trim() || '';
+        // Skip if it's in a comment box
+        if (span.closest('[data-view-name="comment-box"]') || span.closest('.comments-comment-box__form')) {
+            continue;
+        }
+        if (text.length > 10) {
+            fallbackText += text + ' ';
+        }
+    }
+    if (fallbackText.trim().length > 10) {
+        console.log('✅ Post content scraped (fallback):', fallbackText.substring(0, 100) + '...');
+        return fallbackText.trim();
     }
     
     console.warn('⚠️ Could not scrape post content');
@@ -265,13 +297,15 @@ export function insertCommentText(commentText, postElement) {
 // Validate post element is valid LinkedIn post
 export function isValidPostElement(element) {
     if (!element) return false;
-    
-    // Check if element has post-like attributes
+
+    // Check if element has post-like attributes (updated with new LinkedIn UI)
     const hasPostClass = element.classList.contains('feed-shared-update-v2') ||
-                        element.classList.contains('feed-shared-update');
-    
-    const hasDataUrn = element.hasAttribute('data-urn') || 
-                       element.hasAttribute('data-id');
-    
+                        element.classList.contains('feed-shared-update') ||
+                        element.hasAttribute('data-view-name="feed-update"');
+
+    const hasDataUrn = element.hasAttribute('data-urn') ||
+                       element.hasAttribute('data-id') ||
+                       element.hasAttribute('data-urn^="urn:li:activity:"');
+
     return hasPostClass || hasDataUrn;
 }

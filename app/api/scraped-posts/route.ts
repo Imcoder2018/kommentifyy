@@ -96,6 +96,39 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PUT - Update AI comment for a scraped post
+export async function PUT(request: NextRequest) {
+  try {
+    const token = extractToken(request.headers.get('authorization'));
+    if (!token) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const payload = verifyToken(token);
+
+    const { id, aiComment } = await request.json();
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Post ID required' }, { status: 400 });
+    }
+
+    // Verify ownership
+    const post = await (prisma as any).scrapedPost.findFirst({ where: { id, userId: payload.userId } });
+    if (!post) {
+      return NextResponse.json({ success: false, error: 'Post not found' }, { status: 404 });
+    }
+
+    const updated = await (prisma as any).scrapedPost.update({
+      where: { id },
+      data: { aiComment: aiComment || null },
+    });
+
+    return NextResponse.json({ success: true, post: updated });
+  } catch (error: any) {
+    console.error('Update AI comment error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
 // DELETE - Delete a scraped post or all posts
 export async function DELETE(request: NextRequest) {
   try {

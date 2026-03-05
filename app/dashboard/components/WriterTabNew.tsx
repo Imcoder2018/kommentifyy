@@ -71,7 +71,7 @@ export default function WriterTabNew(props: any) {
         plannerSelected, setPlannerSelected, plannerGeneratingTopics,
         plannerPublishTime, setPlannerPublishTime, plannerStartDate, setPlannerStartDate,
         plannerTemplate, setPlannerTemplate, plannerTone, setPlannerTone,
-        plannerLength, setPlannerLength, plannerGenerating, plannerDoneCount, plannerTotal,
+        plannerLength, setPlannerLength, plannerGenerating, plannerDoneCount, plannerTotal, plannerGeneratedPosts,
         plannerStatusMsg, plannerAbortRef, generatePlannerTopics, startPlannerGeneration,
         // History from props
         historyItems, historyLoading, loadHistory,
@@ -1756,12 +1756,12 @@ export default function WriterTabNew(props: any) {
                                     // Show remove button for all scheduled posts since cron is disabled
                                     const canRemove = true;
                                     return (
-                                    <div key={idx} onClick={() => canRemove ? null : loadScheduledPost(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', cursor: canRemove ? 'default' : 'pointer' }}>
+                                    <div key={idx} onClick={() => loadScheduledPost(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', cursor: 'pointer' }}>
                                         <span style={{ color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                                             {firstLine}
                                         </span>
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginLeft: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span>{post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                                            <span>{post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'N/A'}</span>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleRemoveLinkedInScheduledPost(post); }}
                                                 style={{
@@ -1894,7 +1894,7 @@ export default function WriterTabNew(props: any) {
                                 {plannerStatusMsg && <div style={{ marginTop: '10px', color: '#f87171', fontSize: '14px' }}>{plannerStatusMsg}</div>}
                                 <button onClick={generatePlannerTopics} disabled={plannerGeneratingTopics}
                                     style={{ marginTop: '16px', width: '100%', padding: '13px', background: plannerGeneratingTopics ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: plannerGeneratingTopics ? 'wait' : 'pointer' }}>
-                                    {plannerGeneratingTopics ? `Generating ${plannerMode === '5days' ? '8' : '25'} topics...` : `Generate ${plannerMode === '5days' ? '8' : '25'} Topic Ideas`}
+                                    {plannerGeneratingTopics ? `Generating ${plannerMode === '5days' ? '5' : '20'} topics...` : `Generate ${plannerMode === '5days' ? '5' : '20'} Topic Ideas`}
                                 </button>
                             </div>
                         )}
@@ -2019,16 +2019,117 @@ export default function WriterTabNew(props: any) {
 
                         {/* Done Step */}
                         {plannerStep === 'done' && (
-                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
-                                <div style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>All posts generated!</div>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '24px' }}>
-                                    {plannerDoneCount} posts have been scheduled in your calendar.
+                            <div>
+                                <div style={{ textAlign: 'center', padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px' }}>
+                                    <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
+                                    <div style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>All posts generated!</div>
+                                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '16px' }}>
+                                        {plannerDoneCount} posts are ready. Review, schedule individually, or schedule all at once.
+                                    </div>
                                 </div>
-                                <button onClick={() => setPlannerOpen(false)}
-                                    style={{ padding: '12px 32px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                                    Close
-                                </button>
+
+                                {/* Generated Posts Preview */}
+                                <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '16px' }}>
+                                    {plannerGeneratedPosts && plannerGeneratedPosts.map((post: any, idx: number) => (
+                                        <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <span style={{ color: '#60a5fa', fontSize: '12px', fontWeight: '600' }}>
+                                                    Post {idx + 1} · {post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not scheduled'}
+                                                </span>
+                                                <button
+                                                    onClick={async () => {
+                                                        const token = localStorage.getItem('authToken');
+                                                        if (!token) return;
+                                                        showToast('Scheduling post via LinkedIn API...', 'info');
+                                                        try {
+                                                            const res = await fetch('/api/extension/command', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                                body: JSON.stringify({
+                                                                    command: 'linkedin_schedule_via_api',
+                                                                    data: {
+                                                                        content: post.content,
+                                                                        scheduledTime: post.scheduledFor,
+                                                                        mediaUrl: null,
+                                                                        mediaType: null
+                                                                    }
+                                                                }),
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.success) {
+                                                                showToast('Post scheduled successfully!', 'success');
+                                                                loadScheduledPosts?.();
+                                                            } else {
+                                                                showToast(data.error || 'Failed to schedule', 'error');
+                                                            }
+                                                        } catch (e) {
+                                                            console.error('Failed to schedule post:', e);
+                                                            showToast('Error scheduling post', 'error');
+                                                        }
+                                                    }}
+                                                    style={{ padding: '6px 12px', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '6px', color: '#34d399', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                                                    Schedule
+                                                </button>
+                                            </div>
+                                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', maxHeight: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {post.content?.substring(0, 300)}{post.content?.length > 300 ? '...' : ''}
+                                            </div>
+                                            {post.topic && (
+                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '8px', fontStyle: 'italic' }}>
+                                                    Topic: {post.topic}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Schedule All Button */}
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button
+                                        onClick={async () => {
+                                            const token = localStorage.getItem('authToken');
+                                            if (!token) return;
+                                            showToast('Scheduling all posts via LinkedIn API...', 'info');
+                                            let scheduledCount = 0;
+                                            for (let i = 0; i < plannerGeneratedPosts.length; i++) {
+                                                const post = plannerGeneratedPosts[i];
+                                                try {
+                                                    const res = await fetch('/api/extension/command', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                        body: JSON.stringify({
+                                                            command: 'linkedin_schedule_via_api',
+                                                            data: {
+                                                                content: post.content,
+                                                                scheduledTime: post.scheduledFor,
+                                                                mediaUrl: null,
+                                                                mediaType: null
+                                                            }
+                                                        }),
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.success) {
+                                                        scheduledCount++;
+                                                        showToast(`Scheduled ${scheduledCount}/${plannerGeneratedPosts.length} posts`, 'info');
+                                                    }
+                                                } catch (e) {
+                                                    console.error('Failed to schedule post:', e);
+                                                }
+                                                await new Promise(r => setTimeout(r, 500)); // Small delay between posts
+                                            }
+                                            if (scheduledCount > 0) {
+                                                showToast(`${scheduledCount} posts scheduled successfully!`, 'success');
+                                                loadScheduledPosts?.();
+                                            }
+                                        }}
+                                        style={{ flex: 1, padding: '12px 20px', background: 'linear-gradient(135deg, #10b981, #34d399)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                                        Schedule All Posts
+                                    </button>
+                                    <button onClick={() => setPlannerOpen(false)}
+                                        style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
+                                        Close
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'AI post generation not available in your plan' }, { status: 403 });
     }
 
-    const topicCount = mode === '30days' ? 40 : 12;
+    const topicCount = mode === '30days' ? 40 : mode === '20days' ? 20 : 5;
 
     let profileContext = '';
     if (profileData) {
@@ -99,7 +99,7 @@ ${recentPosts ? `\nRecent posts (voice/style reference):\n${recentPosts}` : ''}`
       return NextResponse.json({ success: true, topics: FALLBACK_TOPICS.slice(0, topicCount), fallback: true });
     }
 
-    const prompt = `You are an elite LinkedIn content strategist. Generate ${topicCount} highly specific, viral-potential LinkedIn post topics for a ${mode === '30days' ? '30-day' : '7-day'} content calendar.
+    const prompt = `You are an elite LinkedIn content strategist. Generate ${topicCount} highly specific, viral-potential LinkedIn post topics for a ${mode === '30days' ? '30-day' : mode === '20days' ? '20-day' : '5-day'} content calendar.
 ${profileContext}
 ${userContext ? `\nUser's Goals & Context:\n${userContext}` : ''}
 

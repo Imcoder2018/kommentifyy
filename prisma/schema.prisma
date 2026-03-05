@@ -298,6 +298,7 @@ model ScrapedPost {
   postUrl         String?
   imageUrl        String?  @db.Text
   isSharedByAdmin Boolean  @default(false)
+  aiComment       String?  @db.Text  // Persisted AI-generated comment
   scrapedAt       DateTime @default(now())
   createdAt       DateTime @default(now())
 

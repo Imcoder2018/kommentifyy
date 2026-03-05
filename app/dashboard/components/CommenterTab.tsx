@@ -159,6 +159,16 @@ export default function CommenterTab(props: any) {
             if (data.success) {
                 setCapturedPosts(data.posts || []);
                 setTotalPages(data.pagination?.totalPages || 1);
+                // Load AI comments from database into state
+                const aiComments: Record<string, string> = {};
+                (data.posts || []).forEach((post: any) => {
+                    if (post.aiComment) {
+                        aiComments[post.id] = post.aiComment;
+                    }
+                });
+                if (Object.keys(aiComments).length > 0) {
+                    setAiGeneratedComments(prev => ({ ...prev, ...aiComments }));
+                }
             }
         } catch (e) {
             console.error('Failed to load captured posts:', e);
@@ -253,8 +263,11 @@ export default function CommenterTab(props: any) {
                         const commentData = await commentRes.json();
                         if (commentData.success && commentData.content) {
                             commentText = commentData.content;
-                            // Store AI comment for display
+                            // Store AI comment for display and save to database for persistence
                             setAiGeneratedComments(prev => ({ ...prev, [post.id || i]: commentText }));
+                            if (post.id) {
+                                saveAiCommentToDb(post.id, commentText);
+                            }
                             setEngagementProgress(prev => ({ ...prev, currentComment: commentText }));
                         }
                     } catch (e) {
@@ -454,6 +467,8 @@ export default function CommenterTab(props: any) {
 
             const commentText = data.content;
             setAiGeneratedComments(prev => ({ ...prev, [postId]: commentText }));
+            // Save AI comment to database for persistence
+            saveAiCommentToDb(postId, commentText);
 
             // DON'T auto-send - just show the generated comment for user to review and edit
             // User can click "Send" button manually to send
@@ -469,6 +484,21 @@ export default function CommenterTab(props: any) {
     const generateAiComment = async (postId: string, post: any) => {
         // Show settings preview overlay first
         showSettingsPreview(postId, post);
+    };
+
+    // Save AI comment to database for persistence
+    const saveAiCommentToDb = async (postId: string, comment: string) => {
+        const token = localStorage.getItem('authToken');
+        if (!token || !postId) return;
+        try {
+            await fetch('/api/scraped-posts', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ id: postId, aiComment: comment })
+            });
+        } catch (e) {
+            console.error('Failed to save AI comment to DB:', e);
+        }
     };
 
     const deletePost = async (postId: string) => {
@@ -765,7 +795,7 @@ export default function CommenterTab(props: any) {
                                     // Auto-trigger engagement after capture if auto-like or auto-comment is enabled
                                     if (autoLikeEnabled || autoCommentEnabled) {
                                         console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
-                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 5000);
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 15000);
                                     }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
@@ -794,7 +824,7 @@ export default function CommenterTab(props: any) {
                                     // Auto-trigger engagement after capture if enabled
                                     if (autoLikeEnabled || autoCommentEnabled) {
                                         console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
-                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 5000);
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 15000);
                                     }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
@@ -821,7 +851,7 @@ export default function CommenterTab(props: any) {
                                     // Auto-trigger engagement after capture if enabled
                                     if (autoLikeEnabled || autoCommentEnabled) {
                                         console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
-                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 5000);
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 15000);
                                     }
                                 }
                                 else showToast(data.error || 'Failed', 'error');

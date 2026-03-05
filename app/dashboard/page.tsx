@@ -360,6 +360,7 @@ function DashboardContent() {
     const [plannerTotal, setPlannerTotal] = useState(0);
     const [plannerStatusMsg, setPlannerStatusMsg] = useState('');
     const plannerAbortRef = useRef<boolean>(false);
+    const [plannerGeneratedPosts, setPlannerGeneratedPosts] = useState<any[]>([]);
 
     // LinkedIn OAuth state
     const [linkedInOAuth, setLinkedInOAuth] = useState<any>(null);
@@ -1629,10 +1630,12 @@ function DashboardContent() {
         setPlannerDoneCount(0);
         setPlannerTotal(topics.length);
         setPlannerStep('generating');
+        setPlannerGeneratedPosts([]); // Clear previous generated posts
         // Save session for disconnect resilience
         const key = `planner_${user?.id}_${plannerMode}`;
         const session = { step: 'generating', topics: plannerTopics, selected: plannerSelected, publishTime: plannerPublishTime, startDate: plannerStartDate, template: plannerTemplate, tone: plannerTone, length: plannerLength, doneCount: 0, total: topics.length };
         try { localStorage.setItem(key, JSON.stringify(session)); } catch (e) { console.error('Failed to save planner session:', e); }
+        const generatedPosts: any[] = [];
         for (let i = 0; i < topics.length; i++) {
             if (plannerAbortRef.current) break;
             const topic = topics[i];
@@ -1656,6 +1659,16 @@ function DashboardContent() {
                 if (schedData.success) {
                     const newCount = i + 1;
                     setPlannerDoneCount(newCount);
+                    // Store generated post for preview
+                    generatedPosts.push({
+                        id: schedData.id || `gen_${i}`,
+                        content: genData.content,
+                        topic,
+                        template: plannerTemplate,
+                        tone: plannerTone,
+                        scheduledFor: scheduledDate.toISOString(),
+                    });
+                    setPlannerGeneratedPosts([...generatedPosts]);
                     try { localStorage.setItem(key, JSON.stringify({ ...session, doneCount: newCount })); } catch (e) { console.error('Failed to update planner session:', e); }
                     loadScheduledPosts();
                 }
@@ -2694,7 +2707,7 @@ function DashboardContent() {
         plannerPublishTime, setPlannerPublishTime, plannerStartDate, setPlannerStartDate,
         plannerTemplate, setPlannerTemplate, plannerTone, setPlannerTone,
         plannerLength, setPlannerLength, plannerGenerating, plannerDoneCount, plannerTotal,
-        plannerStatusMsg, plannerAbortRef,
+        plannerStatusMsg, plannerAbortRef, plannerGeneratedPosts,
         openPlanner, generatePlannerTopics, startPlannerGeneration,
         // Voyager
         voyagerData, setVoyagerData, voyagerLoading, voyagerSyncing, setVoyagerSyncing, loadVoyagerData,

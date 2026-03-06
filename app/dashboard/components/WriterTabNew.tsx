@@ -1552,14 +1552,14 @@ export default function WriterTabNew(props: any) {
                             </button>
                             {/* DATE Picker - Full clickable area */}
                             <div style={{ position: 'relative', flex: 1, minWidth: 0, height: '38px', borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
-                                    {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 16)}
+                                <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '11px', fontWeight: '600' }}>
+                                    {writerScheduleDate ? new Date(writerScheduleDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : 'mm/dd/yyyy'}
                                 </span>
                                 <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
                                     style={{
-                                        width: '100%', height: '100%', padding: '0 10px 0 34px',
+                                        width: '100%', height: '100%', padding: '0',
                                         background: 'transparent', border: 'none',
-                                        color: writerScheduleDate ? 'white' : 'rgba(255,255,255,0.6)',
+                                        color: 'transparent',
                                         fontSize: '12px', fontWeight: '600', cursor: 'pointer',
                                         outline: 'none'
                                     }} />
@@ -1567,14 +1567,14 @@ export default function WriterTabNew(props: any) {
 
                             {/* TIME Picker - Full clickable area */}
                             <div style={{ position: 'relative', flex: 1, minWidth: 0, height: '38px', borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
-                                    {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 16)}
+                                <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '11px', fontWeight: '600' }}>
+                                    {writerScheduleTime || '--:--'}
                                 </span>
                                 <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
                                     style={{
-                                        width: '100%', height: '100%', padding: '0 10px 0 34px',
+                                        width: '100%', height: '100%', padding: '0',
                                         background: 'transparent', border: 'none',
-                                        color: writerScheduleTime ? 'white' : 'rgba(255,255,255,0.6)',
+                                        color: 'transparent',
                                         fontSize: '12px', fontWeight: '600', cursor: 'pointer',
                                         outline: 'none'
                                     }} />
@@ -1885,8 +1885,8 @@ export default function WriterTabNew(props: any) {
                                     {plannerStep === 'context' && 'Step 1 of 3 — Add context & generate topics'}
                                     {plannerStep === 'select' && 'Step 2 of 3 — Select your topics'}
                                     {plannerStep === 'time' && 'Step 3 of 3 — Set schedule & generate posts'}
-                                    {plannerStep === 'generating' && `Generating posts… ${plannerDoneCount}/${plannerTotal}`}
-                                    {plannerStep === 'done' && 'All posts generated!'}
+                                    {plannerStep === 'generating' && `Generating & Scheduling... ${plannerDoneCount}/${plannerTotal}`}
+                                    {plannerStep === 'done' && 'All posts generated & scheduled!'}
                                 </div>
                             </div>
                             {plannerStep !== 'generating' && (
@@ -1970,15 +1970,15 @@ export default function WriterTabNew(props: any) {
                                             {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 14)} Start Date
                                         </label>
                                         <div style={{ position: 'relative', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
-                                                {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 18)}
+                                            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '14px', fontWeight: '600' }}>
+                                                {plannerStartDate ? new Date(plannerStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : 'mm/dd/yyyy'}
                                             </span>
                                             <input type="date" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)}
                                                 style={{
-                                                    width: '100%', height: '100%', padding: '0 14px 0 42px',
+                                                    width: '100%', height: '100%', padding: '0',
                                                     background: 'transparent',
                                                     border: 'none',
-                                                    color: plannerStartDate ? 'white' : 'rgba(255,255,255,0.6)',
+                                                    color: 'transparent',
                                                     fontSize: '14px', fontWeight: '600', cursor: 'pointer',
                                                     outline: 'none'
                                                 }} />
@@ -1991,15 +1991,15 @@ export default function WriterTabNew(props: any) {
                                             {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 14)} Publish Time
                                         </label>
                                         <div style={{ position: 'relative', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
-                                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 18)}
+                                            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '14px', fontWeight: '600' }}>
+                                                {plannerPublishTime || '--:--'}
                                             </span>
                                             <input type="time" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)}
                                                 style={{
-                                                    width: '100%', height: '100%', padding: '0 14px 0 42px',
+                                                    width: '100%', height: '100%', padding: '0',
                                                     background: 'transparent',
                                                     border: 'none',
-                                                    color: plannerPublishTime ? 'white' : 'rgba(255,255,255,0.6)',
+                                                    color: 'transparent',
                                                     fontSize: '14px', fontWeight: '600', cursor: 'pointer',
                                                     outline: 'none'
                                                 }} />
@@ -2064,12 +2064,12 @@ export default function WriterTabNew(props: any) {
                             <div style={{ textAlign: 'center', padding: '20px 0' }}>
                                 <div style={{ width: '60px', height: '60px', border: '4px solid rgba(105,63,233,0.3)', borderTopColor: '#693fe9', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
                                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '8px' }}>Generating your content calendar...</div>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '16px' }}>Post {plannerDoneCount} of {plannerTotal}</div>
+                                <div style={{ color: 'white', fontSize: '16px', fontWeight: '700', marginBottom: '8px' }}>Generating & Scheduling posts...</div>
+                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '16px' }}>Please wait while each post is generated and sent to LinkedIn</div>
                                 <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
                                     <div style={{ width: `${(plannerDoneCount / plannerTotal) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #693fe9, #8b5cf6)', transition: 'width 0.3s ease' }}></div>
                                 </div>
-                                {plannerStatusMsg && <div style={{ marginTop: '16px', color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>{plannerStatusMsg}</div>}
+                                {plannerStatusMsg && <div style={{ marginTop: '16px', color: '#a78bfa', fontSize: '14px' }}>{plannerStatusMsg}</div>}
                             </div>
                         )}
 

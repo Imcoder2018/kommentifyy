@@ -118,68 +118,104 @@ const IconHeart = ({ size = 16, color = 'currentColor' }: { size?: number; color
 
 export default function FeaturesPage() {
     const features = [
-        { 
-            icon: <IconEdit size={32} />, 
-            num: '01', 
-            title: 'AI Post Writer + Advanced Scheduler', 
+        {
+            icon: <IconEdit size={32} />,
+            num: '01',
+            title: 'AI Post Writer + Advanced Scheduler',
             desc: 'Enter one keyword → Get 10 unique engaging headlines → Choose tone (Professional, Story, Lead Magnet, Motivational) → AI generates polished, ready-to-publish post → Click "Publish Now" OR schedule it with human-like delays (60–100 seconds).',
             features: ['10 unique headlines per topic', 'Multiple tone options', 'Auto-scroll, auto-draft, auto-publish', 'Human-like posting delays'],
             color: '#3b82f6',
             gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
         },
-        { 
-            icon: <IconMessage size={32} />, 
-            num: '02', 
-            title: 'Smart Comment Automation', 
+        {
+            icon: <IconMessage size={32} />,
+            num: '02',
+            title: 'Smart Comment Automation',
             desc: 'This is not spam commenting. Kommentify opens posts in a new tab, scrolls slowly (human-like), reads the full post, and generates personalized comments with hooks, reactions, and value-adds.',
             features: ['Opens & reads full posts', 'AI-personalized comments', 'Can Like/Share posts too', 'Filter by like/comment count'],
             color: '#8b5cf6',
             gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)'
         },
-        { 
-            icon: <IconSearch size={32} />, 
-            num: '03', 
-            title: 'Keyword-Based Post Discovery', 
+        {
+            icon: <IconSearch size={32} />,
+            num: '03',
+            title: 'Keyword-Based Post Discovery',
             desc: 'Add keywords like "Marketing", "AI Tools", "SaaS", "Real Estate" → Kommentify finds relevant posts → Engages automatically. Choose how many posts to scrap (10–500), set limits, choose engagement type.',
             features: ['Multiple keywords support', 'Scrap 10-500 posts', 'Custom engagement limits', 'Auto-engagement'],
             color: '#10b981',
             gradient: 'linear-gradient(135deg, #10b981, #059669)'
         },
-        { 
-            icon: <IconUsers size={32} />, 
-            num: '04', 
-            title: 'Human-Like Networking', 
-            desc: 'Send personalized connection requests with Boolean search (CEO AND Founder), 1st/2nd/3rd-degree filtering, exclude job seekers/interns, AI-personalized messages, and safe delays.',
-            features: ['Boolean search support', 'Degree-based filtering', 'AI-personalized messages', 'Account-age safe limits'],
-            color: '#ec4899',
-            gradient: 'linear-gradient(135deg, #ec4899, #be185d)'
+        {
+            icon: <IconUpload size={32} />,
+            num: '04',
+            title: 'Manual Import & Lead Generation',
+            desc: 'Upload your target profiles (up to 500/1000/unlimited). For each profile, Kommentify opens it, reads their last 1–5 posts, likes, comments, follows, engages deeply, and builds real relationships automatically.',
+            features: ['CSV profile import', 'Reads recent posts', 'Deep engagement per profile', 'Lead database with export'],
+            color: '#f59e0b',
+            gradient: 'linear-gradient(135deg, #f59e0b, #d97706)'
         },
-        { 
-            icon: <IconChartBar size={32} />, 
-            num: '06', 
-            title: 'Full Analytics Dashboard', 
+        {
+            icon: <IconChartBar size={32} />,
+            num: '05',
+            title: 'Full Analytics Dashboard',
             desc: 'See everything: Total comments, likes, follows, posts written, completed vs pending tasks, activity timeline, import history, connection requests sent, scheduled tasks, and progress tracking.',
             features: ['Real-time activity tracking', 'Task completion status', 'Import history logs', 'Progress visualization'],
             color: '#06b6d4',
             gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)'
         },
-        { 
-            icon: <IconAdjustments size={32} />, 
-            num: '07', 
-            title: 'Limit Control System — Most Powerful', 
-            desc: 'Pre-set limits for account age: New, Semi-new, Average, Mid-aged, Old, Very old. Manual override available for every delay: before liking, commenting, posting, connection requests, scroll, tab open.',
-            features: ['6 account-age presets', 'Full manual override', 'Every delay customizable', 'LinkedIn-safe by default'],
-            color: '#f59e0b',
-            gradient: 'linear-gradient(135deg, #f59e0b, #d97706)'
+        {
+            icon: <IconTarget size={32} />,
+            num: '06',
+            title: 'Content Planner & Calendar',
+            desc: 'Plan your content strategy with a visual calendar. Generate topics for the week/month, schedule posts in advance, and maintain consistent posting schedule effortlessly.',
+            features: ['Visual content calendar', 'Topic generation AI', 'Batch scheduling', 'Consistency tracking'],
+            color: '#14b8a6',
+            gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)'
         },
-        { 
-            icon: <IconActivity size={32} />, 
-            num: '08', 
-            title: 'Organic-Like Behavior Engine', 
-            desc: 'Kommentify uses random delay patterns, human scroll speed, interval variation, tab switching, natural reading delays, and non-linear interactions. Keeps your account safe and natural.',
-            features: ['Random delay patterns', 'Human scroll simulation', 'Tab switching behavior', 'Non-linear interactions'],
-            color: '#ef4444',
-            gradient: 'linear-gradient(135deg, #ef4444, #dc2626)'
+        {
+            icon: <IconTrendingUp size={32} />,
+            num: '07',
+            title: 'Trending Posts Discovery',
+            desc: 'Find and analyze trending content in your industry. Generate engaging posts based on what\'s currently performing well. Get insights on what content resonates with your audience.',
+            features: ['Industry trend analysis', 'AI post generation', 'Performance insights', 'Engagement predictions'],
+            color: '#ec4899',
+            gradient: 'linear-gradient(135deg, #ec4899, #db2777)'
+        },
+        {
+            icon: <IconSparkles size={32} />,
+            num: '08',
+            title: 'Inspiration Sources',
+            desc: 'Scrape content from top performers in your niche. Use their posts as inspiration for your own content. Build a library of inspiration sources and reference posts.',
+            features: ['Profile scraping', 'Post collection', 'Inspiration library', 'Content templates'],
+            color: '#a855f7',
+            gradient: 'linear-gradient(135deg, #a855f7, #9333ea)'
+        },
+        {
+            icon: <IconClock size={32} />,
+            num: '09',
+            title: 'Task Queue Management',
+            desc: 'All your automation tasks in one place. View pending, in-progress, completed, and failed tasks. Control your automation queue with priority settings and bulk actions.',
+            features: ['Task queue visualization', 'Priority control', 'Bulk task management', 'Failure recovery'],
+            color: '#6366f1',
+            gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)'
+        },
+        {
+            icon: <IconShield size={32} />,
+            num: '10',
+            title: 'LinkedIn Profile Integration',
+            desc: 'Scan your LinkedIn profile to generate personalized content. Use your own posts, experience, and expertise as AI context for more authentic content creation.',
+            features: ['Profile scanning', 'Content context', 'Personalized AI', 'Authentic voice'],
+            color: '#0ea5e9',
+            gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)'
+        },
+        {
+            icon: <IconStar size={32} />,
+            num: '11',
+            title: 'Referral Program',
+            desc: 'Share Kommentify with your network and earn rewards. Get unique referral links, track your referrals, and earn commissions for every successful referral.',
+            features: ['Unique referral links', 'Real-time tracking', 'Commission rewards', 'Performance analytics'],
+            color: '#fbbf24',
+            gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)'
         },
     ];
 
@@ -254,7 +290,7 @@ export default function FeaturesPage() {
                         color: '#a78bfa' 
                     }}>
                         <IconSparkles size={18} color="#a78bfa" />
-                        8 Powerful Features · Built for Serious Growth
+                        11 Powerful Features · Built for Serious Growth
                     </div>
                     
                     <h1 className="hero-title" style={{ 

@@ -50,23 +50,22 @@ export default function CommenterTab(props: any) {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Listen for task completion events and auto-trigger engagement
+    // Track if we've already refreshed for a given capture
+    const [lastRefreshKey, setLastRefreshKey] = useState<number>(0);
+
+    // Listen for task completion events and auto-refresh captured posts
     useEffect(() => {
         let pollingInterval: NodeJS.Timeout | null = null;
-        let lastCheckTime = 0;
 
         const handleTaskCompletion = async () => {
-            if (!autoLikeEnabled && !autoCommentEnabled) return;
-            if (autoEngaging) return; // Already engaging
-
             const token = localStorage.getItem('authToken');
             if (!token) return;
 
+            // Skip if we're already engaging
+            if (autoEngaging) return;
+
             try {
-                // Check if any capture tasks just completed (only check once per trigger)
                 const now = Date.now();
-                if (now - lastCheckTime < 5000) return; // Only check once, not repeatedly
-                lastCheckTime = now;
 
                 const res = await fetch('/api/extension/command', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -74,48 +73,44 @@ export default function CommenterTab(props: any) {
                 const data = await res.json();
 
                 if (data.success && data.commands) {
-                    // Find recently completed capture commands
-                    const captureCommands = data.commands.filter((cmd: any) =>
+                    // Find recently completed capture commands (within last 60 seconds)
+                    const recentCapture = data.commands.find((cmd: any) =>
                         ['linkedin_get_feed_api', 'linkedin_search_posts_api', 'linkedin_get_trending_api'].includes(cmd.command) &&
-                        cmd.status === 'completed'
+                        cmd.status === 'completed' &&
+                        (now - new Date(cmd.createdAt).getTime()) < 60000
                     );
 
-                    // Check if any completed in the last 15 seconds
-                    const recentCapture = captureCommands.find((cmd: any) => {
-                        const cmdTime = new Date(cmd.createdAt).getTime();
-                        return (now - cmdTime) < 15000; // Completed within last 15 seconds
-                    });
-
                     if (recentCapture) {
-                        console.log('📝 COMMENTER: Capture task completed, refreshing and auto-engaging...');
-                        showToast('Capture complete! Refreshing posts and auto-engaging...', 'info');
+                        console.log('📝 COMMENTER: Capture task completed, refreshing posts...');
+                        showToast('Capture complete! Refreshing posts...', 'info');
 
                         // Small delay to let posts be saved to DB
-                        await new Promise(r => setTimeout(r, 2000));
+                        await new Promise(r => setTimeout(r, 3000));
 
                         // Refresh posts
                         await loadCapturedPosts();
 
-                        // Get fresh posts and trigger auto-engage
-                        const minLikes = commenterCfg?.minLikes || 0;
-                        const minComments = commenterCfg?.minComments || 0;
+                        // If auto-engage is enabled, trigger it
+                        if (autoLikeEnabled || autoCommentEnabled) {
+                            const minLikes = commenterCfg?.minLikes || 0;
+                            const minComments = commenterCfg?.minComments || 0;
 
-                        const freshRes = await fetch(`/api/scraped-posts?page=1&limit=20&sortBy=scrapedAt&sortOrder=desc`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        const freshData = await freshRes.json();
+                            const freshRes = await fetch(`/api/scraped-posts?page=1&limit=20&sortBy=scrapedAt&sortOrder=desc`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            const freshData = await freshRes.json();
 
-                        if (freshData.success && freshData.posts?.length > 0) {
-                            // Filter qualifying posts
-                            const qualifyingPosts = freshData.posts.filter((p: any) =>
-                                (p.likes || 0) >= minLikes && (p.comments || 0) >= minComments
-                            );
+                            if (freshData.success && freshData.posts?.length > 0) {
+                                const qualifyingPosts = freshData.posts.filter((p: any) =>
+                                    (p.likes || 0) >= minLikes && (p.comments || 0) >= minComments
+                                );
 
-                            if (qualifyingPosts.length > 0) {
-                                showToast(`Found ${qualifyingPosts.length} qualifying posts. Starting auto-engage...`, 'info');
-                                await autoEngageWithPosts(qualifyingPosts);
-                            } else {
-                                showToast('No posts matching filters found', 'warning');
+                                if (qualifyingPosts.length > 0) {
+                                    showToast(`Found ${qualifyingPosts.length} qualifying posts. Starting auto-engage...`, 'info');
+                                    await autoEngageWithPosts(qualifyingPosts);
+                                } else {
+                                    showToast('No posts matching filters found', 'warning');
+                                }
                             }
                         }
                     }
@@ -125,10 +120,17 @@ export default function CommenterTab(props: any) {
             }
         };
 
-        // Listen for task created event
+        // Listen for task created event - trigger refresh after capture
         const handleTaskCreated = () => {
-            // Check for task completion after a delay
+            console.log('📝 COMMENTER: Task created, scheduling refresh check...');
+            // First check after 5 seconds, then poll for up to 60 seconds
             setTimeout(handleTaskCompletion, 5000);
+            // Set up polling to catch delayed completions
+            pollingInterval = setInterval(handleTaskCompletion, 5000);
+            // Stop polling after 60 seconds
+            setTimeout(() => {
+                if (pollingInterval) clearInterval(pollingInterval);
+            }, 60000);
         };
 
         window.addEventListener('kommentify-task-created', handleTaskCreated);
@@ -765,10 +767,10 @@ export default function CommenterTab(props: any) {
                     </div>
                 )}
 
-                {/* Quick Capture Buttons */}
+                {/* Step 1: Capture */}
                 <div style={{ background: 'linear-gradient(135deg, rgba(0,119,181,0.1), rgba(0,160,220,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.2)' }}>
                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Quick Capture
+                        {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Step 1: Capture
                         {(autoLikeEnabled || autoCommentEnabled) && (
                             <span style={{ marginLeft: 'auto', fontSize: '10px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', padding: '2px 8px', borderRadius: '10px' }}>
                                 Auto {autoLikeEnabled && autoCommentEnabled ? 'Like+Comment' : autoLikeEnabled ? 'Like' : 'Comment'} ON
@@ -869,6 +871,13 @@ export default function CommenterTab(props: any) {
                         style={{ padding: '12px 24px', background: (commenterCfgSaving || csSettingsSaving) ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: (commenterCfgSaving || csSettingsSaving) ? 'wait' : 'pointer' }}>
                         {(commenterCfgSaving || csSettingsSaving) ? 'Saving...' : 'Save Settings'}
                     </button>
+                </div>
+
+                {/* Step 2: Engage */}
+                <div style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(124,58,237,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(168,85,247,0.2)', marginTop: '16px' }}>
+                    <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {miniIcon('M13 10V3L4 14h7v7l9-11h-7z', '#c4b5fd', 14)} Step 2: Engage
+                    </h4>
                 </div>
 
                 {/* Captured Posts Feed */}

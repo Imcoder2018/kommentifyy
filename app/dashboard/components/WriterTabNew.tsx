@@ -65,7 +65,7 @@ export default function WriterTabNew(props: any) {
         linkedInUseProfileData, setLinkedInUseProfileData, linkedInTopicSuggestions, linkedInGeneratingTopics,
         showLinkedInDataModal, setShowLinkedInDataModal, toggleLinkedInProfileData, selectTopicSuggestion,
         taskCounts, calendarMonth, setCalendarMonth, calendarYear, setCalendarYear,
-        showInspirationPopup, setShowInspirationPopup, plannerOpen, setPlannerOpen, openPlanner,
+        showInspirationPopup, setShowInspirationPopup, plannerOpen, setPlannerOpen, plannerShowResults, setPlannerShowResults, openPlanner,
         plannerMode, setPlannerMode, plannerStep, setPlannerStep,
         plannerContext, setPlannerContext, plannerTopics, setPlannerTopics,
         plannerSelected, setPlannerSelected, plannerGeneratingTopics,
@@ -1550,10 +1550,39 @@ export default function WriterTabNew(props: any) {
                                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
                                 {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 10)} History
                             </button>
-                            <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
-                                style={{ flex: 1, padding: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '11px', minWidth: 0 }} />
-                            <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
-                                style={{ flex: 1, padding: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'white', fontSize: '11px', minWidth: 0 }} />
+                            {/* DATE Picker - Clickable with prominent icon */}
+                            <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                                <input type="date" id="writer-date-picker" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
+                                    style={{ display: 'none' }} />
+                                <div onClick={() => (document.getElementById('writer-date-picker') as HTMLInputElement)?.showPicker()}
+                                    style={{ padding: '10px 12px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s' }}
+                                    onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
+                                    onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
+                                    <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 4px rgba(167,139,250,0.8))' }}>
+                                        {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 18)}
+                                    </span>
+                                    <span style={{ color: writerScheduleDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600' }}>
+                                        {writerScheduleDate ? new Date(writerScheduleDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Select Date'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* TIME Picker - Clickable with prominent icon */}
+                            <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                                <input type="time" id="writer-time-picker" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
+                                    style={{ display: 'none' }} />
+                                <div onClick={() => (document.getElementById('writer-time-picker') as HTMLInputElement)?.showPicker()}
+                                    style={{ padding: '10px 12px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s' }}
+                                    onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
+                                    onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
+                                    <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 4px rgba(167,139,250,0.8))' }}>
+                                        {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 18)}
+                                    </span>
+                                    <span style={{ color: writerScheduleTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600' }}>
+                                        {writerScheduleTime ? writerScheduleTime : 'Select Time'}
+                                    </span>
+                                </div>
+                            </div>
                             <button onClick={schedulePost}
                                 style={{ padding: '6px 10px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '6px', color: '#c4b5fd', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>
                                 {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 9)} Schedule
@@ -1861,7 +1890,7 @@ export default function WriterTabNew(props: any) {
                                     {plannerStep === 'select' && 'Step 2 of 3 — Select your topics'}
                                     {plannerStep === 'time' && 'Step 3 of 3 — Set schedule & generate posts'}
                                     {plannerStep === 'generating' && `Generating posts… ${plannerDoneCount}/${plannerTotal}`}
-                                    {plannerStep === 'done' && 'All posts generated & scheduled!'}
+                                    {plannerStep === 'done' && 'All posts generated!'}
                                 </div>
                             </div>
                             {plannerStep !== 'generating' && (
@@ -1939,15 +1968,44 @@ export default function WriterTabNew(props: any) {
                         {plannerStep === 'time' && (
                             <div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                                    {/* Start Date - Clickable with prominent icon */}
                                     <div>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Start Date</label>
-                                        <input type="date" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                                        <input type="date" id="planner-date-picker" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)}
+                                            style={{ display: 'none' }} />
+                                        <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', textTransform: 'uppercase' }}>
+                                            {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 14)} Start Date
+                                        </label>
+                                        <div onClick={() => (document.getElementById('planner-date-picker') as HTMLInputElement)?.showPicker()}
+                                            style={{ padding: '14px 16px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }}
+                                            onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
+                                            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
+                                            <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 6px rgba(167,139,250,0.8))' }}>
+                                                {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 22)}
+                                            </span>
+                                            <span style={{ color: plannerStartDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600' }}>
+                                                {plannerStartDate ? new Date(plannerStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Select Start Date'}
+                                            </span>
+                                        </div>
                                     </div>
+
+                                    {/* Publish Time - Clickable with prominent icon */}
                                     <div>
-                                        <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '6px' }}>Publish Time</label>
-                                        <input type="time" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                                        <input type="time" id="planner-time-picker" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)}
+                                            style={{ display: 'none' }} />
+                                        <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', textTransform: 'uppercase' }}>
+                                            {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 14)} Publish Time
+                                        </label>
+                                        <div onClick={() => (document.getElementById('planner-time-picker') as HTMLInputElement)?.showPicker()}
+                                            style={{ padding: '14px 16px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }}
+                                            onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
+                                            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
+                                            <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 6px rgba(167,139,250,0.8))' }}>
+                                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 22)}
+                                            </span>
+                                            <span style={{ color: plannerPublishTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600' }}>
+                                                {plannerPublishTime ? plannerPublishTime : 'Select Time'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
@@ -2019,117 +2077,16 @@ export default function WriterTabNew(props: any) {
 
                         {/* Done Step */}
                         {plannerStep === 'done' && (
-                            <div>
-                                <div style={{ textAlign: 'center', padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px' }}>
-                                    <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
-                                    <div style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>All posts generated!</div>
-                                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '16px' }}>
-                                        {plannerDoneCount} posts are ready. Review, schedule individually, or schedule all at once.
-                                    </div>
+                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
+                                <div style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>All posts generated!</div>
+                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '24px' }}>
+                                    {plannerDoneCount} posts have been saved. View them below the Content Calendar to schedule.
                                 </div>
-
-                                {/* Generated Posts Preview */}
-                                <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '16px' }}>
-                                    {plannerGeneratedPosts && plannerGeneratedPosts.map((post: any, idx: number) => (
-                                        <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <span style={{ color: '#60a5fa', fontSize: '12px', fontWeight: '600' }}>
-                                                    Post {idx + 1} · {post.scheduledFor ? new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not scheduled'}
-                                                </span>
-                                                <button
-                                                    onClick={async () => {
-                                                        const token = localStorage.getItem('authToken');
-                                                        if (!token) return;
-                                                        showToast('Scheduling post via LinkedIn API...', 'info');
-                                                        try {
-                                                            const res = await fetch('/api/extension/command', {
-                                                                method: 'POST',
-                                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                                                body: JSON.stringify({
-                                                                    command: 'linkedin_schedule_via_api',
-                                                                    data: {
-                                                                        content: post.content,
-                                                                        scheduledTime: post.scheduledFor,
-                                                                        mediaUrl: null,
-                                                                        mediaType: null
-                                                                    }
-                                                                }),
-                                                            });
-                                                            const data = await res.json();
-                                                            if (data.success) {
-                                                                showToast('Post scheduled successfully!', 'success');
-                                                                loadScheduledPosts?.();
-                                                            } else {
-                                                                showToast(data.error || 'Failed to schedule', 'error');
-                                                            }
-                                                        } catch (e) {
-                                                            console.error('Failed to schedule post:', e);
-                                                            showToast('Error scheduling post', 'error');
-                                                        }
-                                                    }}
-                                                    style={{ padding: '6px 12px', background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '6px', color: '#34d399', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-                                                    Schedule
-                                                </button>
-                                            </div>
-                                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.5', maxHeight: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {post.content?.substring(0, 300)}{post.content?.length > 300 ? '...' : ''}
-                                            </div>
-                                            {post.topic && (
-                                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: '8px', fontStyle: 'italic' }}>
-                                                    Topic: {post.topic}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Schedule All Button */}
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <button
-                                        onClick={async () => {
-                                            const token = localStorage.getItem('authToken');
-                                            if (!token) return;
-                                            showToast('Scheduling all posts via LinkedIn API...', 'info');
-                                            let scheduledCount = 0;
-                                            for (let i = 0; i < plannerGeneratedPosts.length; i++) {
-                                                const post = plannerGeneratedPosts[i];
-                                                try {
-                                                    const res = await fetch('/api/extension/command', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                                        body: JSON.stringify({
-                                                            command: 'linkedin_schedule_via_api',
-                                                            data: {
-                                                                content: post.content,
-                                                                scheduledTime: post.scheduledFor,
-                                                                mediaUrl: null,
-                                                                mediaType: null
-                                                            }
-                                                        }),
-                                                    });
-                                                    const data = await res.json();
-                                                    if (data.success) {
-                                                        scheduledCount++;
-                                                        showToast(`Scheduled ${scheduledCount}/${plannerGeneratedPosts.length} posts`, 'info');
-                                                    }
-                                                } catch (e) {
-                                                    console.error('Failed to schedule post:', e);
-                                                }
-                                                await new Promise(r => setTimeout(r, 500)); // Small delay between posts
-                                            }
-                                            if (scheduledCount > 0) {
-                                                showToast(`${scheduledCount} posts scheduled successfully!`, 'success');
-                                                loadScheduledPosts?.();
-                                            }
-                                        }}
-                                        style={{ flex: 1, padding: '12px 20px', background: 'linear-gradient(135deg, #10b981, #34d399)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                                        Schedule All Posts
-                                    </button>
-                                    <button onClick={() => setPlannerOpen(false)}
-                                        style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
-                                        Close
-                                    </button>
-                                </div>
+                                <button onClick={() => { setPlannerOpen(false); setPlannerShowResults(true); }}
+                                    style={{ padding: '12px 32px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
+                                    View Posts Below
+                                </button>
                             </div>
                         )}
                     </div>

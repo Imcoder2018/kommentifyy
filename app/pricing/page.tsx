@@ -190,7 +190,7 @@ export default function PricingPage() {
                                 <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '8px', color: 'white' }}>Starter</h3>
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px 0' }}>For growing professionals</p>
                                 <div style={{ marginBottom: '24px' }}>
-                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$29</span>
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$19</span>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
                                         <span style={{ fontSize: '42px', fontWeight: '800', color: 'white' }}>$9</span>
                                         <span style={{ fontSize: '16px', fontWeight: '400', color: 'rgba(255,255,255,0.5)' }}>/mo</span>
@@ -287,9 +287,9 @@ export default function PricingPage() {
                                 <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '8px', color: '#a78bfa' }}>Professional</h3>
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px 0' }}>For growing professionals</p>
                                 <div style={{ marginBottom: '24px' }}>
-                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$58</span>
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$59</span>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
-                                        <span style={{ fontSize: '42px', fontWeight: '800', color: '#a78bfa' }}>$29</span>
+                                        <span style={{ fontSize: '42px', fontWeight: '800', color: '#a78bfa' }}>$19</span>
                                         <span style={{ fontSize: '16px', fontWeight: '400', color: 'rgba(255,255,255,0.5)' }}>/mo</span>
                                     </div>
                                 </div>
@@ -380,7 +380,7 @@ export default function PricingPage() {
                                 <h3 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '8px', color: 'white' }}>Agency</h3>
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '0 0 24px 0' }}>For growing professionals</p>
                                 <div style={{ marginBottom: '24px' }}>
-                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$78</span>
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>$79</span>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
                                         <span style={{ fontSize: '42px', fontWeight: '800', color: 'white' }}>$39</span>
                                         <span style={{ fontSize: '16px', fontWeight: '400', color: 'rgba(255,255,255,0.5)' }}>/mo</span>

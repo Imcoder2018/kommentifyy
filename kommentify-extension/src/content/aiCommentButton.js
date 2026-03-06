@@ -180,8 +180,15 @@ class AICommentButtonManager {
         setTimeout(() => this.scanAndAddButtons(), 2500);
         
         // Continuous interval scan every 2 seconds (faster than before)
+        // Also specifically check for preload iframe which appears on profile pages
         setInterval(() => {
             this.scanAndAddButtons();
+
+            // Additional check: specifically look for preload iframe (Shadow DOM on profile pages)
+            const preloadIframe = this.findPreloadIframe();
+            if (preloadIframe) {
+                console.log('[AI Comment] 🔄 Preload iframe detected, ensuring Shadow DOM scan...');
+            }
         }, 2000);
         
         // Mutation observer for dynamic Ember.js content - FAST response
@@ -229,10 +236,125 @@ class AICommentButtonManager {
     }
 
     /**
+     * Get all elements matching a selector, including those inside Shadow DOM
+     * @param {string} selector - CSS selector to match
+     * @param {Element} root - Root element to search from (default: document)
+     * @returns {Element[]} - Array of matching elements
+     */
+    querySelectorAllDeep(selector, root = document) {
+        const results = [];
+
+        // Helper function to query within an element and its shadow roots
+        const queryInElement = (element) => {
+            try {
+                if (element.matches && element.matches(selector)) {
+                    results.push(element);
+                }
+            } catch (e) {
+                // Ignore invalid selector errors
+            }
+
+            try {
+                const matches = element.querySelectorAll(selector);
+                matches.forEach(el => results.push(el));
+            } catch (e) {
+                // Ignore query errors
+            }
+
+            // Check for shadowRoot
+            if (element.shadowRoot) {
+                queryInElement(element.shadowRoot);
+            }
+
+            // Check all children for shadow roots
+            if (element.children) {
+                Array.from(element.children).forEach(child => queryInElement(child));
+            }
+        };
+
+        queryInElement(root);
+        return results;
+    }
+
+    /**
+     * Find the interop-iframe preload iframe that LinkedIn uses for profile posts
+     * @returns {HTMLIFrameElement|null}
+     */
+    findPreloadIframe() {
+        // Look for the interop-iframe used by LinkedIn for profile posts
+        const iframe = document.querySelector('iframe[data-testid="interop-iframe"]');
+        if (iframe && iframe.contentDocument) {
+            return iframe;
+        }
+
+        // Fallback: look for any iframe with /preload/ src
+        const preloadIframes = document.querySelectorAll('iframe[src*="preload"]');
+        for (const iframe of preloadIframes) {
+            try {
+                if (iframe.contentDocument) {
+                    return iframe;
+                }
+            } catch (e) {
+                // Cross-origin iframe - can't access
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Scan elements within Shadow DOM (including iframe content)
+     * @param {Element} rootElement - Root element to scan from
+     * @param {Function} scanCallback - Function to call for each found element
+     */
+    scanShadowDOM(rootElement, scanCallback) {
+        // Helper to scan an element and its shadow roots
+        const scanElement = (element) => {
+            try {
+                scanCallback(element);
+            } catch (e) {
+                // Ignore errors
+            }
+
+            // Check shadowRoot
+            if (element.shadowRoot) {
+                Array.from(element.shadowRoot.children).forEach(child => scanElement(child));
+            }
+
+            // Check children
+            if (element.children) {
+                Array.from(element.children).forEach(child => scanElement(child));
+            }
+        };
+
+        if (rootElement) {
+            scanElement(rootElement);
+        }
+    }
+
+    /**
      * Scan for comment boxes and add AI comment buttons using robust fallback selectors
      * Uses the same approach as the reference extension for maximum compatibility
+     * Now includes Shadow DOM support for LinkedIn profile pages
      */
     scanAndAddButtons() {
+        let addedCount = 0;
+
+        // First, scan the regular DOM
+        addedCount += this.scanLightDOM();
+
+        // Also scan Shadow DOM (for profile pages with interop-iframe)
+        addedCount += this.scanShadowDOMContent();
+
+        if (addedCount > 0) {
+            console.log('[AI Comment] ✅ Added', addedCount, 'AI buttons to comment boxes');
+        }
+    }
+
+    /**
+     * Scan regular (light) DOM for comment boxes
+     */
+    scanLightDOM() {
         let addedCount = 0;
 
         // Try custom iconContainer selector first (from Having Issues wizard)
@@ -302,9 +424,116 @@ class AICommentButtonManager {
             addedCount++;
         });
 
-        if (addedCount > 0) {
-            console.log('[AI Comment] ✅ Added', addedCount, 'AI buttons to comment boxes');
+        return addedCount;
+    }
+
+    /**
+     * Scan Shadow DOM content (including iframes) for comment boxes
+     * This handles LinkedIn profile pages that use interop-iframe with Shadow DOM
+     */
+    scanShadowDOMContent() {
+        let addedCount = 0;
+
+        // Check for the preload iframe used on profile pages
+        const preloadIframe = this.findPreloadIframe();
+        if (preloadIframe) {
+            console.log('[AI Comment] 🔍 Found preload iframe, scanning Shadow DOM content...');
+            try {
+                const iframeDoc = preloadIframe.contentDocument || preloadIframe.contentWindow?.document;
+                if (iframeDoc) {
+                    // Scan inside the iframe document for comment elements
+                    addedCount += this.scanElementForComments(iframeDoc);
+
+                    // Check for shadow roots inside the iframe
+                    const scanShadowInIframe = (element) => {
+                        if (element.shadowRoot) {
+                            addedCount += this.scanElementForComments(element.shadowRoot);
+                        }
+                        // Recursively check children
+                        if (element.children) {
+                            Array.from(element.children).forEach(child => scanShadowInIframe(child));
+                        }
+                    };
+                    scanShadowInIframe(iframeDoc);
+                }
+            } catch (e) {
+                console.log('[AI Comment] Could not access iframe content:', e.message);
+            }
         }
+
+        // Also scan for Shadow DOM in the main document
+        const scanDocumentShadowDOM = (element) => {
+            if (element.shadowRoot) {
+                addedCount += this.scanElementForComments(element.shadowRoot);
+            }
+            if (element.children) {
+                Array.from(element.children).forEach(child => scanDocumentShadowDOM(child));
+            }
+        };
+
+        // Check document.body for shadow roots
+        if (document.body) {
+            Array.from(document.body.children).forEach(child => scanDocumentShadowDOM(child));
+        }
+
+        // Also check for any open shadow DOMs in iframes
+        const allIframes = document.querySelectorAll('iframe');
+        for (const iframe of allIframes) {
+            try {
+                if (iframe.contentDocument) {
+                    const scanIframeShadow = (element) => {
+                        if (element.shadowRoot) {
+                            addedCount += this.scanElementForComments(element.shadowRoot);
+                        }
+                        if (element.children) {
+                            Array.from(element.children).forEach(child => scanIframeShadow(child));
+                        }
+                    };
+                    Array.from(iframe.contentDocument.children).forEach(child => scanIframeShadow(child));
+                }
+            } catch (e) {
+                // Cross-origin iframe - skip
+            }
+        }
+
+        return addedCount;
+    }
+
+    /**
+     * Scan a specific element (or shadow root) for comment-related elements
+     * @param {Element} container - The element or shadowRoot to scan
+     * @returns {number} - Number of buttons added
+     */
+    scanElementForComments(container) {
+        let addedCount = 0;
+
+        // Find emoji buttons in this container
+        const emojiBtns = container.querySelectorAll(
+            'button[aria-label*="emoji" i], button[aria-label*="Emoji"], button[aria-label*="Show Emoji Picker"]'
+        );
+
+        emojiBtns.forEach(btn => {
+            const iconContainer = btn.parentElement;
+            if (!iconContainer || iconContainer.querySelector('.ai-comment-btn')) return;
+
+            let postElement = this.findPostElement(iconContainer);
+            this.addSuggestButton(postElement, iconContainer);
+            addedCount++;
+        });
+
+        // Find comment forms in this container
+        const commentForms = container.querySelectorAll('.comments-comment-box__form, .comments-comment-box, form[class*="comment"]');
+
+        commentForms.forEach(form => {
+            const toolbar = form.querySelector('.display-flex, .comments-comment-box__detour-container, [data-test-id="comment-box-toolbar"]');
+            if (toolbar && !toolbar.querySelector('.ai-comment-btn')) {
+                let postElement = this.findPostElement(toolbar);
+                this.addSuggestButton(postElement, toolbar);
+                addedCount++;
+            }
+        });
+
+        return addedCount;
     }
 
     /**
@@ -512,8 +741,46 @@ class AICommentButtonManager {
     }
 
     /**
+     * Get the appropriate document to create elements in (handles Shadow DOM)
+     * @param {Element} element - An element from which to determine the document context
+     * @returns {Document} - The document to use for creating elements
+     */
+    getElementDocument(element) {
+        if (!element) return document;
+
+        // Check if element is inside Shadow DOM
+        let current = element;
+        while (current) {
+            if (current.shadowRoot) {
+                // Element is in a shadow root, use that document
+                return current.ownerDocument;
+            }
+            current = current.parentElement;
+        }
+
+        return document;
+    }
+
+    /**
+     * Check if an element is inside Shadow DOM
+     * @param {Element} element - The element to check
+     * @returns {boolean}
+     */
+    isInShadowDOM(element) {
+        let current = element;
+        while (current) {
+            if (current.shadowRoot) {
+                return true;
+            }
+            current = current.parentElement;
+        }
+        return false;
+    }
+
+    /**
      * Add AI button to the comment box toolbar using robust fallback selectors
      * This is the main entry point for adding buttons to comment boxes
+     * Now supports Shadow DOM for LinkedIn profile pages
      */
     addSuggestButton(postElement, providedIconContainer = null) {
         // Check if button already exists
@@ -555,7 +822,9 @@ class AICommentButtonManager {
             return;
         }
 
-        console.log('[AI Comment] ✅ Found icon container, adding button');
+        console.log('[AI Comment] ✅ Found icon container, adding button', {
+            inShadowDOM: this.isInShadowDOM(iconContainer)
+        });
 
         // Ensure iconContainer doesn't wrap and elements stay in a single row
         iconContainer.style.display = 'flex';
@@ -563,8 +832,12 @@ class AICommentButtonManager {
         iconContainer.style.flexWrap = 'nowrap';
         iconContainer.style.alignItems = 'center';
 
+        // Get the correct document for creating elements (handles Shadow DOM)
+        const targetDocument = this.getElementDocument(iconContainer);
+
         // Create our circular icon button matching LinkedIn's native style
-        const aiBtn = document.createElement('button');
+        // Use the correct document to create the element
+        const aiBtn = targetDocument.createElement('button');
         aiBtn.className = 'ai-comment-btn comments-comment-box__detour-icons artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary';
         aiBtn.type = 'button';
         aiBtn.setAttribute('aria-label', 'Generate AI Comment with Kommentify');

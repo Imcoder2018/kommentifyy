@@ -344,6 +344,7 @@ function DashboardContent() {
 
     // Content Planner state
     const [plannerOpen, setPlannerOpen] = useState(false);
+    const [plannerShowResults, setPlannerShowResults] = useState(false);
     const [plannerMode, setPlannerMode] = useState<'5days' | '20days'>('5days');
     const [plannerStep, setPlannerStep] = useState<'context' | 'select' | 'time' | 'generating' | 'done'>('context');
     const [plannerContext, setPlannerContext] = useState('');
@@ -2701,7 +2702,7 @@ function DashboardContent() {
         loadLinkedInProfile, deleteLinkedInProfile, scanLinkedInProfile,
         generateTopicSuggestions, selectTopicSuggestion, toggleLinkedInProfileData,
         // Planner
-        plannerOpen, setPlannerOpen, plannerMode, setPlannerMode, plannerStep, setPlannerStep,
+        plannerOpen, setPlannerOpen, plannerShowResults, setPlannerShowResults, plannerMode, setPlannerMode, plannerStep, setPlannerStep,
         plannerContext, setPlannerContext, plannerTopics, setPlannerTopics,
         plannerSelected, setPlannerSelected, plannerGeneratingTopics,
         plannerPublishTime, setPlannerPublishTime, plannerStartDate, setPlannerStartDate,

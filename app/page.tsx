@@ -616,7 +616,7 @@ function LandingPage() {
     return (
         <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif', background: '#0a0a0a', color: 'white' }}>
             {/* Launch Week Banner - Fixed at top */}
-            <div style={{
+            <div className="lifetime-deal-banner" style={{
                 background: 'linear-gradient(90deg, #dc2626, #ea580c, #dc2626)',
                 padding: '12px 20px',
                 textAlign: 'center',
@@ -676,6 +676,13 @@ function LandingPage() {
                     .extension-preview-section { display: none !important; }
                     .footer-content { flex-direction: column !important; gap: 24px !important; text-align: center !important; }
                     .footer-links { justify-content: center !important; }
+                    .lifetime-deal-banner { flex-direction: column !important; gap: 4px !important; padding: 10px 16px !important; }
+                    .lifetime-deal-banner a { font-size: 12px !important; flex-direction: column !important; gap: 4px !important; text-align: center !important; }
+                    .lifetime-deal-banner span { display: inline-block !important; }
+                }
+                @media (max-width: 480px) {
+                    .lifetime-deal-banner { padding: 8px 12px !important; }
+                    .lifetime-deal-banner a { font-size: 11px !important; white-space: normal !important; line-height: 1.4 !important; }
                 }
                 @media (max-width: 640px) {
                     .hero-title { font-size: 28px !important; letter-spacing: -1px !important; }
@@ -726,7 +733,7 @@ function LandingPage() {
                         </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <Link href="#features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Features</Link>
+                        <Link href="/features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Features</Link>
                         <Link href="#why-kommentify" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Why Kommentify</Link>
                         <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pricing</Link>
                         <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Blog</Link>
@@ -784,7 +791,7 @@ function LandingPage() {
 
                 {/* Desktop Navigation */}
                 <div className="desktop-nav" style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
-                    <Link href="#features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Features</Link>
+                    <Link href="/features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Features</Link>
                     <Link href="#why-kommentify" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Why Us</Link>
                     <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Pricing</Link>
                     <Link href="/blog" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Blog</Link>
@@ -861,17 +868,61 @@ function LandingPage() {
                             <strong style={{ color: '#10b981' }}>Just install the extension, set limits, and let the agent work.</strong>
                         </p>
                         
-                        {/* Star Rating with Chrome Store Link */}
+                        {/* Video Below Content - Full Width */}
+                        <div style={{ position: 'relative', maxWidth: '1100px', margin: '0 auto' }}>
+                            <div style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                borderRadius: '20px',
+                                overflow: 'hidden',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                boxShadow: '0 30px 100px rgba(0,0,0,0.5)'
+                            }}>
+                                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                                    <iframe
+                                        src="https://www.loom.com/embed/0f5fd7b490e840609f8e32cef8a0e602?sid=auto&hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true"
+                                        frameBorder="0"
+                                        allowFullScreen
+                                        loading="eager"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            borderRadius: '20px'
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            {/* Watch Demo Badge */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '-12px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                background: 'linear-gradient(135deg, #693fe9, #7c4dff)',
+                                padding: '8px 20px',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: 'white',
+                                boxShadow: '0 4px 15px rgba(105, 63, 233, 0.4)'
+                            }}>
+                                ▶ Watch Demo
+                            </div>
+                        </div>
+
+                        {/* Star Rating with Chrome Store Link - Below Video */}
                         <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '32px', marginBottom: '16px' }}>
                                 <div style={{ display: 'flex', gap: '2px' }}>
                                     {[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '18px' }}>★</span>)}
                                 </div>
                                 <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Rated 5.0 on Chrome Web Store · 500+ Users</span>
                             </div>
                         </a>
-                        
-                        {/* CTA Buttons - Updated */}
+
+                        {/* CTA Buttons - Below Video */}
                         <div className="cta-buttons" style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
                             <Link href="/signup" style={{
                                 padding: '16px 32px',
@@ -904,8 +955,8 @@ function LandingPage() {
                                 View Pricing
                             </a>
                         </div>
-                        
-                        {/* Trust Badges - Updated */}
+
+                        {/* Trust Badges - Below Video */}
                         <div className="trust-badges" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '50px' }}>
                             {[
                                 { icon: <IconShield size={13} color="#10b981" />, text: '500+ Chrome Users' },
@@ -917,50 +968,6 @@ function LandingPage() {
                                     <span>{badge.icon}</span> {badge.text}
                                 </div>
                             ))}
-                        </div>
-                        
-                        {/* Video Below Content - Full Width */}
-                        <div style={{ position: 'relative', maxWidth: '900px', margin: '0 auto' }}>
-                            <div style={{ 
-                                background: 'rgba(255,255,255,0.05)', 
-                                borderRadius: '20px', 
-                                overflow: 'hidden',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                boxShadow: '0 30px 100px rgba(0,0,0,0.5)'
-                            }}>
-                                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                                    <iframe 
-                                        src="https://www.loom.com/embed/0f5fd7b490e840609f8e32cef8a0e602?sid=auto&hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true" 
-                                        frameBorder="0" 
-                                        allowFullScreen
-                                        loading="eager"
-                                        style={{ 
-                                            position: 'absolute', 
-                                            top: 0, 
-                                            left: 0, 
-                                            width: '100%', 
-                                            height: '100%',
-                                            borderRadius: '20px'
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            {/* Watch Demo Badge */}
-                            <div style={{ 
-                                position: 'absolute', 
-                                top: '-12px', 
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                background: 'linear-gradient(135deg, #693fe9, #7c4dff)', 
-                                padding: '8px 20px', 
-                                borderRadius: '20px', 
-                                fontSize: '12px', 
-                                fontWeight: '600', 
-                                color: 'white',
-                                boxShadow: '0 4px 15px rgba(105, 63, 233, 0.4)'
-                            }}>
-                                ▶ Watch Demo
-                            </div>
                         </div>
                     </div>
                     
@@ -993,7 +1000,7 @@ function LandingPage() {
                                     { icon: <IconChart size={22} color="#693fe9" />, title: 'Dashboard', desc: 'Track all your activity' },
                                     { icon: <IconEdit size={22} color="#693fe9" />, title: 'AI Writer', desc: 'Generate viral posts' },
                                     { icon: <IconBot size={22} color="#693fe9" />, title: 'Automation', desc: 'Set it and forget it' },
-                                    { icon: <IconUsers size={22} color="#693fe9" />, title: 'Networking', desc: 'Connect with ideal profiles' },
+                                    { icon: <IconUpload size={22} color="#693fe9" />, title: 'Import', desc: 'Import leads & engage' },
                                 ].map((f, i) => (
                                     <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '14px', borderRadius: '10px' }}>
                                         <div style={{ marginBottom: '6px' }}>{f.icon}</div>
@@ -1171,7 +1178,7 @@ function LandingPage() {
                                 color: '#a78bfa' 
                             }}>
                                 <IconSparkles size={16} color="#a78bfa" />
-                                8 Powerful Features
+                                11 Powerful Features
                             </div>
                             
                             <h2 className="section-title" style={{ fontSize: '42px', fontWeight: '800', marginBottom: '20px', lineHeight: '1.2' }}>
@@ -1180,26 +1187,26 @@ function LandingPage() {
                             </h2>
                             
                             <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.7)', marginBottom: '20px', lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 20px' }}>
-                                AI Post Writer, Smart Comments, Profile Import, Human-Like Automation, 
-                                and more — everything you need to dominate LinkedIn growth.
+                                AI Post Writer, Smart Comments, Profile Import, Content Planner, Trending Discovery,
+                                Human-Like Automation, Analytics, Referrals and more — everything you need to dominate LinkedIn growth.
                             </p>
                             
                             {/* Feature Highlights */}
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
-                                {['AI Content Creation', 'Manual Import', 'Smart Engagement', 'Safe Automation'].map((f, i) => (
+                                {['AI Post Writer', 'Manual Import', 'Content Planner', 'Analytics', 'Smart Engagement', 'Safe Automation'].map((f, i) => (
                                     <span key={i} style={{
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                         gap: '6px',
-                                        background: i === 1 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(255,255,255,0.08)',
+                                        background: f === 'Manual Import' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(255,255,255,0.08)',
                                         padding: '10px 18px',
                                         borderRadius: '30px',
                                         fontSize: '13px',
-                                        color: i === 1 ? 'white' : 'rgba(255,255,255,0.8)',
-                                        fontWeight: i === 1 ? '600' : '400',
-                                        boxShadow: i === 1 ? '0 4px 15px rgba(245, 158, 11, 0.4)' : 'none'
+                                        color: f === 'Manual Import' ? 'white' : 'rgba(255,255,255,0.8)',
+                                        fontWeight: f === 'Manual Import' ? '600' : '400',
+                                        boxShadow: f === 'Manual Import' ? '0 4px 15px rgba(245, 158, 11, 0.4)' : 'none'
                                     }}>
-                                        <IconCheck size={14} color={i === 1 ? 'white' : '#693fe9'} /> {f}
+                                        <IconCheck size={14} color={f === 'Manual Import' ? 'white' : '#693fe9'} /> {f}
                                     </span>
                                 ))}
                             </div>
@@ -1401,8 +1408,12 @@ function LandingPage() {
                                     { feature: 'AI Comment Generation', kommentify: true, octopus: false, dripify: false, alfred: false },
                                     { feature: 'Smart Comment Automation', kommentify: true, octopus: false, dripify: false, alfred: false },
                                     { feature: 'Profile Import & Auto-Engage', kommentify: true, octopus: false, dripify: false, alfred: false },
-                                    { feature: 'Human-Like Behavior Engine', kommentify: true, octopus: false, dripify: false, alfred: false },
-                                    { feature: 'Account Age Presets', kommentify: true, octopus: false, dripify: false, alfred: false },
+                                    { feature: 'Content Planner & Calendar', kommentify: true, octopus: false, dripify: false, alfred: false },
+                                    { feature: 'Trending Posts Discovery', kommentify: true, octopus: false, dripify: false, alfred: false },
+                                    { feature: 'Inspiration Sources', kommentify: true, octopus: false, dripify: false, alfred: false },
+                                    { feature: 'Lead Database & Export', kommentify: true, octopus: false, dripify: false, alfred: false },
+                                    { feature: 'Full Analytics Dashboard', kommentify: true, octopus: false, dripify: false, alfred: false },
+                                    { feature: 'Referral Program', kommentify: true, octopus: false, dripify: false, alfred: false },
                                     { feature: 'Lifetime Updates Included', kommentify: true, octopus: false, dripify: false, alfred: false },
                                     { feature: '30-Day Money-Back Guarantee', kommentify: true, octopus: false, dripify: false, alfred: false },
                                 ].map((row, i) => (
@@ -1448,15 +1459,15 @@ function LandingPage() {
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
                         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px 24px', textAlign: 'center' }}>
                             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Starter</div>
-                            <div style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>$9<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
+                            <div style={{ fontSize: '20px', fontWeight: '700', color: 'white' }}><span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '4px' }}>$19</span>$9<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
                         </div>
                         <div style={{ background: 'linear-gradient(135deg, rgba(105, 63, 233, 0.15), rgba(105, 63, 233, 0.05))', border: '2px solid #693fe9', borderRadius: '12px', padding: '16px 24px', textAlign: 'center' }}>
                             <div style={{ fontSize: '12px', color: '#a78bfa', marginBottom: '4px' }}>Professional</div>
-                            <div style={{ fontSize: '24px', fontWeight: '700', color: '#a78bfa' }}>$29<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
+                            <div style={{ fontSize: '20px', fontWeight: '700', color: '#a78bfa' }}><span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '4px' }}>$59</span>$29<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
                         </div>
                         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px 24px', textAlign: 'center' }}>
                             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>Agency</div>
-                            <div style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>$39<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
+                            <div style={{ fontSize: '20px', fontWeight: '700', color: 'white' }}><span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '4px' }}>$79</span>$39<span style={{ fontSize: '14px', fontWeight: '400' }}>/mo</span></div>
                         </div>
                     </div>
                     
@@ -1596,7 +1607,7 @@ function LandingPage() {
                                                 <>
                                                     {plan.price > 0 && (
                                                         <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', marginRight: '6px' }}>
-                                                            ${plan.name.toLowerCase().includes('starter') ? '29' : plan.name.toLowerCase().includes('gold') ? '58' : plan.name.toLowerCase().includes('diamond') ? '78' : Math.round(plan.price * 2)}
+                                                            ${plan.name.toLowerCase().includes('starter') ? '19' : plan.name.toLowerCase().includes('gold') || plan.name.toLowerCase().includes('professional') ? '59' : plan.name.toLowerCase().includes('pro') && !plan.name.toLowerCase().includes('professional') ? '60' : plan.name.toLowerCase().includes('diamond') || plan.name.toLowerCase().includes('agency') ? '79' : plan.name.toLowerCase().includes('enterprise') ? '200' : Math.round(plan.price * 2)}
                                                         </span>
                                                     )}
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
@@ -1716,7 +1727,7 @@ function LandingPage() {
                     )}
 
                     <div className="trust-badges" style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '40px', flexWrap: 'wrap' }}>
-                        {['14-Day Money-Back', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
+                        {['30-Day Money-Back', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
                             <div key={i} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <IconCheck size={14} color="#10b981" /> {badge}
                             </div>

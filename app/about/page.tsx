@@ -41,7 +41,6 @@ export default function AboutPage() {
           <div style={{ display: 'grid', gap: '20px' }}>
             {[
               { title: '🤖 AI-Powered Comments', desc: 'Generate intelligent, context-aware comments that sound natural and drive engagement.' },
-              { title: '🔗 Smart Networking', desc: 'Automatically connect with relevant professionals to expand your network.' },
               { title: '📝 Post Scheduling', desc: 'Plan and schedule your LinkedIn content in advance for optimal timing.' },
               { title: '📊 Analytics', desc: 'Track your growth and engagement with detailed analytics and insights.' }
             ].map((item, i) => (

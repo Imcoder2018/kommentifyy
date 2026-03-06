@@ -32,7 +32,7 @@ export default function RefundPolicyPage() {
           border: '1px solid rgba(34, 197, 94, 0.3)',
           marginBottom: '40px'
         }}>
-          <strong>💯 100% Satisfaction Guarantee:</strong> We want you to be completely satisfied with Kommentify. If you&apos;re not happy, we&apos;ll make it right.
+          <strong>🛡️ 99% Safe:</strong> Kommentify is built with browser-based automation that keeps your LinkedIn account safe. No API access means no risk of detection.
         </div>
 
         <section style={{ marginBottom: '35px' }}>

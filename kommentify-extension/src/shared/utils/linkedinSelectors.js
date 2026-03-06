@@ -48,7 +48,11 @@ export const LinkedInSelectors = {
         '.feed-shared-update-v2__description',
         '.feed-shared-text',
         '.update-components-text',
-        '.break-words'
+        '.break-words',
+        // NEW: 2025 LinkedIn UI - Based on provided page structure
+        'p[data-view-name="feed-commentary"]',           // Post text container
+        'p[data-view-name="feed-commentary"] span',     // Spans inside post text
+        'span[data-view-name="feed-commentary"] span',  // Alternative span structure
     ],
 
     // Post container selectors (updated with new LinkedIn UI - 2024+)
@@ -56,6 +60,7 @@ export const LinkedInSelectors = {
         '.feed-shared-update-v2',
         '[data-urn^="urn:li:activity:"]',                 // More specific URN pattern
         '[data-view-name="feed-update"]',                  // New feed wrapper
+        '[data-view-name="feed-full-update"]',             // NEW: 2025 LinkedIn UI - Based on provided page structure
         'li',
         'div[data-id]'
     ],
@@ -66,6 +71,14 @@ export const LinkedInSelectors = {
     
     // Feed
     feedPosts: 'main div[data-urn]',
+
+    // NEW: Profile link selectors (2025 LinkedIn UI)
+    profileLinkSelectors: [
+        'a[href*="/in/"]',                                  // Standard profile links
+        '[data-view-name="feed-header-actor-image"]',      // Profile image link
+        '[data-view-name="feed-actor-image"]',              // Alternative profile image
+        'a[data-view-name="feed-header-text"]',            // Author name link
+    ],
     
     // LinkedIn URLs
     feedUrl: 'https://www.linkedin.com/feed/',

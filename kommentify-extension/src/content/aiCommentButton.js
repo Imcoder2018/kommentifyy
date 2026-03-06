@@ -543,14 +543,17 @@ class AICommentButtonManager {
         // Try main selectors first
         let postElement = iconContainer.closest('.feed-shared-update-v2')
             || iconContainer.closest('[data-urn^="urn:li:activity:"]')
+            || iconContainer.closest('[data-view-name="feed-full-update"]')  // NEW: 2025 LinkedIn UI
+            || iconContainer.closest('[data-view-name="feed-update"]')  // NEW: 2024+ LinkedIn UI
             || iconContainer.closest('.update-components-actor')?.closest('div');
 
         if (!postElement) {
-            // Fallback: traverse up the DOM looking for data-id or LI
+            // Fallback: traverse up the DOM looking for data-id or LI or data-view-name
             let curr = iconContainer;
             let levels = 0;
-            while (curr && levels < 15) {
-                if (curr.hasAttribute('data-id') || curr.tagName === 'LI') {
+            while (curr && levels < 20) {  // Increased from 15 to 20 for deeper nesting
+                if (curr.hasAttribute('data-id') || curr.hasAttribute('data-urn') ||
+                    curr.tagName === 'LI' || curr.hasAttribute('data-view-name')) {
                     postElement = curr;
                     break;
                 }
@@ -598,6 +601,7 @@ class AICommentButtonManager {
             const wrapper = iconContainer.closest('.feed-shared-update-v2')
                 || iconContainer.closest('[data-urn^="urn:li:activity:"]')
                 || iconContainer.closest('[data-view-name="feed-update"]')
+                || iconContainer.closest('[data-view-name="feed-full-update"]')  // NEW: 2025 LinkedIn UI
                 || iconContainer.closest('li')
                 || iconContainer.closest('div[data-id]');
             if (wrapper && !rootsToSearch.includes(wrapper)) {
@@ -608,9 +612,13 @@ class AICommentButtonManager {
         if (rootsToSearch.length === 0) return '';
 
         for (const root of rootsToSearch) {
-            // Try new commentary block first
+            // Try new commentary block first (2024+ LinkedIn UI)
             const newCommentaryElement = root.querySelector('[data-testid="expandable-text-box"]')
-                || root.querySelector('[data-view-name="feed-commentary"]');
+                || root.querySelector('[data-view-name="feed-commentary"]')
+                || root.querySelector('p[data-view-name="feed-commentary"]')  // NEW: 2025 UI
+                || root.querySelector('.f20698cc[data-view-name]')  // NEW: 2025 UI - main content wrapper
+                || root.querySelector('[data-view-name*="commentary"]')  // NEW: Any element with commentary in view-name
+                || root.querySelector('p.componentkey');  // NEW: 2025 UI - p with componentkey
             if (newCommentaryElement && newCommentaryElement.textContent.trim().length > 0) {
                 text = newCommentaryElement.textContent;
             } else {
@@ -681,7 +689,12 @@ class AICommentButtonManager {
                 '.feed-shared-actor__name span[aria-hidden="true"]',
                 '.feed-shared-actor__name',
                 '.feed-shared-actor__title',
-                '[data-test-update-actor-title]'
+                '[data-test-update-actor-title]',
+                // NEW: 2025 LinkedIn UI selectors based on provided page structure
+                '[data-view-name="feed-header-text"] strong',  // <strong> inside feed-header-text
+                'div[data-view-name*="feed-actor"] p strong',  // Any feed actor div with p > strong
+                'p.f08c4b93 strong',  // Direct class pattern from page structure
+                '[data-view-name="feed-actor-image"] + div p strong'  // Image link + div > p > strong
             ];
 
             for (const selector of nameSelectors) {
@@ -1178,10 +1191,26 @@ class AICommentButtonManager {
         }, 95000);
         
         try {
-            // Find the post container using editor (user's approach)
-            const post = editor.closest('div[data-urn], div[data-id]');
+            // Find the post container using editor (user's approach) - Updated with new selectors
+            const post = editor.closest('[data-urn], [data-id], [data-view-name="feed-full-update"], [data-view-name="feed-update"]');
 
             if (!post) {
+                // Fallback: traverse up the DOM
+                let curr = editor;
+                let levels = 0;
+                while (curr && levels < 20) {
+                    if (curr.hasAttribute('data-id') || curr.hasAttribute('data-urn') || curr.hasAttribute('data-view-name')) {
+                        break;
+                    }
+                    curr = curr.parentElement;
+                    levels++;
+                }
+                if (curr && curr !== document.body) {
+                    post = curr;
+                }
+            }
+
+            if (!post || post === document.body) {
                 throw new Error('Could not find post container');
             }
 
@@ -1241,14 +1270,14 @@ class AICommentButtonManager {
                 // Use the editor that was clicked
                 await this.fillCommentInput(comment, editor, finalSettings);
 
-                // Close settings notification after comment is filled (wait 5 seconds)
+                // Close settings notification immediately when comment is generated and filled
                 setTimeout(() => {
                     const notification = document.getElementById('ai-settings-notification');
                     if (notification) {
                         notification.style.animation = 'slideOutRight 0.3s ease';
                         setTimeout(() => notification.remove(), 300);
                     }
-                }, 5000);
+                }, 500); // Brief 500ms delay to show user the notification appeared
 
                 // Show appropriate message based on auto-post setting
                 if (settings.aiAutoPost === 'manual') {

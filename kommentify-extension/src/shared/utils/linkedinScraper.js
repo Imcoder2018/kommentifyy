@@ -128,7 +128,12 @@ export function scrapeAuthorName(postElement) {
         '.update-components-actor__title',
         '.feed-shared-actor__name',
         '.feed-shared-actor__title',
-        '[data-test-id="actor-name"]'
+        '[data-test-id="actor-name"]',
+        // NEW: 2025 LinkedIn UI - Based on provided page structure
+        '[data-view-name="feed-header-text"] strong',      // New UI author name
+        '[data-view-name="feed-actor-image"] + div p',      // Author name after profile image
+        'div[data-view-name*="feed-actor"] p',              // Any feed actor div
+        'a[href*="/in/"] + div p',                          // Link to profile followed by div with name
     ];
 
     for (const selector of directSelectors) {
@@ -146,20 +151,35 @@ export function scrapeAuthorName(postElement) {
 
     // STRATEGY 3: Find by relationship (author container -> name element)
     console.log('📋 SCRAPER: Trying Strategy 3 - Relationship-based search');
-    const actorContainers = postElement.querySelectorAll('[class*="actor"], [class*="author"]');
+    const actorContainers = postElement.querySelectorAll('[class*="actor"], [class*="author"], [data-view-name*="feed-actor"]');
     console.log(`👤 SCRAPER: Found ${actorContainers.length} potential actor containers`);
-    
+
     for (const container of actorContainers) {
         // Look for spans with visible text that might be the name
         const spans = container.querySelectorAll('span[aria-hidden="true"]');
         for (const span of spans) {
             const text = span.textContent?.trim();
             // Name-like text: 2-50 chars, no newlines, starts with capital
-            if (text && text.length >= 2 && text.length < 50 && 
+            if (text && text.length >= 2 && text.length < 50 &&
                 !text.includes('\n') && /^[A-Z]/.test(text)) {
                 const firstName = text.split(' ')[0];
                 console.log(`✅ SCRAPER: Author name extracted (relationship): "${firstName}"`);
                 return firstName;
+            }
+        }
+
+        // NEW: 2025 LinkedIn UI - Look for p elements with strong inside
+        const pElements = container.querySelectorAll('p');
+        for (const p of pElements) {
+            const strong = p.querySelector('strong');
+            if (strong) {
+                const text = strong.textContent?.trim();
+                if (text && text.length >= 2 && text.length < 50 &&
+                    !text.includes('\n') && /^[A-Z]/.test(text)) {
+                    const firstName = text.split(' ')[0];
+                    console.log(`✅ SCRAPER: Author name extracted (p>strong): "${firstName}"`);
+                    return firstName;
+                }
             }
         }
     }
@@ -169,11 +189,11 @@ export function scrapeAuthorName(postElement) {
     console.log('📋 SCRAPER: Trying Strategy 4 - Broad search');
     const allSpans = postElement.querySelectorAll('span');
     const topSpans = Array.from(allSpans).slice(0, 20); // Check first 20 spans
-    
+
     for (const span of topSpans) {
         const text = span.textContent?.trim();
         // Very strict validation for broad search
-        if (text && text.length >= 2 && text.length < 30 && 
+        if (text && text.length >= 2 && text.length < 30 &&
             /^[A-Z][a-z]+/.test(text) && // Starts with capital letter
             !text.includes('\n') &&
             !['View', 'Post', 'Share', 'Like', 'Comment', 'Send'].includes(text)) {
@@ -183,6 +203,29 @@ export function scrapeAuthorName(postElement) {
         }
     }
     console.log('⚠️ SCRAPER: Strategy 4 failed - no broad match');
+
+    // STRATEGY 5: NEW - Extract from profile URL path (2025 LinkedIn UI)
+    console.log('📋 SCRAPER: Trying Strategy 5 - Profile URL extraction');
+    const profileLinks = postElement.querySelectorAll('a[href*="/in/"]');
+    for (const link of profileLinks) {
+        const href = link.getAttribute('href');
+        if (href) {
+            // Extract name from URL like /in/fatima-naeem-658066162/
+            const match = href.match(/\/in\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                // Convert slug to name (e.g., "fatima-naeem" -> "Fatima")
+                const slug = match[1];
+                // Remove numbers and hyphens, take first name
+                const nameParts = slug.replace(/[0-9-]/g, ' ').trim().split(/\s+/);
+                if (nameParts.length > 0 && nameParts[0].length > 1) {
+                    const firstName = nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1).toLowerCase();
+                    console.log(`✅ SCRAPER: Author name extracted (URL): "${firstName}"`);
+                    return firstName;
+                }
+            }
+        }
+    }
+    console.log('⚠️ SCRAPER: Strategy 5 failed - no URL match');
 
     console.warn('❌ SCRAPER: All strategies failed. Returning default "there"');
     console.log('🔍 SCRAPER: Debug - Post element classes:', postElement.className);

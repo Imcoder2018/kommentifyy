@@ -1642,7 +1642,7 @@ function DashboardContent() {
             const topic = topics[i];
             const scheduledDate = new Date(plannerStartDate + 'T' + plannerPublishTime + ':00');
             scheduledDate.setDate(scheduledDate.getDate() + i);
-            setPlannerStatusMsg(`Generating post ${i + 1} of ${topics.length}: "${topic.substring(0, 60)}..."`);
+            setPlannerStatusMsg(`Generating and Scheduling post ${i + 1} of ${topics.length}: "${topic.substring(0, 40)}..."`);
             try {
                 const genRes = await fetch('/api/ai/generate-post', {
                     method: 'POST',
@@ -1651,12 +1651,41 @@ function DashboardContent() {
                 });
                 const genData = await genRes.json();
                 if (!genData.success) { setPlannerStatusMsg(`Post ${i + 1} failed: ${genData.error}`); continue; }
+
+                // Save to post-drafts first
                 const schedRes = await fetch('/api/post-drafts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ content: genData.content, topic, template: plannerTemplate, tone: plannerTone, scheduledFor: scheduledDate.toISOString() }),
+                    body: JSON.stringify({ content: genData.content, topic, template: plannerTemplate, tone: plannerTone, scheduledFor: scheduledDate.toISOString(), status: 'scheduled', postMethod: 'linkedin_api_scheduled' }),
                 });
                 const schedData = await schedRes.json();
+
+                // Also send to extension for LinkedIn scheduling
+                try {
+                    await fetch('/api/extension/command', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            command: 'linkedin_schedule_via_api',
+                            data: {
+                                content: genData.content,
+                                scheduledTime: scheduledDate.toISOString(),
+                                mediaUrl: null,
+                                mediaType: null
+                            }
+                        }),
+                    });
+                } catch (extErr) {
+                    console.error('Failed to send to extension:', extErr);
+                }
+
+                // Save to AI Generated Posts History
+                try {
+                    await saveToHistory('ai_generated', `AI Generated: ${topic.substring(0, 50)}`, genData.content, { template: plannerTemplate, tone: plannerTone, length: plannerLength, scheduledFor: scheduledDate.toISOString(), isPlannerGenerated: true });
+                } catch (histErr) {
+                    console.error('Failed to save to history:', histErr);
+                }
+
                 if (schedData.success) {
                     const newCount = i + 1;
                     setPlannerDoneCount(newCount);

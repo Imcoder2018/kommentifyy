@@ -1550,38 +1550,34 @@ export default function WriterTabNew(props: any) {
                                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
                                 {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 10)} History
                             </button>
-                            {/* DATE Picker - Clickable with prominent icon */}
-                            <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-                                <input type="date" id="writer-date-picker" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
-                                    style={{ display: 'none' }} />
-                                <div onClick={() => (document.getElementById('writer-date-picker') as HTMLInputElement)?.showPicker()}
-                                    style={{ padding: '10px 12px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s' }}
-                                    onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
-                                    onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
-                                    <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 4px rgba(167,139,250,0.8))' }}>
-                                        {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 18)}
-                                    </span>
-                                    <span style={{ color: writerScheduleDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600' }}>
-                                        {writerScheduleDate ? new Date(writerScheduleDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Select Date'}
-                                    </span>
-                                </div>
+                            {/* DATE Picker - Full clickable area */}
+                            <div style={{ position: 'relative', flex: 1, minWidth: 0, height: '38px', borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
+                                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
+                                    {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 16)}
+                                </span>
+                                <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
+                                    style={{
+                                        width: '100%', height: '100%', padding: '0 10px 0 34px',
+                                        background: 'transparent', border: 'none',
+                                        color: writerScheduleDate ? 'white' : 'rgba(255,255,255,0.6)',
+                                        fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                                        outline: 'none'
+                                    }} />
                             </div>
 
-                            {/* TIME Picker - Clickable with prominent icon */}
-                            <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-                                <input type="time" id="writer-time-picker" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
-                                    style={{ display: 'none' }} />
-                                <div onClick={() => (document.getElementById('writer-time-picker') as HTMLInputElement)?.showPicker()}
-                                    style={{ padding: '10px 12px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s' }}
-                                    onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
-                                    onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
-                                    <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 4px rgba(167,139,250,0.8))' }}>
-                                        {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 18)}
-                                    </span>
-                                    <span style={{ color: writerScheduleTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600' }}>
-                                        {writerScheduleTime ? writerScheduleTime : 'Select Time'}
-                                    </span>
-                                </div>
+                            {/* TIME Picker - Full clickable area */}
+                            <div style={{ position: 'relative', flex: 1, minWidth: 0, height: '38px', borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
+                                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
+                                    {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 16)}
+                                </span>
+                                <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
+                                    style={{
+                                        width: '100%', height: '100%', padding: '0 10px 0 34px',
+                                        background: 'transparent', border: 'none',
+                                        color: writerScheduleTime ? 'white' : 'rgba(255,255,255,0.6)',
+                                        fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                                        outline: 'none'
+                                    }} />
                             </div>
                             <button onClick={schedulePost}
                                 style={{ padding: '6px 10px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '6px', color: '#c4b5fd', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>
@@ -1778,8 +1774,8 @@ export default function WriterTabNew(props: any) {
                             <div style={{ color: '#34d399', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>
                                 {writerScheduledPosts.length} Post{writerScheduledPosts.length !== 1 ? 's' : ''} Scheduled
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '120px', overflowY: 'auto' }}>
-                                {writerScheduledPosts.slice(0, 5).map((post: any, idx: number) => {
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflowY: 'auto' }}>
+                                {writerScheduledPosts.slice(0, 20).map((post: any, idx: number) => {
                                     // Get first line of content (up to first newline or use full content)
                                     const firstLine = post.content?.split('\n')[0] || post.content || '';
                                     // Show remove button for all scheduled posts since cron is disabled
@@ -1968,43 +1964,45 @@ export default function WriterTabNew(props: any) {
                         {plannerStep === 'time' && (
                             <div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                                    {/* Start Date - Clickable with prominent icon */}
+                                    {/* Start Date - Full clickable area */}
                                     <div>
-                                        <input type="date" id="planner-date-picker" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)}
-                                            style={{ display: 'none' }} />
                                         <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', textTransform: 'uppercase' }}>
                                             {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 14)} Start Date
                                         </label>
-                                        <div onClick={() => (document.getElementById('planner-date-picker') as HTMLInputElement)?.showPicker()}
-                                            style={{ padding: '14px 16px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }}
-                                            onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
-                                            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
-                                            <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 6px rgba(167,139,250,0.8))' }}>
-                                                {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 22)}
+                                        <div style={{ position: 'relative', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
+                                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
+                                                {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 18)}
                                             </span>
-                                            <span style={{ color: plannerStartDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600' }}>
-                                                {plannerStartDate ? new Date(plannerStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Select Start Date'}
-                                            </span>
+                                            <input type="date" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)}
+                                                style={{
+                                                    width: '100%', height: '100%', padding: '0 14px 0 42px',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: plannerStartDate ? 'white' : 'rgba(255,255,255,0.6)',
+                                                    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                                                    outline: 'none'
+                                                }} />
                                         </div>
                                     </div>
 
-                                    {/* Publish Time - Clickable with prominent icon */}
+                                    {/* Publish Time - Full clickable area */}
                                     <div>
-                                        <input type="time" id="planner-time-picker" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)}
-                                            style={{ display: 'none' }} />
                                         <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', textTransform: 'uppercase' }}>
                                             {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 14)} Publish Time
                                         </label>
-                                        <div onClick={() => (document.getElementById('planner-time-picker') as HTMLInputElement)?.showPicker()}
-                                            style={{ padding: '14px 16px', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))', border: '2px solid rgba(167,139,250,0.6)', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' }}
-                                            onMouseOver={e => { e.currentTarget.style.borderColor = '#a78bfa'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(139,92,246,0.2))'; }}
-                                            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.6)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))'; }}>
-                                            <span style={{ color: '#a78bfa', filter: 'drop-shadow(0 0 6px rgba(167,139,250,0.8))' }}>
-                                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 22)}
+                                        <div style={{ position: 'relative', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
+                                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none' }}>
+                                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 18)}
                                             </span>
-                                            <span style={{ color: plannerPublishTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600' }}>
-                                                {plannerPublishTime ? plannerPublishTime : 'Select Time'}
-                                            </span>
+                                            <input type="time" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)}
+                                                style={{
+                                                    width: '100%', height: '100%', padding: '0 14px 0 42px',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: plannerPublishTime ? 'white' : 'rgba(255,255,255,0.6)',
+                                                    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                                                    outline: 'none'
+                                                }} />
                                         </div>
                                     </div>
                                 </div>
@@ -2081,11 +2079,11 @@ export default function WriterTabNew(props: any) {
                                 <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
                                 <div style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>All posts generated!</div>
                                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '24px' }}>
-                                    {plannerDoneCount} posts have been saved. View them below the Content Calendar to schedule.
+                                    {plannerDoneCount} posts have been saved and sent to LinkedIn! Check the "Posts Scheduled" section below the Content Calendar.
                                 </div>
-                                <button onClick={() => { setPlannerOpen(false); setPlannerShowResults(true); }}
+                                <button onClick={() => { setPlannerOpen(false); }}
                                     style={{ padding: '12px 32px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                                    View Posts Below
+                                    Done
                                 </button>
                             </div>
                         )}

@@ -1550,35 +1550,17 @@ export default function WriterTabNew(props: any) {
                                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
                                 {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 10)} History
                             </button>
-                            {/* DATE Picker - Full clickable area */}
-                            <div style={{ position: 'relative', flex: 1, minWidth: 0, height: '38px', borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '11px', fontWeight: '600' }}>
-                                    {writerScheduleDate ? new Date(writerScheduleDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : 'mm/dd/yyyy'}
-                                </span>
-                                <input type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)}
-                                    style={{
-                                        width: '100%', height: '100%', padding: '0',
-                                        background: 'transparent', border: 'none',
-                                        color: 'transparent',
-                                        fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-                                        outline: 'none'
-                                    }} />
-                            </div>
+                            {/* DATE Picker - Using label */}
+                            <label htmlFor="writer-date-input" style={{ flex: 1, height: '38px', padding: '0 12px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '10px', color: writerScheduleDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {writerScheduleDate ? new Date(writerScheduleDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '📅 Select Date'}
+                            </label>
+                            <input type="date" id="writer-date-input" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)} style={{ display: 'none' }} />
 
-                            {/* TIME Picker - Full clickable area */}
-                            <div style={{ position: 'relative', flex: 1, minWidth: 0, height: '38px', borderRadius: '10px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '11px', fontWeight: '600' }}>
-                                    {writerScheduleTime || '--:--'}
-                                </span>
-                                <input type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)}
-                                    style={{
-                                        width: '100%', height: '100%', padding: '0',
-                                        background: 'transparent', border: 'none',
-                                        color: 'transparent',
-                                        fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-                                        outline: 'none'
-                                    }} />
-                            </div>
+                            {/* TIME Picker - Using label */}
+                            <label htmlFor="writer-time-input" style={{ flex: 1, height: '38px', padding: '0 12px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '10px', color: writerScheduleTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {writerScheduleTime ? writerScheduleTime : '🕐 Select Time'}
+                            </label>
+                            <input type="time" id="writer-time-input" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)} style={{ display: 'none' }} />
                             <button onClick={schedulePost}
                                 style={{ padding: '6px 10px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '6px', color: '#c4b5fd', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>
                                 {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 9)} Schedule
@@ -1964,46 +1946,26 @@ export default function WriterTabNew(props: any) {
                         {plannerStep === 'time' && (
                             <div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                                    {/* Start Date - Full clickable area */}
+                                    {/* Start Date - Simple button */}
                                     <div>
-                                        <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', textTransform: 'uppercase' }}>
-                                            {miniIcon('M6 2v6h.01M12 2v6h.01M6 2C5 2 4 3 4 4v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2h-8', '#a78bfa', 14)} Start Date
+                                        <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
+                                            Start Date
                                         </label>
-                                        <div style={{ position: 'relative', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '14px', fontWeight: '600' }}>
-                                                {plannerStartDate ? new Date(plannerStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : 'mm/dd/yyyy'}
-                                            </span>
-                                            <input type="date" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)}
-                                                style={{
-                                                    width: '100%', height: '100%', padding: '0',
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    color: 'transparent',
-                                                    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                                                    outline: 'none'
-                                                }} />
-                                        </div>
+                                        <label htmlFor="planner-date-input" style={{ width: '100%', height: '48px', padding: '0 14px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '12px', color: plannerStartDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {plannerStartDate ? new Date(plannerStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '📅 Select Date'}
+                                        </label>
+                                        <input type="date" id="planner-date-input" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)} style={{ display: 'none' }} />
                                     </div>
 
-                                    {/* Publish Time - Full clickable area */}
+                                    {/* Publish Time - Simple button */}
                                     <div>
-                                        <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '6px', textTransform: 'uppercase' }}>
-                                            {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', '#a78bfa', 14)} Publish Time
+                                        <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
+                                            Publish Time
                                         </label>
-                                        <div style={{ position: 'relative', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(167,139,250,0.6)', background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.1))' }}>
-                                            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#a78bfa', zIndex: 1, pointerEvents: 'none', fontSize: '14px', fontWeight: '600' }}>
-                                                {plannerPublishTime || '--:--'}
-                                            </span>
-                                            <input type="time" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)}
-                                                style={{
-                                                    width: '100%', height: '100%', padding: '0',
-                                                    background: 'transparent',
-                                                    border: 'none',
-                                                    color: 'transparent',
-                                                    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                                                    outline: 'none'
-                                                }} />
-                                        </div>
+                                        <label htmlFor="planner-time-input" style={{ width: '100%', height: '48px', padding: '0 14px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '12px', color: plannerPublishTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {plannerPublishTime ? plannerPublishTime : '🕐 Select Time'}
+                                        </label>
+                                        <input type="time" id="planner-time-input" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)} style={{ display: 'none' }} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>

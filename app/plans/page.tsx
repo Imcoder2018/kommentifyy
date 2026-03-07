@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MonthlyPlans from '../components/MonthlyPlans';
 import LifetimeDeals from '../components/LifetimeDeals';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import WhatsAppButton from '../components/WhatsAppButton';
 
 export default function PlansPage() {
   const router = useRouter();
@@ -16,6 +19,15 @@ export default function PlansPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [soldLifetimeSpots] = useState(217);
   const totalLifetimeSpots = 500;
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const faqItems = [
+    { q: 'Can I upgrade from Free to paid?', a: 'Yes! You can upgrade to any paid plan anytime from your dashboard. Your usage limits will be instantly increased.' },
+    { q: "What's the difference between monthly and lifetime?", a: 'Monthly plans require recurring payments. Lifetime plans are a one-time payment that gives you permanent access forever with all future updates included.' },
+    { q: 'Do lifetime users get updates?', a: 'Yes! Lifetime users receive all future features, improvements, and updates at no additional cost. You\'re locked in forever.' },
+    { q: 'Can I cancel my subscription anytime?', a: 'Yes, you can cancel your monthly subscription anytime from your dashboard. No questions asked, no hidden fees.' },
+    { q: 'Is my LinkedIn account safe?', a: 'Absolutely! Kommentify uses human-like delays, random intervals, and browser-based automation. Your data never leaves your browser, making it the safest LinkedIn tool available.' },
+  ];
 
   // Helper functions
   const formatNumber = (num: number) => {
@@ -115,6 +127,9 @@ export default function PlansPage() {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Shared Header Component */}
+      <Header showBanner={true} />
+
       {/* Animated background elements */}
       <div style={{ position: 'absolute', top: '10%', left: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(105,63,233,0.15) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }}></div>
       <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)' }}></div>
@@ -124,7 +139,7 @@ export default function PlansPage() {
         {/* Header with Extension CTA */}
         <div className="plans-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src="/logo32x32-2.png" alt="Kommentify" style={{ width: '48px', height: '48px' }} />
+            <img src="/kom-logo-32.png" alt="Kommentify" style={{ width: '48px', height: '48px' }} />
             <span style={{ fontSize: '28px', fontWeight: '700', color: 'white' }}>Kommentify</span>
           </div>
           
@@ -231,6 +246,80 @@ export default function PlansPage() {
           soldLifetimeSpots={soldLifetimeSpots}
           totalLifetimeSpots={totalLifetimeSpots}
         />
+
+        {/* LinkedIn Premium Bonus Note */}
+        {lifetimeDeals.length > 0 && (
+          <div style={{ marginTop: '30px', textAlign: 'center' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%)',
+              border: '1px solid rgba(16,185,129,0.3)',
+              borderRadius: '16px',
+              padding: '20px',
+              maxWidth: '800px',
+              margin: '0 auto'
+            }}>
+              <div style={{ fontSize: '14px', color: '#10b981', fontWeight: '600', marginBottom: '8px' }}>
+                🎁 LinkedIn Premium Bonus
+              </div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6' }}>
+                After you buy, connect with our support team through WhatsApp — they'll help you activate the LinkedIn Business plan on your account.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* FAQ Section */}
+        <section style={{ padding: '80px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: '32px', fontWeight: '700', textAlign: 'center', marginBottom: '40px', color: 'white' }}>
+              <span style={{ color: '#a78bfa' }}>Frequently Asked</span> <span style={{ color: '#693fe9' }}>Questions</span>
+            </h2>
+
+            {faqItems.map((faq, i) => (
+              <div key={i} style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  style={{
+                    width: '100%',
+                    padding: '18px 24px',
+                    background: 'transparent',
+                    border: 'none',
+                    textAlign: 'left',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  {faq.q}
+                  <span style={{ fontSize: '20px', color: '#693fe9', transition: 'transform 0.3s', transform: openFaq === i ? 'rotate(45deg)' : 'none' }}>+</span>
+                </button>
+                {openFaq === i && (
+                  <div style={{ padding: '0 24px 18px', fontSize: '15px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.7' }}>
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Trust Badges */}
+        <section style={{ padding: '40px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+            {['30-Day Money-Back Guarantee', 'Cancel Anytime', 'Secure Payment'].map((badge, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                {badge}
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Trust Section */}
         <div className="trust-section" style={{ 
@@ -359,6 +448,12 @@ export default function PlansPage() {
           }
         }
       `}</style>
+
+      {/* Shared Footer Component */}
+      <Footer />
+
+      {/* WhatsApp Chat Button */}
+      <WhatsAppButton />
     </div>
   );
 }

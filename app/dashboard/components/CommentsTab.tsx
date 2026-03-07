@@ -341,13 +341,10 @@ const styles = {
     },
 
     // ============================================
-    // SIDEBAR STYLES (Comment Style Sources - Right Side)
+    // SIDEBAR STYLES (Comment Style Sources - Below Header)
     // ============================================
     sidebar: {
-        position: 'fixed' as const,
-        right: '24px',
-        top: '120px',
-        width: '320px',
+        width: '360px',
         background: 'rgba(17, 24, 39, 0.98)',
         backdropFilter: 'blur(12px)',
         borderRadius: '16px',
@@ -355,16 +352,13 @@ const styles = {
         borderLeft: '3px solid #8b5cf6',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(139, 92, 246, 0.1)',
         padding: SPACING.lg,
-        maxHeight: 'calc(100vh - 160px)',
+        maxHeight: 'calc(100vh - 300px)',
         overflowY: 'auto' as const,
         zIndex: 50,
     },
-    // RIGHT SIDEBAR STYLES (Comment Settings - positioned left of Style Sources)
+    // RIGHT SIDEBAR STYLES (Comment Settings - Below Header)
     rightSidebar: {
-        position: 'fixed' as const,
-        right: '384px',
-        top: '120px',
-        width: '360px',
+        width: '400px',
         background: 'rgba(17, 24, 39, 0.98)',
         backdropFilter: 'blur(12px)',
         borderRadius: '16px',
@@ -372,7 +366,7 @@ const styles = {
         borderLeft: '3px solid #3b82f6',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1)',
         padding: SPACING.lg,
-        maxHeight: 'calc(100vh - 160px)',
+        maxHeight: 'calc(100vh - 300px)',
         overflowY: 'auto' as const,
         zIndex: 50,
     },
@@ -998,8 +992,10 @@ export default function CommentsTab(props: any) {
                 </div>
             </div>
 
-            {/* Comment Settings LEFT SIDEBAR */}
-            <div className="comment-settings-sidebar" style={styles.rightSidebar}>
+            {/* Sidebars Container - Below Header */}
+            <div style={{ display: 'flex', gap: SPACING.lg, marginBottom: SPACING.xl, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                {/* Comment Settings */}
+                <div className="comment-settings-sidebar" style={styles.rightSidebar}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
                     <h3 style={{ color: 'white', fontSize: TYPOGRAPHY.fontSizeLg, fontWeight: TYPOGRAPHY.fontWeightBold, margin: 0, display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
                         {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#3b82f6', 18)}
@@ -1270,7 +1266,7 @@ export default function CommentsTab(props: any) {
             </div>
 
         {/* ============================================ */}
-        {/* STYLE SOURCES SIDEBAR - Fixed Right Side */}
+        {/* STYLE SOURCES SIDEBAR - Below Header */}
         {/* ============================================ */}
         <div className="style-sources-sidebar" style={styles.sidebar}>
                 {/* Sidebar Header */}
@@ -1626,6 +1622,7 @@ export default function CommentsTab(props: any) {
                             )}
                         </>
                     )}
+            </div>
             </div>
         </div>
         </div>

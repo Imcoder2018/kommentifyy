@@ -135,7 +135,7 @@ export default function Footer() {
                         <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '15px', color: 'rgba(255,255,255,0.8)' }}>Product</h4>
                         <div className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <Link href="/#features" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Features</Link>
-                            <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Pricing</Link>
+                            <Link href="/plans" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Pricing</Link>
                             <Link href="/#comparison" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '13px' }}>Compare</Link>
                             <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '13px' }}>🔥 Lifetime Deal</Link>
                             <a href="https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontSize: '13px', fontWeight: '500' }}>🌐 Download Extension</a>

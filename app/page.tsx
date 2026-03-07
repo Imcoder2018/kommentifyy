@@ -634,7 +634,7 @@ function LandingPage() {
                     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
                     animation: 'shimmer 2s infinite'
                 }}></div>
-                <a href="/pricing" target="_blank" rel="noopener noreferrer" style={{ 
+                <a href="/plans" target="_blank" rel="noopener noreferrer" style={{ 
                     fontSize: '14px', 
                     fontWeight: '700', 
                     color: 'white',
@@ -737,7 +737,7 @@ function LandingPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <Link href="/features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Features</Link>
                         <Link href="#why-kommentify" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Why Kommentify</Link>
-                        <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pricing</Link>
+                        <Link href="/plans" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pricing</Link>
                         <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Blog</Link>
                         <Link href="/lifetime-deal" onClick={() => setMobileMenuOpen(false)} style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '18px', fontWeight: '600', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}><IconFire size={18} /> Lifetime Deal</Link>
                         <Link href="#comparison" onClick={() => setMobileMenuOpen(false)} style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontSize: '18px', fontWeight: '500', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Compare</Link>
@@ -795,7 +795,7 @@ function LandingPage() {
                 <div className="desktop-nav" style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
                     <Link href="/features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Features</Link>
                     <Link href="#why-kommentify" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Why Us</Link>
-                    <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Pricing</Link>
+                    <Link href="/plans" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Pricing</Link>
                     <Link href="/blog" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Blog</Link>
                     <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><IconFire size={14} /> Lifetime Deal</Link>
                     <Link href="#comparison" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>Compare</Link>
@@ -941,7 +941,7 @@ function LandingPage() {
                             }}>
                                 🚀 Start Free Forever <span>→</span>
                             </Link>
-                            <a href="/pricing" style={{
+                            <a href="/plans" style={{
                                 padding: '16px 32px',
                                 background: 'transparent',
                                 border: '2px solid rgba(255,255,255,0.3)',
@@ -1439,7 +1439,7 @@ function LandingPage() {
                         <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>
                             <strong style={{ color: '#693fe9' }}>Kommentify</strong> is the only tool that combines <strong>AI content creation + intelligent engagement + full automation + human-like safety</strong> — with lifetime deals no competitor offers.
                         </p>
-                        <a href="/pricing" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)' }}>
+                        <a href="/plans" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)' }}>
                             🚀 Get Lifetime Access <span>→</span>
                         </a>
                     </div>
@@ -1481,7 +1481,7 @@ function LandingPage() {
                     {/* Pricing Update Note */}
                     <div style={{ maxWidth: '600px', margin: '0 auto 40px', padding: '16px 24px', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.05))', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', textAlign: 'center' }}>
                         <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: '1.6' }}>
-                            <strong style={{ color: '#f59e0b' }}>Pricing update strategy:</strong> When we hit 500 paying subscribers, prices increase by 30-50%. <strong>Grandfather clause:</strong> Existing customers keep their price forever.
+                            <strong style={{ color: '#f59e0b' }}>Lock in your price today:</strong> As we grow and add more features, prices will increase. Sign up now to secure your current rate forever — you'll never pay more, guaranteed.
                         </p>
                     </div>
                     

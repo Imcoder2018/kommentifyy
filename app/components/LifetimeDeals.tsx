@@ -148,8 +148,8 @@ export default function LifetimeDeals({ lifetimeDeals, loading, formatNumber, so
                         <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '13px' }}>🎁 30-Day Money-Back Guarantee — Pay Once, Use Forever</span>
                     </div>
                 </div>
-                <h2 className="section-title" style={{ fontSize: '38px', fontWeight: '700', textAlign: 'center', marginBottom: '16px' }}>
-                    Lifetime Access<br/>
+                <h2 className="section-title" style={{ fontSize: '38px', fontWeight: '700', textAlign: 'center', marginBottom: '16px', color: 'white' }}>
+                    <span style={{ color: '#a78bfa' }}>Lifetime Access</span><br/>
                     <span style={{ color: '#f59e0b' }}>One Payment. Forever Yours.</span>
                 </h2>
                 <p style={{ textAlign: 'center', fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px' }}>
@@ -194,7 +194,7 @@ export default function LifetimeDeals({ lifetimeDeals, loading, formatNumber, so
                                 { icon: <IconChart size={14} color="#10b981" />, text: `${plan.limits.monthlyShares >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyShares)} Auto Shares` },
                                 { icon: <IconUsers size={14} color="#3b82f6" />, text: `${plan.limits.monthlyFollows >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyFollows)} Auto Follows` },
                                 { icon: <IconHandshake size={14} color="#f59e0b" />, text: `${plan.limits.monthlyConnections >= 100000 ? 'Unlimited' : formatNumber(plan.limits.monthlyConnections)} Connections` },
-                                plan.monthlyImportCredits > 0 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: plan.monthlyImportCredits >= 100000 ? 'Unlimited Imports' : `${formatNumber(plan.monthlyImportCredits)} Imports` } : null,
+                                plan.monthlyImportCredits > 0 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: plan.monthlyImportCredits >= 100000 ? 'Unlimited Warm Leads Imports' : `${formatNumber(plan.monthlyImportCredits)} Warm Leads Imports` } : null,
                                 { icon: <IconRocket size={14} color="#22c55e" />, text: 'Viral Posts Writer' },
                                 { icon: <IconDatabase size={14} color="#8b5cf6" />, text: 'Added Sources (AI Posts & Comments)' },
                                 { icon: <IconUser size={14} color="#f59e0b" />, text: 'Personalized Post Writer (Scan Profile)' },
@@ -284,7 +284,7 @@ export default function LifetimeDeals({ lifetimeDeals, loading, formatNumber, so
                                         <div style={{ fontSize: '16px', fontWeight: '700', color: '#8b5cf6' }}>
                                             $5 for 200 AI Comments
                                         </div>
-                                        <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '2px' }}>
+                                        <div style={{ fontSize: '10px', color: '#a78bfa', marginTop: '2px' }}>
                                             Purchase additional AI comments anytime
                                         </div>
                                     </div>

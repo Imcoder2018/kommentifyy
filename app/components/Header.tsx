@@ -58,7 +58,7 @@ export default function Header({ showBanner = true }: HeaderProps) {
                         background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
                         animation: 'shimmer 2s infinite'
                     }}></div>
-                    <a href="/pricing" target="_blank" rel="noopener noreferrer" style={{ 
+                    <a href="/plans" target="_blank" rel="noopener noreferrer" style={{ 
                         fontSize: '14px', 
                         fontWeight: '700', 
                         color: 'white',
@@ -95,7 +95,7 @@ export default function Header({ showBanner = true }: HeaderProps) {
                 
                 <div className="desktop-nav" style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
                     <Link href="/features" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}>Features</Link>
-                    <Link href="/pricing" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}>Pricing</Link>
+                    <Link href="/plans" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}>Pricing</Link>
                     <Link href="/blog" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}>Blog</Link>
                     <Link href="/#comparison" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}>Compare</Link>
                     <Link href="/lifetime-deal" style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -144,7 +144,7 @@ export default function Header({ showBanner = true }: HeaderProps) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <Link href="/" onClick={() => setMobileMenuOpen(false)} style={{ color: 'white', textDecoration: 'none', fontSize: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Home</Link>
                         <Link href="/features" onClick={() => setMobileMenuOpen(false)} style={{ color: 'white', textDecoration: 'none', fontSize: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Features</Link>
-                        <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} style={{ color: 'white', textDecoration: 'none', fontSize: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pricing</Link>
+                        <Link href="/plans" onClick={() => setMobileMenuOpen(false)} style={{ color: 'white', textDecoration: 'none', fontSize: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Pricing</Link>
                         <Link href="/blog" onClick={() => setMobileMenuOpen(false)} style={{ color: 'white', textDecoration: 'none', fontSize: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Blog</Link>
                         <Link href="/lifetime-deal" onClick={() => setMobileMenuOpen(false)} style={{ color: '#f59e0b', textDecoration: 'none', fontSize: '18px', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <IconFire size={18} /> Lifetime Deal

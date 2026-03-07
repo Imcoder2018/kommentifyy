@@ -67,7 +67,7 @@ export default function ReferralPage() {
                     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
                     animation: 'shimmer 2s infinite'
                 }}></div>
-                <a href="/pricing" target="_blank" rel="noopener noreferrer" style={{ 
+                <a href="/plans" target="_blank" rel="noopener noreferrer" style={{ 
                     fontSize: '14px', 
                     fontWeight: '700', 
                     color: 'white',

@@ -109,6 +109,7 @@ interface Props {
   miniIcon?: any;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
   extensionConnected?: boolean;
+  hideTitle?: boolean;
 }
 
 // ============= DESIGN SYSTEM =============
@@ -837,9 +838,12 @@ export default function LeadWarmerTab(props: Props) {
     );
   }, [leads, searchQuery]);
 
+  const { hideTitle } = props;
+
   return (
     <div style={styles.container}>
-      {/* GLOBAL HEADER */}
+      {/* GLOBAL HEADER - hide when used in dashboard with existing header */}
+      {!hideTitle && (
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -861,6 +865,7 @@ export default function LeadWarmerTab(props: Props) {
           </div>
         </div>
       </div>
+      )}
 
       {/* NAVIGATION TABS */}
       <div style={{ display: 'flex', gap: '8px', borderBottom: `1px solid ${THEME.colors.border}`, paddingBottom: '12px' }}>

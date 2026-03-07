@@ -250,7 +250,7 @@ export default function PricingPage() {
                                     <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
                                         $5 for 200 AI Comments
                                     </div>
-                                    <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                    <div style={{ fontSize: '12px', color: '#a78bfa', marginTop: '4px' }}>
                                         Purchase additional AI comments anytime
                                     </div>
                                 </div>
@@ -347,7 +347,7 @@ export default function PricingPage() {
                                     <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
                                         $5 for 200 AI Comments
                                     </div>
-                                    <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                    <div style={{ fontSize: '12px', color: '#a78bfa', marginTop: '4px' }}>
                                         Purchase additional AI comments anytime
                                     </div>
                                 </div>
@@ -440,7 +440,7 @@ export default function PricingPage() {
                                     <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
                                         $5 for 200 AI Comments
                                     </div>
-                                    <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                    <div style={{ fontSize: '12px', color: '#a78bfa', marginTop: '4px' }}>
                                         Purchase additional AI comments anytime
                                     </div>
                                 </div>
@@ -474,8 +474,8 @@ export default function PricingPage() {
                             <IconFire size={20} color="#f59e0b" />
                             <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '14px' }}>Limited Time: Pay Once, Use Forever</span>
                         </div>
-                        <h2 style={{ fontSize: '38px', fontWeight: '700', marginBottom: '12px' }}>
-                            Lifetime Access<br/>
+                        <h2 style={{ fontSize: '38px', fontWeight: '700', marginBottom: '12px', color: 'white' }}>
+                            <span style={{ color: '#a78bfa' }}>Lifetime Access</span><br/>
                             <span style={{ color: '#f59e0b' }}>One Payment. Forever Yours.</span>
                         </h2>
                         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginBottom: '30px' }}>
@@ -518,7 +518,7 @@ export default function PricingPage() {
                                     { text: `${formatNumber(plan.limits.monthlyShares)} Auto Shares` },
                                     { text: `${formatNumber(plan.limits.monthlyFollows)} Auto Follows` },
                                     { text: `${formatNumber(plan.limits.monthlyConnections)} Connections` },
-                                    plan.monthlyImportCredits > 0 ? { text: `${formatNumber(plan.monthlyImportCredits)} Imports` } : null,
+                                    plan.monthlyImportCredits > 0 ? { text: `${formatNumber(plan.monthlyImportCredits)} Warm Leads Imports` } : null,
                                     { text: 'Viral Posts Writer' },
                                     { text: 'Added Sources (AI Posts & Comments)' },
                                     { text: 'Personalized Post Writer (Scan Profile)' },

@@ -322,7 +322,7 @@ export default function LifetimeDealPage() {
                                     { icon: <IconChart size={14} color="#10b981" />, text: `${plan.limits.monthlyShares >= 100000 ? 'Unlimited' : plan.limits.monthlyShares} Auto Shares` },
                                     { icon: <IconUsers size={14} color="#3b82f6" />, text: `${plan.limits.monthlyFollows >= 100000 ? 'Unlimited' : plan.limits.monthlyFollows} Auto Follows` },
                                     { icon: <IconHandshake size={14} color="#f59e0b" />, text: `${plan.limits.monthlyConnections >= 100000 ? 'Unlimited' : plan.limits.monthlyConnections} Connection Requests` },
-                                    plan.monthlyImportCredits >= 100000 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: 'Unlimited Profile Imports' } : plan.monthlyImportCredits > 0 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: `${plan.monthlyImportCredits} Profile Imports` } : null,
+                                    plan.monthlyImportCredits >= 100000 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: 'Unlimited Warm Leads Imports' } : plan.monthlyImportCredits > 0 ? { icon: <IconDownload size={14} color="#06b6d4" />, text: `${plan.monthlyImportCredits} Warm Leads Imports` } : null,
                                     plan.features.scheduling ? { icon: <IconCalendar size={14} color="#a855f7" />, text: 'Post Scheduling' } : null,
                                     plan.features.automationScheduling ? { icon: <IconZap size={14} color="#eab308" />, text: 'Automation Scheduling' } : null,
                                     { icon: <IconRocket size={14} color="#22c55e" />, text: 'Lifetime Updates' },
@@ -398,7 +398,7 @@ export default function LifetimeDealPage() {
                                             <div style={{ fontSize: '20px', fontWeight: '700', color: '#8b5cf6' }}>
                                                 $5 for 200 AI Comments
                                             </div>
-                                            <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>
+                                            <div style={{ fontSize: '12px', color: '#a78bfa', marginTop: '4px' }}>
                                                 Purchase additional AI comments anytime
                                             </div>
                                         </div>

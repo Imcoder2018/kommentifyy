@@ -1303,7 +1303,7 @@ export default function WriterTabNew(props: any) {
                         writerContent.trim() ? (() => {
                             const isMobile = writerPreviewMode === 'mobile';
                             const maxW = isMobile ? '375px' : '100%';
-                            const TRUNCATE_CHARS = 130; // LinkedIn-style truncation at 130 characters
+                            const TRUNCATE_CHARS = isMobile ? 140 : 200; // LinkedIn-style truncation: 140 for mobile, 200 for desktop
                             const truncated = writerContent.length > TRUNCATE_CHARS && !writerPreviewExpanded;
                             const displayText = truncated ? writerContent.substring(0, TRUNCATE_CHARS) : writerContent;
                             

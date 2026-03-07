@@ -4068,8 +4068,8 @@ function DashboardContent() {
                 {activeTab === 'limits' && <LimitsTab {...tabProps} />}
                 {activeTab === 'activity' && <ActivityTab {...tabProps} />}
                 {activeTab === 'commenter' && <CommenterTab {...tabProps} />}
-                {activeTab === 'import' && <LeadWarmerTab {...tabProps} />}
-                {activeTab === 'lead-warmer' && <LeadWarmerTab {...tabProps} />}
+                {activeTab === 'import' && <LeadWarmerTab {...tabProps} hideTitle />}
+                {activeTab === 'lead-warmer' && <LeadWarmerTab {...tabProps} hideTitle />}
                 {activeTab === 'analytics' && <AnalyticsTab {...tabProps} />}
                 {activeTab === 'usage' && <UsageTab {...tabProps} />}
                 {activeTab === 'referrals' && <ReferralsTab {...tabProps} />}

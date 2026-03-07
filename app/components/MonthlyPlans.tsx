@@ -173,7 +173,7 @@ export default function MonthlyPlans({ plans, billingCycle, formatNumber, getYea
                     { label: 'Auto Shares', value: monthlyShares, icon: <IconChart size={14} color="#10b981" /> },
                     { label: 'Auto Follows', value: monthlyFollows, icon: <IconUsers size={14} color="#3b82f6" /> },
                     { label: 'Connections', value: connections, icon: <IconHandshake size={14} color="#f59e0b" /> },
-                    { label: 'Imports', value: imports, icon: <IconDownload size={14} color="#06b6d4" /> },
+                    { label: 'Warm Leads Imports', value: imports, icon: <IconDownload size={14} color="#06b6d4" /> },
                 ];
 
                 // Additional features to match lifetime deals format

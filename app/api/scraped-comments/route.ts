@@ -77,9 +77,11 @@ export async function POST(request: NextRequest) {
     // Action: save bulk comments from extension scrape
     if (body.action === 'saveComments') {
       const { profileUrl, profileIdSlug, profileName, comments } = body;
-      if (!profileIdSlug || !comments || !Array.isArray(comments)) {
-        return NextResponse.json({ success: false, error: 'Missing profileIdSlug or comments array' }, { status: 400 });
+      if (!profileIdSlug) {
+        return NextResponse.json({ success: false, error: 'Missing profileIdSlug' }, { status: 400 });
       }
+      // Allow empty comments array for adding shared profiles without comments initially
+      const commentsArray = (comments && Array.isArray(comments)) ? comments : [];
 
       // Upsert the profile
       const profile = await prisma.commentStyleProfile.upsert({
@@ -89,25 +91,26 @@ export async function POST(request: NextRequest) {
           profileUrl: profileUrl || `https://www.linkedin.com/in/${profileIdSlug}/`,
           profileId: profileIdSlug,
           profileName: profileName || profileIdSlug,
-          commentCount: comments.length,
+          commentCount: commentsArray.length,
           lastScrapedAt: new Date(),
         },
         update: {
           profileName: profileName || undefined,
-          commentCount: { increment: comments.length },
+          commentCount: { increment: commentsArray.length },
           lastScrapedAt: new Date(),
         },
       });
 
-      // Delete old comments for this profile to avoid duplicates on re-scrape
-      await prisma.scrapedComment.deleteMany({
-        where: { userId: payload.userId, profileId: profile.id },
-      });
+      // Only delete and create comments if we have them
+      if (commentsArray.length > 0) {
+        // Delete old comments for this profile to avoid duplicates on re-scrape
+        await prisma.scrapedComment.deleteMany({
+          where: { userId: payload.userId, profileId: profile.id },
+        });
 
-      // Bulk create comments
-      if (comments.length > 0) {
+        // Bulk create comments
         await prisma.scrapedComment.createMany({
-          data: comments.map((c: any) => ({
+          data: commentsArray.map((c: any) => ({
             userId: payload.userId,
             profileId: profile.id,
             postText: (c.postText || '').substring(0, 5000),
@@ -115,16 +118,16 @@ export async function POST(request: NextRequest) {
             commentText: (c.commentText || '').substring(0, 5000),
           })),
         });
+
+        // Update accurate count
+        const count = await prisma.scrapedComment.count({ where: { profileId: profile.id } });
+        await prisma.commentStyleProfile.update({
+          where: { id: profile.id },
+          data: { commentCount: count },
+        });
       }
 
-      // Update accurate count
-      const count = await prisma.scrapedComment.count({ where: { profileId: profile.id } });
-      await prisma.commentStyleProfile.update({
-        where: { id: profile.id },
-        data: { commentCount: count },
-      });
-
-      return NextResponse.json({ success: true, profileId: profile.id, savedCount: comments.length });
+      return NextResponse.json({ success: true, profileId: profile.id, savedCount: commentsArray.length });
     }
 
     return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });

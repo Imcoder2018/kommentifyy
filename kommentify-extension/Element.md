@@ -1,0 +1,7612 @@
+\<div class="scaffold-layout  
+    scaffold-layout--breakpoint-md  
+    scaffold-layout--sidebar-main-aside  
+      
+    scaffold-layout--reflow  
+      
+    "\>  
+\<\!----\>  
+  \<div class="scaffold-layout\_\_inner scaffold-layout-container  
+      scaffold-layout-container--reflow  
+      "\>  
+\<\!----\>  
+      \<div class="scaffold-layout\_\_row scaffold-layout\_\_content  
+          scaffold-layout\_\_content--sidebar-main-aside  
+          scaffold-layout\_\_content--has-sidebar  
+            
+          scaffold-layout\_\_content--has-aside  
+            
+          "\>  
+          \<aside class="scaffold-layout\_\_sidebar" tabindex="-1"\>  
+      
+                
+        \<div class="scaffold-layout\_\_sticky  
+      
+    scaffold-layout\_\_sticky--md  
+    "\>  
+  \<div class="scaffold-layout\_\_sticky-content"\>  
+      
+          \<div role="region" aria-label="Side Bar"\>  
+              
+    \<div class="artdeco-card  
+        NkNFsHGTgJtQlSLyjeXmcFaEzHsUltfJYpk  
+        mb2 overflow-hidden profile-card"\>
+
+\<\!----\>  
+        \<a href="/in/kratiagarwal95/" id="ember1310" class="ember-view link-without-hover-visited display-flex flex-column mb2 profile-card-profile-link" aria-label="Background photo of Krati Agarwal Premium account"\>  
+            \<div class="pb1 premium-accent-bar" role="presentation"\>\</div\>
+
+          \<div class="profile-card-background-image  
+              " style="background-image:url(https://media.licdn.com/dms/image/v2/D5616AQGVW8ik8VsK5Q/profile-displaybackgroundimage-shrink\_200\_800/B56ZYaKfVEHQAY-/0/1744195680710?e=1774483200\&amp;v=beta\&amp;t=OWGItYJrQGvbshtW\_CBQP57p1gMqfHaJakW4RLgzo0I)"\>  
+              \<div class="profile-card-background-image--premium-overlay"\>  
+                \<span class="text-body-small-bold mr2"\>  
+                  Premium  
+                \</span\>  
+              \</div\>  
+          \</div\>  
+        \</a\>
+
+          \<a href="/in/kratiagarwal95/" id="ember1311" class="ember-view profile-card-profile-picture-container link-without-hover-visited"\>  
+            \<img width="72" src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" height="72" alt="Photo of Krati Agarwal" id="ember1312" class="profile-card-profile-picture evi-image lazy-image ember-view"\>  
+          \</a\>
+
+        \<div class="profile-card-member-details"\>  
+          \<a href="/in/kratiagarwal95/" id="ember1313" class="ember-view link-without-hover-visited display-flex flex-column mb2"\>  
+            \<div class="display-flex mt1"\>  
+              \<h3 class="profile-card-name text-heading-large"\>  
+                Krati Agarwal  
+              \</h3\>  
+                \<div class="profile-card-display-badge-ivm-container"\>  
+                    
+    \<div class="ivm-image-view-model    text-heading-large"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+        \<svg role="none" aria-hidden="true" class=" " xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>
+
+    \</div\>  
+    
+          \</div\>  
+    
+                \</div\>  
+            \</div\>  
+              \<p class="profile-card-headline text-body-xsmall mt1"\>  
+                Helping founders craft compelling stories and build a strong LinkedIn community. DM me 'BRAND'  
+              \</p\>  
+              \<p class="text-body-xsmall t-black--light mt1"\>  
+                Bengaluru, Karnataka  
+              \</p\>  
+          \</a\>  
+            \<a href="/in/kratiagarwal95/" id="ember1314" class="ember-view link-without-hover-visited"\>  
+              \<p class="profile-card-position-details text-body-xsmall t-bold display-flex align-items-center"\>  
+                \<img src="https://media.licdn.com/dms/image/v2/C4E0BAQH-TU\_npWrRUg/company-logo\_100\_100/company-logo\_100\_100/0/1630644764500/markrating\_logo?e=1774483200\&amp;v=beta\&amp;t=pas6C-3dOJdiK54ayBYO1URlMgKtGMXrG3wN4KiZaJI" alt="" id="ember1315" class="evi-image ember-view profile-card-company-logo"\>  
+                \<span\>Markrating Cafe | SEO \&amp; Social Media Content Agency\</span\>  
+              \</p\>  
+            \</a\>  
+        \</div\>  
+\<\!----\>        
+    \</div\>  
+\<\!----\>    
+                
+    \<div class="artdeco-card overflow-hidden p4 mb2"\>
+
+        \<div class="feed-left-nav-growth-widgets\_\_widgets pb3"\>  
+          
+
+    \<div class="entity-list-wrapper "\>  
+      \<ul class="entity-list row"\>  
+          \<li class="feed-left-nav-growth-widgets\_\_entity-list-item entity-list-item"\>  
+              
+        \<a href="/me/profile-views/" id="ember1873" class="ember-view full-width "\>  
+            
+    \<div class="display-flex align-items-baseline"\>  
+      \<div class="text-align-left"\>  
+          \<div id="ember1874" class="ember-view t-12 t-bold mr2 t-black"\>  
+\<span\>Profile viewers\</span\>  \</div\>
+
+\<\!----\>      \</div\>  
+      \<div class="feed-identity-widget-item\_\_icon-stat t-12 t-black t-bold flex-1"\>  
+          \<span class="feed-identity-widget-item\_\_stat"\>  
+            \<strong\>\<\!----\>4,157\<\!----\>\</strong\>  
+          \</span\>  
+      \</div\>  
+    \</div\>  
+    
+        \</a\>  
+    
+          \</li\>  
+          \<li class="feed-left-nav-growth-widgets\_\_entity-list-item entity-list-item"\>  
+              
+        \<a href="/analytics/creator/content/" id="ember1875" class="ember-view full-width "\>  
+            
+    \<div class="display-flex align-items-baseline"\>  
+      \<div class="text-align-left"\>  
+          \<div id="ember1876" class="ember-view t-12 t-bold mr2 t-black"\>  
+\<span\>Post impressions\</span\>  \</div\>
+
+\<\!----\>      \</div\>  
+      \<div class="feed-identity-widget-item\_\_icon-stat t-12 t-black t-bold flex-1"\>  
+          \<span class="feed-identity-widget-item\_\_stat"\>  
+            \<strong\>\<\!----\>6,879\<\!----\>\</strong\>  
+          \</span\>  
+      \</div\>  
+    \</div\>  
+    
+        \</a\>  
+    
+          \</li\>  
+      \</ul\>
+
+\<\!----\>  
+      
+
+    \</div\>  
+    
+        \</div\>
+
+        \<div\>  
+\<\!----\>  
+            \<a href="/premium/my-premium/" id="ember1877" class="ember-view feed-left-nav-growth-widgets\_\_link mt4 text-align-left display-flex flex-column"\>  
+              \<p class="t-12 t-black t-bold display-flex"\>  
+                \<svg role="none" aria-hidden="true" class="mr1 flex-shrink-zero" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="premium-chip-small"\>  
+\<\!----\>      
+    \<use href="\#premium-chip-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+                \<span\>Your Premium features\</span\>  
+              \</p\>  
+            \</a\>  
+                  \</div\>  
+    \</div\>  
+    
+            \<\!----\>                
+    \<section class="artdeco-card overflow-hidden org-organization-admin-pages-entrypoint-card\_\_card artdeco-card overflow-hidden mb2"\>  
+\<\!----\>  
+    
+        \<div class="display-flex justify-space-between mb1"\>  
+          \<h2 class="text-body-xsmall-bold ph3 pt3"\>  
+            My pages (6)  
+          \</h2\>  
+            \<button class="mt3 mr3 text-body-xsmall-bold t-black--light" type="button"\>  
+              See all  
+            \</button\>  
+        \</div\>
+
+      \<div class="relative block"\>  
+            \<div class="org-organization-admin-pages-entrypoint-card\_\_item"\>  
+              \<a href="/company/71026475/admin/" id="ember1146" class="ember-view pt3 pb3 pl3"\>  
+                \<img src="https://media.licdn.com/dms/image/v2/C560BAQGzMinYfXsN8A/company-logo\_100\_100/company-logo\_100\_100/0/1630653076766/artinotech\_logo?e=1774483200\&amp;v=beta\&amp;t=oozhhXKZGc1YuHQ1rEZQagf-1d6xmZOBTgXswSoYZwo" loading="lazy" alt="eVCards \- A Network of e-Visiting Cards logo" id="ember1147" class="evi-image lazy-image ember-view EntityPhoto-square-0"\>  
+              \</a\>
+
+              \<div class="org-organization-admin-pages-entrypoint-card\_\_content"\>  
+                \<a href="/company/71026475/admin/" id="ember1148" class="ember-view"\>  
+                  \<span class="text-body-xsmall-bold t-black"\>  
+                    eVCards \- A Network of e-Visiting Cards  
+                  \</span\>  
+                \</a\>
+
+                  \<a href="/company/71026475/admin/notifications/" id="ember1149" class="ember-view org-organization-admin-pages-entrypoint-card\_\_link org-organization-admin-pages-entrypoint-card\_\_link--multi display-flex overflow-hidden link-without-visited-state"\>  
+                    \<span class="org-organization-admin-pages-entrypoint-card\_\_link-text text-body-xsmall-bold t-black truncate"\>  
+                      Activity  
+                    \</span\>  
+                    \<span class="org-organization-admin-pages-entrypoint-card\_\_link-text org-organization-admin-pages-entrypoint-card\_\_stat text-body-xsmall-bold link-without-visited-state"\>  
+                      0  
+                    \</span\>  
+                  \</a\>  
+              \</div\>  
+            \</div\>  
+            \<div class="org-organization-admin-pages-entrypoint-card\_\_item"\>  
+              \<a href="/company/66276978/admin/" id="ember1150" class="ember-view pt3 pb3 pl3"\>  
+                \<img src="https://media.licdn.com/dms/image/v2/C560BAQGN3KbyYIKGYQ/company-logo\_100\_100/company-logo\_100\_100/0/1630664768507?e=1774483200\&amp;v=beta\&amp;t=FSELnycgq8rUW8Tv0NWanS9-DHYdi\_NK9K7qLbkeqo8" loading="lazy" alt="Packagerr logo" id="ember1151" class="evi-image lazy-image ember-view EntityPhoto-square-0"\>  
+              \</a\>
+
+              \<div class="org-organization-admin-pages-entrypoint-card\_\_content"\>  
+                \<a href="/company/66276978/admin/" id="ember1152" class="ember-view"\>  
+                  \<span class="text-body-xsmall-bold t-black"\>  
+                    Packagerr  
+                  \</span\>  
+                \</a\>
+
+                  \<a href="/company/66276978/admin/notifications/" id="ember1153" class="ember-view org-organization-admin-pages-entrypoint-card\_\_link org-organization-admin-pages-entrypoint-card\_\_link--multi display-flex overflow-hidden link-without-visited-state"\>  
+                    \<span class="org-organization-admin-pages-entrypoint-card\_\_link-text text-body-xsmall-bold t-black truncate"\>  
+                      Activity  
+                    \</span\>  
+                    \<span class="org-organization-admin-pages-entrypoint-card\_\_link-text org-organization-admin-pages-entrypoint-card\_\_stat text-body-xsmall-bold link-without-visited-state"\>  
+                      0  
+                    \</span\>  
+                  \</a\>  
+              \</div\>  
+            \</div\>  
+            \<div class="org-organization-admin-pages-entrypoint-card\_\_item"\>  
+              \<a href="/company/89618836/admin/" id="ember1154" class="ember-view pt3 pb3 pl3"\>  
+                \<img src="https://media.licdn.com/dms/image/v2/C4E0BAQGk5-aHAOXlFQ/company-logo\_100\_100/company-logo\_100\_100/0/1668762277824/lateral\_connect1\_logo?e=1774483200\&amp;v=beta\&amp;t=89bd2hHxbtX1cfoW5xKYVewCA9XeCXp3PbT1DH3rTrc" loading="lazy" alt="Lateral Connect logo" id="ember1155" class="evi-image lazy-image ember-view EntityPhoto-square-0"\>  
+              \</a\>
+
+              \<div class="org-organization-admin-pages-entrypoint-card\_\_content"\>  
+                \<a href="/company/89618836/admin/" id="ember1156" class="ember-view"\>  
+                  \<span class="text-body-xsmall-bold t-black"\>  
+                    Lateral Connect  
+                  \</span\>  
+                \</a\>
+
+                  \<a href="/company/89618836/admin/notifications/" id="ember1157" class="ember-view org-organization-admin-pages-entrypoint-card\_\_link org-organization-admin-pages-entrypoint-card\_\_link--multi display-flex overflow-hidden link-without-visited-state"\>  
+                    \<span class="org-organization-admin-pages-entrypoint-card\_\_link-text text-body-xsmall-bold t-black truncate"\>  
+                      Activity  
+                    \</span\>  
+                    \<span class="org-organization-admin-pages-entrypoint-card\_\_link-text org-organization-admin-pages-entrypoint-card\_\_stat text-body-xsmall-bold link-without-visited-state"\>  
+                      439  
+                    \</span\>  
+                  \</a\>  
+              \</div\>  
+            \</div\>  
+      \</div\>  
+\<\!----\>  
+        \<footer class="artdeco-card\_\_actions"\>  
+              
+    \<div class="display-flex flex-column"\>  
+      \<span class="org-organization-admin-pages-entrypoint-card\_\_combined-premium-upsell-footer-top-text text-body-xsmall t-black--light"\>  
+        Grow your business faster  
+      \</span\>  
+      \<span class="display-flex flex-row align-items-center pl3 pt3"\>  
+        \<svg role="none" aria-hidden="true" class="org-organization-admin-pages-entrypoint-card\_\_premium-upsell-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="premium-chip-v2-medium"\>  
+\<\!----\>      
+    \<use href="\#premium-chip-v2-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+        \<button class="text-body-xsmall-bold t-black" type="button"\>  
+          \<\!----\>Try Premium Page\<\!----\>  
+        \</button\>  
+      \</span\>
+
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  org-organization-admin-pages-entrypoint-card\_\_premium-upsell-grow-my-footer-link link-without-hover-visited mt3" target="\_blank" data-view-name="pages-admin-module-premium-pages-upsell-ads-sxgy-cta" href="https://www.linkedin.com/ad-beta/claim-promo?companyId=47662766\&amp;incentiveId=7431829729759932416" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<div class="display-flex"\>  
+              \<span class="org-organization-admin-pages-entrypoint-card\_\_premium-upsell-grow-my-footer-icon-container inline-flex t-black"\>  
+                \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="app-ads-small"\>  
+\<\!----\>      
+    \<use href="\#app-ads-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \</span\>  
+              \<span class="text-body-xsmall-bold t-black v-align-middle"\>  
+                Claim US$250 in ad credit  
+              \</span\>  
+            \</div\>  
+          \</a\>  
+    \</div\>  
+      
+    \<div id="ember1158" class="ember-view"\>\<\!----\>\</div\>  
+    
+    
+        \</footer\>  
+      
+\</section\>
+
+      
+
+    \<div id="ember1159" class="ember-view"\>\<\!----\>\</div\>  
+    
+    
+              
+
+    \<div class="artdeco-card overflow-hidden p4 mb2"\>  
+      \<ul class="feed-left-nav-common-module\_\_widgets"\>  
+        \<li class="list-style-none"\>  
+          \<a href="/my-items/" id="ember1160" class="ember-view feed-left-nav-common-module\_\_link"\>  
+            \<p class="t-12 t-black t-bold v-align-middle display-flex"\>  
+              \<svg role="none" aria-hidden="true" class="mr2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="bookmark-fill-small"\>  
+\<\!----\>      
+    \<use href="\#bookmark-fill-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \<span\>  
+                Saved items  
+              \</span\>  
+            \</p\>  
+          \</a\>  
+        \</li\>  
+        \<li class="list-style-none mt4"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  feed-left-nav-common-module\_\_link" href="https://www.linkedin.com/groups" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<p class="t-12 t-black t-bold v-align-middle display-flex"\>  
+              \<svg role="none" aria-hidden="true" class="mr2 flex-shrink-zero" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="group-small"\>  
+\<\!----\>      
+    \<use href="\#group-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \<span\>Groups\</span\>  
+            \</p\>  
+          \</a\>  
+        \</li\>  
+        \<li class="list-style-none mt4"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  feed-left-nav-common-module\_\_link" href="https://www.linkedin.com/mynetwork/network-manager/newsletters" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<p class="t-12 t-black t-bold v-align-middle display-flex"\>  
+              \<svg role="none" aria-hidden="true" class="mr2 flex-shrink-zero" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="newspaper-small"\>  
+\<\!----\>      
+    \<use href="\#newspaper-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \<span\>Newsletters\</span\>  
+            \</p\>  
+          \</a\>  
+        \</li\>  
+        \<li class="list-style-none mt4"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  feed-left-nav-common-module\_\_link" href="https://www.linkedin.com/events" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<p class="t-12 t-black t-bold v-align-middle display-flex"\>  
+              \<svg role="none" aria-hidden="true" class="mr2 flex-shrink-zero" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="calendar-small"\>  
+\<\!----\>      
+    \<use href="\#calendar-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \<span\>Events\</span\>  
+            \</p\>  
+          \</a\>  
+        \</li\>  
+      \</ul\>  
+    \</div\>  
+    
+          \</div\>  
+          
+  \</div\>  
+\</div\>  
+      
+            
+
+\<\!----\>\</aside\>
+
+            \<main class="reDSlFmeWsRCSjvrShPfArMgIMuLzIgZRauDw" aria-label="Main Feed"\>  
+      
+              
+\<\!----\>      \<div\>  
+  \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+  \<div class="share-box-feed-entry\_\_closed-share-box artdeco-card"\>
+
+\<\!----\>        
+  \<div class="media-modifiers-drag-and-drop\_\_dropzone"\>  
+    \<svg role="none" aria-hidden="true" class="media-modifiers-drag-and-drop\_\_dropzone-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="add-medium"\>  
+\<\!----\>      
+    \<use href="\#add-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+    \<span class="media-modifiers-drag-and-drop\_\_dropzone-drop"\>  
+        Drop your files here  
+    \</span\>  
+    \<span class="media-modifiers-drag-and-drop\_\_dropzone-drag"\>  
+        Drag your files here  
+    \</span\>  
+  \</div\>
+
+    \<div class="share-box-feed-entry\_\_top-bar"\>  
+        \<a href="/in/kratiagarwal95/" id="ember1161" class="ember-view"\>  
+          \<div class="share-box-feed-entry\_\_avatar"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" alt="Visit profile for Krati Agarwal" id="ember1162" class="EntityPhoto-circle-3 evi-image ember-view"\>  
+          \</div\>  
+        \</a\>  
+      \<button id="ember1163" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view oyFokKgVSSEKULbheFbusUIGuSdVkwLFBnM"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="truncate block text-align-left"\>  
+            \<span class="t-normal"\>  
+              \<strong\>\<\!----\>Start a post\<\!----\>\</strong\>  
+            \</span\>  
+        \</span\>  
+        
+\</span\>\</button\>  
+    \</div\>
+
+    \<div class="share-box-feed-entry-toolbar\_\_wrapper share-box-feed-entry\_\_tool-bar"\>  
+      \<button class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary share-box-feed-entry-toolbar\_\_item  
+          video-detour-btn" aria-label="Add a video" type="button"\>  
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="video-medium" type="video"\>  
+\<\!----\>      
+    \<use href="\#video-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+        \<span class="artdeco-button\_\_text"\>Video\</span\>  
+      \</button\>  
+      \<button class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary share-box-feed-entry-toolbar\_\_item  
+          image-detour-btn" aria-label="Add a photo" type="button"\>  
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="image-medium" type="image"\>  
+\<\!----\>      
+    \<use href="\#image-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+        \<span class="artdeco-button\_\_text"\>Photo\</span\>  
+      \</button\>
+
+        \<a href="/article/new/" id="ember1852" class="ember-view share-box-feed-entry-toolbar\_\_item artdeco-button artdeco-button--muted artdeco-button--tertiary artdeco-button--4" aria-label="Write an article on LinkedIn"\>  
+          \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="content-align-left-medium" type="content-align-left"\>  
+\<\!----\>      
+    \<use href="\#content-align-left-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+          \<span class="share-box-feed-entry-toolbar\_\_item-text"\>  
+            Write article  
+          \</span\>  
+        \</a\>  
+\</div\>
+
+    \<span\>\</span\>  
+      \<\!----\>
+
+        
+    \<button type="button"\>  
+      \<section class="share-feed-shareable-trigger\_\_container"\>  
+        \<article class="share-feed-shareable-trigger\_\_text-content"\>  
+          \<p class="share-feed-shareable-trigger\_\_subtitle"\>  
+            \<\!----\>International Women’s Day 2026\<\!----\>  
+          \</p\>  
+          \<p class="share-feed-shareable-trigger\_\_title"\>  
+            \<\!----\>Who is a woman who’s made an impact on your career? Celebrate her with a post or video.\<\!----\>  
+          \</p\>  
+        \</article\>  
+        \<aside\>  
+          \<button aria-label="Compose" id="ember1165" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="compose-medium"\>  
+\<\!----\>      
+    \<use href="\#compose-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+        \</aside\>  
+      \</section\>  
+    \</button\>  
+  
+
+\<\!----\>  \</div\>
+
+\<\!----\>\</div\>  
+            
+  \<div id="ember1166" class="mb2 artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember1167" class="display-flex full-width artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button" tabindex="0"\>  
+      \<hr class="flex-grow-1 mr2 mvA feed-index-sort-border"\>  
+      \<div class="display-flex t-black"\>  
+        \<span class="t-12 t-black--light t-normal"\>  
+          Sort by:  
+        \</span\>  
+        \<span class="t-12 t-bold mh1"\>  
+            Top  
+        \</span\>  
+        \<svg role="img" aria-hidden="false" aria-label="Sort order dropdown button" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      \</div\>  
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember1168" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view"\>\<\!----\>\</div\>  
+  \</div\>
+
+\<\!----\>  
+        
+    \<div class="relative"\>  
+      \<h1 class="visually-hidden"\>  
+        feed updates  
+      \</h1\>
+
+\<\!----\>  
+      \<div class="scaffold-finite-scroll  
+    scaffold-finite-scroll--finite  
+    "\>  
+  \<\!----\>  
+    
+      \<div class="scaffold-finite-scroll\_\_content" data-finite-scroll-hotkey-context="FEED"\>  
+          
+\<\!----\>              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7436002128806178816" class="relative" data-finite-scroll-hotkey-item="0"\>  
+        
+        
+          
+          
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;KMMYFD4S9wnHUoA/sGskXw==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:activity:7436002128806178816\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;KMMYFD4S9wnHUoA/sGskXw==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+            feed-shared-update-v2--e2e  
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember1891" role="article" data-urn="urn:li:activity:7436002128806178816"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 1  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+        update-components-actor--with-control-menu-and-hide-post  
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="View Ankit Kumar’s  graphic link" target="\_self" href="https://www.linkedin.com/in/anupdatedkit?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAF\_Si-0BTbz6\_3kQtZs0050dBiLubmzCzME" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="48" src="https://media.licdn.com/dms/image/v2/D5603AQEq-nwBIzOA2g/profile-displayphoto-scale\_100\_100/B56Zs7.77sHAAg-/0/1766237913866?e=1774483200\&amp;v=beta\&amp;t=37WN10DNORp3YJGbEB894OkOfFbjyAWIBzUXNofbiCA" loading="lazy" height="48" alt="View Ankit Kumar’s  graphic link" id="ember1892" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-3  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: Ankit Kumar Verified • Following LinkedIn Guide for Founders • Business focused strategies • Founder @(TheBrandSalt) • Logical approach • Personalised approach for businesses" target="\_self" href="https://www.linkedin.com/in/anupdatedkit?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAF\_Si-0BTbz6\_3kQtZs0050dBiLubmzCzME" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<\!----\>Ankit Kumar\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Ankit Kumar\<\!----\>\</span\>\</span\>  
+              \</span\>  
+                \<span class="update-components-actor\_\_supplementary-actor-info update-components-actor\_\_supplementary-actor-info--align-icon update-components-actor\_\_single-line-truncate text-body-xsmall  
+                    t-black--light  
+                    flex-shrink-zero"\>  
+                  \<span aria-hidden="true"\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• Following\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Verified • Following\<\!----\>\</span\>  
+                \</span\>  
+            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>LinkedIn Guide for Founders • Business focused strategies • Founder @(TheBrandSalt) • Logical approach • Personalised approach for businesses\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>LinkedIn Guide for Founders • Business focused strategies • Founder @(TheBrandSalt) • Logical approach • Personalised approach for businesses\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+\<\!----\>            \<span class="update-components-actor\_\_sub-description text-body-xsmall  
+                t-black--light  
+                  
+                "\>  
+              \<span aria-hidden="true"\>\<\!----\>47m •\<span class="white-space-pre"\> \</span\>\<span\>\<li-icon aria-hidden="true" type="globe-americas" class="v-align-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" fill="currentColor" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 011-3l.55.55A1.5 1.5 0 015 6.62v1.07a.75.75 0 00.22.53l.56.56a.75.75 0 00.53.22H7v.69a.75.75 0 00.22.53l.56.56a.75.75 0 01.22.53V13a5 5 0 01-5-5zm6.24 4.83l2-2.46a.75.75 0 00.09-.8l-.58-1.16A.76.76 0 0010 8H7v-.19a.51.51 0 01.28-.45l.38-.19a.74.74 0 01.68 0L9 7.5l.38-.7a1 1 0 00.12-.48v-.85a.78.78 0 01.21-.53l1.07-1.09a5 5 0 01-1.54 9z"\>\</path\>  
+    \</svg\>\</li-icon\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>47 minutes ago • Visible to anyone on or off LinkedIn\<\!----\>\</span\>  
+            \</span\>  
+        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                          
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+        feed-shared-update-v2--with-hide-post  
+        "\>  
+\<\!----\>  
+        \<div id="ember1894" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by Ankit Kumar" tabindex="0" id="ember1895" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember1896" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>        \<button class="feed-shared-control-menu\_\_hide-post-button artdeco-button artdeco-button--circle artdeco-button--tertiary artdeco-button--1 artdeco-button--muted" aria-label="Dismiss post by Ankit Kumar" type="button"\>  
+            
+    \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+      \<path d="M13.78 12.72C14.07 13.01 14.07 13.49 13.78 13.78C13.63 13.93 13.44 14 13.25 14C13.06 14 12.87 13.93 12.72 13.78L8 9.06L3.28 13.78C3.13 13.93 2.94 14 2.75 14C2.56 14 2.37 13.93 2.22 13.78C1.93 13.49 1.93 13.01 2.22 12.72L6.94 8L2.22 3.28C1.93 2.99 1.93 2.51 2.22 2.22C2.51 1.93 2.99 1.93 3.28 2.22L8 6.94L12.72 2.22C13.01 1.93 13.49 1.93 13.78 2.22C14.07 2.51 14.07 2.99 13.78 3.28L9.06 8L13.78 12.72Z" fill="currentColor"\>\</path\>  
+    \</svg\>
+
+        \</button\>  
+          \</div\>  
+    
+                                      \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--3-lines  
+          
+          
+          
+        " tabindex="-1"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>Recently, a client shared some honest feedback with me.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>He said he has worked with quite a few agencies before.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Most of them were good at the core work; they could write well, understood personal branding, and knew how to engage and build networks.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>But there was one thing he felt was missing almost everywhere; "Structure."\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>He told me that with most agencies he still had to stay very involved in the process, he often had to follow up, timelines weren’t clear, and communication felt scattered.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>What he appreciated while working with us was something simple. "The process."\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>The onboarding was clear from day one, communication was structured, timelines were defined, and content calendars were shared in advance.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Everything felt organised.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>He said something that stayed with me.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>“With other agencies I felt like I was working with them. With you guys, it feels like the system is working for me.”\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>That meant a lot. Because in service businesses, most people only talk about the final output, but the experience of working together matters just as much.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>When things are clear, structured, and transparent, founders don’t have to constantly manage the agency.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>They can simply trust the process and focus on their own business and honestly, that’s something we care a lot about building.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Not just good work. But a way of working that makes things easier for the client.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>📌 If you believe service businesses should focus as much on the process as the outcome, follow along.\<\!----\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:346.0874938964844px" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+    \<div class="update-components-image  
+        update-components-image--single-image  
+        feed-shared-update-v2\_\_content"\>  
+      \<div class="update-components-image\_\_container-wrapper relative"\>  
+        \<div class="update-components-image\_\_container  
+            " style="  
+          padding-top: 125%;"\>  
+\<\!----\>  
+                \<button class="update-components-image\_\_image-link" type="button"\>  
+                    \<span class="visually-hidden"\>  
+                      Activate to view larger image,  
+                    \</span\>  
+                    
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQE60NoiA-Hf4A/feedshare-shrink\_800/B56ZzH8h2sIkAg-/0/1772881059765?e=1774483200\&amp;v=beta\&amp;t=u2HliB-XIGrtQEhZ4Zm9SCx\_TGQcQKCEsYX96nHazPI" loading="lazy" height="750" alt="A LinkedIn post sharing client feedback about the importance of structured onboarding, clear communication, and organised processes when working with a branding agency." id="ember1898" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fit update-components-image\_\_image update-components-image\_\_image--constrained evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+                \</button\>  
+\<\!----\>              \<\!----\>        \</div\>  
+        \<span class="visually-hidden" id="update-components-image-ember1897" aria-hidden="true"\>  
+              Activate to view larger image,  
+        \</span\>
+
+\<\!----\>  
+\<\!----\>      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember1899" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="You and 25 others" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--1 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--2 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-APPRECIATION data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/3wqhxqtk2l554o70ur3kessf1" alt="support" data-test-reactions-icon-type="APPRECIATION" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span class="social-details-social-counts\_\_social-proof-container"\>  
+                      \<span aria-hidden="true" data-social-proof-fallback="" class="social-details-social-counts\_\_social-proof-fallback-number"\>26\</span\>  
+                      \<span class="social-details-social-counts\_\_social-proof-text"\>  
+                          You and 25 others  
+                      \</span\>  
+                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="8 comments on Ankit Kumar’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              8 comments  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>  
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember1901" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember1902" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="true" aria-label="Unreact Like" id="ember1903" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          react-button--active"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+                
+    \<img class="reactions-icon artdeco-button\_\_icon reactions-react-button\_\_icon reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+  
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                react-button\_\_text--like"\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember1904" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember1905" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember1900" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-0-1772883921438" title="Generate AI Comment" type="button"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-87" class="ember-view"\>\<div id="ember1908" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember1909" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember1911" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember1912" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember1913" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-88" class="ember-view"\>\<div id="ember1915" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember1916" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember1917" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-89" class="ember-view"\>\<div id="ember1919" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember1920" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+              \<div id="ember1979" class="comments-comment-box--cr  
+      
+    comments-comment-box--no-avatar  
+      
+      
+      
+    " data-scroll-name="true"\>  
+      \<div class="display-flex flex-1"\>  
+\<\!----\>  
+\<\!----\>        \<form class="comments-comment-box\_\_form"\>  
+          \<div class="comments-comment-texteditor  
+              "\>  
+            \<div class="display-flex  
+                flex-wrap"\>  
+              \<div class="comments-comment-box-comment\_\_text-editor"\>  
+    
+        
+        
+    
+    \<div\>  
+\<\!----\>          
+      
+    \<div class="editor-container relative"\>  
+      \<div\>  
+        \<div class="editor-content ql-container"\>\<div class="ql-editor ql-blank" data-gramm="false" contenteditable="true" data-placeholder="Add a comment…" aria-placeholder="Add a comment…" aria-label="Text editor for creating content" role="textbox" aria-multiline="true" aria-describedby="ember1984-text-editor-placeholder" data-test-ql-editor-contenteditable="true"\>\<p\>\<br\>\</p\>\</div\>\<div class="ql-clipboard" contenteditable="true" tabindex="-1"\>\</div\>\</div\>  
+          \<span class="a11y-text" aria-hidden="true" id="ember1984-text-editor-placeholder"\>  
+            Add a comment…  
+          \</span\>
+
+\<\!----\>      \</div\>  
+\<\!----\>    \</div\>  
+    
+    
+    \</div\>  
+  
+
+    
+    
+\</div\>  
+\<\!----\>              \<div class="display-flex justify-space-between"\>  
+                \<div class="display-flex"\>  
+                      
+        
+                          
+    \<div\>  
+      \<span tabindex="-1" id="ember1986" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top ember-view"\>  
+        \<button title="Open Emoji Keyboard" aria-label="Open Emoji Keyboard" aria-expanded="false" aria-controls="artdeco-hoverable-comments\_overlay\_emoji\_\_emoji-hoverable\_\_content" id="ember1987" class="comments-comment-box\_\_emoji-picker-trigger emoji-hoverable-trigger artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view" data-reaction-summary\_\_emoji-hoverable="" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="emoji-medium"\>  
+\<\!----\>      
+    \<use href="\#emoji-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Open Emoji Keyboard  
+\</span\>\</button\>  
+            
+      \</span\>
+
+        \<div id="comments\_overlay\_emoji\_\_emoji-hoverable\_\_content" class="ember-view"\>\<div id="ember1989" class="ember-view"\>\</div\>\</div\>  
+    \</div\>  
+    
+                      
+    
+                    \<div class="comments-comment-box\_\_detour-container"\>  
+                        \<button aria-label="Add a photo" id="ember1981" class="comments-comment-box\_\_detour-icons artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="image-medium"\>  
+\<\!----\>      
+    \<use href="\#image-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+                    \</div\>  
+                \</div\>  
+                \<div class="display-flex align-items-center"\>  
+\<\!----\>\<\!----\>                \</div\>  
+              \</div\>  
+            \</div\>  
+          \</div\>  
+\<\!----\>\<\!----\>        \</form\>  
+      \</div\>  
+    
+    \<\!----\>  
+\</div\>
+
+\<\!----\>  
+\<\!----\>  
+                \<div class="comments-sort-order-toggle mr2 ml3 mb2"\>  
+  \<div id="ember1990" class="comments-sort-order-toggle\_\_dropdown artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-left ember-view"\>  
+    \<button aria-expanded="false" id="ember1991" class="comments-sort-order-toggle\_\_trigger artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button" tabindex="0"\>  
+      \<span class="visually-hidden"\>  
+        Current selected sort order is Most relevant  
+      \</span\>  
+      \<span aria-hidden="true" class="display-flex align-items-center t-black--light t-bold"\>  
+        Most relevant  
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      \</span\>  
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember1992" class="dropdown-options comments-sort-order-toggle\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-left artdeco-dropdown\_\_content--placement-bottom ember-view"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+              \<div id="ember1982" class="comments-comments-list  
+    comments-comments-list--cr"\>  
+\<\!----\>\<\!----\>  
+    \<div class="comments-comment-list\_\_container  
+        "\>  
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+          
+        " data-id="urn:li:comment:(activity:7436002128806178816,7436002221210857473)" id="ember1993" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Ankit Kumar’s  graphic link" target="\_self" href="https://www.linkedin.com/in/anupdatedkit" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQEq-nwBIzOA2g/profile-displayphoto-scale\_100\_100/B56Zs7.77sHAAg-/0/1766237913866?e=1774483200\&amp;v=beta\&amp;t=37WN10DNORp3YJGbEB894OkOfFbjyAWIBzUXNofbiCA" loading="lazy" height="32" alt="View Ankit Kumar’s  graphic link" id="ember1994" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Ankit Kumar Author,    LinkedIn Guide for Founders • Business focused strategies • Founder @(TheBrandSalt) • Logical approach • Personalised approach for businesses" target="\_self" href="https://www.linkedin.com/in/anupdatedkit" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Ankit Kumar\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \</span\>\<span class="comments-comment-meta\_\_badge label-neutral"\>  
+                Author  
+              \</span\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              LinkedIn Guide for Founders • Business focused strategies • Founder @(TheBrandSalt) • Logical approach • Personalised approach for businesses  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            47m  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember1995" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember1996" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Ankit Kumar’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember1997" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember1998" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                        
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>📌 When you work with an agency, what frustrates you more; poor work or poor communication?\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember1999" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2000" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Ankit Kumar’s comment" id="ember2001" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2002" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Ankit Kumar’s comment" id="ember2003" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2004" class="ember-view"\>\<div id="ember2005" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2006" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+          
+        " data-id="urn:li:comment:(activity:7436002128806178816,7436002786833530880)" id="ember2007" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Nisha Mishra’s  graphic link" target="\_self" href="https://www.linkedin.com/in/nisha-mishra-08a65a24b" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQHxKd65DB2ugw/profile-displayphoto-scale\_100\_100/B56ZldBxZnJ0Ac-/0/1758202370924?e=1774483200\&amp;v=beta\&amp;t=vxQ7PGzKX4FB7THOwn45YCGKSZndfV8u8Djm-3fh0c0" loading="lazy" height="32" alt="View Nisha Mishra’s  graphic link" id="ember2008" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Nisha Mishra   • 1st Branding \&amp;amp; Marketing | Content Creator | Branding Strategist for Founders \&amp;amp; Leaders | Business" target="\_self" href="https://www.linkedin.com/in/nisha-mishra-08a65a24b" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Nisha Mishra\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_linkedin-bug-premium-v2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 1st\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              Branding \&amp; Marketing | Content Creator | Branding Strategist for Founders \&amp; Leaders | Business  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            45m  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2009" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2010" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Nisha Mishra’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2011" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2012" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                        
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>Many agencies focus on creativity, but structured execution is what truly makes things easier for clients.\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2013" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2014" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Nisha Mishra’s comment" id="ember2015" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2016" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Nisha Mishra’s comment" id="ember2017" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2018" class="ember-view"\>\<div id="ember2019" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2020" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+    \</div\>  
+          \<div class="comments-comment-list\_\_load-more-container"\>  
+            \<button aria-label="Load more comments" id="ember2021" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comments-list\_\_load-more-comments-arrows"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="maximize-small"\>  
+\<\!----\>      
+    \<use href="\#maximize-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+            \<button id="ember2022" class="comments-comments-list\_\_load-more-comments-button--cr artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Load more comments  
+\</span\>\</button\>  
+          \</div\>  
+    \</div\>  
+          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+                    
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1922" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7427699438074286081" class="relative" data-finite-scroll-hotkey-item="1" style=""\>  
+        
+        
+          
+        \<div id="ember1924" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;LlAcb0xgRLabeZCjCP3ogQ==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:activity:7427699438074286081\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;LlAcb0xgRLabeZCjCP3ogQ==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+            feed-shared-update-v2--e2e  
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember1950" role="article" data-urn="urn:li:activity:7427699438074286081"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 2  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+        update-components-actor--with-control-menu  
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="Paddle, graphic." target="\_self" href="https://www.linkedin.com/company/paddle/posts" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D4E0BAQH14BCfSkjbGA/company-logo\_100\_100/B4EZWP76iEHcAQ-/0/1741876603367/paddle\_logo?e=1774483200\&amp;v=beta\&amp;t=pkYOKIdptqB060Ai6gVtOcTnIueCNbGgreXZlP0NIC0" loading="lazy" height="32" alt="" id="ember1951" class="ivm-view-attr\_\_img--centered EntityPhoto-square-1  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: Paddle Promoted" target="\_self" href="https://www.linkedin.com/company/paddle/posts" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<span\>\<\!----\>Paddle\<\!----\>\</span\>\</span\>\<span class="visually-hidden"\>\<span\>\<\!----\>Paddle\<\!----\>\</span\>\</span\>\</span\>  
+              \</span\>  
+\<\!----\>            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>Promoted\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Promoted\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+\<\!----\>\<\!----\>        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                          
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+          
+        "\>  
+\<\!----\>  
+        \<div id="ember1953" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by Paddle" tabindex="0" id="ember1954" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember1955" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>    \</div\>  
+    
+                                      \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--2-lines  
+          
+          
+          
+        " tabindex="-1"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>Scaling SaaS globally is complex, well, unless your billing stack does it all.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Paddle brings localization, compliance, and retention together \- so you can focus on building, not billing.\<\!----\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:16.95001220703125px" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+        
+    \<article class="update-components-article  
+          
+         update-components-article--large-image-content  
+         feed-shared-update-v2\_\_content" role="presentation"\>  
+      \<div class="update-components-article--with-large-image"\>  
+        \<div class="update-components-article\_\_link-container" style="padding-top: 100%;"\>  
+            \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-article\_\_image-link  
+                tap-target" aria-label="View sponsored page, graphic" target="\_blank" href="https://www.paddle.com/billing?utm\_campaign=Engaged+-+SaaS+-+ROW-+MOFU%2526BOFU+-+Static+-+Website+visits\&amp;utm\_source=linkedin\&amp;utm\_medium=paid\&amp;hsa\_acc=506140421\&amp;hsa\_cam=818699893\&amp;hsa\_grp=483070583\&amp;hsa\_ad=1177784733\&amp;hsa\_net=linkedin\&amp;hsa\_ver=3\&amp;li\_fat\_id=6a7b4737-2622-4810-a5c1-7ba67add91db\&amp;utm\_term=1177784733\&amp;utm\_campaign=Engaged%2B-%2BSaaS%2B-%2BROW-%2BMOFU%26BOFU%2B-%2BStatic%2B-%2BWebsite%2Bvisits\&amp;utm\_medium=paid\&amp;utm\_channel=Engaged%2BAccounts%2B-%2B11%2BFeb\&amp;utm\_source=linkedin" data-test-app-aware-link="" attributionsrc="https://px.ads.linkedin.com/attribution\_source?campaign\_id=483070583\&amp;creative\_id=1177784733\&amp;impression\_id=da866db2-5821-4c7f-800c-88ab6a61abe8\&amp;destination=https%3A%2F%2Fwww.paddle.com%2Fbilling\&amp;member\_id=272127269" waprocessedanchor="true"\>  
+                  
+        
+                    
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img src="https://media.licdn.com/dms/image/v2/D4D10AQHisPZR93byNg/image-shrink\_800/B4DZdoVFfWHkAc-/0/1749802048530/Paddle-SaasPV-Ad2-v1-1200px1png?e=1773489600\&amp;v=beta\&amp;t=p0fK\_yrshzBwuIWJJbjimHOXgGNhhtV1POPB1LfUvPQ" loading="lazy" alt="" id="ember1956" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fit update-components-article\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+                  
+    
+            \</a\>  
+\<\!----\>        \</div\>  
+        \<div class="update-components-article\_\_description-container  
+              
+            "\>  
+          \<div class="flex-grow-1 full-width"\>  
+            \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-article\_\_meta flex-grow-1 full-width tap-target display-flex justify-space-between align-items-flex-start" target="\_blank" aria-label="Simplify SaaS billing, globally" aria-describedby="update-components-article\_\_description-ember1950" href="https://www.paddle.com/billing?utm\_campaign=Engaged+-+SaaS+-+ROW-+MOFU%2526BOFU+-+Static+-+Website+visits\&amp;utm\_source=linkedin\&amp;utm\_medium=paid\&amp;hsa\_acc=506140421\&amp;hsa\_cam=818699893\&amp;hsa\_grp=483070583\&amp;hsa\_ad=1177784733\&amp;hsa\_net=linkedin\&amp;hsa\_ver=3\&amp;li\_fat\_id=6a7b4737-2622-4810-a5c1-7ba67add91db\&amp;utm\_term=1177784733\&amp;utm\_campaign=Engaged%2B-%2BSaaS%2B-%2BROW-%2BMOFU%26BOFU%2B-%2BStatic%2B-%2BWebsite%2Bvisits\&amp;utm\_medium=paid\&amp;utm\_channel=Engaged%2BAccounts%2B-%2B11%2BFeb\&amp;utm\_source=linkedin" data-test-app-aware-link="" attributionsrc="https://px.ads.linkedin.com/attribution\_source?campaign\_id=483070583\&amp;creative\_id=1177784733\&amp;impression\_id=da866db2-5821-4c7f-800c-88ab6a61abe8\&amp;destination=https%3A%2F%2Fwww.paddle.com%2Fbilling\&amp;member\_id=272127269" waprocessedanchor="true"\>  
+              \<div class="display-flex full-width"\>  
+                \<div class="display-flex flex-column flex-grow-1 full-width"\>  
+                  \<div\>  
+                            
+  \<div class="t-14 update-components-article\_\_title break-words t-black t-bold text-heading-small " dir="ltr"\>  
+      \<span dir="ltr"\>\<\!----\>Simplify SaaS billing, globally\<\!----\>\</span\>  
+  \</div\>
+
+                            
+  \<span class="update-components-article\_\_subtitle--inset  
+                               update-components-article\_\_subtitle-ellipsis update-components-article\_\_subtitle--low-emphasis t-12 t-normal t-black--light text-body-xsmall " dir="ltr"\>  
+      \<\!----\>paddle.com\<\!----\>  
+  \</span\>
+
+                  \</div\>  
+\<\!----\>                \</div\>  
+              \</div\>
+
+\<\!----\>                  
+    \<button class="update-components-button  
+          
+          
+          
+         artdeco-button  
+                    artdeco-button--secondary  
+                      
+                    artdeco-button--1 flex-shrink-zero ml4" role="link" type="button"\>  
+\<\!----\>  
+\<\!----\>  
+        \<span class="visually-hidden"\>Learn more. View Sponsored Content\</span\>  
+        \<span class="update-components-button\_\_text" aria-hidden="true"\>Learn more\</span\>  
+\<\!----\>    \</button\>  
+    
+            \</a\>  
+          \</div\>  
+        \</div\>  
+      \</div\>  
+    \</article\>  
+    
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember1957" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="21 reactions" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--1 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--2 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-PRAISE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/b1dl5jk88euc7e9ri50xy5qo8" alt="celebrate" data-test-reactions-icon-type="PRAISE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span aria-hidden="true" class="social-details-social-counts\_\_reactions-count  
+                        "\>  
+21                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="2 comments on Paddle’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              2 comments  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>  
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember1959" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember1960" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like" id="ember1961" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+              \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="thumbs-up-outline-small"\>  
+\<\!----\>      
+    \<use href="\#thumbs-up-outline-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember1962" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember1963" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember1958" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-1-1772883921682" title="Generate AI Comment" type="button"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-90" class="ember-view"\>\<div id="ember1966" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember1967" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember1969" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember1970" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember1971" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-91" class="ember-view"\>\<div id="ember1973" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember1974" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember1975" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-92" class="ember-view"\>\<div id="ember1977" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember1978" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+\<\!----\>\<\!----\>          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1925" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7435975961482838016" class="relative" data-finite-scroll-hotkey-item="2"\>  
+        
+        
+          
+        \<div id="ember1927" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;gP6pzQXHluCFl9QzK84vzg==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:activity:7435975961482838016\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;gP6pzQXHluCFl9QzK84vzg==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+            feed-shared-update-v2--e2e  
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember2023" role="article" data-urn="urn:li:activity:7435975961482838016"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 3  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="update-components-header update-components-header--with-control-menu-and-hide-post update-components-header--with-divider update-components-header--with-image pt2 t-12 t-black--light t-normal"\>  
+      \<div class="update-components-header\_\_text-wrapper  
+          "\>  
+\<\!----\>            \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " data-control-id="gP6pzQXHluCFl9QzK84vzg==" target="\_self" href="https://www.linkedin.com/in/sathyaraghu?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAAK2V1oBa5rCImHSAYQM1CGEPBKF-JSLYn4" data-test-app-aware-link="" waprocessedanchor="true"\>  
+                
+    \<div class="ivm-image-view-model    update-components-header\_\_image mr2"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="24" src="https://media.licdn.com/dms/image/v2/D4E03AQEGmSO\_SMh47A/profile-displayphoto-shrink\_100\_100/profile-displayphoto-shrink\_100\_100/0/1728579983757?e=1774483200\&amp;v=beta\&amp;t=6AHrtXHPvcB3MCbkf\_5tAi8B5OF1VOpnpT\_yHYZmX9g" loading="lazy" height="24" alt="Sathya’s profile photo" id="ember2024" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-0   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</a\>  
+          \<span class="update-components-header\_\_text-view"\>  
+            \<span\>\<a href="/in/sathyaraghu/" id="ember2025" class="ember-view"\>\<\!----\>Sathya Raghu V Mokkapati\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>commented on this\<\!----\>  
+          \</span\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+    
+                        
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+        feed-shared-update-v2--with-hide-post  
+        "\>  
+\<\!----\>  
+        \<div id="ember2027" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by Sriram Somayajula" tabindex="0" id="ember2028" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember2029" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>        \<button class="feed-shared-control-menu\_\_hide-post-button artdeco-button artdeco-button--circle artdeco-button--tertiary artdeco-button--1 artdeco-button--muted" aria-label="Dismiss post by Sriram Somayajula" type="button"\>  
+            
+    \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+      \<path d="M13.78 12.72C14.07 13.01 14.07 13.49 13.78 13.78C13.63 13.93 13.44 14 13.25 14C13.06 14 12.87 13.93 12.72 13.78L8 9.06L3.28 13.78C3.13 13.93 2.94 14 2.75 14C2.56 14 2.37 13.93 2.22 13.78C1.93 13.49 1.93 13.01 2.22 12.72L6.94 8L2.22 3.28C1.93 2.99 1.93 2.51 2.22 2.22C2.51 1.93 2.99 1.93 3.28 2.22L8 6.94L12.72 2.22C13.01 1.93 13.49 1.93 13.78 2.22C14.07 2.51 14.07 2.99 13.78 3.28L9.06 8L13.78 12.72Z" fill="currentColor"\>\</path\>  
+    \</svg\>
+
+        \</button\>  
+          \</div\>  
+    
+\<\!----\>\<\!----\>                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+          
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="View Sriram Somayajula’s  graphic link" target="\_self" href="https://www.linkedin.com/in/sriram-somayajula-1746134?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAADNbigBORQpN8udxLEo2J5kzL5UHQrnOoc" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="48" src="https://media.licdn.com/dms/image/v2/D5603AQHlIyvy8c4-UQ/profile-displayphoto-scale\_100\_100/B56ZiDEoqBHkAc-/0/1754545687892?e=1774483200\&amp;v=beta\&amp;t=tC6wu\_e3pfPx3vx2w4t4Jqp7b-iz7IYNS2lbmwFyV4w" loading="lazy" height="48" alt="View Sriram Somayajula’s  graphic link" id="ember2030" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-3  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: Sriram Somayajula Verified • 1st Teacher of Finance | CA, CFA, ISB |" target="\_self" href="https://www.linkedin.com/in/sriram-somayajula-1746134?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAADNbigBORQpN8udxLEo2J5kzL5UHQrnOoc" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<\!----\>Sriram Somayajula\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Sriram Somayajula\<\!----\>\</span\>\</span\>  
+              \</span\>  
+                \<span class="update-components-actor\_\_supplementary-actor-info update-components-actor\_\_supplementary-actor-info--align-icon update-components-actor\_\_single-line-truncate text-body-xsmall  
+                    t-black--light  
+                    flex-shrink-zero"\>  
+                  \<span aria-hidden="true"\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 1st\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Verified • 1st\<\!----\>\</span\>  
+                \</span\>  
+            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>Teacher of Finance | CA, CFA, ISB |\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Teacher of Finance | CA, CFA, ISB |\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+\<\!----\>            \<span class="update-components-actor\_\_sub-description text-body-xsmall  
+                t-black--light  
+                  
+                "\>  
+              \<span aria-hidden="true"\>\<\!----\>4h •\<span class="white-space-pre"\> \</span\>\<span\>\<li-icon aria-hidden="true" type="globe-americas" class="v-align-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" fill="currentColor" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 011-3l.55.55A1.5 1.5 0 015 6.62v1.07a.75.75 0 00.22.53l.56.56a.75.75 0 00.53.22H7v.69a.75.75 0 00.22.53l.56.56a.75.75 0 01.22.53V13a5 5 0 01-5-5zm6.24 4.83l2-2.46a.75.75 0 00.09-.8l-.58-1.16A.76.76 0 0010 8H7v-.19a.51.51 0 01.28-.45l.38-.19a.74.74 0 01.68 0L9 7.5l.38-.7a1 1 0 00.12-.48v-.85a.78.78 0 01.21-.53l1.07-1.09a5 5 0 01-1.54 9z"\>\</path\>  
+    \</svg\>\</li-icon\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>4 hours ago • Visible to anyone on or off LinkedIn\<\!----\>\</span\>  
+            \</span\>  
+        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                  \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--3-lines  
+          
+          
+          
+        " tabindex="-1"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>We started\<span class="white-space-pre"\> \</span\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " target="\_self" tabindex="0" href="https://www.linkedin.com/company/1fin/" data-test-app-aware-link="" style="display: inline-block;"\>\<span\>\<span\>\<\!----\>1FIN\<\!----\>\</span\>\</span\>\</a\>\<span class="white-space-pre"\> \</span\>(IndigoLearn) to help students succeed in exams and careers. It has been a wonderful journey so far, with us having achieved some goals we initially set out to achieve, and quite a few still pending 🙂\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Today, I’m delighted to share that IndigoLearn (1FIN) has been acquired by Avinash Group of Institutions (AGI), led by\<span class="white-space-pre"\> \</span\>\<span\>\<a tabindex="0" href="/in/avinashbrahmadevara/" id="ember2031" class="ember-view"\>\<\!----\>Dr. Avinash Brahmadevara CA CS CMA\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>the force behind\<span class="white-space-pre"\> \</span\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " target="\_self" tabindex="0" href="https://www.linkedin.com/company/avinash-college-of-commerce---india/" data-test-app-aware-link="" style="display: inline-block;"\>\<span\>\<span\>\<\!----\>Avinash College of Commerce \- India\<\!----\>\</span\>\</span\>\</a\>\<\!----\>.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Looking back at last 8+ years, I’m grateful for what we built at 1FIN. Pioneering animated, concept-driven learning; a robust digital platform; 15,000+ learners across CA, CMA, ACCA, and CFA including many All-India Ranks (AIRs). It’s been a journey of experiments, setbacks, and wins; each student story kept us moving.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Looking ahead, we’re excited to combine AGI’s strong offline presence and brand, with our digital DNA. Together, we’ll deliver exam-focused, career-oriented learning across domains, scaling our impact across Telangana and the rest of India.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Heartfelt thanks to my co-founders\<span class="white-space-pre"\> \</span\>\<span\>\<a tabindex="0" href="/in/surajlakhotia/" id="ember2032" class="ember-view"\>\<\!----\>CA Suraj Lakhotia\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>and\<span class="white-space-pre"\> \</span\>\<span\>\<a tabindex="0" href="/in/sarat-velumuri-37372719/" id="ember2033" class="ember-view"\>\<\!----\>Sarat Velumuri\<\!----\>\</a\>\</span\>\<\!----\>, to\<span class="white-space-pre"\> \</span\>\<span\>\<a tabindex="0" href="/in/sathyaraghu/" id="ember2034" class="ember-view"\>\<\!----\>Sathya Raghu V Mokkapati\<\!----\>\</a\>\</span\>\<\!----\>, our incredible team, past and present, students, faculty, investors, friends and family. Your support made this possible\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<\!----\>🙏🏻\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Onward \&amp; stronger, together with AGI. 💪🏻\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23acquisition\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>Acquisition\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23edtech\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>EdTech\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23highereducation\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>HigherEducation\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23studentsuccess\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>StudentSuccess\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23commerceeducation\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>CommerceEducation\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23agi\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>AGI\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23avinashcollegeofcommerce\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>AvinashCollegeOfCommerce\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23indigolearn\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>IndigoLearn\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%231fin\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>1FIN\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23india\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>India\</span\>\</a\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:379.2250061035156px" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+    \<div class="update-components-image  
+        update-components-image--smart-grid update-components-image--smart-grid-two-images update-components-image--smart-grid-two-images-single-row  
+        feed-shared-update-v2\_\_content"\>  
+      \<div class="update-components-image\_\_container-wrapper relative"\>  
+        \<div class="update-components-image\_\_container  
+            " style="aspect-ratio: 2.91;  
+          "\>  
+\<\!----\>  
+                \<button class="update-components-image\_\_image-link" style="aspect-ratio: 1.14" aria-label="Activate to view larger image, No alternative text description for this image" type="button"\>  
+                    
+    \<div class="ivm-image-view-model   " aria-hidden="true"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQH2lI-0cr4uDg/feedshare-shrink\_2048\_1536/B56ZzHJmrYIYAg-/0/1772867709887?e=1774483200\&amp;v=beta\&amp;t=gTDm5pCttzXdpKCqU3SGqLo-ws-N2ju6cBymypOnlhU" loading="lazy" height="528" alt="No alternative text description for this image" id="ember2036" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fill update-components-image\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+\<\!----\>                \</button\>  
+                \<button class="update-components-image\_\_image-link" aria-label="Activate to view larger image, No alternative text description for this image" type="button"\>  
+                    
+    \<div class="ivm-image-view-model   " aria-hidden="true"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQGIFNeW5a3vAg/feedshare-shrink\_800/B56ZzHJm3zG4Ac-/0/1772867710711?e=1774483200\&amp;v=beta\&amp;t=TKVgVFhsuEvuxxusM9udZ16FtJ3V4W\_LEkzSZyu-tkM" loading="lazy" height="337" alt="No alternative text description for this image" id="ember2037" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fill update-components-image\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+\<\!----\>                \</button\>  
+\<\!----\>        \</div\>  
+        \<span class="visually-hidden" id="update-components-image-ember2035" aria-hidden="true"\>  
+              Activate to view larger image,  
+        \</span\>
+
+\<\!----\>  
+\<\!----\>      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember2038" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="36 reactions" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span aria-hidden="true" class="social-details-social-counts\_\_reactions-count  
+                        "\>  
+36                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="8 comments on Sriram Somayajula’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              8 comments  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>  
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember2040" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember2041" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like" id="ember2042" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+              \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="thumbs-up-outline-small"\>  
+\<\!----\>      
+    \<use href="\#thumbs-up-outline-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2043" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember2044" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember2039" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-2-1772883929618" title="Generate AI Comment" type="button"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-93" class="ember-view"\>\<div id="ember2047" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember2048" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember2050" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember2051" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember2052" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-94" class="ember-view"\>\<div id="ember2054" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember2055" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember2056" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-95" class="ember-view"\>\<div id="ember2058" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember2059" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+\<\!----\>\<\!----\>              \<div id="ember2060" class="comments-comments-list  
+    comments-comments-list--cr"\>  
+\<\!----\>\<\!----\>  
+    \<div class="comments-comment-list\_\_container  
+        "\>  
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+        comments-highlighted-animation  
+        " data-id="urn:li:comment:(ugcPost:7435946134625480704,7435975953484357632)" id="ember2061" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Sathya Raghu V Mokkapati’s  graphic link" target="\_self" href="https://www.linkedin.com/in/sathyaraghu" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D4E03AQEGmSO\_SMh47A/profile-displayphoto-shrink\_100\_100/profile-displayphoto-shrink\_100\_100/0/1728579983757?e=1774483200\&amp;v=beta\&amp;t=6AHrtXHPvcB3MCbkf\_5tAi8B5OF1VOpnpT\_yHYZmX9g" loading="lazy" height="32" alt="View Sathya Raghu V Mokkapati’s  graphic link" id="ember2062" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Sathya Raghu V Mokkapati   • 1st Co-Founder \&amp;amp; CEO, Soul Forest | Building Nature Economic Zones | Co-Founder, Kheyti (Earthshot) \&amp;amp; CosmosGreen | Author (Penguin 2025\) | TED Speaker | CA | Seeking feedback from soil, water \&amp;amp; species" target="\_self" href="https://www.linkedin.com/in/sathyaraghu" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Sathya Raghu V Mokkapati\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_linkedin-bug-premium-v2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 1st\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              Co-Founder \&amp; CEO, Soul Forest | Building Nature Economic Zones | Co-Founder, Kheyti (Earthshot) \&amp; CosmosGreen | Author (Penguin 2025\) | TED Speaker | CA | Seeking feedback from soil, water \&amp; species  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            2h  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2063" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2064" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Sathya Raghu V Mokkapati’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2065" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2066" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                       comments-highlighted-comment-item\_\_show-more-text--two  
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>Congratulations on the milestone\<span class="white-space-pre"\> \</span\>\<span\>\<a tabindex="0" href="/in/sriram-somayajula-1746134/" id="ember2067" class="ember-view"\>\<\!----\>Sriram Somayajula\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<span\>\<a tabindex="0" href="/in/surajlakhotia/" id="ember2068" class="ember-view"\>\<\!----\>CA Suraj Lakhotia\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<span\>\<a tabindex="0" href="/in/sarat-velumuri-37372719/" id="ember2069" class="ember-view"\>\<\!----\>Sarat Velumuri\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<span\>\<a tabindex="0" href="/in/avinashbrahmadevara/" id="ember2070" class="ember-view"\>\<\!----\>Dr. Avinash Brahmadevara CA CS CMA\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>Wonderful to see the journey of 1FIN evolve into this next chapter with AGI. Wishing you and the team continued impact and many more student success stories ahead.\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:undefined" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2071" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2072" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Sathya Raghu V Mokkapati’s comment" id="ember2073" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2074" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Sathya Raghu V Mokkapati’s comment" id="ember2075" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2076" class="ember-view"\>\<div id="ember2077" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2078" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+    \</div\>  
+          \<div class="comments-comment-list\_\_load-more-container"\>  
+            \<button aria-label="Load more comments" id="ember2079" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comments-list\_\_load-more-comments-arrows"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="maximize-small"\>  
+\<\!----\>      
+    \<use href="\#maximize-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+            \<button id="ember2080" class="comments-comments-list\_\_load-more-comments-button--cr artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Load more comments  
+\</span\>\</button\>  
+          \</div\>  
+    \</div\>  
+          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+                    
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1928" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7435172441628389376" class="relative" data-finite-scroll-hotkey-item="3"\>  
+        
+        
+          
+        \<div id="ember1930" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;zfwk+Xa97A/KgIugJCbcxQ==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:activity:7435172441628389376\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;zfwk+Xa97A/KgIugJCbcxQ==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+            feed-shared-update-v2--e2e  
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember2082" role="article" data-urn="urn:li:activity:7435172441628389376"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 4  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+        update-components-actor--with-control-menu-and-hide-post  
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="View Manleen Kaur’s  graphic link" target="\_self" href="https://www.linkedin.com/in/manleenkaurpersonalbrandstrategist?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAADFCzccBRASkr0aaliIZF6AvW6NdMi1rVFQ" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="48" src="https://media.licdn.com/dms/image/v2/D5603AQGc7xe5vMrTWg/profile-displayphoto-scale\_100\_100/B56ZpoHh1NHAAc-/0/1762683396958?e=1774483200\&amp;v=beta\&amp;t=jZ5moRKLyIB4baj4Jneo-nx4KNr-kF5k9xDzjWlEiKQ" loading="lazy" height="48" alt="View Manleen Kaur’s  graphic link" id="ember2083" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-3  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: Manleen Kaur Verified • 1st Turning Founders \&amp;amp; Coaches Content Into a Lead Engine Without Going Viral Using My GhostGrow System | Personal Brand Strategist \&amp;amp; Ghostwriter | DM “PB” to Start" target="\_self" href="https://www.linkedin.com/in/manleenkaurpersonalbrandstrategist?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAADFCzccBRASkr0aaliIZF6AvW6NdMi1rVFQ" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<\!----\>Manleen Kaur\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Manleen Kaur\<\!----\>\</span\>\</span\>  
+              \</span\>  
+                \<span class="update-components-actor\_\_supplementary-actor-info update-components-actor\_\_supplementary-actor-info--align-icon update-components-actor\_\_single-line-truncate text-body-xsmall  
+                    t-black--light  
+                    flex-shrink-zero"\>  
+                  \<span aria-hidden="true"\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 1st\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Verified • 1st\<\!----\>\</span\>  
+                \</span\>  
+            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>Turning Founders \&amp; Coaches Content Into a Lead Engine Without Going Viral Using My GhostGrow System | Personal Brand Strategist \&amp; Ghostwriter | DM “PB” to Start\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Turning Founders \&amp; Coaches Content Into a Lead Engine Without Going Viral Using My GhostGrow System | Personal Brand Strategist \&amp; Ghostwriter | DM “PB” to Start\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+\<\!----\>            \<span class="update-components-actor\_\_sub-description text-body-xsmall  
+                t-black--light  
+                  
+                "\>  
+              \<span aria-hidden="true"\>\<\!----\>2d •\<span class="white-space-pre"\> \</span\>\<span\>\<li-icon aria-hidden="true" type="globe-americas" class="v-align-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" fill="currentColor" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 011-3l.55.55A1.5 1.5 0 015 6.62v1.07a.75.75 0 00.22.53l.56.56a.75.75 0 00.53.22H7v.69a.75.75 0 00.22.53l.56.56a.75.75 0 01.22.53V13a5 5 0 01-5-5zm6.24 4.83l2-2.46a.75.75 0 00.09-.8l-.58-1.16A.76.76 0 0010 8H7v-.19a.51.51 0 01.28-.45l.38-.19a.74.74 0 01.68 0L9 7.5l.38-.7a1 1 0 00.12-.48v-.85a.78.78 0 01.21-.53l1.07-1.09a5 5 0 01-1.54 9z"\>\</path\>  
+    \</svg\>\</li-icon\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>2 days ago • Visible to anyone on or off LinkedIn\<\!----\>\</span\>  
+            \</span\>  
+        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                          
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+        feed-shared-update-v2--with-hide-post  
+        "\>  
+\<\!----\>  
+        \<div id="ember2085" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by Manleen Kaur" tabindex="0" id="ember2086" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember2087" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>        \<button class="feed-shared-control-menu\_\_hide-post-button artdeco-button artdeco-button--circle artdeco-button--tertiary artdeco-button--1 artdeco-button--muted" aria-label="Dismiss post by Manleen Kaur" type="button"\>  
+            
+    \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+      \<path d="M13.78 12.72C14.07 13.01 14.07 13.49 13.78 13.78C13.63 13.93 13.44 14 13.25 14C13.06 14 12.87 13.93 12.72 13.78L8 9.06L3.28 13.78C3.13 13.93 2.94 14 2.75 14C2.56 14 2.37 13.93 2.22 13.78C1.93 13.49 1.93 13.01 2.22 12.72L6.94 8L2.22 3.28C1.93 2.99 1.93 2.51 2.22 2.22C2.51 1.93 2.99 1.93 3.28 2.22L8 6.94L12.72 2.22C13.01 1.93 13.49 1.93 13.78 2.22C14.07 2.51 14.07 2.99 13.78 3.28L9.06 8L13.78 12.72Z" fill="currentColor"\>\</path\>  
+    \</svg\>
+
+        \</button\>  
+          \</div\>  
+    
+                                      \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--2-lines  
+          
+          
+          
+        " tabindex="-1"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>Half of the educational based posts here sound the same.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>You could swap their names and no one could notice.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>And that’s exactly why they don’t convert.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>My client just gained 139 followers and 155 profile visits from a single post.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Most people share advice that anyone can Google in 60 seconds.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>But no advice in her post was Googleable.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>It all came from her experience with her clients.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>The things only she could say because she lived it.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>And that’s exactly what made people stop, visit her profile and follow her.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Your audience doesn’t need more generic advice.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>They need your experience and perspective.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>That’s yours and nobody else’s.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>And that’s what makes them come to you instead of Google.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>P.S. If you’re done sharing generic advice and want to attract the right people, dm me.\<\!----\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:329.5749816894531px" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+    \<div class="update-components-image  
+        update-components-image--single-image  
+        feed-shared-update-v2\_\_content"\>  
+      \<div class="update-components-image\_\_container-wrapper relative"\>  
+        \<div class="update-components-image\_\_container  
+            " style="  
+          padding-top: 125%;"\>  
+\<\!----\>  
+                \<button class="update-components-image\_\_image-link" type="button"\>  
+                    \<span class="visually-hidden"\>  
+                      Activate to view larger image,  
+                    \</span\>  
+                    
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQF78MflkZiypw/feedshare-shrink\_800/B56Zy8J4W0I0Ag-/0/1772683233133?e=1774483200\&amp;v=beta\&amp;t=TiAP01KcIVGrqTxjR0dnCbx2erSPGMLc-DuxraV5pdI" loading="lazy" height="750" alt="graphical user interface, application, Teams" id="ember2089" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fit update-components-image\_\_image update-components-image\_\_image--constrained evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+                \</button\>  
+\<\!----\>              \<\!----\>        \</div\>  
+        \<span class="visually-hidden" id="update-components-image-ember2088" aria-hidden="true"\>  
+              Activate to view larger image,  
+        \</span\>
+
+\<\!----\>  
+\<\!----\>      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember2090" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="Tulasi Adi Bala Krishna and 122 others" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--1 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-APPRECIATION data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/3wqhxqtk2l554o70ur3kessf1" alt="support" data-test-reactions-icon-type="APPRECIATION" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--2 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span class="social-details-social-counts\_\_social-proof-container"\>  
+                      \<span aria-hidden="true" data-social-proof-fallback="" class="social-details-social-counts\_\_social-proof-fallback-number"\>123\</span\>  
+                      \<span class="social-details-social-counts\_\_social-proof-text"\>  
+                            Tulasi Adi Bala Krishna and 122 others  
+                      \</span\>  
+                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="69 comments on Manleen Kaur’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              69 comments  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>  
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember2092" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember2093" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like" id="ember2094" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+              \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="thumbs-up-outline-small"\>  
+\<\!----\>      
+    \<use href="\#thumbs-up-outline-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2095" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember2096" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember2091" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-3-1772883929618" title="Generate AI Comment" type="button"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-96" class="ember-view"\>\<div id="ember2099" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember2100" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember2102" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember2103" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember2104" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-97" class="ember-view"\>\<div id="ember2106" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember2107" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember2108" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-98" class="ember-view"\>\<div id="ember2110" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember2111" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+\<\!----\>\<\!----\>              \<div id="ember2112" class="comments-comments-list  
+    comments-comments-list--cr"\>  
+\<\!----\>\<\!----\>  
+    \<div class="comments-comment-list\_\_container  
+        "\>  
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+        comments-highlighted-animation  
+        " data-id="urn:li:comment:(activity:7435172382258012160,7435241241245683712)" id="ember2113" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Saijal Taparia’s  graphic link" target="\_self" href="https://www.linkedin.com/in/saijal-taparia" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQEGkhavrGLV7g/profile-displayphoto-scale\_100\_100/B56Zvgjk8qIcAg-/0/1768998983215?e=1774483200\&amp;v=beta\&amp;t=PjZBhP0F0446gtWbHEIYLBTpxXK02n6Oz7SBJfahais" loading="lazy" height="32" alt="View Saijal Taparia’s  graphic link" id="ember2114" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Saijal Taparia   • 2nd Personal Branding Strategist for Founders, Coaches, and CXOs | Top 1% Favikon |" target="\_self" href="https://www.linkedin.com/in/saijal-taparia" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Saijal Taparia\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 2nd\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              Personal Branding Strategist for Founders, Coaches, and CXOs | Top 1% Favikon |  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            2d  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2115" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2116" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Saijal Taparia’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2117" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2118" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                       comments-highlighted-comment-item\_\_show-more-text--two  
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>I tell my clients this all the time: if ChatGPT or Google could have written it, it won’t build authority.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Your unfair advantage is the patterns you see working with real clients every week.\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:undefined" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2119" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2120" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Saijal Taparia’s comment" id="ember2121" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2122" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<span class="comments-comment-social-bar\_\_social-counts-separator--cr"\>\</span\>  
+        \<button class="comments-comment-social-bar\_\_reactions-count--cr   
+            hoverable-link-text" aria-label="1 Reaction on Saijal Taparia’s comment" type="button"\>  
+    \<img class="reactions-icon comments-comment-social-bar\_\_count-icon reactions-icon\_\_consumption--small data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+  \<span aria-hidden="true" class="v-align-middle pl1"\>  
+            1  
+          \</span\>  
+        \</button\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Saijal Taparia’s comment" id="ember2123" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+            \<span class="comments-comment-social-bar\_\_social-counts-separator--cr"\>\</span\>  
+            \<span aria-hidden="true" class="comments-comment-social-bar\_\_replies-count--cr  
+                "\>  
+              1 reply  
+            \</span\>  
+          \<span class="visually-hidden"\>  
+            1 Comment on Saijal Taparia’s comment  
+          \</span\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2124" class="ember-view"\>\<div id="ember2125" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2126" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+    \</div\>  
+          \<div class="comments-comment-list\_\_load-more-container"\>  
+            \<button aria-label="Load more comments" id="ember2127" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comments-list\_\_load-more-comments-arrows"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="maximize-small"\>  
+\<\!----\>      
+    \<use href="\#maximize-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+            \<button id="ember2128" class="comments-comments-list\_\_load-more-comments-button--cr artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Load more comments  
+\</span\>\</button\>  
+          \</div\>  
+    \</div\>  
+          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+                    
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1931" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7435943787790651392" class="relative" data-finite-scroll-hotkey-item="4"\>  
+        
+        
+          
+        \<div id="ember1933" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;PP1Biz7FvQHbrZBd53H5NA==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:activity:7435943787790651392\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;PP1Biz7FvQHbrZBd53H5NA==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+            feed-shared-update-v2--e2e  
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember2130" role="article" data-urn="urn:li:activity:7435943787790651392"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 5  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+        update-components-actor--with-control-menu-and-hide-post  
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="View Soumya Pandey’s  graphic link" target="\_self" href="https://www.linkedin.com/in/soumya-pandey-9076b4339?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAFT\_sxcB5JeDEo4rUxq\_rO4EYijLj727ZtM" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="48" src="https://media.licdn.com/dms/image/v2/D5603AQGomWVuaHFWlg/profile-displayphoto-scale\_100\_100/B56Zx1da9hI0Ac-/0/1771497174294?e=1774483200\&amp;v=beta\&amp;t=m13v\_q1cYLfYIPHVy70er3\_Isu-S6jgb6ZgDkq0XKLA" loading="lazy" height="48" alt="View Soumya Pandey’s  graphic link" id="ember2131" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-3  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: Soumya Pandey Premium • 1st Building Revenue-Driven Personal Brands | Authority \&amp;amp; Acquisition Systems Across LinkedIn, YouTube \&amp;amp; Instagram | Helping Experts Turn Visibility Into 3–5 Qualified Sales Conversations Per Week" target="\_self" href="https://www.linkedin.com/in/soumya-pandey-9076b4339?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAFT\_sxcB5JeDEo4rUxq\_rO4EYijLj727ZtM" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<\!----\>Soumya Pandey\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Soumya Pandey\<\!----\>\</span\>\</span\>  
+              \</span\>  
+                \<span class="update-components-actor\_\_supplementary-actor-info update-components-actor\_\_supplementary-actor-info--align-icon update-components-actor\_\_single-line-truncate text-body-xsmall  
+                    t-black--light  
+                    flex-shrink-zero"\>  
+                  \<span aria-hidden="true"\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_linkedin-bug-premium-v2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 1st\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Premium • 1st\<\!----\>\</span\>  
+                \</span\>  
+            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>Building Revenue-Driven Personal Brands | Authority \&amp; Acquisition Systems Across LinkedIn, YouTube \&amp; Instagram | Helping Experts Turn Visibility Into 3–5 Qualified Sales Conversations Per Week\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Building Revenue-Driven Personal Brands | Authority \&amp; Acquisition Systems Across LinkedIn, YouTube \&amp; Instagram | Helping Experts Turn Visibility Into 3–5 Qualified Sales Conversations Per Week\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+              \<a tabindex="0" rel="noopener noreferrer" target="\_blank" href="https://topmate.io/sn\_team" id="ember2132" class="ember-view pb0" waprocessedanchor="true"\>  
+                \<div class="update-components-actor\_\_sub-description-button-text"\>  
+                  Book an appointment  
+                \</div\>  
+              \</a\>  
+            \<span class="update-components-actor\_\_sub-description text-body-xsmall  
+                t-black--light  
+                  
+                "\>  
+              \<span aria-hidden="true"\>\<\!----\>5h • Edited •\<span class="white-space-pre"\> \</span\>\<span\>\<li-icon aria-hidden="true" type="globe-americas" class="v-align-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" fill="currentColor" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 011-3l.55.55A1.5 1.5 0 015 6.62v1.07a.75.75 0 00.22.53l.56.56a.75.75 0 00.53.22H7v.69a.75.75 0 00.22.53l.56.56a.75.75 0 01.22.53V13a5 5 0 01-5-5zm6.24 4.83l2-2.46a.75.75 0 00.09-.8l-.58-1.16A.76.76 0 0010 8H7v-.19a.51.51 0 01.28-.45l.38-.19a.74.74 0 01.68 0L9 7.5l.38-.7a1 1 0 00.12-.48v-.85a.78.78 0 01.21-.53l1.07-1.09a5 5 0 01-1.54 9z"\>\</path\>  
+    \</svg\>\</li-icon\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>5 hours ago • Edited • Visible to anyone on or off LinkedIn\<\!----\>\</span\>  
+            \</span\>  
+        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                          
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+        feed-shared-update-v2--with-hide-post  
+        "\>  
+\<\!----\>  
+        \<div id="ember2134" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by Soumya Pandey" tabindex="0" id="ember2135" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember2136" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>        \<button class="feed-shared-control-menu\_\_hide-post-button artdeco-button artdeco-button--circle artdeco-button--tertiary artdeco-button--1 artdeco-button--muted" aria-label="Dismiss post by Soumya Pandey" type="button"\>  
+            
+    \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+      \<path d="M13.78 12.72C14.07 13.01 14.07 13.49 13.78 13.78C13.63 13.93 13.44 14 13.25 14C13.06 14 12.87 13.93 12.72 13.78L8 9.06L3.28 13.78C3.13 13.93 2.94 14 2.75 14C2.56 14 2.37 13.93 2.22 13.78C1.93 13.49 1.93 13.01 2.22 12.72L6.94 8L2.22 3.28C1.93 2.99 1.93 2.51 2.22 2.22C2.51 1.93 2.99 1.93 3.28 2.22L8 6.94L12.72 2.22C13.01 1.93 13.49 1.93 13.78 2.22C14.07 2.51 14.07 2.99 13.78 3.28L9.06 8L13.78 12.72Z" fill="currentColor"\>\</path\>  
+    \</svg\>
+
+        \</button\>  
+          \</div\>  
+    
+                                      \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--3-lines  
+        feed-shared-inline-show-more-text--expanded  
+          
+          
+        " tabindex="-1" style="max-height: none; display: block;"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>This is the reality LinkedIn don't want you to know\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Most creators aren’t actually running out of content ideas.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>They’re running out of clarity.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Here’s what usually happens:\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>You sit down to post.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>You open LinkedIn.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>You start typing something about growth, mindset, or marketing…\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>And suddenly your brain says:\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>“Nothing feels good enough to post.”\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>So you scroll instead.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>The problem isn’t creativity.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>The problem is a broken content system.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Here are 3 strategic fixes if you feel like you're running out of ideas:\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>1. You’re creating content randomly instead of using content pillars.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>If every post is about a new topic, your brain has to reinvent the wheel every day.\<\!----\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>Top creators repeat themes they just say them differently each time.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>2. You’re trying to sound smart instead of solving real problems.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>The best posts don’t come from inspiration.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>They come from questions your audience asks repeatedly.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>No questions \= no content.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>3. You’re consuming content but not documenting insights.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>Every conversation, client problem, tool discovery, or mistake is content.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>But if you don’t capture it immediately, the idea disappears.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Great creators don’t have more ideas.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>They just capture and structure them better.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>About me:\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>I’m Soumya Pandey, a Social Media Strategist helping founders and creators turn LinkedIn, Instagram, and YouTube into platforms that generate inbound opportunities instead of just views.\<\!----\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<\!----\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+    \<div class="update-components-image  
+        update-components-image--smart-grid update-components-image--smart-grid-two-images update-components-image--smart-grid-two-images-single-row  
+        feed-shared-update-v2\_\_content"\>  
+      \<div class="update-components-image\_\_container-wrapper relative"\>  
+        \<div class="update-components-image\_\_container  
+            " style="aspect-ratio: 1.50;  
+          "\>  
+\<\!----\>  
+                \<button class="update-components-image\_\_image-link" style="aspect-ratio: 0.75" aria-label="Activate to view larger image, No alternative text description for this image" type="button"\>  
+                    
+    \<div class="ivm-image-view-model   " aria-hidden="true"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQHlPl1Lpw-arA/feedshare-shrink\_800/B56ZzHAs9oHQAc-/0/1772865377436?e=1774483200\&amp;v=beta\&amp;t=HWd0YpuRlihiV7djTqDMJVZuIOG2Dt73Swl\_w86a4g8" loading="lazy" height="800" alt="No alternative text description for this image" id="ember2138" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fill update-components-image\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+\<\!----\>                \</button\>  
+                \<button class="update-components-image\_\_image-link" aria-label="Activate to view larger image, No alternative text description for this image" type="button"\>  
+                    
+    \<div class="ivm-image-view-model   " aria-hidden="true"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQHBrrs3n3VP3w/feedshare-shrink\_800/B56ZzHAs0tHsAc-/0/1772865377016?e=1774483200\&amp;v=beta\&amp;t=\_17td0\_n\_q8DLuv\_Dq7wcrmCRuO\_DBWURUWoyLAMP-k" loading="lazy" height="800" alt="No alternative text description for this image" id="ember2139" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fill update-components-image\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+\<\!----\>                \</button\>  
+\<\!----\>        \</div\>  
+        \<span class="visually-hidden" id="update-components-image-ember2137" aria-hidden="true"\>  
+              Activate to view larger image,  
+        \</span\>
+
+\<\!----\>  
+\<\!----\>      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember2140" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="You and 26 others" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--1 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--2 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-PRAISE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/b1dl5jk88euc7e9ri50xy5qo8" alt="celebrate" data-test-reactions-icon-type="PRAISE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span class="social-details-social-counts\_\_social-proof-container"\>  
+                      \<span aria-hidden="true" data-social-proof-fallback="" class="social-details-social-counts\_\_social-proof-fallback-number"\>27\</span\>  
+                      \<span class="social-details-social-counts\_\_social-proof-text"\>  
+                          You and 26 others  
+                      \</span\>  
+                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="2 comments on Soumya Pandey’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              2 comments  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>  
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember2142" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember2143" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="true" aria-label="Unreact Like" id="ember2144" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          react-button--active"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+                
+    \<img class="reactions-icon artdeco-button\_\_icon reactions-react-button\_\_icon reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+  
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                react-button\_\_text--like"\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2145" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember2146" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember2141" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-4-1772883931601" title="Generate AI Comment" type="button"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-99" class="ember-view"\>\<div id="ember2149" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember2150" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember2152" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember2153" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember2154" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-100" class="ember-view"\>\<div id="ember2156" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember2157" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember2158" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-101" class="ember-view"\>\<div id="ember2160" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember2161" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+              \<div id="ember2248" class="comments-comment-box--cr  
+      
+    comments-comment-box--no-avatar  
+      
+      
+      
+    " data-scroll-name="true"\>  
+      \<div class="display-flex flex-1"\>  
+\<\!----\>  
+\<\!----\>        \<form class="comments-comment-box\_\_form"\>  
+          \<div class="comments-comment-texteditor  
+              "\>  
+            \<div class="display-flex  
+                flex-wrap"\>  
+              \<div class="comments-comment-box-comment\_\_text-editor"\>  
+    
+        
+        
+    
+    \<div\>  
+\<\!----\>          
+      
+    \<div class="editor-container relative"\>  
+      \<div\>  
+        \<div class="editor-content ql-container"\>\<div class="ql-editor ql-blank" data-gramm="false" contenteditable="true" data-placeholder="Add a comment…" aria-placeholder="Add a comment…" aria-label="Text editor for creating content" role="textbox" aria-multiline="true" aria-describedby="ember2253-text-editor-placeholder" data-test-ql-editor-contenteditable="true"\>\<p\>\<br\>\</p\>\</div\>\<div class="ql-clipboard" contenteditable="true" tabindex="-1"\>\</div\>\</div\>  
+          \<span class="a11y-text" aria-hidden="true" id="ember2253-text-editor-placeholder"\>  
+            Add a comment…  
+          \</span\>
+
+\<\!----\>      \</div\>  
+\<\!----\>    \</div\>  
+    
+    
+    \</div\>  
+  
+
+    
+    
+\</div\>  
+\<\!----\>              \<div class="display-flex justify-space-between"\>  
+                \<div class="display-flex"\>  
+                      
+        
+                          
+    \<div\>  
+      \<span tabindex="-1" id="ember2255" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top ember-view"\>  
+        \<button title="Open Emoji Keyboard" aria-label="Open Emoji Keyboard" aria-expanded="false" aria-controls="artdeco-hoverable-comments\_overlay\_emoji\_\_emoji-hoverable\_\_content" id="ember2256" class="comments-comment-box\_\_emoji-picker-trigger emoji-hoverable-trigger artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view" data-reaction-summary\_\_emoji-hoverable="" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="emoji-medium"\>  
+\<\!----\>      
+    \<use href="\#emoji-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Open Emoji Keyboard  
+\</span\>\</button\>  
+            
+      \</span\>
+
+\<\!----\>    \</div\>  
+    
+                      
+    
+                    \<div class="comments-comment-box\_\_detour-container"\>  
+                        \<button aria-label="Add a photo" id="ember2276" class="comments-comment-box\_\_detour-icons artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="image-medium"\>  
+\<\!----\>      
+    \<use href="\#image-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+                    \</div\>  
+                \</div\>  
+                \<div class="display-flex align-items-center"\>  
+\<\!----\>\<\!----\>                \</div\>  
+              \</div\>  
+            \</div\>  
+          \</div\>  
+\<\!----\>\<\!----\>        \</form\>  
+      \</div\>  
+    
+    \<\!----\>  
+\</div\>
+
+\<\!----\>  
+\<\!----\>  
+                \<div class="comments-sort-order-toggle mr2 ml3 mb2"\>  
+  \<div id="ember2257" class="comments-sort-order-toggle\_\_dropdown artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-left ember-view"\>  
+    \<button aria-expanded="false" id="ember2258" class="comments-sort-order-toggle\_\_trigger artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button" tabindex="0"\>  
+      \<span class="visually-hidden"\>  
+        Current selected sort order is Most relevant  
+      \</span\>  
+      \<span aria-hidden="true" class="display-flex align-items-center t-black--light t-bold"\>  
+        Most relevant  
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      \</span\>  
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2259" class="dropdown-options comments-sort-order-toggle\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-left artdeco-dropdown\_\_content--placement-bottom ember-view"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+              \<div id="ember2251" class="comments-comments-list  
+    comments-comments-list--cr"\>  
+\<\!----\>\<\!----\>  
+    \<div class="comments-comment-list\_\_container  
+        "\>  
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+          
+        " data-id="urn:li:comment:(ugcPost:7435936350824181761,7436014436626329600)" id="ember2279" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Krati Agarwal’s  graphic link" target="\_self" href="https://www.linkedin.com/in/kratiagarwal95" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" height="32" alt="View Krati Agarwal’s  graphic link" id="ember2280" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Krati Agarwal   • You Helping founders craft compelling stories and build a strong LinkedIn community. DM me \&amp;\#39;BRAND\&amp;\#39;" target="\_self" href="https://www.linkedin.com/in/kratiagarwal95" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Krati Agarwal\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_linkedin-bug-premium-v2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• You\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              Helping founders craft compelling stories and build a strong LinkedIn community. DM me 'BRAND'  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            1s  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2281" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2282" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Krati Agarwal’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2283" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2284" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                        
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>Content ideas rarely disappear — structure is what keeps them visible.\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2285" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2286" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Krati Agarwal’s comment" id="ember2287" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2288" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Krati Agarwal’s comment" id="ember2289" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2290" class="ember-view"\>\<div id="ember2291" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2292" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+          
+        " data-id="urn:li:comment:(ugcPost:7435936350824181761,7435958467305046016)" id="ember2260" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Abhijit Deb Roy’s  graphic link" target="\_self" href="https://www.linkedin.com/in/abhijit-deb-roy-47985b171" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQFzth5CPzF9MQ/profile-displayphoto-shrink\_100\_100/B56ZPbQFDOG4Ac-/0/1734550247091?e=1774483200\&amp;v=beta\&amp;t=FUMxShHDPMxLUchRlbduFNqqkY8c-YGSYRwBKixuWiU" loading="lazy" height="32" alt="View Abhijit Deb Roy’s  graphic link" id="ember2261" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Abhijit Deb Roy   • 2nd I Turn Emotional Depth into Growth for Wellness Brands \&amp;amp; Health Founders | Ghostwriting \&amp;amp; Content Strategy That Heals \&amp;amp; Converts" target="\_self" href="https://www.linkedin.com/in/abhijit-deb-roy-47985b171" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Abhijit Deb Roy\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 2nd\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              I Turn Emotional Depth into Growth for Wellness Brands \&amp; Health Founders | Ghostwriting \&amp; Content Strategy That Heals \&amp; Converts  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            3h  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2262" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2263" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Abhijit Deb Roy’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2264" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2265" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                        
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>repetation is what creates the difference\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span\>\<a tabindex="0" href="/in/soumya-pandey-9076b4339/" id="ember2266" class="ember-view"\>\<\!----\>Soumya Pandey\<\!----\>\</a\>\</span\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2267" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2268" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Abhijit Deb Roy’s comment" id="ember2269" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2270" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Abhijit Deb Roy’s comment" id="ember2271" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2272" class="ember-view"\>\<div id="ember2273" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2274" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+    \</div\>  
+\<\!----\>\</div\>  
+          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+                    
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1934" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7432726863656927232" class="relative" data-finite-scroll-hotkey-item="5"\>  
+        
+        
+          
+        \<div id="ember1936" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;ymb0e8NdVWKP/nhk/QdO6Q==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:activity:7432726863656927232\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;ymb0e8NdVWKP/nhk/QdO6Q==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+            feed-shared-update-v2--e2e  
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember2195" role="article" data-urn="urn:li:activity:7432726863656927232"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 6  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="update-components-header update-components-header--with-control-menu-and-hide-post update-components-header--with-divider update-components-header--with-image pt2 t-12 t-black--light t-normal"\>  
+      \<div class="update-components-header\_\_text-wrapper  
+          "\>  
+\<\!----\>            \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " data-control-id="ymb0e8NdVWKP/nhk/QdO6Q==" target="\_self" href="https://www.linkedin.com/in/shubhankarnalawade?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAADOYd5AB0D7sUlopiqQyUfcImoIKrgS\_9QQ" data-test-app-aware-link="" waprocessedanchor="true"\>  
+                
+    \<div class="ivm-image-view-model    update-components-header\_\_image mr2"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="24" src="https://media.licdn.com/dms/image/v2/D4D35AQEkW02GTIfdWw/profile-framedphoto-shrink\_100\_100/B4DZytUFRnH4Ak-/0/1772434249011?e=1773489600\&amp;v=beta\&amp;t=ifBuy6KyMaQdz9F6y4ziVwpi\_PoOix-eaZQnEVjV07g" loading="lazy" height="24" alt="Shubhankar’s profile photo" id="ember2196" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-0   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</a\>  
+          \<span class="update-components-header\_\_text-view"\>  
+            \<span\>\<a href="/in/shubhankarnalawade/" id="ember2197" class="ember-view"\>\<\!----\>Shubhankar Nalawade\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>commented on this\<\!----\>  
+          \</span\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+    
+                        
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+        feed-shared-update-v2--with-hide-post  
+        "\>  
+\<\!----\>  
+        \<div id="ember2199" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by Prerna Bhandari" tabindex="0" id="ember2200" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember2201" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>        \<button class="feed-shared-control-menu\_\_hide-post-button artdeco-button artdeco-button--circle artdeco-button--tertiary artdeco-button--1 artdeco-button--muted" aria-label="Dismiss post by Prerna Bhandari" type="button"\>  
+            
+    \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+      \<path d="M13.78 12.72C14.07 13.01 14.07 13.49 13.78 13.78C13.63 13.93 13.44 14 13.25 14C13.06 14 12.87 13.93 12.72 13.78L8 9.06L3.28 13.78C3.13 13.93 2.94 14 2.75 14C2.56 14 2.37 13.93 2.22 13.78C1.93 13.49 1.93 13.01 2.22 12.72L6.94 8L2.22 3.28C1.93 2.99 1.93 2.51 2.22 2.22C2.51 1.93 2.99 1.93 3.28 2.22L8 6.94L12.72 2.22C13.01 1.93 13.49 1.93 13.78 2.22C14.07 2.51 14.07 2.99 13.78 3.28L9.06 8L13.78 12.72Z" fill="currentColor"\>\</path\>  
+    \</svg\>
+
+        \</button\>  
+          \</div\>  
+    
+\<\!----\>\<\!----\>                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+          
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="View Prerna Bhandari’s  graphic link" target="\_self" href="https://www.linkedin.com/in/prerna-bhandari-ghostwriter-personalbranding?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAADGmQ8wB8JqEd1xuqvWKanBFp1myzQvQjYg" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="48" src="https://media.licdn.com/dms/image/v2/D5603AQFir0lKJ1dDcw/profile-displayphoto-scale\_100\_100/B56ZpeCDOpIYAc-/0/1762514188837?e=1774483200\&amp;v=beta\&amp;t=OcUQPhqNgwoyDpnLhYrMFrt3JwbINUzjk9\_YvAT1Wks" loading="lazy" height="48" alt="View Prerna Bhandari’s  graphic link" id="ember2202" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-3  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: Prerna Bhandari Verified • 1st Helping Founders \&amp;amp; Creators build presence on LinkedIn | Personal Branding Strategist | LinkedIn Coach | Ex-Content Lead @ DynTech | @ AKMG" target="\_self" href="https://www.linkedin.com/in/prerna-bhandari-ghostwriter-personalbranding?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAADGmQ8wB8JqEd1xuqvWKanBFp1myzQvQjYg" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<\!----\>Prerna Bhandari\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Prerna Bhandari\<\!----\>\</span\>\</span\>  
+              \</span\>  
+                \<span class="update-components-actor\_\_supplementary-actor-info update-components-actor\_\_supplementary-actor-info--align-icon update-components-actor\_\_single-line-truncate text-body-xsmall  
+                    t-black--light  
+                    flex-shrink-zero"\>  
+                  \<span aria-hidden="true"\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 1st\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Verified • 1st\<\!----\>\</span\>  
+                \</span\>  
+            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>Helping Founders \&amp; Creators build presence on LinkedIn | Personal Branding Strategist | LinkedIn Coach | Ex-Content Lead @ DynTech | @ AKMG\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Helping Founders \&amp; Creators build presence on LinkedIn | Personal Branding Strategist | LinkedIn Coach | Ex-Content Lead @ DynTech | @ AKMG\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+\<\!----\>            \<span class="update-components-actor\_\_sub-description text-body-xsmall  
+                t-black--light  
+                  
+                "\>  
+              \<span aria-hidden="true"\>\<\!----\>1w •\<span class="white-space-pre"\> \</span\>\<span\>\<li-icon aria-hidden="true" type="globe-americas" class="v-align-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" fill="currentColor" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 011-3l.55.55A1.5 1.5 0 015 6.62v1.07a.75.75 0 00.22.53l.56.56a.75.75 0 00.53.22H7v.69a.75.75 0 00.22.53l.56.56a.75.75 0 01.22.53V13a5 5 0 01-5-5zm6.24 4.83l2-2.46a.75.75 0 00.09-.8l-.58-1.16A.76.76 0 0010 8H7v-.19a.51.51 0 01.28-.45l.38-.19a.74.74 0 01.68 0L9 7.5l.38-.7a1 1 0 00.12-.48v-.85a.78.78 0 01.21-.53l1.07-1.09a5 5 0 01-1.54 9z"\>\</path\>  
+    \</svg\>\</li-icon\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>1 week ago • Visible to anyone on or off LinkedIn\<\!----\>\</span\>  
+            \</span\>  
+        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                  \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--1-lines  
+          
+          
+          
+        " tabindex="-1"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>After managing 25+ founder profiles, here’s what I’ve learned.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Most founders do not struggle with ideas.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>They struggle with structure.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>They create content on the go.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Random thoughts.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Random wins.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Random announcements.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>And then they call it strategy. (it’s not)\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>If you are serious about positioning, you need a content bank system.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Here’s how I structure it.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>1\&gt;\&nbsp;divide content into clear pillars.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Vision and market POV.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Operational insights.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Proof and performance.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Personal leadership philosophy.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>If a post does not fit into a pillar, it does not get created. Discipline protects authority.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>2\&gt;\&nbsp;map it to funnel stages.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Top of funnel content attracts attention and expands reach.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Middle of funnel content builds depth, credibility, and trust.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Founders who skip this step end up either sounding too generic or too technical.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>3\&gt;\&nbsp;pre build 30 to 45 ideas in advance.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Not drafts.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Not half thoughts.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Clear angles.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Clear headlines.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Clear outcomes.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>This removes emotional decision making from content creation. (which is where most damage happens)\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>4\&gt;\&nbsp;document conversations.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Sales calls.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Investor questions.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Internal debates.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Team challenges.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Your best content is already happening inside your company. You are just not capturing it.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>A founder content bank is about thinking like an operator, not a creator.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Random posting builds noise.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Structured positioning builds authority.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Follow\<span class="white-space-pre"\> \</span\>\<span\>\<a tabindex="0" href="/in/prerna-bhandari-ghostwriter-personalbranding/" id="ember2203" class="ember-view"\>\<\!----\>Prerna Bhandari\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>for more if you want founder branding done strategically.\<\!----\>\<span\>\<br\>\</span\>\<\!----\>Ignore if last minute posting feels exciting. (your call)\<\!----\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:382.0249938964844px" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+    \<div class="update-components-image  
+        update-components-image--single-image  
+        feed-shared-update-v2\_\_content"\>  
+      \<div class="update-components-image\_\_container-wrapper relative"\>  
+        \<div class="update-components-image\_\_container  
+            " style="  
+          padding-top: 125%;"\>  
+\<\!----\>  
+                \<button class="update-components-image\_\_image-link" type="button"\>  
+                    \<span class="visually-hidden"\>  
+                      Activate to view larger image,  
+                    \</span\>  
+                    
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQHkeS\_95ufTPQ/feedshare-shrink\_800/B56ZyYHpkzKYAk-/0/1772078668391?e=1774483200\&amp;v=beta\&amp;t=5eJRNbGpySjKrNBryD50yd0j41\_o7VmsHtTzoolq\_Iw" loading="lazy" height="750" alt="No alternative text description for this image" id="ember2205" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fit update-components-image\_\_image update-components-image\_\_image--constrained evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+                \</button\>  
+\<\!----\>              \<\!----\>        \</div\>  
+        \<span class="visually-hidden" id="update-components-image-ember2204" aria-hidden="true"\>  
+              Activate to view larger image,  
+        \</span\>
+
+\<\!----\>  
+\<\!----\>      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember2206" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="Adish Jain and 146 others" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--1 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--2 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-APPRECIATION data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/3wqhxqtk2l554o70ur3kessf1" alt="support" data-test-reactions-icon-type="APPRECIATION" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span class="social-details-social-counts\_\_social-proof-container"\>  
+                      \<span aria-hidden="true" data-social-proof-fallback="" class="social-details-social-counts\_\_social-proof-fallback-number"\>147\</span\>  
+                      \<span class="social-details-social-counts\_\_social-proof-text"\>  
+                            Adish Jain and 146 others  
+                      \</span\>  
+                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="75 comments on Prerna Bhandari’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              75 comments  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_item--height-two-x flex-shrink-1 overflow-hidden  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button id="ember2207" class="ember-view t-black--light social-details-social-counts\_\_count-value-hover social-details-social-counts\_\_item--truncate-text full-width  
+                            text-body-small  
+                            hoverable-link-text social-details-social-counts\_\_btn  
+                            " aria-label="1 repost of Prerna Bhandari’s post"\>  
+                          \<span aria-hidden="true"\>  
+                            1 repost  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember2209" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember2210" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like" id="ember2211" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+              \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="thumbs-up-outline-small"\>  
+\<\!----\>      
+    \<use href="\#thumbs-up-outline-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2212" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember2213" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember2208" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-5-1772883933290" title="Generate AI Comment" type="button"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-105" class="ember-view"\>\<div id="ember2216" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember2217" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember2219" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember2220" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember2221" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-106" class="ember-view"\>\<div id="ember2223" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember2224" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember2225" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-107" class="ember-view"\>\<div id="ember2227" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember2228" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+\<\!----\>\<\!----\>              \<div id="ember2229" class="comments-comments-list  
+    comments-comments-list--cr"\>  
+\<\!----\>\<\!----\>  
+    \<div class="comments-comment-list\_\_container  
+        "\>  
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+        comments-highlighted-animation  
+        " data-id="urn:li:comment:(activity:7432636651514011648,7432726852315746304)" id="ember2230" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Shubhankar Nalawade’s hiring graphic link" target="\_self" href="https://www.linkedin.com/in/shubhankarnalawade" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D4D35AQEkW02GTIfdWw/profile-framedphoto-shrink\_100\_100/B4DZytUFRnH4Ak-/0/1772434249011?e=1773489600\&amp;v=beta\&amp;t=ifBuy6KyMaQdz9F6y4ziVwpi\_PoOix-eaZQnEVjV07g" loading="lazy" height="32" alt="View Shubhankar Nalawade’s hiring graphic link" id="ember2231" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Shubhankar Nalawade   • 1st Building \- SocialPlug Media | Helping Brands and Founders Grow Visibility, Credibility \&amp;amp; Revenue" target="\_self" href="https://www.linkedin.com/in/shubhankarnalawade" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Shubhankar Nalawade\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_linkedin-bug-premium-v2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 1st\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              Building \- SocialPlug Media | Helping Brands and Founders Grow Visibility, Credibility \&amp; Revenue  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            1w  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2232" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2233" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Shubhankar Nalawade’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2234" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2235" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                       comments-highlighted-comment-item\_\_show-more-text--two  
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>That's so well explained\!\<span class="white-space-pre"\> \</span\>\<span\>\<a tabindex="0" href="/in/prerna-bhandari-ghostwriter-personalbranding/" id="ember2236" class="ember-view"\>\<\!----\>Prerna Bhandari\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>Doing right positioning and having the right content strategy is the key for their growth\!\<span class="white-space-pre"\> \</span\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2237" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2238" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Shubhankar Nalawade’s comment" id="ember2239" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2240" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Shubhankar Nalawade’s comment" id="ember2241" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2242" class="ember-view"\>\<div id="ember2243" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2244" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+    \</div\>  
+          \<div class="comments-comment-list\_\_load-more-container"\>  
+            \<button aria-label="Load more comments" id="ember2245" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comments-list\_\_load-more-comments-arrows"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="maximize-small"\>  
+\<\!----\>      
+    \<use href="\#maximize-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+            \<button id="ember2246" class="comments-comments-list\_\_load-more-comments-button--cr artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Load more comments  
+\</span\>\</button\>  
+          \</div\>  
+    \</div\>  
+          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+                    
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1937" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:aggregate:(urn:li:activity:7435998083768885248,urn:li:activity:7435942546968629248)" class="relative" data-finite-scroll-hotkey-item="6"\>  
+        
+        
+          
+        \<div id="ember1939" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;E1nKApFYmG902sNsqMvM7Q==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:aggregate:(urn:li:activity:7435998083768885248,urn:li:activity:7435942546968629248)\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;E1nKApFYmG902sNsqMvM7Q==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+            feed-shared-update-v2--e2e  
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember2293" role="article" data-urn="urn:li:aggregate:(urn:li:activity:7435998083768885248,urn:li:activity:7435942546968629248)"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 7  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="update-components-header update-components-header--with-control-menu-and-hide-post update-components-header--with-divider update-components-header--with-image pt2 t-12 t-black--light t-normal"\>  
+      \<div class="update-components-header\_\_text-wrapper  
+          "\>  
+\<\!----\>            \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " data-control-id="E1nKApFYmG902sNsqMvM7Q==" target="\_self" href="https://www.linkedin.com/in/richa-rajpal-personalbranding?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAAC6y4pIBjmgjUvTE2D9H\_bqbAgxBoC9w-Ro" data-test-app-aware-link="" waprocessedanchor="true"\>  
+                
+    \<div class="ivm-image-view-model    update-components-header\_\_image mr2"\>  
+        \<ul class="display-flex align-items-center list-style-none mr1 ivm-image-view-model\_\_img-list--size-4"\>  
+            \<li class="ivm-image-view-model\_\_img-list-item-entity  
+                  
+                "\>  
+                
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="24" src="https://media.licdn.com/dms/image/v2/D5603AQEnhTLgavtuTQ/profile-displayphoto-scale\_100\_100/B56Zmzcz2dI0Ac-/0/1759652298990?e=1774483200\&amp;v=beta\&amp;t=qcUYnxT7UnT1KD4axDKuVo6gK6GYXdBnpMhBxkvL13k" loading="lazy" height="24" alt="Richa Rajpal" id="ember2294" class="ivm-view-attr\_\_img--centered ivm-image-view-model\_\_circle-img   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+            \</li\>  
+            \<li class="ivm-image-view-model\_\_img-list-item-entity  
+                  
+                "\>  
+                
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="24" src="https://media.licdn.com/dms/image/v2/D5603AQEbgie-9tpZgw/profile-displayphoto-scale\_100\_100/B56ZloP3udKEAc-/0/1758390616365?e=1774483200\&amp;v=beta\&amp;t=dHeGAst6fRfW0WsTCJfNjiZs2ipfCZoF6LNHUjZ-pck" loading="lazy" height="24" alt="Richa Rajpal" id="ember2295" class="ivm-view-attr\_\_img--centered ivm-image-view-model\_\_circle-img   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+            \</li\>  
+        \</ul\>
+
+          \<span class="visually-hidden"\>Richa Rajpal\</span\>  
+    \</div\>  
+    
+            \</a\>  
+          \<span class="update-components-header\_\_text-view"\>  
+            \<span\>\<a href="/in/richa-rajpal-personalbranding/" id="ember2296" class="ember-view"\>\<\!----\>Richa Rajpal\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>and\<span class="white-space-pre"\> \</span\>\<span\>\<a href="/in/rosemariageorge/" id="ember2297" class="ember-view"\>\<\!----\>Rose Maria George\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>like this\<\!----\>  
+          \</span\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+    
+                        
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+        feed-shared-update-v2--with-hide-post  
+        "\>  
+\<\!----\>  
+        \<div id="ember2299" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by Rose Maria George" tabindex="0" id="ember2300" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember2301" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>        \<button class="feed-shared-control-menu\_\_hide-post-button artdeco-button artdeco-button--circle artdeco-button--tertiary artdeco-button--1 artdeco-button--muted" aria-label="Dismiss post by Rose Maria George" type="button"\>  
+            
+    \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+      \<path d="M13.78 12.72C14.07 13.01 14.07 13.49 13.78 13.78C13.63 13.93 13.44 14 13.25 14C13.06 14 12.87 13.93 12.72 13.78L8 9.06L3.28 13.78C3.13 13.93 2.94 14 2.75 14C2.56 14 2.37 13.93 2.22 13.78C1.93 13.49 1.93 13.01 2.22 12.72L6.94 8L2.22 3.28C1.93 2.99 1.93 2.51 2.22 2.22C2.51 1.93 2.99 1.93 3.28 2.22L8 6.94L12.72 2.22C13.01 1.93 13.49 1.93 13.78 2.22C14.07 2.51 14.07 2.99 13.78 3.28L9.06 8L13.78 12.72Z" fill="currentColor"\>\</path\>  
+    \</svg\>
+
+        \</button\>  
+          \</div\>  
+    
+\<\!----\>\<\!----\>                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+          
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="View Rose Maria George’s  graphic link" target="\_self" href="https://www.linkedin.com/in/rosemariageorge?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAADC8p18BB1g6-r36mVepuQG4rEqODZWwb5U" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="48" src="https://media.licdn.com/dms/image/v2/D5603AQEbgie-9tpZgw/profile-displayphoto-scale\_100\_100/B56ZloP3udKEAc-/0/1758390616365?e=1774483200\&amp;v=beta\&amp;t=dHeGAst6fRfW0WsTCJfNjiZs2ipfCZoF6LNHUjZ-pck" loading="lazy" height="48" alt="View Rose Maria George’s  graphic link" id="ember2302" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-3  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: Rose Maria George Premium • Following Your LinkedIn marketing and storytelling mate at a text distance" target="\_self" href="https://www.linkedin.com/in/rosemariageorge?miniProfileUrn=urn%3Ali%3Afsd\_profile%3AACoAADC8p18BB1g6-r36mVepuQG4rEqODZWwb5U" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<\!----\>Rose Maria George\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Rose Maria George\<\!----\>\</span\>\</span\>  
+              \</span\>  
+                \<span class="update-components-actor\_\_supplementary-actor-info update-components-actor\_\_supplementary-actor-info--align-icon update-components-actor\_\_single-line-truncate text-body-xsmall  
+                    t-black--light  
+                    flex-shrink-zero"\>  
+                  \<span aria-hidden="true"\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_linkedin-bug-premium-v2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• Following\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Premium • Following\<\!----\>\</span\>  
+                \</span\>  
+            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>Your LinkedIn marketing and storytelling mate at a text distance\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Your LinkedIn marketing and storytelling mate at a text distance\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+              \<a tabindex="0" rel="noopener noreferrer" target="\_blank" href="https://tally.so/r/mY8lr0" id="ember2303" class="ember-view pb0" waprocessedanchor="true"\>  
+                \<div class="update-components-actor\_\_sub-description-button-text"\>  
+                  Visit my store  
+                \</div\>  
+              \</a\>  
+            \<span class="update-components-actor\_\_sub-description text-body-xsmall  
+                t-black--light  
+                  
+                "\>  
+              \<span aria-hidden="true"\>\<\!----\>4h •\<span class="white-space-pre"\> \</span\>\<span\>\<li-icon aria-hidden="true" type="globe-americas" class="v-align-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" fill="currentColor" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 011-3l.55.55A1.5 1.5 0 015 6.62v1.07a.75.75 0 00.22.53l.56.56a.75.75 0 00.53.22H7v.69a.75.75 0 00.22.53l.56.56a.75.75 0 01.22.53V13a5 5 0 01-5-5zm6.24 4.83l2-2.46a.75.75 0 00.09-.8l-.58-1.16A.76.76 0 0010 8H7v-.19a.51.51 0 01.28-.45l.38-.19a.74.74 0 01.68 0L9 7.5l.38-.7a1 1 0 00.12-.48v-.85a.78.78 0 01.21-.53l1.07-1.09a5 5 0 01-1.54 9z"\>\</path\>  
+    \</svg\>\</li-icon\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>4 hours ago • Visible to anyone on or off LinkedIn\<\!----\>\</span\>  
+            \</span\>  
+        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                  \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--3-lines  
+        feed-shared-inline-show-more-text--expanded  
+          
+          
+        " tabindex="-1" style="max-height: none; display: block;"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>There are people who look the same in almost every photo.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>That's their photo face.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>And then there are people who look like 12 different people in 6 pictures.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Their photos look different:\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<\!----\>•Hangry at 7 PM.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<\!----\>•Grumpy at 8 AM.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<\!----\>•After ice cream smile.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<\!----\>•Pissed but still smiling.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<\!----\>•With friends' giddiness.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>I'm the people. My LinkedIn photos prove that.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>I know this is none of your business.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>But my younger cousin told, “Eww, you look so old. Why did you post this?”\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>It was supposed to be a great Friday last night with me cooking pasta and all.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>The kid destroyed me with his cruel question.\<span class="white-space-pre"\> \</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Do you have a no-filter person at home? What's their most brutal line?\<\!----\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<\!----\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+    \<div class="update-components-image  
+        update-components-image--single-image  
+        feed-shared-update-v2\_\_content"\>  
+      \<div class="update-components-image\_\_container-wrapper relative"\>  
+        \<div class="update-components-image\_\_container  
+            " style="  
+          padding-top: 103.71%;"\>  
+\<\!----\>  
+                \<button class="update-components-image\_\_image-link" type="button"\>  
+                    \<span class="visually-hidden"\>  
+                      Activate to view larger image,  
+                    \</span\>  
+                    
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="600" src="https://media.licdn.com/dms/image/v2/D5622AQHleN2xUP5VEA/feedshare-shrink\_800/B56ZzByzs6G4Ag-/0/1772777848388?e=1774483200\&amp;v=beta\&amp;t=3\_lO7jWgRAn8uqAJzfiqBWjL0CbnOnRSNmyJ0HjqnNw" loading="lazy" height="622" alt="Rose Maria George, LinkedIn personal branding expert from Kerala India, making a candid funny face while eating pizza in a bright pink outfit — showing the authentic unfiltered personality behind her LinkedIn content" id="ember2305" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_img--aspect-fill update-components-image\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+                \</button\>  
+\<\!----\>              \<\!----\>        \</div\>  
+        \<span class="visually-hidden" id="update-components-image-ember2304" aria-hidden="true"\>  
+              Activate to view larger image,  
+        \</span\>
+
+\<\!----\>  
+\<\!----\>      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember2306" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="You and 97 others" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--1 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--2 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-ENTERTAINMENT data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/41j9d0423ck1snej32brbuuwg" alt="funny" data-test-reactions-icon-type="ENTERTAINMENT" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span class="social-details-social-counts\_\_social-proof-container"\>  
+                      \<span aria-hidden="true" data-social-proof-fallback="" class="social-details-social-counts\_\_social-proof-fallback-number"\>98\</span\>  
+                      \<span class="social-details-social-counts\_\_social-proof-text"\>  
+                          You and 97 others  
+                      \</span\>  
+                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="32 comments on Rose Maria George’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              32 comments  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>  
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember2308" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember2309" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="true" aria-label="Unreact Like" id="ember2310" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          react-button--active"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+                
+    \<img class="reactions-icon artdeco-button\_\_icon reactions-react-button\_\_icon reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+  
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                react-button\_\_text--like"\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2311" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember2312" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember2307" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-6-1772884008630" title="Generate AI Comment" type="button" style="opacity: 1; pointer-events: auto;"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-108" class="ember-view"\>\<div id="ember2315" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember2316" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember2318" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember2319" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember2320" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-109" class="ember-view"\>\<div id="ember2322" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember2323" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember2324" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-110" class="ember-view"\>\<div id="ember2326" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember2327" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+              \<div id="ember2385" class="comments-comment-box--cr  
+      
+    comments-comment-box--no-avatar  
+      
+      
+      
+    " data-scroll-name="true"\>  
+      \<div class="display-flex flex-1"\>  
+\<\!----\>  
+\<\!----\>        \<form class="comments-comment-box\_\_form"\>  
+          \<div class="comments-comment-texteditor  
+              "\>  
+            \<div class="display-flex  
+                flex-wrap"\>  
+              \<div class="comments-comment-box-comment\_\_text-editor"\>  
+    
+        
+        
+    
+    \<div\>  
+\<\!----\>          
+      
+    \<div class="editor-container relative"\>  
+      \<div\>  
+        \<div class="editor-content ql-container"\>\<div class="ql-editor ql-blank" data-gramm="false" contenteditable="true" data-placeholder="Add a comment…" aria-placeholder="Add a comment…" aria-label="Text editor for creating content" role="textbox" aria-multiline="true" aria-describedby="ember2390-text-editor-placeholder" data-test-ql-editor-contenteditable="true"\>\<p\>\<br\>\</p\>\</div\>\<div class="ql-clipboard" contenteditable="true" tabindex="-1"\>\</div\>\</div\>  
+          \<span class="a11y-text" aria-hidden="true" id="ember2390-text-editor-placeholder"\>  
+            Add a comment…  
+          \</span\>
+
+\<\!----\>      \</div\>  
+\<\!----\>    \</div\>  
+    
+    
+    \</div\>  
+  
+
+    
+    
+\</div\>  
+\<\!----\>              \<div class="display-flex justify-space-between"\>  
+                \<div class="display-flex"\>  
+                      
+        
+                          
+    \<div\>  
+      \<span tabindex="-1" id="ember2392" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top ember-view"\>  
+        \<button title="Open Emoji Keyboard" aria-label="Open Emoji Keyboard" aria-expanded="false" aria-controls="artdeco-hoverable-comments\_overlay\_emoji\_\_emoji-hoverable\_\_content" id="ember2393" class="comments-comment-box\_\_emoji-picker-trigger emoji-hoverable-trigger artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view" data-reaction-summary\_\_emoji-hoverable="" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="emoji-medium"\>  
+\<\!----\>      
+    \<use href="\#emoji-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Open Emoji Keyboard  
+\</span\>\</button\>  
+            
+      \</span\>
+
+\<\!----\>    \</div\>  
+    
+                      
+    
+                    \<div class="comments-comment-box\_\_detour-container"\>  
+                        \<button aria-label="Add a photo" id="ember2431" class="comments-comment-box\_\_detour-icons artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="image-medium"\>  
+\<\!----\>      
+    \<use href="\#image-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+                    \</div\>  
+                \</div\>  
+                \<div class="display-flex align-items-center"\>  
+\<\!----\>\<\!----\>                \</div\>  
+              \</div\>  
+            \</div\>  
+          \</div\>  
+\<\!----\>\<\!----\>        \</form\>  
+      \</div\>  
+    
+    \<\!----\>  
+\</div\>
+
+\<\!----\>  
+\<\!----\>  
+                \<div class="comments-sort-order-toggle mr2 ml3 mb2"\>  
+  \<div id="ember2394" class="comments-sort-order-toggle\_\_dropdown artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-left ember-view"\>  
+    \<button aria-expanded="false" id="ember2395" class="comments-sort-order-toggle\_\_trigger artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button" tabindex="0"\>  
+      \<span class="visually-hidden"\>  
+        Current selected sort order is Most relevant  
+      \</span\>  
+      \<span aria-hidden="true" class="display-flex align-items-center t-black--light t-bold"\>  
+        Most relevant  
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      \</span\>  
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2396" class="dropdown-options comments-sort-order-toggle\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-left artdeco-dropdown\_\_content--placement-bottom ember-view"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+              \<div id="ember2388" class="comments-comments-list  
+    comments-comments-list--cr"\>  
+\<\!----\>\<\!----\>  
+    \<div class="comments-comment-list\_\_container  
+        "\>  
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+          
+        " data-id="urn:li:comment:(activity:7435942317041258496,7436014750737604609)" id="ember2434" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Krati Agarwal’s  graphic link" target="\_self" href="https://www.linkedin.com/in/kratiagarwal95" data-test-app-aware-link=""\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" height="32" alt="View Krati Agarwal’s  graphic link" id="ember2435" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Krati Agarwal   • You Helping founders craft compelling stories and build a strong LinkedIn community. DM me \&amp;\#39;BRAND\&amp;\#39;" target="\_self" href="https://www.linkedin.com/in/kratiagarwal95" data-test-app-aware-link=""\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Krati Agarwal\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_linkedin-bug-premium-v2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" data-supported-dps="14x14" data-test-icon="linkedin-bug-premium-v2-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/7lputkpzv6s224ks0n6c7h2qo" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/e41cj52mke6g9s3xjsvu8yrbz" x="0" y="0" width="14" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• You\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              Helping founders craft compelling stories and build a strong LinkedIn community. DM me 'BRAND'  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            1s  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2436" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2437" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Krati Agarwal’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2438" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2439" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                        
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<\!----\>The most honest critics are usually the ones at home — zero filters, zero mercy. 😅\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2440" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2441" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Krati Agarwal’s comment" id="ember2442" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2443" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Krati Agarwal’s comment" id="ember2444" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2445" class="ember-view"\>\<div id="ember2446" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2447" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+          
+        " data-id="urn:li:comment:(activity:7435942317041258496,7435946571663437824)" id="ember2397" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Edwin Reagan’s  graphic link" target="\_self" href="https://www.linkedin.com/in/edwin-reagan-meta-ads-expert" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQFCwv\_-SK12mg/profile-displayphoto-scale\_100\_100/B56ZxnWcDeG4Ag-/0/1771260466455?e=1774483200\&amp;v=beta\&amp;t=CndVkTOjfsQWoQFt9DINOrH-gPFUlzrnP2btcj-vCcA" loading="lazy" height="32" alt="View Edwin Reagan’s  graphic link" id="ember2398" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Edwin Reagan   • 3rd+ I help businesses get high-ROI leads and sales with Facebook \&amp;amp; Instagram ads" target="\_self" href="https://www.linkedin.com/in/edwin-reagan-meta-ads-expert" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Edwin Reagan\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 3rd+\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              I help businesses get high-ROI leads and sales with Facebook \&amp; Instagram ads  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            4h  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2399" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2400" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Edwin Reagan’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2401" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2402" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                        
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<span\>\<a tabindex="0" href="/in/rosemariageorge/" id="ember2403" class="ember-view"\>\<\!----\>Rose Maria George\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>This made me smile. Real life shows many sides of us, and that’s normal. Photos don’t need to be perfect to be meaningful. Sometimes the most honest moments are the ones that show who we really are.\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2404" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2405" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Edwin Reagan’s comment" id="ember2406" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2407" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Edwin Reagan’s comment" id="ember2408" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2409" class="ember-view"\>\<div id="ember2410" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2411" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+              
+                    
+    \<article class="comments-comment-entity  
+          
+          
+          
+          
+        " data-id="urn:li:comment:(activity:7435942317041258496,7435956329485250561)" id="ember2412" tabindex="-1"\>  
+          
+    \<div class="comments-comment-meta\_\_container  
+        comments-comment-meta\_\_container--parent"\>  
+      \<div class="comments-comment-meta\_\_actor"\>  
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_image-link" aria-label="View Jordan Molina’s  graphic link" target="\_self" href="https://www.linkedin.com/in/jordan-ryan-molina" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="32" src="https://media.licdn.com/dms/image/v2/D5603AQH900NtsC3L\_w/profile-displayphoto-scale\_100\_100/B56Zs.qxUcIcAc-/0/1766282959450?e=1774483200\&amp;v=beta\&amp;t=x0l18gqygN5cr5OrZTp4linBHft6ZTHczQsaq4r36-I" loading="lazy" height="32" alt="View Jordan Molina’s  graphic link" id="ember2413" class="ivm-view-attr\_\_img--centered EntityPhoto-circle-1   evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+        \</a\>
+
+        \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  comments-comment-meta\_\_description-container tap-target overflow-hidden" aria-label="View: Jordan Molina   • 2nd Bringing Quality Leads to You | LinkedIn Organic and Email Marketing | 25+ Years in Sales and Marketing | Marketing/AI Ops Specialist | Clients have booked 25+ Calls in 30 days | Co-founder of The Social Tiger 🐅" target="\_self" href="https://www.linkedin.com/in/jordan-ryan-molina" data-test-app-aware-link="" waprocessedanchor="true"\>  
+          \<h3 class="comments-comment-meta\_\_description"\>  
+            \<span class="comments-comment-meta\_\_description-title"\>  
+              \<\!----\>Jordan Molina\<\!----\>  
+            \</span\>\<span class="comments-comment-meta\_\_data"\>  
+                \<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<svg role="none" aria-hidden="true" class="text-view-model\_\_verified-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="verified-small"\>  
+\<\!----\>      
+    \<use href="\#verified-small" width="16" height="16"\>\</use\>  
+\</svg\>  
+\<span class="white-space-pre"\> \</span\>• 2nd\<\!----\>  
+              \</span\>\<\!----\>\</h3\>\<div class="comments-comment-meta\_\_description-subtitle"\>  
+              Bringing Quality Leads to You | LinkedIn Organic and Email Marketing | 25+ Years in Sales and Marketing | Marketing/AI Ops Specialist | Clients have booked 25+ Calls in 30 days | Co-founder of The Social Tiger 🐅  
+            \</div\>\</a\>  
+      \</div\>  
+        \<div class="comments-comment-meta\_\_info"\>  
+\<\!----\>          \<time class="comments-comment-meta\_\_data"\>  
+            3h  
+          \</time\>
+
+            \<div class="comment-options-trigger comments-comment-meta\_\_options"\>  
+  \<div id="ember2414" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+    \<button aria-expanded="false" id="ember2415" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view artdeco-button artdeco-button--1 artdeco-button--circle artdeco-button--tertiary artdeco-button--muted" type="button" tabindex="0"\>  
+        \<svg role="img" aria-hidden="false" aria-label="Open options for Jordan Molina’s comment" class="comment-options-dropdown\_\_trigger-icon t-black--light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="overflow-web-ios-small"\>  
+\<\!----\>      
+    \<use href="\#overflow-web-ios-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+      
+\<\!----\>\</button\>  
+    \<div tabindex="-1" aria-hidden="true" id="ember2416" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view dropdown-options absolute"\>\<\!----\>\</div\>  
+  \</div\>  
+\</div\>  
+        \</div\>  
+    \</div\>  
+  
+
+          
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+          \<section class="comments-comment-entity\_\_content"\>  
+                
+    \<div id="translation-container-ember2417" class="break-words"\>  
+        
+                    
+    \<div class="feed-shared-inline-show-more-text  
+          
+          
+          
+          
+          
+          
+         comments-comment-item\_\_inline-show-more-text  
+                        
+                        
+                        
+                      " tabindex="-1"\>  
+        
+                    \<span class="comments-comment-item\_\_main-content feed-shared-main-content--comment t-14 t-black t-normal" dir="ltr"\>  
+                      \<div dir="ltr" class="update-components-text relative"\>  
+    \<span dir="ltr"\>\<span\>\<a tabindex="0" href="/in/rosemariageorge/" id="ember2418" class="ember-view"\>\<\!----\>Rose Maria George\<\!----\>\</a\>\</span\>\<span class="white-space-pre"\> \</span\>Kids can be brutally honest. Sharing the unfiltered version of yourself makes a bigger impact than trying to look perfect\! Those little moments stick with people and show who you really are.\<\!----\>\</span\>  
+\</div\>  
+                    \</span\>  
+                  \<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                
+    \</div\>  
+    
+\<\!----\>          \</section\>  
+          
+    \</div\>  
+  \</div\>
+
+          
+    \<div id="ember2419" class="comment-social-activity  
+    "\>  
+        
+    
+    \<div\>  
+      \<div id="ember2420" class="ember-view"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+            
+  \<div class="comments-thread-entity  "\>  
+      \<div class="comments-thread-spacing\_\_default"\>\</div\>  
+    \<div class="comments-thread-item"\>  
+        
+            \<div class="comments-comment-social-bar--cr"\>  
+    \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+        
+    \<span class="reactions-react-button comments-comment-social-bar\_\_reaction-action-button--cr"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like to Jordan Molina’s comment" id="ember2421" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+\<\!----\>  
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2422" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+  \<\!----\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_vertical-divider"\>\</div\>
+
+      \<div class="comments-comment-social-bar\_\_action-group--cr"\>  
+          \<button aria-label="Reply to Jordan Molina’s comment" id="ember2423" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comment-social-bar\_\_reply-action-button--cr button reply"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+\<\!----\>  \<span aria-hidden="true"\>  
+    Reply  
+  \</span\>
+
+\</span\>\</button\>  
+\<\!----\>\</div\>
+
+\<\!----\>\</div\>
+
+\<\!----\>  
+            
+    \</div\>  
+  \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>  
+    \</div\>  
+    
+        \<div id="ember2424" class="ember-view"\>\<div id="ember2425" class="ember-view"\>\<\!----\>\</div\>\</div\>  
+            
+  \<div id="ember2426" class="ember-view"\>\<\!----\>\</div\>
+
+\<\!----\>\<\!----\>\<\!----\>          \</article\>  
+    
+              
+    \</div\>  
+          \<div class="comments-comment-list\_\_load-more-container"\>  
+            \<button aria-label="Load more comments" id="ember2427" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view comments-comments-list\_\_load-more-comments-arrows"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="maximize-small"\>  
+\<\!----\>      
+    \<use href="\#maximize-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+            \<button id="ember2428" class="comments-comments-list\_\_load-more-comments-button--cr artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--tertiary ember-view"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Load more comments  
+\</span\>\</button\>  
+          \</div\>  
+    \</div\>  
+          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+                    
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1940" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7429079683964510208" class="relative" data-finite-scroll-hotkey-item="7"\>  
+        
+        
+          
+        \<div id="ember1942" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;9G68lEUsRNmaN3QNmE05XQ==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:activity:7429079683964510208\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;9G68lEUsRNmaN3QNmE05XQ==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+              
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember2163" role="article" data-urn="urn:li:activity:7429079683964510208"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 8  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="IPkNnIARSwIgDovLKQPRZiiOKJEdxfAsYbVk  
+        display-flex align-items-flex-start  
+        update-components-actor--with-control-menu  
+          
+        "\>  
+\<\!----\>  
+      \<div class="update-components-actor\_\_container  
+          pr4  
+          display-flex flex-grow-1"\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_image relative  
+              " aria-label="IV Carbon Catapult, graphic." target="\_self" href="https://www.linkedin.com/company/carbon-catapult/posts" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="js-update-components-actor\_\_avatar"\>  
+                
+    \<div class="ivm-image-view-model    update-components-actor\_\_avatar"\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="48" src="https://media.licdn.com/dms/image/v2/D4E0BAQE5Pii-7XAtLQ/company-logo\_100\_100/company-logo\_100\_100/0/1727954507013/carbon\_catapult\_logo?e=1774483200\&amp;v=beta\&amp;t=jOec8tV1k2zrbSZBpVSb5YnAdjID61XmIojKFMXnGYI" loading="lazy" height="48" alt="" id="ember2164" class="ivm-view-attr\_\_img--centered EntityPhoto-square-3  update-components-actor\_\_avatar-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \</span\>  
+          \</a\>  
+        \<div class="update-components-actor\_\_meta  
+            "\>  
+          \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-actor\_\_meta-link" aria-label="View: IV Carbon Catapult 3,479 followers" target="\_self" href="https://www.linkedin.com/company/carbon-catapult/posts" data-test-app-aware-link="" waprocessedanchor="true"\>  
+            \<span class="update-components-actor\_\_title"\>  
+              \<span class="sMUtNwtMLHwvQCwuPsQKIgXjcSDxhKGoRY  
+                  hoverable-link-text t-14 t-bold text-body-medium-bold  
+                  t-black  
+                    
+                  update-components-actor\_\_single-line-truncate"\>  
+                \<span dir="ltr"\>\<span aria-hidden="true"\>\<span\>\<\!----\>IV Carbon Catapult\<\!----\>\</span\>\</span\>\<span class="visually-hidden"\>\<span\>\<\!----\>IV Carbon Catapult\<\!----\>\</span\>\</span\>\</span\>  
+              \</span\>  
+\<\!----\>            \</span\>
+
+              \<span class="update-components-actor\_\_description text-body-xsmall  
+                  t-black--light"\>  
+                \<span aria-hidden="true"\>\<\!----\>3,479 followers\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>3,479 followers\<\!----\>\</span\>  
+              \</span\>
+
+          \</a\>  
+\<\!----\>            \<span class="update-components-actor\_\_sub-description text-body-xsmall  
+                t-black--light  
+                update-components-actor\_\_sub-description--untruncated  
+                "\>  
+              \<span aria-hidden="true"\>\<\!----\>Promoted\<\!----\>\</span\>\<span class="visually-hidden"\>\<\!----\>Promoted\<\!----\>\</span\>  
+            \</span\>  
+        \</div\>  
+      \</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                          
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+          
+        "\>  
+\<\!----\>  
+        \<div id="ember2166" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view"\>  
+          \<button aria-expanded="false" aria-label="Open control menu for post by IV Carbon Catapult" tabindex="0" id="ember2167" class="feed-shared-control-menu\_\_trigger artdeco-button artdeco-button--tertiary artdeco-button--muted artdeco-button--1 artdeco-button--circle artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view" type="button"\>  
+                
+  \<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"\>  
+    \<path d="M3.25 8C3.25 8.69 2.69 9.25 2 9.25C1.31 9.25 0.75 8.69 0.75 8C0.75 7.31 1.31 6.75 2 6.75C2.69 6.75 3.25 7.31 3.25 8ZM14 6.75C13.31 6.75 12.75 7.31 12.75 8C12.75 8.69 13.31 9.25 14 9.25C14.69 9.25 15.25 8.69 15.25 8C15.25 7.31 14.69 6.75 14 6.75ZM8 6.75C7.31 6.75 6.75 7.31 6.75 8C6.75 8.69 7.31 9.25 8 9.25C8.69 9.25 9.25 8.69 9.25 8C9.25 7.31 8.69 6.75 8 6.75Z" fill="currentColor"\>\</path\>  
+  \</svg\>
+
+                        
+\<\!----\>\</button\>  
+          \<div tabindex="-1" aria-hidden="true" id="ember2168" class="feed-shared-control-menu\_\_content artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--has-arrow artdeco-dropdown\_\_content--arrow-right artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view" aria-label="Control Menu Options"\>\<\!----\>\</div\>  
+        \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>    \</div\>  
+    
+                                      \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>                            
+    \<div class="WSJlUlVoxoiVQfydxwgIyDGCQMmcBMnrE" style="" tabindex="-1"\>  
+            
+    \<div class="feed-shared-inline-show-more-text  
+        feed-shared-update-v2\_\_description feed-shared-inline-show-more-text--minimal-padding  
+          
+        feed-shared-inline-show-more-text--2-lines  
+          
+          
+          
+        " tabindex="-1"\>  
+        
+              
+    \<div class="update-components-text relative update-components-update-v2\_\_commentary " dir="ltr"\>  
+\<\!----\>  
+      \<span class="break-words  
+          tvm-parent-container"\>  
+\<\!----\>        \<span dir="ltr"\>\<\!----\>💡For a long time, carbon has been treated as a reporting exercise something you do after the real business decisions are made.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>That mindset is outdated.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Today, carbon sits at the intersection of risk, resilience, competitiveness and growth.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>When organisations understand their carbon footprint, they gain:\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🔷 Clear visibility of operational inefficiencies\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🔷 Better supply-chain resilience\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🔷 Stronger positioning in procurement and investment decisions\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🔷 Credibility with customers, partners and employees\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🔷 A genuine edge as regulation and expectations tighten\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Carbon data isn’t just environmental data it’s decision-making intelligence.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>We’re seeing it already:\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🍂 Public sector procurement embedding carbon requirements\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🍂 Investors scrutinising transition plans, not just pledges\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>🍂 Customers choosing businesses that can evidence action, not intent\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>The companies that will thrive aren’t the ones scrambling to comply they’re the ones embedding carbon thinking into strategy, operations and growth plans now.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Net zero isn’t the destination.  Smarter, more resilient businesses are.\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<\!----\>Talk with our team today about how we can support your carbon planning, ESG and CSR👇\<\!----\>\<span\>\<br\>\</span\>\<span\>\<br\>\</span\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " target="\_self" tabindex="0" href="mailto:enquiries@carbon-catapult.co.uk" data-test-app-aware-link="" style="display: inline-block;"\>\<\!----\>enquiries@carbon-catapult.co.uk\<\!----\>\</a\>\<span\>\<br\>\</span\>\<\!----\>T: 0333 0344 300\<\!----\>\<span\>\<br\>\</span\>\<\!----\>DM us at\<span class="white-space-pre"\> \</span\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " target="\_self" tabindex="0" href="https://www.linkedin.com/company/carbon-catapult/" data-test-app-aware-link="" style="display: inline-block;"\>\<span\>\<span\>\<\!----\>IV Carbon Catapult\<\!----\>\</span\>\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<span\>\<br\>\</span\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " target="\_self" tabindex="0" href="http://www.carbon-catapult.co.uk" data-test-app-aware-link="" attributionsrc="https://px.ads.linkedin.com/attribution\_source?campaign\_id=485861334\&amp;creative\_id=1142426894\&amp;impression\_id=b587b868-2412-45cc-892e-5d2eed54a0c6\&amp;destination=http%3A%2F%2Fwww.carbon-catapult.co.uk\&amp;member\_id=272127269" original\_target="http://www.carbon-catapult.co.uk/" waprocessedid="bm76io" wa-annotate="true" waprocessedanchor="true" style="display: inline-block;"\>\<\!----\>www.carbon-catapult.co.uk\<\!----\>\</a\>\<div mcafee\_wa\_ann="{\&quot;category\&quot;:\[\&quot;bu\&quot;\],\&quot;flags\&quot;:0,\&quot;key\&quot;:\&quot;carbon-catapult.co.uk\&quot;,\&quot;trust\&quot;:80,\&quot;ttl\&quot;:604800,\&quot;scanner\&quot;:\&quot;hti-url\&quot;,\&quot;originalUrl\&quot;:\&quot;http://www.carbon-catapult.co.uk/\&quot;,\&quot;dossierUrl\&quot;:\&quot;http://www.carbon-catapult.co.uk/\&quot;}" waprocessedid="bm76io" style="cursor: default \!important; display: inline-block \!important; float: none \!important; padding: 0px 0px 0px 4px \!important; position: relative \!important; top: 2px \!important; z-index: 1 \!important;"\>\<div style="display: inline-block \!important; outline: none;" id="0DE9E47C-871A-4F90-8440-B190C216800A\_1" class="mcafee\_green" tabindex="0"\>\</div\>\</div\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<span\>\<br\>\</span\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<span\>\<br\>\</span\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23carbonstrategy\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>CarbonStrategy\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23sustainability\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>Sustainability\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23businessleadership\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>BusinessLeadership\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23netzero\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>NetZero\</span\>\</a\>\<span class="white-space-pre"\> \</span\>\<\!----\>\<\!----\>\<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk " tabindex="0" href="https://www.linkedin.com/search/results/all/?keywords=%23riskmanagement\&amp;origin=HASH\_TAG\_FROM\_FEED" data-test-app-aware-link="" style="display: inline-block;"\>\<span class="visually-hidden"\>hashtag\</span\>\<span\>\<span aria-hidden="true"\>\#\</span\>RiskManagement\</span\>\</a\>\</span\>  
+      \</span\>  
+    \</div\>  
+    
+          \<button role="button" class="feed-shared-inline-show-more-text\_\_see-more-less-toggle see-more t-14 t-black--light t-normal hoverable-link-text feed-shared-inline-show-more-text\_\_dynamic-more-text feed-shared-inline-show-more-text\_\_dynamic-bidi-text" aria-label="see more, visually reveals content which is already detected by screen readers" style="left:377.2624816894531px" type="button"\>  
+          \<span\>…more\</span\>  
+        \</button\>\<\!----\>    \</div\>  
+    
+          
+\<\!----\>    \</div\>  
+    
+                            
+    \<div class="update-components-linkedin-video  
+        feed-shared-update-v2\_\_content  
+          
+          
+        "\>  
+          \<div class="update-components-linkedin-video\_\_container"\>  
+\<\!----\>                
+      \<div class="video-s-loader base-video-s-loader  
+      
+    video-s-loader--video-loading  
+      
+    "\>  
+  \<div data-player-id="ember2170" class="media-player video-s-loader\_\_video-container"\>
+
+    
+    
+
+    \<\!----\>  
+    \<\!----\>  
+\<\!----\>\<\!----\>\<\!----\>\<\!----\>    \<\!----\>  
+\<\!----\>  
+\<\!----\>  
+
+  \<div data-vjs-player="" class="ember-view video-js media-player\_\_player vjs-fluid media-player--use-mercado vjs-controls-enabled vjs-workinghover vjs-v7 vjs-layout-medium vjs-has-started vjs-paused vjs-user-inactive" id="ember2171" tabindex="-1" role="region" lang="en" translate="no" aria-label="Video player"\>\<div class="vjs-poster-background" style="background-image: url(\&quot;https://media.licdn.com/dms/image/v2/D4E05AQEtOvO6BKcRyg/videocover-high/B4EZwul4T9HcBY-/0/1770308209632?e=1773489600\&amp;v=beta\&amp;t=1CDCK7il3WOuCNRhNcRx0pHOKmlLyfZdvMsmgtMmnXg\&quot;);"\>\</div\>\<video id="ember2171\_html5\_api" class="vjs-tech" tabindex="-1" role="application" preload="metadata" muted="muted" poster="https://media.licdn.com/dms/image/v2/D4E05AQEtOvO6BKcRyg/videocover-high/B4EZwul4T9HcBY-/0/1770308209632?e=1773489600\&amp;v=beta\&amp;t=1CDCK7il3WOuCNRhNcRx0pHOKmlLyfZdvMsmgtMmnXg" src="blob:https://www.linkedin.com/0ff106e4-5ee1-44cb-ac22-4513612233ac" autoplay="autoplay"\>\</video\>  
+        
+  \<div class="visually-hidden" aria-live="polite"\>\</div\>\<div class="vjs-poster" tabindex="-1" aria-disabled="false" style="background-image: url(\&quot;https://media.licdn.com/dms/image/v2/D4E05AQEtOvO6BKcRyg/videocover-high/B4EZwul4T9HcBY-/0/1770308209632?e=1773489600\&amp;v=beta\&amp;t=1CDCK7il3WOuCNRhNcRx0pHOKmlLyfZdvMsmgtMmnXg\&quot;);"\>\</div\>\<button class="vjs-big-play-button" type="button" aria-disabled="false"\>\<span class="vjs-icon-placeholder" aria-hidden="true"\>\</span\>\<span class="vjs-control-text" aria-live="polite"\>Play\</span\>\</button\>\<div class="vjs-loading-spinner" dir="ltr"\>\<span class="vjs-control-text"\>Media is loading\</span\>\</div\>\<div class="vjs-control-bar vjs-control-bar--tier" dir="ltr"\>\<div class="vjs-progress-control vjs-control"\>\<div tabindex="0" class="vjs-progress-holder vjs-slider vjs-slider-horizontal" role="slider" aria-valuenow="2.44" aria-valuemin="0" aria-valuemax="100" aria-label="Playback progress" aria-valuetext="0:01 of 0:58"\>\<div class="vjs-load-progress" style="width: 48.28%;"\>\<span class="vjs-control-text"\>\<span\>Loaded\</span\>: \<span class="vjs-control-text-loaded-percentage"\>48.28%\</span\>\</span\>\<div data-start="0" data-end="27.999999" style="left: 0%; width: 100%;"\>\</div\>\</div\>\<div class="vjs-mouse-display"\>\<div class="vjs-time-tooltip" aria-hidden="true"\>\</div\>\</div\>\<div class="vjs-play-progress vjs-slider-bar" aria-hidden="true" style="width: 2.44%;"\>\<div class="vjs-time-tooltip" aria-hidden="true" style="right: 0px;"\>0:01\</div\>\</div\>\</div\>\</div\>\<button class="vjs-play-control vjs-control vjs-button vjs-paused" type="button" aria-disabled="false"\>\<span class="vjs-icon-placeholder" aria-hidden="true"\>\</span\>\<span class="vjs-control-text" aria-live="polite"\>Play\</span\>\<div class="vjs-tooltip-container vjs-tooltip-left"\>\<div class="vjs-tooltip" aria-hidden="true" role="tooltip"\>Play\</div\>\</div\>\</button\>\<button class="vjs-control vjs-button vjs-back-to-start-button" type="button" aria-disabled="false"\>\<span class="vjs-icon-placeholder" aria-hidden="true"\>\</span\>\<span class="vjs-control-text" aria-live="polite"\>Back to start of video\</span\>\<div class="vjs-tooltip-container vjs-tooltip-left"\>\<div class="vjs-tooltip" aria-hidden="true" role="tooltip"\>Back to start\</div\>\</div\>\</button\>\<div class="vjs-live-control vjs-control vjs-hidden"\>\<div class="vjs-live-display" aria-live="off"\>\<span class="vjs-control-text"\>Stream Type\&nbsp;\</span\>LIVE\</div\>\</div\>\<div class="vjs-time-display vjs-control" translate="no"\>\<div class="vjs-current-time vjs-time-control vjs-control"\>\<span class="vjs-control-text" role="presentation"\>Current time\&nbsp;\</span\>\<span class="vjs-current-time-display" aria-live="off" role="presentation"\>0:01\</span\>\</div\>\<div class="vjs-time-control vjs-time-divider" aria-hidden="true"\>\<div\>\<span\>/\</span\>\</div\>\</div\>\<div class="vjs-duration vjs-time-control vjs-control"\>\<span class="vjs-control-text" role="presentation"\>Duration\&nbsp;\</span\>\<span class="vjs-duration-display" aria-live="off" role="presentation"\>0:58\</span\>\</div\>\</div\>\<div class="vjs-custom-control-spacer vjs-spacer "\>\&nbsp;\</div\>\<button class="vjs-control vjs-button vjs-hidden vjs-captions-toggle" type="button" aria-disabled="false"\>\<span class="vjs-icon-placeholder" aria-hidden="true"\>\</span\>\<span class="vjs-control-text" aria-live="polite"\>Turn closed captions on\</span\>\<div class="vjs-tooltip-container vjs-tooltip-right"\>\<div class="vjs-tooltip" aria-hidden="true" role="tooltip"\>Show captions\</div\>\</div\>\</button\>\<div class="vjs-volume-panel vjs-control vjs-volume-panel-vertical"\>\<button class="vjs-mute-control vjs-control vjs-button vjs-vol-0" type="button" aria-disabled="false"\>\<span class="vjs-icon-placeholder" aria-hidden="true"\>\</span\>\<span class="vjs-control-text" aria-live="polite"\>Unmute\</span\>\</button\>\<div class="vjs-volume-control vjs-control vjs-volume-vertical" style="max-height: 282.25px;"\>\<div tabindex="0" class="vjs-volume-bar vjs-slider-bar vjs-slider vjs-slider-vertical" role="slider" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Volume" aria-live="polite" aria-valuetext="0%"\>\<div class="vjs-mouse-display"\>\<div class="vjs-volume-tooltip" aria-hidden="true"\>\</div\>\</div\>\<div class="vjs-volume-level" style="height: 0%;"\>\<span class="vjs-control-text"\>\</span\>\</div\>\</div\>\</div\>\</div\>\<button class="vjs-fullscreen-control vjs-control vjs-button" type="button" aria-disabled="false"\>\<span class="vjs-icon-placeholder" aria-hidden="true"\>\</span\>\<span class="vjs-control-text" aria-live="polite"\>Turn fullscreen on\</span\>\<div class="vjs-tooltip-container vjs-tooltip-right"\>\<div class="vjs-tooltip" aria-hidden="true" role="tooltip"\>Fullscreen\</div\>\</div\>\</button\>\</div\>\<div class="vjs-error-display vjs-modal-dialog vjs-hidden " tabindex="-1" aria-describedby="ember2171\_component\_5286\_description" aria-hidden="true" aria-label="Modal window" role="dialog"\>\<p class="vjs-modal-dialog-description vjs-control-text" id="ember2171\_component\_5286\_description"\>Media player modal window\</p\>\<div class="vjs-modal-dialog-content" role="document"\>\</div\>\</div\>\<div class="vjs-text-track-display" translate="yes" aria-live="off" aria-atomic="true"\>\<div style="position: absolute; inset: 0px; margin: 1.5%;"\>\</div\>\</div\>\</div\>
+
+\<\!----\>\</div\>  
+\</div\>  
+    
+                      \</div\>  
+\<\!----\>\<\!----\>\<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                        \<\!----\>
+
+                  \<\!----\>
+
+\<\!----\>  
+                      
+      
+    \<div id="ember2172" class="update-v2-social-activity  
+          
+        "\>  
+        
+            
+    \<div class="social-details-social-counts social-details-social-counts--no-vertical-padding  
+          
+          
+          
+          
+        "\>  
+      \<div class="display-flex flex-grow-1 full-width"\>  
+        \<div class="relative full-width"\>  
+          \<ul class="display-flex flex-wrap"\>  
+              \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_reactions social-details-social-counts\_\_item--height-two-x  
+                  social-details-social-counts\_\_reactions--left-aligned  
+                  "\>  
+                \<button data-reaction-details="" aria-label="575 reactions" class="t-black--light display-flex align-items-center social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                    text-body-small  
+                    hoverable-link-text  
+                    " type="button"\>  
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--0 reactions-icon\_\_consumption--small data-test-reactions-icon-type-LIKE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/8ekq8gho1ruaf8i7f86vd1ftt" alt="like" data-test-reactions-icon-type="LIKE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--1 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-PRAISE data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/b1dl5jk88euc7e9ri50xy5qo8" alt="celebrate" data-test-reactions-icon-type="PRAISE" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+    
+    \<img class="reactions-icon social-detail-social-counts\_\_count-icon social-detail-social-counts\_\_count-icon--2 reactions-icon\_\_consumption--small reactions-icon--stacked data-test-reactions-icon-type-EMPATHY data-test-reactions-icon-theme-light" src="https://static.licdn.com/aero-v1/sc/h/cpho5fghnpme8epox8rdcds22" alt="love" data-test-reactions-icon-type="EMPATHY" data-test-reactions-icon-theme="light" data-test-reactions-icon-style="consumption" data-test-reactions-icon-size="small"\>  
+                      \<span aria-hidden="true" class="social-details-social-counts\_\_reactions-count  
+                        "\>  
+575                    \</span\>  
+                \</button\>  
+              \</li\>
+
+              \<li data-non-reaction-details="" class="display-flex flex-grow-1 max-full-width"\>  
+                \<ul class="display-flex flex-grow-1 max-full-width"\>  
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_comments social-details-social-counts\_\_item--height-two-x  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button aria-label="1 comment on IV Carbon Catapult’s post" class="t-black--light social-details-social-counts\_\_count-value social-details-social-counts\_\_count-value-hover  
+                            text-body-small  
+                            hoverable-link-text  
+                            social-details-social-counts\_\_btn  
+                            " type="button"\>  
+                          \<span aria-hidden="true"\>  
+                              1 comment  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+                    \<li class="social-details-social-counts\_\_item social-details-social-counts\_\_item--height-two-x flex-shrink-1 overflow-hidden  
+                        social-details-social-counts\_\_item--right-aligned  
+                        "\>  
+                        \<button id="ember2173" class="ember-view t-black--light social-details-social-counts\_\_count-value-hover social-details-social-counts\_\_item--truncate-text full-width  
+                            text-body-small  
+                            hoverable-link-text social-details-social-counts\_\_btn  
+                            " aria-label="7 reposts of IV Carbon Catapult’s post"\>  
+                          \<span aria-hidden="true"\>  
+                            7 reposts  
+                          \</span\>  
+                        \</button\>  
+                    \</li\>
+
+\<\!----\>                \</ul\>  
+              \</li\>  
+          \</ul\>  
+        \</div\>  
+      \</div\>  
+    \</div\>  
+  
+
+\<\!----\>  
+\<\!----\>  
+            
+    \<div class="feed-shared-social-action-bar  
+          
+        feed-shared-social-action-bar--full-width  
+        feed-shared-social-action-bar--has-identity-toggle  
+        feed-shared-social-action-bar--has-social-counts  
+        "\>  
+        
+                
+    \<div class="feed-shared-social-action-bar\_\_action-button"\>  
+      \<button aria-label="Open menu for switching identity when interacting with this post" id="ember2175" class="artdeco-button artdeco-button--muted artdeco-button--4 artdeco-button--tertiary ember-view align-items-center social-actions-button content-admin-identity-toggle-button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="content-admin-identity-toggle-button\_\_image-and-caret-wrapper"\>  
+            \<img src="https://media.licdn.com/dms/image/v2/D5603AQHpCuQfEWpTjw/profile-displayphoto-scale\_100\_100/B56ZnC5evIIsAk-/0/1759911476181?e=1774483200\&amp;v=beta\&amp;t=7lu0pci1YS6bhuoYMCsaRmwRBiJSpXIu8GBtqIHm2GU" loading="lazy" alt="Photo of Krati Agarwal" id="ember2176" class="EntityPhoto-circle-0 evi-image lazy-image ember-view"\>  
+          \<svg role="none" aria-hidden="true" class="ml1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        \</div\>  
+        
+\</span\>\</button\>
+
+\<\!----\>    \</div\>  
+    
+                
+    \<span class="reactions-react-button feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+\<\!----\>      \<button aria-pressed="false" aria-label="React Like" id="ember2177" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button react-button\_\_trigger  
+          "\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<div class="flex-wrap justify-center  
+            artdeco-button\_\_text align-items-center"\>  
+              \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="thumbs-up-outline-small"\>  
+\<\!----\>      
+    \<use href="\#thumbs-up-outline-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span aria-hidden="true" class="artdeco-button\_\_text react-button\_\_text social-action-button\_\_text  
+                "\>  
+              Like  
+            \</span\>  
+        \</div\>  
+        
+\</span\>\</button\>
+
+      \<button aria-label="Open reactions menu" aria-expanded="false" tabindex="0" id="ember2178" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--tertiary ember-view reactions-menu\_\_trigger" data-finite-scroll-hotkey="l"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<svg role="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+        
+\</span\>\</button\>  
+    \</span\>  
+    
+              \<span tabindex="-1" id="ember2179" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+  \<div\>  
+    \<button role="button" aria-label="Comment" tabindex="0" id="feed-shared-social-action-bar-comment-ember2174" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button comment-button flex-wrap " data-finite-scroll-hotkey="c" data-ai-processed="true"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="comment-small"\>  
+\<\!----\>      
+    \<use href="\#comment-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Comment  
+\</span\>\</button\>\<button class="ai-comment-btn" id="ai-btn-6-1772883933291" title="Generate AI Comment" type="button"\>🤖 AI\</button\>  
+  \</div\>  
+  \<div id="artdeco-gen-102" class="ember-view"\>\<div id="ember2182" class="ember-view"\>\</div\>\</div\>  
+\</span\>  
+                
+    \<div id="ember2183" class="artdeco-dropdown artdeco-dropdown--placement-bottom artdeco-dropdown--justification-right ember-view feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+      \<span tabindex="-1" id="ember2185" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view flex-1 display-flex"\>  
+        \<button aria-expanded="false" aria-label="" tabindex="0" id="ember2186" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-bottom ember-view   
+            artdeco-button social-actions-button social-reshare-button flex-wrap  
+            artdeco-button--muted artdeco-button--3 artdeco-button--tertiary" data-finite-scroll-hotkey="r" type="button"\>  
+            \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="repost-small"\>  
+\<\!----\>      
+    \<use href="\#repost-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+            \<span class="artdeco-button\_\_text social-action-button\_\_text"\>Repost\</span\>  
+          
+\<\!----\>\</button\>
+
+        \<div tabindex="-1" aria-hidden="true" id="ember2187" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-bottom ember-view social-reshare-button\_\_share-dropdown-content"\>\<\!----\>\</div\>
+
+        \<div id="artdeco-gen-103" class="ember-view"\>\<div id="ember2189" class="ember-view"\>\</div\>\</div\>  
+      \</span\>  
+        \<div\>  
+    
+        
+\<\!----\>    
+    
+\</div\>
+
+\<\!----\>  
+\<\!----\>    \</div\>  
+    
+                \<div class="feed-shared-social-action-bar\_\_action-button feed-shared-social-action-bar--new-padding"\>  
+                  \<span tabindex="-1" id="ember2190" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-top artdeco-hoverable-trigger--is-hoverable ember-view"\>  
+                      
+    \<button aria-label="Send in a private message" id="ember2191" class="artdeco-button artdeco-button--muted artdeco-button--3 artdeco-button--tertiary ember-view social-actions-button send-privately-button flex-wrap  
+         send-privately-button" data-finite-scroll-hotkey="s" type="button"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="send-privately-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#send-privately-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+        \<span class="artdeco-button\_\_text social-action-button\_\_text"\>  
+          Send  
+        \</span\>  
+      
+\</span\>\</button\>  
+    
+                    \<div id="artdeco-gen-104" class="ember-view"\>\<div id="ember2193" class="ember-view"\>\</div\>\</div\>  
+                  \</span\>  
+                \</div\>  
+\<\!----\>\<\!----\>            
+    \</div\>  
+    
+\<\!----\>\<\!----\>\<\!----\>      
+    \</div\>  
+    
+    
+                  \<\!----\>                \</div\>
+
+                    
+      
+    \<div id="ember2194" class="update-v2-social-activity  
+          
+        "\>  
+        
+\<\!----\>\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+\<\!----\>                    
+
+\<\!----\>  
+          \<div class="feed-shared-update-v2\_\_comments-container display-flex flex-column  
+              "\>  
+\<\!----\>\<\!----\>          \</div\>  
+      
+    \</div\>  
+    
+  
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1943" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:aggregate:(urn:li:jobPosting:4363472549,urn:li:jobPosting:4380467739,urn:li:jobPosting:4372373878,urn:li:jobPosting:4380375799,urn:li:jobPosting:4357694384)" class="relative" data-finite-scroll-hotkey-item="8" style=""\>  
+        
+        
+          
+        \<div id="ember1945" class="ember-view  occludable-update "\>  
+              
+            
+    \<div class="full-height" data-view-name="feed-full-update" data-view-tracking-scope="\[{\&quot;topicName\&quot;:\&quot;FeedUpdateServedEvent\&quot;,\&quot;contentTrackingId\&quot;:\&quot;QK62PW7618uacawlqubc4w==\&quot;,\&quot;breadcrumb\&quot;:{\&quot;$type\&quot;:\&quot;proto.sdui.breadcrumbs.feed.FeedUpdateServedBreadcrumb\&quot;,\&quot;updateUrn\&quot;:\&quot;urn:li:aggregate:(urn:li:jobPosting:4363472549,urn:li:jobPosting:4380467739,urn:li:jobPosting:4372373878,urn:li:jobPosting:4380375799,urn:li:jobPosting:4357694384)\&quot;,\&quot;moduleKey\&quot;:\&quot;home-feed:desktop\&quot;,\&quot;requestId\&quot;:\&quot;41a91c21-3807-413c-9eaa-5dd574c613b3\&quot;,\&quot;trackingId\&quot;:\&quot;QK62PW7618uacawlqubc4w==\&quot;,\&quot;trackingPipelineType\&quot;:\&quot;BREADCRUMB\&quot;,\&quot;actionEventTopicName\&quot;:\&quot;FeedActionEvent\&quot;,\&quot;impressionEventTopicName\&quot;:\&quot;FeedImpressionEvent\&quot;}}\]"\>  
+      \<div class="full-height"\>  
+        \<div class="feed-shared-update-v2 feed-shared-update-v2--minimal-padding full-height feed-shared-update-v2--with-carousel-fix relative  
+              
+              
+              
+              
+              
+            artdeco-card  
+              
+              
+            " id="ember2361" role="article" data-urn="urn:li:aggregate:(urn:li:jobPosting:4363472549,urn:li:jobPosting:4380467739,urn:li:jobPosting:4372373878,urn:li:jobPosting:4380375799,urn:li:jobPosting:4357694384)"\>  
+            
+      \<div\>  
+          
+              \<div class="feed-shared-update-v2\_\_control-menu-container display-flex flex-column flex-grow-1 full-height"\>  
+                  
+                \<h2 class="visually-hidden"\>  
+                    Feed post number 9  
+                \</h2\>  
+                \<div class="fie-impression-container"\>  
+\<\!----\>                  \<div class="relative"\>  
+                        
+    \<div class="update-components-header pt3 t-12 t-black--light t-normal update-components-header\_\_emphasized-style t-14 pv4"\>  
+      \<div class="update-components-header\_\_text-wrapper  
+          "\>  
+\<\!----\>\<\!----\>          \<span class="update-components-header\_\_text-view"\>  
+            \<\!----\>Jobs recommended for you\<\!----\>  
+          \</span\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+    
+                        
+    \<div class="feed-shared-control-menu display-flex  
+        feed-shared-update-v2\_\_control-menu absolute text-align-right  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>\<\!----\>    \</div\>  
+    
+\<\!----\>\<\!----\>                      \<\!----\>  
+                  \</div\>  
+\<\!----\>  
+                  \<\!----\>
+
+\<\!----\>\<\!----\>\<\!----\>\<\!----\>  
+\<\!----\>  
+                      \<\!----\>
+
+                          
+    \<div class="feed-shared-carousel  
+        feed-shared-carousel--no-heading  
+          
+        update-components-carousel--jobs  
+          
+        "\>  
+      \<section id="ember2364" class="artdeco-carousel ember-view"\>\<div class="artdeco-carousel\_\_heading  
+    artdeco-carousel\_\_heading--custom"\>  
+      
+\<\!----\>        \<\!----\>  
+        
+\<\!----\>\</div\>
+
+\<div class="artdeco-carousel\_\_content"\>  
+      
+\<\!----\>        \<ul id="ember2365" class="artdeco-carousel\_\_slider ember-view" style="transform: translateX(0px);"\>  
+            \<li tabindex="-1" style="width: 232px; max-width: none; min-width: auto;" data-item-index="0" id="ember2366" class="artdeco-carousel\_\_item active ember-view"\>\<div data-test-display="display" class="artdeco-carousel\_\_item-container"\>  
+      
+                  
+    \<div class="update-components-carousel-job"\>  
+      \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-carousel-job\_\_container-link" target="\_blank" href="https://www.linkedin.com/jobs/collections/recommended?currentJobId=4363472549\&amp;originToLandingJobPostings=4363472549%2C4380467739%2C4372373878%2C4380375799%2C4357694384\&amp;trackingId=QK62PW7618uacawlqubc4w%3D%3D\&amp;refId=QK62PW7618uacawlqubc4w%3D%3D" data-test-app-aware-link="" waprocessedanchor="true"\>  
+        \<span class="visually-hidden"\>  
+          View job: Head of Storytelling \&amp; Content  
+        \</span\>  
+        \<div class="update-components-carousel-job\_\_container"\>  
+              
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="200" src="https://media.licdn.com/dms/image/v2/D561BAQHdh-Khzn-duA/company-background\_200/B56ZwNuNfbJMAg-/0/1769756744912/unbox\_health\_cover?e=1773489600\&amp;v=beta\&amp;t=z1bqBzkFJS2KOWfIztSaTWmBrfhGTxA9N6zo-o-u178" loading="lazy" height="200" alt="" id="ember2373" class="ivm-view-attr\_\_img--centered  update-components-carousel-job\_\_background-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+          \<div class="update-components-carousel-job\_\_content"\>  
+                
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="100" src="https://media.licdn.com/dms/image/v2/D4D0BAQEy6esK6gNifw/company-logo\_100\_100/company-logo\_100\_100/0/1700462377098/unbox\_health\_logo?e=1774483200\&amp;v=beta\&amp;t=maNccmS\_0PZbxKMI3NnGpyFJ8PtUos-9J2wJEaCsYG0" loading="lazy" height="100" alt="" id="ember2374" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_entity-img--company  update-components-carousel-job\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \<div class="flex-1 t-black"\>  
+                \<div class="pt2"\>  
+                    
+    \<div class="ovswzBtDiuwrvZGPImbKEolithPQlnqRyaOGtY  
+        inline-show-more-text--is-collapsed  
+        inline-show-more-text--is-collapsed-with-line-clamp  
+          
+        text-align-left  
+          
+         t-bold" style="-webkit-line-clamp:2;" dir="ltr" tabindex="-1"\>
+
+        \<span dir="ltr"\>\<\!----\>Head of Storytelling \&amp; Content\<\!----\>\</span\>
+
+\<\!----\>    \</div\>  
+    
+                \</div\>  
+                \<div\>  
+                    
+    \<div class="ovswzBtDiuwrvZGPImbKEolithPQlnqRyaOGtY  
+        inline-show-more-text--is-collapsed  
+        inline-show-more-text--is-collapsed-with-line-clamp  
+          
+          
+          
+         t-14" style="-webkit-line-clamp:1;" dir="ltr" tabindex="-1"\>
+
+        Unbox Health  
+        
+\<\!----\>    \</div\>  
+    
+                \</div\>  
+                \<p class="t-black--light t-12 pt1"\>  
+                  \<\!----\>Bengaluru, Karnataka, India\<\!----\>  
+                \</p\>  
+\<\!----\>            \</div\>  
+              \<div class="update-components-carousel-job\_\_footer truncate" title="1 month ago •   Easy Apply"\>  
+                \<span class="update-components-carousel-job\_\_footer-text truncate t-12 t-black--light t-normal"\>  
+                  \<\!----\>1 month ago •\<span class="white-space-pre"\> \</span\>\<li-icon aria-hidden="true" type="linkedin-bug-color" class="v-align-text-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M15 2v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1h12a1 1 0 011 1zM5 6H3v7h2zm.25-2A1.25 1.25 0 104 5.25 1.25 1.25 0 005.25 4zM13 9.29c0-2.2-.73-3.49-2.86-3.49A2.71 2.71 0 007.89 7V6H6v7h2V9.73a1.73 1.73 0 011.52-1.92h.14C10.82 7.8 11 8.94 11 9.73V13h2z" fill="\#0a66c2"\>\</path\>  
+    \</svg\>\</li-icon\>\<span class="white-space-pre"\> \</span\>Easy Apply\<\!----\>  
+                \</span\>  
+              \</div\>  
+          \</div\>  
+        \</div\>  
+      \</a\>  
+    \</div\>  
+    
+              
+\</div\>\</li\>  
+            \<li tabindex="-1" style="width: 232px; max-width: none; min-width: auto;" data-item-index="1" id="ember2367" class="artdeco-carousel\_\_item ember-view"\>\<div data-test-display="display" class="artdeco-carousel\_\_item-container"\>  
+      
+                  
+    \<div class="update-components-carousel-job"\>  
+      \<a class="VBLqHsHvuoZghLmlWyQapBMyykOxWXk  update-components-carousel-job\_\_container-link" target="\_blank" href="https://www.linkedin.com/jobs/collections/recommended?currentJobId=4380467739\&amp;originToLandingJobPostings=4363472549%2C4380467739%2C4372373878%2C4380375799%2C4357694384\&amp;trackingId=uJ81LM2DCHAR%2FXn5989B7w%3D%3D\&amp;refId=uJ81LM2DCHAR%2FXn5989B7w%3D%3D" data-test-app-aware-link="" waprocessedanchor="true"\>  
+        \<span class="visually-hidden"\>  
+          View job: Social Media Manager  
+        \</span\>  
+        \<div class="update-components-carousel-job\_\_container"\>  
+              
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="200" src="https://media.licdn.com/dms/image/v2/D561BAQEGeOe1ZxUKjA/company-background\_200/B56ZrbDxmfIcAc-/0/1764611794986/vibetradingai\_cover?e=1773489600\&amp;v=beta\&amp;t=hpebT9oKRqSPZ6mXB6WFu4CJpQfwcZJM2VRVkA8YaVg" loading="lazy" height="200" alt="" id="ember2375" class="ivm-view-attr\_\_img--centered  update-components-carousel-job\_\_background-image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+          \<div class="update-components-carousel-job\_\_content"\>  
+                
+    \<div class="ivm-image-view-model   "\>  
+          
+    \<div class="ivm-view-attr\_\_img-wrapper  
+          
+        "\>  
+\<\!----\>  
+\<\!----\>          \<img width="100" src="https://media.licdn.com/dms/image/v2/D560BAQH\_L1AZlsICYg/company-logo\_100\_100/B56Zflc1iyGQAQ-/0/1751901231572/vibetradingai\_logo?e=1774483200\&amp;v=beta\&amp;t=TnQ3Ut\_XYWXsFn58BrCxLpnlxwHaeqZK6-9Q7Fe-zPg" loading="lazy" height="100" alt="" id="ember2376" class="ivm-view-attr\_\_img--centered ivm-view-attr\_\_entity-img--company  update-components-carousel-job\_\_image evi-image lazy-image ember-view"\>  
+    \</div\>  
+    
+          \</div\>  
+    
+            \<div class="flex-1 t-black"\>  
+                \<div class="pt2"\>  
+                    
+    \<div class="ovswzBtDiuwrvZGPImbKEolithPQlnqRyaOGtY  
+        inline-show-more-text--is-collapsed  
+        inline-show-more-text--is-collapsed-with-line-clamp  
+          
+        text-align-left  
+          
+         t-bold" style="-webkit-line-clamp:2;" dir="ltr" tabindex="-1"\>
+
+        \<span dir="ltr"\>\<\!----\>Social Media Manager\<\!----\>\</span\>
+
+\<\!----\>    \</div\>  
+    
+                \</div\>  
+                \<div\>  
+                    
+    \<div class="ovswzBtDiuwrvZGPImbKEolithPQlnqRyaOGtY  
+        inline-show-more-text--is-collapsed  
+        inline-show-more-text--is-collapsed-with-line-clamp  
+          
+          
+          
+         t-14" style="-webkit-line-clamp:1;" dir="ltr" tabindex="-1"\>
+
+        Vibe Trader  
+        
+\<\!----\>    \</div\>  
+    
+                \</div\>  
+                \<p class="t-black--light t-12 pt1"\>  
+                  \<\!----\>India\<\!----\>  
+                \</p\>  
+\<\!----\>            \</div\>  
+              \<div class="update-components-carousel-job\_\_footer truncate" title="1 day ago •   Easy Apply"\>  
+                \<span class="update-components-carousel-job\_\_footer-text truncate t-12 t-black--light t-normal"\>  
+                  \<\!----\>1 day ago •\<span class="white-space-pre"\> \</span\>\<li-icon aria-hidden="true" type="linkedin-bug-color" class="v-align-text-bottom" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M15 2v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1h12a1 1 0 011 1zM5 6H3v7h2zm.25-2A1.25 1.25 0 104 5.25 1.25 1.25 0 005.25 4zM13 9.29c0-2.2-.73-3.49-2.86-3.49A2.71 2.71 0 007.89 7V6H6v7h2V9.73a1.73 1.73 0 011.52-1.92h.14C10.82 7.8 11 8.94 11 9.73V13h2z" fill="\#0a66c2"\>\</path\>  
+    \</svg\>\</li-icon\>\<span class="white-space-pre"\> \</span\>Easy Apply\<\!----\>  
+                \</span\>  
+              \</div\>  
+          \</div\>  
+        \</div\>  
+      \</a\>  
+    \</div\>  
+    
+              
+\</div\>\</li\>  
+            \<li tabindex="-1" style="width: 232px; max-width: none; min-width: auto;" data-item-index="2" id="ember2368" class="artdeco-carousel\_\_item ember-view"\>\<div data-test-display="hidden" class="artdeco-carousel\_\_item-container"\>  
+\<\!----\>\</div\>\</li\>  
+            \<li tabindex="-1" style="width: 232px; max-width: none; min-width: auto;" data-item-index="3" id="ember2369" class="artdeco-carousel\_\_item ember-view"\>\<div data-test-display="hidden" class="artdeco-carousel\_\_item-container"\>  
+\<\!----\>\</div\>\</li\>  
+            \<li tabindex="-1" style="width: 232px; max-width: none; min-width: auto;" data-item-index="4" id="ember2370" class="artdeco-carousel\_\_item ember-view"\>\<div data-test-display="hidden" class="artdeco-carousel\_\_item-container"\>  
+\<\!----\>\</div\>\</li\>  
+        \</ul\>  
+        
+\</div\>
+
+\<\!----\>  
+\<div aria-live="polite" class="visually-hidden" id="artdeco-carousel\_\_a11y-notification"\>\</div\>\</section\>
+
+        \<button disabled="" aria-label="Navigate to previous item" id="ember2371" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--primary ember-view feed-shared-carousel\_\_navigation-button feed-shared-carousel\_\_navigation-button--prev"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="chevron-left-medium" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#chevron-left-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+        \<button aria-label="Navigate to next item" id="ember2372" class="artdeco-button artdeco-button--circle artdeco-button--muted artdeco-button--2 artdeco-button--primary ember-view feed-shared-carousel\_\_navigation-button feed-shared-carousel\_\_navigation-button--next"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" data-supported-dps="24x24" data-test-icon="chevron-right-medium" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#chevron-right-medium" width="24" height="24"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+      
+\</span\>\</button\>  
+    \</div\>  
+  
+
+                  \<\!----\>
+
+\<\!----\>  
+\<\!----\>                      
+    \<button class="update-components-button  
+        feed-shared-footer  
+        artdeco-button--tertiary artdeco-button--muted artdeco-button--fluid artdeco-button  
+          
+        " role="link" type="button"\>  
+\<\!----\>  
+\<\!----\>  
+        \<span class="visually-hidden"\>Show more\</span\>  
+        \<span class="update-components-button\_\_text" aria-hidden="true"\>Show more\</span\>  
+        \<svg role="none" aria-hidden="true" class="update-components-button\_\_hue-icon mh1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="arrow-right-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#arrow-right-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+    \</button\>  
+    
+                \</div\>
+
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+\<\!----\>  
+            
+              \</div\>  
+            
+      \</div\>  
+    
+        \</div\>  
+      \</div\>  
+\<\!----\>    \</div\>  
+\<\!----\>    
+          
+        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember1946" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7434914609926504449" class="relative" data-finite-scroll-hotkey-item="9"\>  
+        
+        
+          
+        \<div id="ember1948" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2330" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7433114601258647553" class="relative" data-finite-scroll-hotkey-item="10"\>  
+        
+        
+          
+        \<div id="ember2332" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2333" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7433435840325824512" class="relative" data-finite-scroll-hotkey-item="11"\>  
+        
+        
+          
+        \<div id="ember2335" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2336" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7434904710899298305" class="relative" data-finite-scroll-hotkey-item="12"\>  
+        
+        
+          
+        \<div id="ember2338" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2339" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7434141700660449280" class="relative" data-finite-scroll-hotkey-item="13"\>  
+        
+        
+          
+        \<div id="ember2341" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2342" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7432365509939179520" class="relative" data-finite-scroll-hotkey-item="14"\>  
+        
+        
+          
+        \<div id="ember2344" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2345" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7435662373010493440" class="relative" data-finite-scroll-hotkey-item="15"\>  
+        
+        
+          
+        \<div id="ember2347" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2348" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7435135208066076672" class="relative" data-finite-scroll-hotkey-item="16"\>  
+        
+        
+          
+        \<div id="ember2350" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2351" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7396164082254610433" class="has-occluded-height relative" data-finite-scroll-hotkey-item="17" style="height: 1013px;"\>  
+        
+        
+          
+        \<div id="ember2353" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2354" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7433000093403910144" class="relative" data-finite-scroll-hotkey-item="18"\>  
+        
+        
+          
+        \<div id="ember2356" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+                  
+    \<h2 class="feed-skip-link\_\_container"\>  
+      \<button id="ember2357" class="artdeco-button artdeco-button--muted artdeco-button--2 artdeco-button--secondary ember-view feed-skip-link"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Skip to LinkedIn News  
+\</span\>\</button\>  
+    \</h2\>  
+    
+              \<div\>  
+    
+                  
+    \<div data-id="urn:li:activity:7435315146006163457" class="relative" data-finite-scroll-hotkey-item="19"\>  
+        
+        
+          
+        \<div id="ember2359" class="ember-view occludable-update-hint occludable-update "\>  
+\<\!----\>        \</div\>  
+  
+
+\<\!----\>        
+    
+    \</div\>  
+    
+                
+\</div\>
+
+          
+      \</div\>  
+    
+
+\<\!----\>  
+    \<div\>  
+    
+          
+        \<div class="display-flex p5"\>  
+          \<button id="ember2360" class="artdeco-button artdeco-button--muted artdeco-button--1 artdeco-button--full artdeco-button--secondary ember-view scaffold-finite-scroll\_\_load-button" type="button"\>\<\!----\>  
+\<span class="artdeco-button\_\_text"\>  
+    Show more feed updates  
+\</span\>\</button\>  
+        \</div\>  
+      
+      
+\</div\>
+
+\</div\>  
+\<\!----\>    \</div\>  
+    
+      
+            
+  \</main\>
+
+          \<aside class="scaffold-layout\_\_aside  
+      
+    " aria-label="LinkedIn News"\>  
+    
+              
+\<\!----\>          \<div id="feed-right-rail-tooltip-outlet"\>  \<div id="artdeco-hoverable-news-module\_\_tooltip-ember1854" class="artdeco-hoverable-content news-module\_\_tooltip-content artdeco-hoverable-content--inverse-theme artdeco-hoverable-content--default-spacing artdeco-hoverable-content--undefined-placement" tabindex="-1" role="tooltip" aria-hidden="true"\>  
+    \<div class="artdeco-hoverable-content\_\_shell"\>  
+        \<button class="artdeco-hoverable-content\_\_close-btn" aria-label="Dismiss" type="button"\>  
+          \<li-icon aria-hidden="true" type="cancel-icon" size="small"\>\<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" data-supported-dps="16x16" fill="currentColor" class="mercado-match" width="16" height="16" focusable="false"\>  
+      \<path d="M14 3.41L9.41 8 14 12.59 12.59 14 8 9.41 3.41 14 2 12.59 6.59 8 2 3.41 3.41 2 8 6.59 12.59 2z"\>\</path\>  
+    \</svg\>\</li-icon\>  
+        \</button\>  
+      \<div class="artdeco-hoverable-content\_\_content"\>  
+          
+                These are the day’s top professional news stories and conversations. \<a href="https://www.linkedin.com/help/linkedin/answer/72665" class="news-module\_\_tooltip-link" target="\_blank" aria-label="Learn more about how LinkedIn news stories are selected" data-test-news-module-custom-hoverable\_\_tooltip-link="true" waprocessedanchor="true"\>Learn more\</a\> about how they’re selected.  
+                
+      \</div\>  
+    \</div\>  
+    \<div class="artdeco-hoverable-content\_\_arrow" aria-hidden="true"\>\</div\>  
+  \</div\>  
+\</div\>  
+          \<div class="mb2"\>  
+              \<section class="artdeco-card"\>  
+\<\!----\>  
+    
+                  
+      \<div id="ember1855" class="ember-view"\>  
+        \<div id="feed-news-module" class="news-module--with-game" data-view-name="news-module"\>  
+          \<div class="news-module\_\_header display-flex"\>  
+\<\!----\>            \<h2 class="news-module\_\_title t-20 t-black  
+                " id="news-module\_\_title"\>  
+              \<span class="t-20 t-black t-bold"\>  
+                LinkedIn News  
+              \</span\>  
+            \</h2\>
+
+\<\!----\>            \<span tabindex="-1" id="ember1856" class="artdeco-hoverable-trigger artdeco-hoverable-trigger--content-placed-left ember-view"\>  
+              \<button aria-controls="artdeco-hoverable-news-module\_\_tooltip-ember1854" aria-expanded="false" aria-label="Click to see more information about day’s top professional news stories and conversations" type="button"\>  
+                \<svg role="none" aria-hidden="true" class="news-module\_\_notify-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="signal-notice-small"\>  
+\<\!----\>      
+    \<use href="\#signal-notice-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \</button\>  
+              \<div id="news-module\_\_tooltip-ember1854" class="ember-view"\>\<div id="ember1858" class="ember-view"\>\</div\>\</div\>  
+            \</span\>  
+          \</div\>
+
+          \<div class="news-module\_\_subheader"\>  
+            \<h3 class="text-body-medium-bold t-16 t-black--light pt2  
+                " id="news-module\_\_title-top-stories"\>  
+              Top stories  
+            \</h3\>  
+          \</div\>
+
+          \<ul class="mt1 list-style-none" aria-labelledby="news-module\_\_title-top-stories"\>  
+\<\!----\>              \<li class="news-module\_\_storyline  
+                    
+                    
+                    
+                  "\>  
+                \<a href="/news/story/karnataka-bans-social-media-for-kids-7737505/" id="ember1878" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>Karnataka bans social media for kids\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 20,774 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                    
+                    
+                    
+                  "\>  
+                \<a href="/news/story/top-finance-experts-to-follow-7984906/" id="ember1879" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>Top finance experts to follow\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      8d ago • 5,593 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                    
+                    
+                    
+                  "\>  
+                \<a href="/news/story/top-tech-startup-experts-to-follow-7305329/" id="ember1880" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>Top tech \&amp; startup experts to follow\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 3,610 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                    
+                    
+                    
+                  "\>  
+                \<a href="/news/story/how-women-power-progress-7071220/" id="ember1881" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>How women power progress\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 2,765 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                    
+                    
+                    
+                  "\>  
+                \<a href="/news/story/top-marketing-experts-to-follow-7295537/" id="ember1882" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>Top marketing experts to follow\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 1,310 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                   news-module\_\_storyline--extra focused-easeOut-motion  
+                    
+                    
+                  "\>  
+                \<a href="/news/story/asia-currencies-slide-on-iran-crisis-7062884/" id="ember1883" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>Asia currencies slide on Iran crisis\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 839 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                   news-module\_\_storyline--extra focused-easeOut-motion  
+                    
+                    
+                  "\>  
+                \<a href="/news/story/india-inc-rethinks-gulf-deals-7734009/" id="ember1884" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>India Inc rethinks Gulf deals\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 280 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                   news-module\_\_storyline--extra focused-easeOut-motion  
+                    
+                    
+                  "\>  
+                \<a href="/news/story/pharmas-obesity-ad-blitz-7060820/" id="ember1885" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>Pharma’s obesity ad blitz\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 204 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                   news-module\_\_storyline--extra focused-easeOut-motion  
+                    
+                    
+                  "\>  
+                \<a href="/news/story/how-women-make-financial-choices-7713721/" id="ember1886" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>How women make financial choices\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 182 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+              \<li class="news-module\_\_storyline  
+                   news-module\_\_storyline--extra focused-easeOut-motion  
+                    
+                    
+                  "\>  
+                \<a href="/news/story/funding-steadies-for-women-7062892/" id="ember1887" class="ember-view news-module\_\_link--with-game link-without-hover-state block"\>  
+                  \<div class="news-module\_\_headline t-14 t-bold t-black truncate pt1 pr4"\>Funding steadies for women\</div\>
+
+                    \<span class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      1d ago • 166 readers  
+                    \</span\>  
+                \</a\>  
+              \</li\>  
+          \</ul\>
+
+            \<button aria-label="Show more" aria-expanded="false" id="ember1888" class="artdeco-button artdeco-button--muted artdeco-button--icon-right artdeco-button--1 artdeco-button--tertiary ember-view news-module\_\_toggle-storylines--with-game"\>        \<svg role="none" aria-hidden="true" class="artdeco-button\_\_icon " xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="chevron-down-small"\>  
+\<\!----\>      
+    \<use href="\#chevron-down-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+\<span class="artdeco-button\_\_text"\>  
+    Show more  
+\</span\>\</button\>
+
+            
+    
+      \<div\>  
+          
+    \<div class="news-module\_\_subheader"\>  
+      \<h3 class="text-body-medium-bold t-16 t-black--light pt2" id="todays-games-entrypoint-title"\>  
+          LinkedIn puzzle spotlight  
+      \</h3\>  
+    \</div\>  
+    
+          \<div class="display-flex flex-column"\>  
+            \<a href="/games/zip/" id="ember1889" class="ember-view ps-basic-entrypoint\_\_link link-without-hover-state"\>  
+              \<img class="mr3" width="64" height="64" src="https://static.licdn.com/aero-v1/sc/h/bhcn11cebvq6jyb4ytx000xre" alt="Preview GIF of the Zip game"\>  
+              \<div class="ps-basic-entrypoint\_\_content-container"\>  
+                \<div class="ps-basic-entrypoint\_\_text-container"\>  
+                  \<div\>  
+                    \<div class="text-body-small-bold t-black"\>Zip \- a quick brain teaser\</div\>  
+                    \<div class="text-body-xsmall t-black--light"\>  
+                      Solve in 60s or less\!  
+                    \</div\>  
+                  \</div\>  
+                    \<div class="t-12 t-black--light t-normal inline-block full-width truncate"\>  
+                      97 connections played  
+                    \</div\>  
+                \</div\>  
+                \<svg role="none" aria-hidden="true" class="ps-basic-entrypoint\_\_icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="chevron-right-small" data-rtl="true"\>  
+\<\!----\>      
+    \<use href="\#chevron-right-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+              \</div\>  
+            \</a\>  
+          \</div\>  
+      \</div\>  
+  
+
+        \</div\>  
+      \</div\>  
+    
+                
+\</section\>  
+          \</div\>  
+        \<div class="scaffold-layout\_\_sticky  
+      
+    scaffold-layout\_\_sticky--lg  
+    "\>  
+  \<div class="scaffold-layout\_\_sticky-content"\>  
+      
+          \<div id="feed-right-rail-tooltip-sticky-outlet"\>\</div\>  
+          \<section class="ad-banner-container  
+      
+      
+      
+     artdeco-card overflow-hidden"\>  
+  \<iframe data-ad-banner="" class="ad-banner" width="300" height="250" src="about:blank" scrolling="no" title="advertisement" data-rocket-already-registered="true"\>\</iframe\>
+
+\<\!----\>  
+    
+\<\!----\>  
+
+\<\!----\>  
+\<\!----\>\</section\>  
+            
+\<\!----\>    
+            
+    \<footer class="global-footer-compact  
+        " aria-label="LinkedIn Footer Content"\>  
+        
+          
+\<\!----\>        \<ul class="global-footer-compact\_\_content global-footer-compact\_\_links"\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                \<a tabindex="0" target="\_blank" href="https://about.linkedin.com/" id="compactfooter-about" class="ember-view global-footer\_\_link t-12 t-normal" waprocessedanchor="true"\>  
+                  \<span\>  
+                    About  
+                  \</span\>  
+                \</a\>  
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                \<a tabindex="0" target="\_blank" href="https://www.linkedin.com/accessibility" id="compactfooter-accessibility" class="ember-view global-footer\_\_link t-12 t-normal" waprocessedanchor="true"\>  
+                  \<span\>  
+                    Accessibility  
+                  \</span\>  
+                \</a\>  
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                \<a tabindex="0" target="\_blank" href="https://www.linkedin.com/help/linkedin?trk=footer\_d\_flagship3\_feed" id="compactfooter-help" class="ember-view global-footer\_\_link t-12 t-normal" waprocessedanchor="true"\>  
+                  \<span data-dyn-trk=""\>  
+                    Help Center  
+                  \</span\>  
+                \</a\>  
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                  
+      
+      
+    \<div id="ember1864" class="artdeco-dropdown artdeco-dropdown--placement-top artdeco-dropdown--justification-left ember-view global-footer-dropdown"\>  
+      \<button aria-expanded="false" id="compactfooter-privacy\_dropdown-trigger" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-top ember-view global-footer-dropdown\_\_trigger" type="button" tabindex="0"\>  
+        \<span class="global-footer\_\_link global-footer\_\_dropdown-trigger t-12 t-normal"\>  
+          \<span class="text-align-left"\>  
+            Privacy \&amp; Terms  
+            \<svg role="none" aria-hidden="true" class="global-footer-dropdown\_\_trigger-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+          \</span\>  
+        \</span\>  
+        
+\<\!----\>\</button\>  
+      \<div tabindex="-1" aria-hidden="true" id="ember1866" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-left artdeco-dropdown\_\_content--placement-top ember-view global-footer-dropdown\_\_options"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+    
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                \<a tabindex="0" target="\_blank" href="https://www.linkedin.com/help/linkedin/answer/62931" id="compactfooter-ad\_choices" class="ember-view global-footer\_\_link t-12 t-normal" waprocessedanchor="true"\>  
+                  \<span\>  
+                    Ad Choices  
+                  \</span\>  
+                \</a\>  
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                \<a tabindex="0" target="\_blank" href="https://www.linkedin.com/ad/start?trk=n\_nav\_ads\_rr" id="compactfooter-advertising" class="ember-view global-footer\_\_link t-12 t-normal" waprocessedanchor="true"\>  
+                  \<span\>  
+                    Advertising  
+                  \</span\>  
+                \</a\>  
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                  
+      
+      
+    \<div id="ember1869" class="artdeco-dropdown artdeco-dropdown--placement-top artdeco-dropdown--justification-right ember-view global-footer-dropdown"\>  
+      \<button aria-expanded="false" id="compactfooter-business\_services\_dropdown-trigger" class="artdeco-dropdown\_\_trigger artdeco-dropdown\_\_trigger--placement-top ember-view global-footer-dropdown\_\_trigger" type="button" tabindex="0"\>  
+        \<span class="global-footer\_\_link global-footer\_\_dropdown-trigger t-12 t-normal"\>  
+          \<span class="text-align-left"\>  
+            Business Services  
+            \<svg role="none" aria-hidden="true" class="global-footer-dropdown\_\_trigger-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" data-supported-dps="16x16" data-test-icon="caret-small"\>  
+\<\!----\>      
+    \<use href="\#caret-small" width="16" height="16"\>\</use\>  
+\</svg\>
+
+          \</span\>  
+        \</span\>  
+        
+\<\!----\>\</button\>  
+      \<div tabindex="-1" aria-hidden="true" id="ember1871" class="artdeco-dropdown\_\_content artdeco-dropdown--is-dropdown-element artdeco-dropdown\_\_content--justification-right artdeco-dropdown\_\_content--placement-top ember-view global-footer-dropdown\_\_options"\>\<\!----\>\</div\>  
+    \</div\>  
+    
+    
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                  
+  \<div\>  
+      
+    \<div\>  
+      \<div id="ember1872" class="ember-view"\>\<\!----\>\</div\>
+
+        
+  \<button id="compactfooter-get\_app\_footer" class="global-footer\_\_link global-footer\_\_dropdown-trigger t-12 t-normal" type="button"\>  
+    Get the LinkedIn app  
+  \</button\>
+
+    \</div\>  
+    
+  \</div\>
+
+            \</li\>  
+            \<li class="global-footer-compact\_\_item"\>  
+                \<button id="compactfooter-more" class="global-footer\_\_link t-12 t-normal" aria-label="More options" type="button"\>  
+                  More  
+                \</button\>  
+            \</li\>  
+        \</ul\>  
+          \<div class="global-footer-compact\_\_content t-12 t-normal text-align-center clear-both" id="compactfooter-copyright"\>  
+            \<svg role="img" aria-hidden="false" aria-label="LinkedIn" class="global-footer-compact\_\_linkedin-logo" xmlns="http://www.w3.org/2000/svg" width="56" height="14" viewBox="0 0 56 14" data-supported-dps="56x14" data-test-icon="linkedin-logo-blue-xxsmall"\>  
+\<\!----\>    \<svg display="var(--hue-web-svg-display-light)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/aahlc8ivbnmk0t3eyz8as5gvr" x="0" y="0" width="56" height="14"\>\</image\>  
+    \</svg\>  
+    \<svg display="var(--hue-web-svg-display-dark)"\>  
+      \<image href="https://static.licdn.com/aero-v1/sc/h/34bl5fp6gi8t0nscavw94xa7x" x="0" y="0" width="56" height="14"\>\</image\>  
+    \</svg\>  
+\</svg\>
+
+            LinkedIn Corporation © 2026  
+          \</div\>
+
+        \<div id="ember1860" class="ember-view"\>\<\!----\>\</div\>  
+        
+    
+    \</footer\>  
+    
+          
+  \</div\>  
+\</div\>  
+      
+            
+\</aside\>  
+      \</div\>
+
+\<\!----\>  \</div\>  
+\</div\>  

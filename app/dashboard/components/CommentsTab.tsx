@@ -835,6 +835,12 @@ export default function CommentsTab(props: any) {
     // Accordion state for Comment Style Sources sidebar
     const [sharedProfilesOpen, setSharedProfilesOpen] = useState(true);
     const [savedProfilesOpen, setSavedProfilesOpen] = useState(true);
+
+    // State for shared profile comments popup
+    const [viewingSharedProfile, setViewingSharedProfile] = useState<any>(null);
+    const [sharedProfileComments, setSharedProfileComments] = useState<any[]>([]);
+    const [sharedCommentsLoading, setSharedCommentsLoading] = useState(false);
+
     useEffect(() => {
         if (!csSettingsLoading && !settingsLoaded) {
             // Mark loaded after a short delay to skip the initial state hydration
@@ -903,6 +909,33 @@ export default function CommentsTab(props: any) {
             showToast('Failed to copy to clipboard', 'error');
         }
     }, [showToast]);
+
+    // Load shared profile comments for popup
+    const loadSharedProfileComments = async (profile: any) => {
+        setViewingSharedProfile(profile);
+        setSharedCommentsLoading(true);
+        setSharedProfileComments([]);
+        
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) return;
+            
+            const res = await fetch('/api/shared/comment-profiles/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ profileId: profile.profileId }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setSharedProfileComments(data.comments || []);
+            }
+        } catch (e) {
+            console.error('Failed to load shared profile comments:', e);
+            showToast('Failed to load comments', 'error');
+        } finally {
+            setSharedCommentsLoading(false);
+        }
+    };
 
     return (
         <div className="fade-in">
@@ -1374,16 +1407,67 @@ export default function CommentsTab(props: any) {
                                     return (
                                         <div
                                             key={i}
-                                            onClick={() => { if (profileMatch) toggleProfileSelect(profileMatch.id); }}
-                                            style={{
-                                                ...styles.sharedProfileChip,
-                                                background: isSelected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
-                                                borderColor: isSelected ? 'rgba(245, 158, 11, 0.5)' : 'rgba(255,255,255,0.08)',
+                                            onClick={async () => { 
+                                                if (profileMatch) {
+                                                    toggleProfileSelect(profileMatch.id);
+                                                } else {
+                                                    // Add shared profile to user's saved profiles and select it
+                                                    const token = localStorage.getItem('authToken');
+                                                    if (!token) return;
+                                                    try {
+                                                        // First, get the comments from the shared profile
+                                                        const sharedRes = await fetch('/api/shared/comment-profiles/comments', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                            body: JSON.stringify({ profileId: p.profileId }),
+                                                        });
+                                                        const sharedData = await sharedRes.json();
+                                                        const comments = sharedData.success ? sharedData.comments : [];
+                                                        
+                                                        // Now add the profile with its comments
+                                                        const res = await fetch('/api/scraped-comments', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                            body: JSON.stringify({ 
+                                                                action: 'saveComments',
+                                                                profileUrl: p.profileUrl,
+                                                                profileIdSlug: p.profileId,
+                                                                profileName: p.profileName,
+                                                                comments: comments // Include the shared comments
+                                                            }),
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.success && data.profileId) {
+                                                            // Reload profiles to get the new one
+                                                            await loadCommentStyleProfiles();
+                                                            // Then select the new profile for training
+                                                            setTimeout(() => {
+                                                                toggleProfileSelect(data.profileId);
+                                                            }, 500);
+                                                            // Show success message
+                                                            showToast(`Added ${p.profileName} to your profiles`, 'success');
+                                                        }
+                                                    } catch (e) {
+                                                        console.error('Failed to add shared profile:', e);
+                                                        showToast('Failed to add profile', 'error');
+                                                    }
+                                                }
                                             }}
-                                            onMouseOver={e => {
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                background: isSelected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+                                                padding: '6px 10px',
+                                                borderRadius: '8px',
+                                                border: `1px solid ${isSelected ? 'rgba(245, 158, 11, 0.5)' : 'rgba(255,255,255,0.08)'}`,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                            }}
+                                            onMouseOver={(e: any) => {
                                                 e.currentTarget.style.background = isSelected ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.06)';
                                             }}
-                                            onMouseOut={e => {
+                                            onMouseOut={(e: any) => {
                                                 e.currentTarget.style.background = isSelected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)';
                                             }}
                                         >
@@ -1396,6 +1480,31 @@ export default function CommentsTab(props: any) {
                                             <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: TYPOGRAPHY.fontSizeXs, fontWeight: TYPOGRAPHY.fontWeightMedium }}>
                                                 {p.profileName || p.profileId}
                                             </span>
+                                            <button
+                                                title="View all comments"
+                                                onClick={(e: any) => {
+                                                    e.stopPropagation();
+                                                    loadSharedProfileComments(p);
+                                                }}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'rgba(255,255,255,0.4)',
+                                                    cursor: 'pointer',
+                                                    padding: '2px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    marginLeft: '4px'
+                                                }}
+                                                onMouseOver={(e: any) => {
+                                                    e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                                                }}
+                                                onMouseOut={(e: any) => {
+                                                    e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                                                }}
+                                            >
+                                                {miniIcon('M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', 'rgba(255,255,255,0.5)', 12)}
+                                            </button>
                                         </div>
                                     );
                                 })}
@@ -1625,6 +1734,145 @@ export default function CommentsTab(props: any) {
             </div>
             </div>
         </div>
+
+        {/* Shared Profile Comments Popup */}
+        {viewingSharedProfile && (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                padding: '20px'
+            }}>
+                <div style={{
+                    background: '#1a1a3e',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    maxWidth: '600px',
+                    width: '100%',
+                    maxHeight: '80vh',
+                    overflowY: 'auto',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div>
+                            <h3 style={{ color: 'white', margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+                                {viewingSharedProfile.profileName || viewingSharedProfile.profileId}
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '4px 0 0', fontSize: '12px' }}>
+                                Shared Profile Comments ({sharedProfileComments.length})
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setViewingSharedProfile(null);
+                                setSharedProfileComments([]);
+                            }}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'rgba(255,255,255,0.6)',
+                                cursor: 'pointer',
+                                fontSize: '20px',
+                                padding: '0'
+                            }}
+                            onMouseOver={(e: any) => {
+                                e.currentTarget.style.color = 'white';
+                            }}
+                            onMouseOut={(e: any) => {
+                                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                            }}
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    {/* Comments */}
+                    {sharedCommentsLoading ? (
+                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.5)' }}>
+                            <div style={{ ...styles.spinner, margin: '0 auto 12px' }} />
+                            Loading comments...
+                        </div>
+                    ) : sharedProfileComments.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.4)' }}>
+                            No comments found for this profile.
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {sharedProfileComments.map((comment: any, i: number) => (
+                                <div key={i} style={{
+                                    background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{
+                                                background: comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.2)' : 'rgba(59,130,246,0.2)',
+                                                color: comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#60a5fa',
+                                                fontSize: '9px',
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                display: 'inline-block',
+                                                marginBottom: '6px',
+                                                fontWeight: '500'
+                                            }}>
+                                                {comment.context === 'DIRECT COMMENT ON POST' ? 'Direct' : 'Reply'}
+                                            </div>
+                                            {comment.isTopComment && (
+                                                <div style={{
+                                                    background: 'rgba(245,158,11,0.2)',
+                                                    color: '#fbbf24',
+                                                    fontSize: '9px',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    display: 'inline-block',
+                                                    marginBottom: '6px',
+                                                    marginLeft: '6px',
+                                                    fontWeight: '500'
+                                                }}>
+                                                    TOP
+                                                </div>
+                                            )}
+                                            <div style={{
+                                                color: 'rgba(255,255,255,0.9)',
+                                                fontSize: '12px',
+                                                lineHeight: '1.5',
+                                                marginBottom: '8px'
+                                            }}>
+                                                {comment.commentText}
+                                            </div>
+                                            {comment.postText && (
+                                                <div style={{
+                                                    color: 'rgba(255,255,255,0.5)',
+                                                    fontSize: '11px',
+                                                    lineHeight: '1.4',
+                                                    padding: '8px',
+                                                    background: 'rgba(0,0,0,0.2)',
+                                                    borderRadius: '6px',
+                                                    borderLeft: '3px solid rgba(255,255,255,0.1)'
+                                                }}>
+                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px', marginBottom: '4px' }}>POST:</div>
+                                                    {comment.postText}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
         </div>
 
     );

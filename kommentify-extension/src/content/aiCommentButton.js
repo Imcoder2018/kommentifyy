@@ -545,7 +545,9 @@ class AICommentButtonManager {
             || iconContainer.closest('[data-urn^="urn:li:activity:"]')
             || iconContainer.closest('[data-view-name="feed-full-update"]')  // NEW: 2025 LinkedIn UI
             || iconContainer.closest('[data-view-name="feed-update"]')  // NEW: 2024+ LinkedIn UI
-            || iconContainer.closest('.update-components-actor')?.closest('div');
+            || iconContainer.closest('.update-components-actor')?.closest('div')
+            || iconContainer.closest('.update-v2-social-activity')?.closest('.feed-shared-update-v2')  // NEW: 2025 UI - go through social activity
+            || iconContainer.closest('.social-details-social-counts')?.closest('.feed-shared-update-v2');  // NEW: 2025 UI - go through social counts
 
         if (!postElement) {
             // Fallback: traverse up the DOM looking for data-id or LI or data-view-name
@@ -683,6 +685,8 @@ class AICommentButtonManager {
 
             // FALLBACK: Array of name selectors tried in order
             const nameSelectors = [
+                // NEW: 2025 LinkedIn UI selectors - most specific first
+                '.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]',  // 2025 UI structure
                 '.update-components-actor__single-line-truncate span[dir="ltr"] span[aria-hidden="true"]',
                 '.update-components-actor__name span[aria-hidden="true"]',
                 '.update-components-actor__name',
@@ -705,6 +709,18 @@ class AICommentButtonManager {
                     if (name && name.length > 0) return name;
                 }
             }
+
+            // NEW: Fallback - extract from aria-label on author link (2025 LinkedIn UI)
+            // Example: aria-label="View: Ankit Kumar Verified • Following..."
+            const authorLink = postElement.querySelector('a[aria-label^="View:"]');
+            if (authorLink) {
+                const ariaLabel = authorLink.getAttribute('aria-label') || '';
+                const match = ariaLabel.match(/^View:\s*([^\s]+)/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+
             return null;
         } catch (error) {
             console.error('[AI Comment] Error extracting poster name:', error);
@@ -1699,7 +1715,18 @@ class AICommentButtonManager {
 
         document.body.appendChild(popup);
         console.log('[AI Comment] Notification popup added to DOM');
-        // Note: Notification will be closed after comment is generated and filled (see handleAIButtonClick)
+
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            if (popup && popup.parentElement) {
+                popup.style.animation = 'slideOutRight 0.3s ease forwards';
+                setTimeout(() => {
+                    if (popup && popup.parentElement) {
+                        popup.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
     }
 
     /**

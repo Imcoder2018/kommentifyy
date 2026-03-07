@@ -1,6 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // ============================================
+// THEME-AWARE COLOR HELPERS
+// ============================================
+const getThemeColors = (theme: string) => ({
+    isLight: theme === 'light',
+    bg: theme === 'light' ? '#ffffff' : 'rgba(17, 24, 39, 0.98)',
+    bgSubtle: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.03)',
+    text: theme === 'light' ? '#111827' : 'white',
+    textMuted: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)',
+    textDim: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)',
+    textDimmest: theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.4)',
+    border: theme === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)',
+    borderStrong: theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
+    shadow: theme === 'light' ? '0 8px 32px rgba(0, 0, 0, 0.12)' : '0 8px 32px rgba(0, 0, 0, 0.4)',
+    inputBg: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)',
+    inputBorder: theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
+});
+
+// ============================================
 // STYLE CONSTANTS (UI/UX Improvements)
 // ============================================
 
@@ -809,6 +827,9 @@ export default function CommentsTab(props: any) {
         handleTabChange, cleanLinkedInProfileUrls,
     } = props;
 
+    // Get theme-aware colors
+    const themeColors = getThemeColors(theme || 'dark');
+
     // Auto Decide state - use props from parent (page.tsx manages this state)
     const [autoDeciding, setAutoDeciding] = useState(false);
     const [autoDecideReasoning, setAutoDecideReasoning] = useState('');
@@ -945,7 +966,7 @@ export default function CommentsTab(props: any) {
             <div style={{
                 marginBottom: SPACING.xl,
                 paddingBottom: SPACING.lg,
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                borderBottom: `1px solid ${themeColors.border}`,
             }}>
             {/* Breadcrumbs */}
             <div style={{
@@ -954,23 +975,23 @@ export default function CommentsTab(props: any) {
                     gap: SPACING.sm,
                     marginBottom: SPACING.md,
                     fontSize: TYPOGRAPHY.fontSizeSm,
-                    color: 'rgba(255,255,255,0.5)',
+                    color: themeColors.textDim,
                 }}>
                     <span
                         onClick={() => setActiveTab?.('overview')}
                         style={{ cursor: 'pointer', transition: 'color 0.2s' }}
-                        onMouseOver={e => e.currentTarget.style.color = 'white'}
-                        onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+                        onMouseOver={e => e.currentTarget.style.color = themeColors.text}
+                        onMouseOut={e => e.currentTarget.style.color = themeColors.textDim}
                     >Dashboard</span>
-                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
-                    <span style={{ color: 'rgba(255,255,255,0.7)' }}>Comments</span>
+                    <span style={{ color: themeColors.textDimmest }}>/</span>
+                    <span style={{ color: themeColors.textMuted }}>Comments</span>
                 </div>
 
                 {/* Title and Description */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACING.lg }}>
                     <div>
                         <h1 style={{
-                            color: 'white',
+                            color: themeColors.text,
                             fontSize: TYPOGRAPHY.fontSizeTitle,
                             fontWeight: TYPOGRAPHY.fontWeightBold,
                             margin: 0,
@@ -983,7 +1004,7 @@ export default function CommentsTab(props: any) {
                             Comment Settings
                         </h1>
                         <p style={{
-                            color: 'rgba(255,255,255,0.5)',
+                            color: themeColors.textDim,
                             fontSize: TYPOGRAPHY.fontSizeMd,
                             margin: 0,
                             maxWidth: '500px',
@@ -1028,7 +1049,12 @@ export default function CommentsTab(props: any) {
             {/* Sidebars Container - Below Header */}
             <div style={{ display: 'flex', gap: SPACING.lg, marginBottom: SPACING.xl, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                 {/* Comment Settings */}
-                <div className="comment-settings-sidebar" style={styles.rightSidebar}>
+                <div className="comment-settings-sidebar" style={{
+                    ...styles.rightSidebar,
+                    background: themeColors.bg,
+                    border: `1px solid ${themeColors.border}`,
+                    boxShadow: themeColors.shadow,
+                }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
                     <h3 style={{ color: 'white', fontSize: TYPOGRAPHY.fontSizeLg, fontWeight: TYPOGRAPHY.fontWeightBold, margin: 0, display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
                         {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#3b82f6', 18)}
@@ -1301,7 +1327,12 @@ export default function CommentsTab(props: any) {
         {/* ============================================ */}
         {/* STYLE SOURCES SIDEBAR - Below Header */}
         {/* ============================================ */}
-        <div className="style-sources-sidebar" style={styles.sidebar}>
+        <div className="style-sources-sidebar" style={{
+            ...styles.sidebar,
+            background: themeColors.bg,
+            border: `1px solid ${themeColors.border}`,
+            boxShadow: themeColors.shadow,
+        }}>
                 {/* Sidebar Header */}
                 <div style={styles.sidebarHeader}>
                     <div style={styles.sidebarTitle}>

@@ -110,24 +110,57 @@ interface Props {
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
   extensionConnected?: boolean;
   hideTitle?: boolean;
+  theme?: 'current' | 'light' | 'dark';
 }
 
+// ============= THEME-AWARE COLORS =============
+const getThemeColors = (theme: string) => ({
+  isLight: theme === 'light',
+  bg: theme === 'light' ? '#ffffff' : 'rgba(17, 24, 39, 0.98)',
+  bgSubtle: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.03)',
+  bgCard: theme === 'light' ? '#ffffff' : 'rgba(255,255,255,0.03)',
+  surface: theme === 'light' ? '#f3f4f6' : '#1e293b',
+  surfaceHighlight: theme === 'light' ? '#e5e7eb' : '#334155',
+  text: {
+    primary: theme === 'light' ? '#111827' : 'white',
+    secondary: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)',
+    muted: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)',
+  },
+  textMuted: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)',
+  textDim: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)',
+  textDimmest: theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.4)',
+  border: theme === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)',
+  borderLight: theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)',
+  borderStrong: theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)',
+  shadow: theme === 'light' ? '0 8px 32px rgba(0, 0, 0, 0.12)' : '0 8px 32px rgba(0, 0, 0, 0.4)',
+  inputBg: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)',
+  inputBorder: theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
+  primary: '#693fe9',
+  primaryHover: '#7c3aed',
+  primaryLight: '#a78bfa',
+  success: '#10b981',
+  error: '#ef4444',
+  warning: '#f59e0b',
+  info: '#3b82f6',
+  linkedin: '#0a66c2',
+});
+
 // ============= DESIGN SYSTEM =============
-const THEME = {
+const getTheme = (theme: string) => ({
   colors: {
     primary: '#693fe9',
     primaryHover: '#7c3aed',
     primaryLight: '#a78bfa',
-    secondary: '#1e293b',
-    background: '#0f172a',
-    surface: '#1e293b',
-    surfaceHighlight: '#334155',
+    secondary: theme === 'light' ? '#f3f4f6' : '#1e293b',
+    background: theme === 'light' ? '#f9fafb' : '#0f172a',
+    surface: theme === 'light' ? '#ffffff' : '#1e293b',
+    surfaceHighlight: theme === 'light' ? '#e5e7eb' : '#334155',
     text: {
-      primary: '#f8fafc',
-      secondary: '#94a3b8',
-      muted: '#64748b',
+      primary: theme === 'light' ? '#111827' : '#f8fafc',
+      secondary: theme === 'light' ? '#4b5563' : '#94a3b8',
+      muted: theme === 'light' ? '#6b7280' : '#64748b',
     },
-    border: 'rgba(255,255,255,0.08)',
+    border: theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)',
     success: '#10b981',
     error: '#ef4444',
     warning: '#f59e0b',
@@ -136,37 +169,41 @@ const THEME = {
   },
   radius: { sm: '6px', md: '8px', lg: '12px', xl: '16px', xxl: '24px', full: '9999px' },
   shadows: {
-    sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+    sm: theme === 'light' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    md: theme === 'light' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    lg: theme === 'light' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
     glow: '0 0 20px rgba(105, 63, 233, 0.25)',
   },
   transitions: { default: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' }
-};
+});
 
-const styles = {
-  container: { display: 'flex', flexDirection: 'column' as const, gap: '24px', paddingBottom: '40px', fontFamily: 'Inter, system-ui, sans-serif' },
-  card: { background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)', backdropFilter: 'blur(16px)', border: `1px solid ${THEME.colors.border}`, borderRadius: THEME.radius.xl, padding: '24px', boxShadow: THEME.shadows.lg },
-  statCard: { background: 'rgba(30, 41, 59, 0.5)', border: `1px solid ${THEME.colors.border}`, borderRadius: THEME.radius.lg, padding: '20px', display: 'flex', flexDirection: 'column' as const, gap: '8px' },
-  btn: (variant: 'primary' | 'secondary' | 'danger' | 'ghost' | 'linkedin' | 'success' | 'outline' = 'primary', disabled = false) => {
-    const base = { padding: '10px 18px', borderRadius: THEME.radius.md, border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1, fontWeight: 600, fontSize: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: THEME.transitions.default, outline: 'none' };
-    switch (variant) {
-      case 'primary': return { ...base, background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', boxShadow: disabled ? 'none' : '0 4px 14px rgba(105, 63, 233, 0.3)' };
-      case 'linkedin': return { ...base, background: '#0a66c2', color: 'white', boxShadow: disabled ? 'none' : '0 4px 14px rgba(10, 102, 194, 0.3)' };
-      case 'success': return { ...base, background: THEME.colors.success, color: 'white', boxShadow: disabled ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.3)' };
-      case 'secondary': return { ...base, background: 'rgba(255, 255, 255, 0.05)', color: THEME.colors.text.primary, border: `1px solid rgba(255, 255, 255, 0.1)` };
-      case 'outline': return { ...base, background: 'transparent', color: THEME.colors.primaryLight, border: `1px solid ${THEME.colors.primaryLight}` };
-      case 'danger': return { ...base, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' };
-      case 'ghost': return { ...base, background: 'transparent', color: THEME.colors.text.secondary, padding: '8px' };
-      default: return base;
-    }
-  },
-  input: { background: 'rgba(15, 23, 42, 0.6)', border: `1px solid ${THEME.colors.border}`, borderRadius: THEME.radius.md, padding: '12px 16px', color: THEME.colors.text.primary, fontSize: '14px', width: '100%', outline: 'none', transition: THEME.transitions.default },
-  select: { background: 'rgba(15, 23, 42, 0.6)', border: `1px solid ${THEME.colors.border}`, borderRadius: THEME.radius.md, padding: '12px 16px', color: THEME.colors.text.primary, fontSize: '14px', width: '100%', outline: 'none', appearance: 'none' as const, cursor: 'pointer' },
-  table: { width: '100%', borderCollapse: 'collapse' as const },
-  th: { textAlign: 'left' as const, padding: '16px', color: THEME.colors.text.secondary, fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em', borderBottom: `1px solid ${THEME.colors.border}`, background: 'rgba(255, 255, 255, 0.02)' },
-  td: { padding: '16px', borderBottom: `1px solid ${THEME.colors.border}`, color: THEME.colors.text.primary, fontSize: '14px', verticalAlign: 'top' as const },
-  badge: (color: string) => ({ padding: '4px 10px', borderRadius: THEME.radius.full, fontSize: '12px', fontWeight: 600, background: `${color}15`, color: color, border: `1px solid ${color}30`, display: 'inline-flex', alignItems: 'center', gap: '6px' }),
+const getStyles = (theme: string) => {
+  const t = getTheme(theme);
+  const colors = getThemeColors(theme);
+  return {
+    container: { display: 'flex', flexDirection: 'column' as const, gap: '24px', paddingBottom: '40px', fontFamily: 'Inter, system-ui, sans-serif' },
+    card: { background: theme === 'light' ? '#ffffff' : 'linear-gradient(145deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)', backdropFilter: 'blur(16px)', border: `1px solid ${colors.border}`, borderRadius: t.radius.xl, padding: '24px', boxShadow: theme === 'light' ? '0 4px 20px rgba(0,0,0,0.08)' : t.shadows.lg },
+    statCard: { background: theme === 'light' ? '#f9fafb' : 'rgba(30, 41, 59, 0.5)', border: `1px solid ${colors.border}`, borderRadius: t.radius.lg, padding: '20px', display: 'flex', flexDirection: 'column' as const, gap: '8px' },
+    btn: (variant: 'primary' | 'secondary' | 'danger' | 'ghost' | 'linkedin' | 'success' | 'outline' = 'primary', disabled = false) => {
+      const base = { padding: '10px 18px', borderRadius: t.radius.md, border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1, fontWeight: 600, fontSize: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: t.transitions.default, outline: 'none' };
+      switch (variant) {
+        case 'primary': return { ...base, background: 'linear-gradient(135deg, #693fe9 0%, #8b5cf6 100%)', color: 'white', boxShadow: disabled ? 'none' : '0 4px 14px rgba(105, 63, 233, 0.3)' };
+        case 'linkedin': return { ...base, background: '#0a66c2', color: 'white', boxShadow: disabled ? 'none' : '0 4px 14px rgba(10, 102, 194, 0.3)' };
+        case 'success': return { ...base, background: t.colors.success, color: 'white', boxShadow: disabled ? 'none' : '0 4px 14px rgba(16, 185, 129, 0.3)' };
+        case 'secondary': return { ...base, background: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)', color: t.colors.text.primary, border: `1px solid ${theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255, 255, 255, 0.1)'}` };
+        case 'outline': return { ...base, background: 'transparent', color: t.colors.primaryLight, border: `1px solid ${t.colors.primaryLight}` };
+        case 'danger': return { ...base, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' };
+        case 'ghost': return { ...base, background: 'transparent', color: t.colors.text.secondary, padding: '8px' };
+        default: return base;
+      }
+    },
+    input: { background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, borderRadius: t.radius.md, padding: '12px 16px', color: t.colors.text.primary, fontSize: '14px', width: '100%', outline: 'none', transition: t.transitions.default },
+    select: { background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, borderRadius: t.radius.md, padding: '12px 16px', color: t.colors.text.primary, fontSize: '14px', width: '100%', outline: 'none', appearance: 'none' as const, cursor: 'pointer' },
+    table: { width: '100%', borderCollapse: 'collapse' as const },
+    th: { textAlign: 'left' as const, padding: '16px', color: t.colors.text.secondary, fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em', borderBottom: `1px solid ${colors.border}`, background: theme === 'light' ? '#f9fafb' : 'rgba(255, 255, 255, 0.02)' },
+    td: { padding: '16px', borderBottom: `1px solid ${colors.border}`, color: t.colors.text.primary, fontSize: '14px', verticalAlign: 'top' as const },
+    badge: (color: string) => ({ padding: '4px 10px', borderRadius: t.radius.full, fontSize: '12px', fontWeight: 600, background: `${color}15`, color: color, border: `1px solid ${color}30`, display: 'inline-flex', alignItems: 'center', gap: '6px' }),
+  };
 };
 
 // ============= CONSTANTS =============
@@ -218,7 +255,10 @@ const useApi = () => {
 };
 
 export default function LeadWarmerTab(props: Props) {
-  const { showToast, extensionConnected = false } = props;
+  const { showToast, extensionConnected = false, theme = 'dark' } = props;
+  const t = getTheme(theme);
+  const styles = getStyles(theme);
+  const themeColors = getThemeColors(theme);
   const { apiGet, apiPost, apiDelete } = useApi();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'pipeline' | 'sequence' | 'settings'>('overview');
@@ -847,28 +887,28 @@ export default function LeadWarmerTab(props: Props) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            Lead Warmer <span style={styles.badge(THEME.colors.primaryLight)}>Automation</span>
+            Lead Warmer <span style={styles.badge(themeColors.primaryLight)}>Automation</span>
           </h1>
-          <p style={{ color: THEME.colors.text.secondary, margin: 0, fontSize: '15px' }}>
+          <p style={{ color: themeColors.text.secondary, margin: 0, fontSize: '15px' }}>
             Automate personalized engagement with your prospects&apos; content. Set up multi-day warming sequences and let AI handle commenting.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(30, 41, 59, 0.6)', padding: '8px 16px', borderRadius: THEME.radius.full, border: `1px solid ${THEME.colors.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(30, 41, 59, 0.6)', padding: '8px 16px', borderRadius: t.radius.full, border: `1px solid ${themeColors.border}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: extensionConnected ? THEME.colors.success : THEME.colors.error, boxShadow: `0 0 10px ${extensionConnected ? THEME.colors.success : THEME.colors.error}` }} />
-            <span style={{ color: THEME.colors.text.primary, fontSize: '13px', fontWeight: 600 }}>Extension</span>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: extensionConnected ? themeColors.success : themeColors.error, boxShadow: `0 0 10px ${extensionConnected ? themeColors.success : themeColors.error}` }} />
+            <span style={{ color: themeColors.text.primary, fontSize: '13px', fontWeight: 600 }}>Extension</span>
           </div>
-          <div style={{ width: '1px', height: '20px', background: THEME.colors.border }} />
+          <div style={{ width: '1px', height: '20px', background: themeColors.border }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: autopilotEnabled ? THEME.colors.primaryLight : THEME.colors.text.muted }} />
-            <span style={{ color: THEME.colors.text.primary, fontSize: '13px', fontWeight: 600 }}>Autopilot</span>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: autopilotEnabled ? themeColors.primaryLight : themeColors.text.muted }} />
+            <span style={{ color: themeColors.text.primary, fontSize: '13px', fontWeight: 600 }}>Autopilot</span>
           </div>
         </div>
       </div>
       )}
 
       {/* NAVIGATION TABS */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: `1px solid ${THEME.colors.border}`, paddingBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px', borderBottom: `1px solid ${themeColors.border}`, paddingBottom: '12px' }}>
         {[
           { id: 'overview', label: 'Overview', icon: BarChart2 },
           { id: 'pipeline', label: 'Leads Pipeline', icon: LayoutList },
@@ -877,9 +917,9 @@ export default function LeadWarmerTab(props: Props) {
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} style={{
             padding: '10px 20px', background: activeTab === tab.id ? 'rgba(105, 63, 233, 0.1)' : 'transparent',
-            border: 'none', borderRadius: THEME.radius.md,
-            color: activeTab === tab.id ? THEME.colors.primaryLight : THEME.colors.text.secondary,
-            fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: THEME.transitions.default,
+            border: 'none', borderRadius: t.radius.md,
+            color: activeTab === tab.id ? themeColors.primaryLight : themeColors.text.secondary,
+            fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: t.transitions.default,
           }}>
             <tab.icon size={16} /> {tab.label}
           </button>
@@ -891,14 +931,14 @@ export default function LeadWarmerTab(props: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
             {[
-              { label: 'Total Leads', value: stats.total, icon: Users, color: THEME.colors.primaryLight },
-              { label: 'Unassigned', value: stats.unassigned, icon: HelpCircle, color: THEME.colors.text.muted },
-              { label: 'Instant Engaged', value: stats.instant, icon: Zap, color: THEME.colors.warning },
-              { label: 'On Autopilot', value: stats.scheduled, icon: Target, color: THEME.colors.success },
+              { label: 'Total Leads', value: stats.total, icon: Users, color: themeColors.primaryLight },
+              { label: 'Unassigned', value: stats.unassigned, icon: HelpCircle, color: themeColors.text.muted },
+              { label: 'Instant Engaged', value: stats.instant, icon: Zap, color: themeColors.warning },
+              { label: 'On Autopilot', value: stats.scheduled, icon: Target, color: themeColors.success },
             ].map(s => (
               <div key={s.label} style={styles.statCard}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: THEME.colors.text.secondary, fontSize: '14px', fontWeight: 600 }}>{s.label}</span>
+                  <span style={{ color: themeColors.text.secondary, fontSize: '14px', fontWeight: 600 }}>{s.label}</span>
                   <s.icon size={18} color={s.color} />
                 </div>
                 <span style={{ fontSize: '32px', fontWeight: 700, color: 'white' }}>{s.value}</span>
@@ -910,24 +950,24 @@ export default function LeadWarmerTab(props: Props) {
             {/* Upcoming Executions */}
             <div style={{ ...styles.card, minHeight: '400px' }}>
               <h3 style={{ margin: '0 0 16px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Calendar size={18} color={THEME.colors.primaryLight} /> Upcoming Executions
+                <Calendar size={18} color={themeColors.primaryLight} /> Upcoming Executions
               </h3>
               {upcomingTasks.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '550px', overflowY: 'auto' }}>
                   {upcomingTasks.slice(0, 20).map((task, idx) => (
-                    <div key={task.id} style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: THEME.radius.sm, border: `1px solid ${THEME.colors.border}` }}>
+                    <div key={task.id} style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: t.radius.sm, border: `1px solid ${themeColors.border}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                         <span style={{ color: 'white', fontWeight: 600, fontSize: '14px' }}>{task.leadName}</span>
-                        <span style={{ color: THEME.colors.warning, fontSize: '11px', fontWeight: 600 }}>{task.scheduledFor ? new Date(task.scheduledFor).toLocaleDateString() : 'Pending'}</span>
+                        <span style={{ color: themeColors.warning, fontSize: '11px', fontWeight: 600 }}>{task.scheduledFor ? new Date(task.scheduledFor).toLocaleDateString() : 'Pending'}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: task.targetPost ? '6px' : '0' }}>
-                        <Clock size={11} color={THEME.colors.text.muted} />
-                        <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>
+                        <Clock size={11} color={themeColors.text.muted} />
+                        <span style={{ color: themeColors.text.secondary, fontSize: '11px' }}>
                           {task.scheduledFor ? new Date(task.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''} - Day {task.day}
                         </span>
                       </div>
                       {task.targetPost && (
-                        <div style={{ marginTop: '6px', padding: '8px 10px', background: 'rgba(105, 63, 233, 0.12)', borderRadius: '6px', borderLeft: `3px solid ${THEME.colors.primaryLight}` }}>
+                        <div style={{ marginTop: '6px', padding: '8px 10px', background: 'rgba(105, 63, 233, 0.12)', borderRadius: '6px', borderLeft: `3px solid ${themeColors.primaryLight}` }}>
                           <span style={{ color: 'white', fontSize: '11px', lineHeight: '1.4' }}>{task.targetPost}</span>
                         </div>
                       )}
@@ -935,7 +975,7 @@ export default function LeadWarmerTab(props: Props) {
                   ))}
                 </div>
               ) : (
-                <div style={{ padding: '24px', textAlign: 'center', color: THEME.colors.text.muted, border: `1px dashed ${THEME.colors.border}`, borderRadius: THEME.radius.md }}>
+                <div style={{ padding: '24px', textAlign: 'center', color: themeColors.text.muted, border: `1px dashed ${themeColors.border}`, borderRadius: t.radius.md }}>
                   {autopilotEnabled ? 'No upcoming tasks scheduled' : 'Autopilot is paused. Enable in settings.'}
                 </div>
               )}
@@ -944,30 +984,30 @@ export default function LeadWarmerTab(props: Props) {
             {/* Recent Performance */}
             <div style={{ ...styles.card, minHeight: '400px' }}>
               <h3 style={{ margin: '0 0 16px 0', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Activity size={18} color={THEME.colors.info} /> Recent Performance
+                <Activity size={18} color={themeColors.info} /> Recent Performance
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '550px', overflowY: 'auto' }}>
                 {executionHistory.length > 0 ? (
                   executionHistory.slice(0, 20).map(log => (
-                    <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: THEME.radius.sm, border: `1px solid ${THEME.colors.border}` }}>
+                    <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: t.radius.sm, border: `1px solid ${themeColors.border}` }}>
                       <div>
                         <span style={{ color: 'white', fontWeight: 600, fontSize: '14px', display: 'block' }}>{log.type === 'instant' ? 'Instant Execution' : 'Autopilot'}</span>
-                        <span style={{ color: THEME.colors.text.muted, fontSize: '12px' }}>{new Date(log.date).toLocaleString()}</span>
+                        <span style={{ color: themeColors.text.muted, fontSize: '12px' }}>{new Date(log.date).toLocaleString()}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '16px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
-                          <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>Leads</span>
+                          <span style={{ color: themeColors.text.secondary, fontSize: '11px' }}>Leads</span>
                           <span style={{ color: 'white', fontWeight: 700, fontSize: '13px' }}>{log.leadsProcessed}</span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
-                          <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>Engaged</span>
-                          <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '13px' }}>{log.engagedCount ?? (log.likesGiven + log.commentsGiven)}</span>
+                          <span style={{ color: themeColors.text.secondary, fontSize: '11px' }}>Engaged</span>
+                          <span style={{ color: themeColors.success, fontWeight: 700, fontSize: '13px' }}>{log.engagedCount ?? (log.likesGiven + log.commentsGiven)}</span>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div style={{ padding: '20px', textAlign: 'center', color: THEME.colors.text.muted, fontSize: '13px' }}>
+                  <div style={{ padding: '20px', textAlign: 'center', color: themeColors.text.muted, fontSize: '13px' }}>
                     No execution history yet
                   </div>
                 )}
@@ -978,9 +1018,9 @@ export default function LeadWarmerTab(props: Props) {
             <div style={{ ...styles.card, minHeight: '500px' }}>
               <div style={{ margin: '0 0 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Target size={18} color={THEME.colors.success} /> Autopilot Sessions
+                  <Target size={18} color={themeColors.success} /> Autopilot Sessions
                 </h3>
-                <button onClick={() => setAutopilotPaused(!autopilotPaused)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, background: autopilotPaused ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)', color: autopilotPaused ? THEME.colors.error : THEME.colors.success }}>
+                <button onClick={() => setAutopilotPaused(!autopilotPaused)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, background: autopilotPaused ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)', color: autopilotPaused ? themeColors.error : themeColors.success }}>
                   {autopilotPaused ? <><PlayCircle size={14} /> Resume</> : <><Timer size={14} /> Pause</>}
                 </button>
               </div>
@@ -990,45 +1030,45 @@ export default function LeadWarmerTab(props: Props) {
                     const isExpanded = expandedSession === session.id;
                     const isMostRecent = sIdx === 0;
                     return (
-                    <div key={session.id} style={{ background: 'rgba(34, 197, 94, 0.05)', borderRadius: THEME.radius.md, border: `1px solid ${isMostRecent ? 'rgba(34, 197, 94, 0.4)' : 'rgba(34, 197, 94, 0.2)'}`, overflow: 'hidden' }}>
+                    <div key={session.id} style={{ background: 'rgba(34, 197, 94, 0.05)', borderRadius: t.radius.md, border: `1px solid ${isMostRecent ? 'rgba(34, 197, 94, 0.4)' : 'rgba(34, 197, 94, 0.2)'}`, overflow: 'hidden' }}>
                       <div onClick={() => setExpandedSession(isExpanded ? null : session.id)} style={{ padding: '12px', background: isMostRecent ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          {isExpanded ? <ChevronUp size={16} color={THEME.colors.success} /> : <ChevronDown size={16} color={THEME.colors.text.muted} />}
+                          {isExpanded ? <ChevronUp size={16} color={themeColors.success} /> : <ChevronDown size={16} color={themeColors.text.muted} />}
                           <div>
-                            <span style={{ color: isMostRecent ? THEME.colors.success : 'white', fontWeight: 700, fontSize: '13px' }}>Session #{autopilotSessions.length - sIdx} {isMostRecent && '(Latest)'}</span>
-                            <span style={{ color: THEME.colors.text.muted, fontSize: '11px', display: 'block' }}>{new Date(session.createdAt).toLocaleString()}</span>
+                            <span style={{ color: isMostRecent ? themeColors.success : 'white', fontWeight: 700, fontSize: '13px' }}>Session #{autopilotSessions.length - sIdx} {isMostRecent && '(Latest)'}</span>
+                            <span style={{ color: themeColors.text.muted, fontSize: '11px', display: 'block' }}>{new Date(session.createdAt).toLocaleString()}</span>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div style={{ textAlign: 'right' }}>
-                            <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '12px' }}>{session.leadCount} leads</span>
-                            <span style={{ color: THEME.colors.primaryLight, fontSize: '10px', display: 'block' }}>{session.commentsGenerated} comments</span>
+                            <span style={{ color: themeColors.success, fontWeight: 700, fontSize: '12px' }}>{session.leadCount} leads</span>
+                            <span style={{ color: themeColors.primaryLight, fontSize: '10px', display: 'block' }}>{session.commentsGenerated} comments</span>
                           </div>
-                          <button onClick={async (e) => { e.stopPropagation(); if (confirm('Delete session? This will remove leads from autopilot.')) { try { await apiPost('/api/warm-leads', { action: 'delete_session', sessionId: session.id, leadIds: session.leadIds }); setAutopilotSessions(prev => prev.filter(s => s.id !== session.id)); loadLeads(); showToast?.('Session deleted', 'success'); } catch { showToast?.('Delete failed', 'error'); } }}} style={{ background: 'rgba(239,68,68,0.15)', border: 'none', borderRadius: '4px', padding: '6px', cursor: 'pointer' }}><Trash2 size={14} color={THEME.colors.error} /></button>
+                          <button onClick={async (e) => { e.stopPropagation(); if (confirm('Delete session? This will remove leads from autopilot.')) { try { await apiPost('/api/warm-leads', { action: 'delete_session', sessionId: session.id, leadIds: session.leadIds }); setAutopilotSessions(prev => prev.filter(s => s.id !== session.id)); loadLeads(); showToast?.('Session deleted', 'success'); } catch { showToast?.('Delete failed', 'error'); } }}} style={{ background: 'rgba(239,68,68,0.15)', border: 'none', borderRadius: '4px', padding: '6px', cursor: 'pointer' }}><Trash2 size={14} color={themeColors.error} /></button>
                         </div>
                       </div>
                       {isExpanded && (
                       <div style={{ padding: '8px', maxHeight: '400px', overflowY: 'auto' }}>
                         {session.tasks && session.tasks.length > 0 ? (
                           session.tasks.map((task, tIdx) => (
-                            <div key={task.id} style={{ padding: '8px', marginBottom: '4px', background: 'rgba(0,0,0,0.25)', borderRadius: '6px', border: `1px solid ${THEME.colors.border}30` }}>
+                            <div key={task.id} style={{ padding: '8px', marginBottom: '4px', background: 'rgba(0,0,0,0.25)', borderRadius: '6px', border: `1px solid ${themeColors.border}30` }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap' }}>
-                                <span style={{ color: THEME.colors.primaryLight, fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>#{task.leadIndex || tIdx + 1}</span>
+                                <span style={{ color: themeColors.primaryLight, fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>#{task.leadIndex || tIdx + 1}</span>
                                 <span style={{ color: 'white', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{task.leadName || 'Unknown'}</span>
-                                <span style={{ color: THEME.colors.text.muted, fontSize: '10px', flexShrink: 0 }}>|</span>
+                                <span style={{ color: themeColors.text.muted, fontSize: '10px', flexShrink: 0 }}>|</span>
                                 <span style={{ color: '#fbbf24', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}>{task.action}</span>
-                                <span style={{ color: THEME.colors.info, fontSize: '10px', fontWeight: 600, flexShrink: 0, background: 'rgba(59, 130, 246, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>{task.postsPerDay || 1}p</span>
-                                <span style={{ color: THEME.colors.text.muted, fontSize: '9px', flexShrink: 0 }}>{task.postsRange || ''}</span>
-                                <span style={{ color: THEME.colors.text.muted, fontSize: '10px', flexShrink: 0 }}>|</span>
-                                <span style={{ color: THEME.colors.text.secondary, fontSize: '10px', flexShrink: 0 }}>{task.scheduledFor ? new Date(task.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                                <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '9px', fontWeight: 700, flexShrink: 0, background: task.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : task.status === 'failed' ? 'rgba(239, 68, 68, 0.2)' : task.status === 'due' ? 'rgba(251, 191, 36, 0.25)' : 'rgba(255,255,255,0.1)', color: task.status === 'completed' ? THEME.colors.success : task.status === 'failed' ? THEME.colors.error : task.status === 'due' ? '#FBBF24' : THEME.colors.text.muted }}>
+                                <span style={{ color: themeColors.info, fontSize: '10px', fontWeight: 600, flexShrink: 0, background: 'rgba(59, 130, 246, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>{task.postsPerDay || 1}p</span>
+                                <span style={{ color: themeColors.text.muted, fontSize: '9px', flexShrink: 0 }}>{task.postsRange || ''}</span>
+                                <span style={{ color: themeColors.text.muted, fontSize: '10px', flexShrink: 0 }}>|</span>
+                                <span style={{ color: themeColors.text.secondary, fontSize: '10px', flexShrink: 0 }}>{task.scheduledFor ? new Date(task.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '9px', fontWeight: 700, flexShrink: 0, background: task.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : task.status === 'failed' ? 'rgba(239, 68, 68, 0.2)' : task.status === 'due' ? 'rgba(251, 191, 36, 0.25)' : 'rgba(255,255,255,0.1)', color: task.status === 'completed' ? themeColors.success : task.status === 'failed' ? themeColors.error : task.status === 'due' ? '#FBBF24' : themeColors.text.muted }}>
                                   {task.status === 'completed' ? '✓' : task.status === 'failed' ? '✗' : task.status === 'due' ? '!' : '○'}
                                 </span>
                               </div>
                             </div>
                           ))
                         ) : (
-                          <div style={{ padding: '12px', color: THEME.colors.text.muted, fontSize: '12px', textAlign: 'center' }}>No tasks</div>
+                          <div style={{ padding: '12px', color: themeColors.text.muted, fontSize: '12px', textAlign: 'center' }}>No tasks</div>
                         )}
                       </div>
                       )}
@@ -1036,7 +1076,7 @@ export default function LeadWarmerTab(props: Props) {
                     );
                   })
                 ) : (
-                  <div style={{ padding: '24px', textAlign: 'center', color: THEME.colors.text.muted, border: `1px dashed ${THEME.colors.border}`, borderRadius: THEME.radius.md }}>
+                  <div style={{ padding: '24px', textAlign: 'center', color: themeColors.text.muted, border: `1px dashed ${themeColors.border}`, borderRadius: t.radius.md }}>
                     No autopilot sessions yet. Add leads to autopilot to see them here.
                   </div>
                 )}
@@ -1050,17 +1090,17 @@ export default function LeadWarmerTab(props: Props) {
       {activeTab === 'pipeline' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Workflow Steps Guide */}
-          <div style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)', borderRadius: THEME.radius.lg, border: `1px solid ${THEME.colors.border}`, padding: '16px 20px' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)', borderRadius: t.radius.lg, border: `1px solid ${themeColors.border}`, padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <Zap size={16} color={THEME.colors.primaryLight} />
+              <Zap size={16} color={themeColors.primaryLight} />
               <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>How It Works</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0', flexWrap: 'wrap' }}>
               {[
-                { step: 1, label: 'Select Leads', icon: Users, color: THEME.colors.primary },
-                { step: 2, label: 'Instant / Autopilot', icon: Zap, color: THEME.colors.warning },
+                { step: 1, label: 'Select Leads', icon: Users, color: themeColors.primary },
+                { step: 2, label: 'Instant / Autopilot', icon: Zap, color: themeColors.warning },
                 { step: 3, label: 'Fetch Posts', icon: Download, color: '#3b82f6' },
-                { step: 4, label: 'AI Comments', icon: MessageCircle, color: THEME.colors.success },
+                { step: 4, label: 'AI Comments', icon: MessageCircle, color: themeColors.success },
                 { step: 5, label: 'Scheduled', icon: Clock, color: '#f59e0b' },
               ].map((item, idx) => (
                 <div key={item.step} style={{ display: 'flex', alignItems: 'center' }}>
@@ -1069,7 +1109,7 @@ export default function LeadWarmerTab(props: Props) {
                     <item.icon size={12} color={item.color} />
                     <span style={{ color: 'white', fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
                   </div>
-                  {idx < 4 && <ChevronRight size={14} color={THEME.colors.text.muted} style={{ margin: '0 4px' }} />}
+                  {idx < 4 && <ChevronRight size={14} color={themeColors.text.muted} style={{ margin: '0 4px' }} />}
                 </div>
               ))}
             </div>
@@ -1078,13 +1118,13 @@ export default function LeadWarmerTab(props: Props) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', width: '320px' }}>
-                <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: THEME.colors.text.muted }} />
+                <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: themeColors.text.muted }} />
                 <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search leads by name or URL..." style={{ ...styles.input, paddingLeft: '42px', background: 'rgba(30, 41, 59, 0.5)' }} />
               </div>
               <button onClick={() => loadLeads()} disabled={loading} style={{ ...styles.btn('ghost'), padding: '8px' }} title="Refresh leads">
                 <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
               </button>
-              {stats.total > 0 && <span style={{ color: THEME.colors.text.muted, fontSize: '13px' }}>{stats.total} total</span>}
+              {stats.total > 0 && <span style={{ color: themeColors.text.muted, fontSize: '13px' }}>{stats.total} total</span>}
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={() => setViewMode(prev => prev === 'list' ? 'detail' : 'list')} style={styles.btn('secondary')}>
@@ -1097,13 +1137,13 @@ export default function LeadWarmerTab(props: Props) {
           </div>
 
           {selectedLeads.size > 0 && (
-            <div style={{ background: 'rgba(105, 63, 233, 0.15)', border: `1px solid rgba(105, 63, 233, 0.3)`, padding: '12px 20px', borderRadius: THEME.radius.md, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ background: 'rgba(105, 63, 233, 0.15)', border: `1px solid rgba(105, 63, 233, 0.3)`, padding: '12px 20px', borderRadius: t.radius.md, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'white', fontWeight: 600 }}>{selectedLeads.size} Leads Selected</span>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button onClick={() => fetchPosts(Array.from(selectedLeads))} disabled={fetchingPosts} style={styles.btn('secondary')}>
                   <Download size={14} /> Fetch Posts
                 </button>
-                <button onClick={() => setShowInstantModal(true)} style={{ ...styles.btn('primary'), background: THEME.colors.warning }}>
+                <button onClick={() => setShowInstantModal(true)} style={{ ...styles.btn('primary'), background: themeColors.warning }}>
                   <Zap size={14} /> Instant Warm Up
                 </button>
                 <button onClick={scheduleSelected} disabled={autopilotGenerating} style={styles.btn('success')}>
@@ -1116,19 +1156,19 @@ export default function LeadWarmerTab(props: Props) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {processingProgress.stage === 'complete' ? (
-                        <Check size={16} color={THEME.colors.success} />
+                        <Check size={16} color={themeColors.success} />
                       ) : (
-                        <Loader2 size={14} className="animate-spin" color={THEME.colors.primaryLight} />
+                        <Loader2 size={14} className="animate-spin" color={themeColors.primaryLight} />
                       )}
-                      <span style={{ fontSize: '13px', color: processingProgress.stage === 'complete' ? THEME.colors.success : THEME.colors.primaryLight, fontWeight: 600 }}>
+                      <span style={{ fontSize: '13px', color: processingProgress.stage === 'complete' ? themeColors.success : themeColors.primaryLight, fontWeight: 600 }}>
                         {processingProgress.stage === 'fetching' && 'Fetching Posts...'}
                         {processingProgress.stage === 'generating' && 'Generating AI Comments...'}
                         {processingProgress.stage === 'complete' && 'Setup Complete!'}
                       </span>
                     </div>
                     <button onClick={cancelProcessing} style={{ background: 'rgba(239, 68, 68, 0.2)', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <X size={12} color={THEME.colors.error} />
-                      <span style={{ color: THEME.colors.error, fontSize: '11px', fontWeight: 600 }}>Stop</span>
+                      <X size={12} color={themeColors.error} />
+                      <span style={{ color: themeColors.error, fontSize: '11px', fontWeight: 600 }}>Stop</span>
                     </button>
                   </div>
 
@@ -1137,7 +1177,7 @@ export default function LeadWarmerTab(props: Props) {
                     <div style={{
                       width: processingProgress.total > 0 ? `${(processingProgress.current / processingProgress.total) * 100}%` : '100%',
                       height: '100%',
-                      background: processingProgress.stage === 'complete' ? THEME.colors.success : THEME.colors.primaryLight,
+                      background: processingProgress.stage === 'complete' ? themeColors.success : themeColors.primaryLight,
                       borderRadius: '4px',
                       transition: 'width 0.3s ease'
                     }} />
@@ -1145,7 +1185,7 @@ export default function LeadWarmerTab(props: Props) {
 
                   {/* Progress stats */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', color: THEME.colors.text.secondary }}>{processingProgress.message}</span>
+                    <span style={{ fontSize: '12px', color: themeColors.text.secondary }}>{processingProgress.message}</span>
                     {processingProgress.total > 0 && (
                       <span style={{ fontSize: '12px', color: 'white', fontWeight: 600 }}>
                         {processingProgress.current} / {processingProgress.total}
@@ -1154,7 +1194,7 @@ export default function LeadWarmerTab(props: Props) {
                   </div>
 
                   {processingProgress.stage !== 'complete' && (
-                    <p style={{ fontSize: '10px', color: THEME.colors.text.muted, margin: '8px 0 0 0' }}>
+                    <p style={{ fontSize: '10px', color: themeColors.text.muted, margin: '8px 0 0 0' }}>
                       Keep LinkedIn open. Processing continues even if you close this page.
                     </p>
                   )}
@@ -1164,17 +1204,17 @@ export default function LeadWarmerTab(props: Props) {
           )}
 
           {showImport && (
-            <div style={{ ...styles.card, border: `1px solid ${THEME.colors.primaryLight}40` }}>
+            <div style={{ ...styles.card, border: `1px solid ${themeColors.primaryLight}40` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h3 style={{ margin: 0, color: 'white', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Upload size={20} color={THEME.colors.primaryLight} /> Import Leads
+                  <Upload size={20} color={themeColors.primaryLight} /> Import Leads
                 </h3>
-                <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', color: THEME.colors.text.muted, cursor: 'pointer' }}><X size={20} /></button>
+                <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', color: themeColors.text.muted, cursor: 'pointer' }}><X size={20} /></button>
               </div>
               <div style={{ display: 'flex', gap: '20px', flexDirection: 'column' }}>
                 <textarea value={importText} onChange={e => setImportText(e.target.value)} placeholder={'Paste LinkedIn Profile URLs here (one per line)...\nhttps://www.linkedin.com/in/username'} style={{ ...styles.input, minHeight: '140px', fontFamily: 'monospace' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: THEME.colors.text.muted, fontSize: '13px' }}>
+                  <span style={{ color: themeColors.text.muted, fontSize: '13px' }}>
                     {importText.split('\n').filter(l => l.match(/linkedin\.com\/in\//i)).length} valid URLs detected
                   </span>
                   <div style={{ display: 'flex', gap: '12px' }}>
@@ -1205,19 +1245,19 @@ export default function LeadWarmerTab(props: Props) {
 
           <div style={styles.card}>
             {loading ? (
-              <div style={{ padding: '60px', textAlign: 'center', color: THEME.colors.text.muted }}>
-                <Loader2 className="animate-spin" size={40} style={{ margin: '0 auto 20px', color: THEME.colors.primaryLight }} />
+              <div style={{ padding: '60px', textAlign: 'center', color: themeColors.text.muted }}>
+                <Loader2 className="animate-spin" size={40} style={{ margin: '0 auto 20px', color: themeColors.primaryLight }} />
                 <p style={{ fontSize: '16px' }}>Loading pipeline data...</p>
               </div>
             ) : leads.length === 0 ? (
-              <div style={{ padding: '80px', textAlign: 'center', color: THEME.colors.text.muted }}>
+              <div style={{ padding: '80px', textAlign: 'center', color: themeColors.text.muted }}>
                 <Users size={64} style={{ opacity: 0.2, margin: '0 auto 20px' }} />
                 <p style={{ fontSize: '18px', marginBottom: '8px', color: 'white', fontWeight: 600 }}>Your pipeline is empty</p>
                 <p style={{ fontSize: '14px', marginBottom: '24px' }}>Import LinkedIn URLs to start warming up leads.</p>
                 <button onClick={() => setShowImport(true)} style={styles.btn('primary')}><UserPlus size={16} /> Import Leads</button>
               </div>
             ) : filteredLeads.length === 0 ? (
-              <div style={{ padding: '80px', textAlign: 'center', color: THEME.colors.text.muted }}>
+              <div style={{ padding: '80px', textAlign: 'center', color: themeColors.text.muted }}>
                 <Search size={64} style={{ opacity: 0.2, margin: '0 auto 20px' }} />
                 <p style={{ fontSize: '18px', marginBottom: '8px', color: 'white', fontWeight: 600 }}>No leads match your search</p>
                 <p style={{ fontSize: '14px', marginBottom: '24px' }}>{leads.length} lead(s) in pipeline, but none match &quot;{searchQuery}&quot;</p>
@@ -1232,7 +1272,7 @@ export default function LeadWarmerTab(props: Props) {
                         <input type="checkbox" onChange={() => {
                           if (selectedLeads.size === filteredLeads.length) setSelectedLeads(new Set());
                           else setSelectedLeads(new Set(filteredLeads.map(l => l.id)));
-                        }} checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0} style={{ width: '16px', height: '16px', accentColor: THEME.colors.primary }} />
+                        }} checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0} style={{ width: '16px', height: '16px', accentColor: themeColors.primary }} />
                       </th>
                       <th style={styles.th}>Prospect Details</th>
                       <th style={styles.th}>Warmup Status</th>
@@ -1250,14 +1290,14 @@ export default function LeadWarmerTab(props: Props) {
                             const s = new Set(selectedLeads);
                             if (s.has(lead.id)) s.delete(lead.id); else s.add(lead.id);
                             setSelectedLeads(s);
-                          }} style={{ width: '16px', height: '16px', accentColor: THEME.colors.primary, marginTop: '4px' }} />
+                          }} style={{ width: '16px', height: '16px', accentColor: themeColors.primary, marginTop: '4px' }} />
                         </td>
                         <td style={styles.td}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <a href={lead.linkedinUrl} target="_blank" rel="noreferrer" style={{ color: 'white', fontWeight: 600, fontSize: '15px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              {lead.firstName || lead.vanityId || 'Unknown Lead'} <ExternalLink size={12} style={{ color: THEME.colors.text.muted }} />
+                              {lead.firstName || lead.vanityId || 'Unknown Lead'} <ExternalLink size={12} style={{ color: themeColors.text.muted }} />
                             </a>
-                            <span style={{ fontSize: '13px', color: THEME.colors.text.secondary, marginTop: '6px', lineHeight: 1.4 }}>
+                            <span style={{ fontSize: '13px', color: themeColors.text.secondary, marginTop: '6px', lineHeight: 1.4 }}>
                               {lead.headline?.substring(0, 80)}{lead.headline && lead.headline.length > 80 ? '...' : ''}
                             </span>
                           </div>
@@ -1265,16 +1305,16 @@ export default function LeadWarmerTab(props: Props) {
                         <td style={styles.td}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
                             <span style={styles.badge(
-                              lead.engagementType === 'instant' ? THEME.colors.warning :
-                              lead.engagementType === 'scheduled' ? THEME.colors.success : THEME.colors.text.muted
+                              lead.engagementType === 'instant' ? themeColors.warning :
+                              lead.engagementType === 'scheduled' ? themeColors.success : themeColors.text.muted
                             )}>
                               {lead.engagementType === 'instant' ? <Zap size={12} /> : lead.engagementType === 'scheduled' ? <Target size={12} /> : <HelpCircle size={12} />}
                               {lead.engagementType ? lead.engagementType.toUpperCase() : 'UNASSIGNED'}
                             </span>
                             {lead.postsFetched ? (
-                              <span style={{ fontSize: '12px', color: THEME.colors.info, display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> Posts Fetched</span>
+                              <span style={{ fontSize: '12px', color: themeColors.info, display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> Posts Fetched</span>
                             ) : (
-                              <span style={{ fontSize: '12px', color: THEME.colors.text.muted, display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> Pending Fetch</span>
+                              <span style={{ fontSize: '12px', color: themeColors.text.muted, display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> Pending Fetch</span>
                             )}
                           </div>
                         </td>
@@ -1283,29 +1323,29 @@ export default function LeadWarmerTab(props: Props) {
                             <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px', maxWidth: '500px', scrollbarWidth: 'thin' }}>
                               {lead.postsFetched && lead.posts && lead.posts.length > 0 ? (
                                 lead.posts.slice(0, 5).map(post => (
-                                  <div key={post.id} style={{ minWidth: '280px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: THEME.radius.lg, padding: '16px', border: `1px solid ${THEME.colors.border}`, display: 'flex', flexDirection: 'column' }}>
+                                  <div key={post.id} style={{ minWidth: '280px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: t.radius.lg, padding: '16px', border: `1px solid ${themeColors.border}`, display: 'flex', flexDirection: 'column' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                      <span style={{ fontSize: '12px', color: THEME.colors.text.secondary }}>{post.postDate ? new Date(post.postDate).toLocaleDateString() : 'Recent'}</span>
-                                      <div style={{ display: 'flex', gap: '12px', color: THEME.colors.text.secondary, fontSize: '12px' }}>
+                                      <span style={{ fontSize: '12px', color: themeColors.text.secondary }}>{post.postDate ? new Date(post.postDate).toLocaleDateString() : 'Recent'}</span>
+                                      <div style={{ display: 'flex', gap: '12px', color: themeColors.text.secondary, fontSize: '12px' }}>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Heart size={12} /> {post.likes}</span>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageCircle size={12} /> {post.comments}</span>
                                       </div>
                                     </div>
-                                    <p style={{ fontSize: '13px', color: THEME.colors.text.primary, lineHeight: '1.5', height: '60px', overflow: 'hidden', marginBottom: '8px', wordBreak: 'break-word' }}>
+                                    <p style={{ fontSize: '13px', color: themeColors.text.primary, lineHeight: '1.5', height: '60px', overflow: 'hidden', marginBottom: '8px', wordBreak: 'break-word' }}>
                                       {post.postText || 'No text content'}
                                     </p>
                                     {/* Show generated AI comment */}
                                     {post.commentText && (
                                       <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                                          <Wand2 size={12} color={THEME.colors.success} />
-                                          <span style={{ fontSize: '11px', color: THEME.colors.success, fontWeight: 600 }}>AI Comment Generated</span>
+                                          <Wand2 size={12} color={themeColors.success} />
+                                          <span style={{ fontSize: '11px', color: themeColors.success, fontWeight: 600 }}>AI Comment Generated</span>
                                         </div>
-                                        <p style={{ fontSize: '12px', color: THEME.colors.text.primary, margin: 0, lineHeight: '1.4' }}>{post.commentText}</p>
+                                        <p style={{ fontSize: '12px', color: themeColors.text.primary, margin: 0, lineHeight: '1.4' }}>{post.commentText}</p>
                                       </div>
                                     )}
                                     <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
-                                      <button onClick={() => engage(lead, post, 'like')} disabled={engagingPostId === post.id || post.isLiked} style={{ ...styles.btn(post.isLiked ? 'ghost' : 'secondary'), padding: '6px 12px', fontSize: '12px', flex: 1, color: post.isLiked ? THEME.colors.linkedin : '' }}>
+                                      <button onClick={() => engage(lead, post, 'like')} disabled={engagingPostId === post.id || post.isLiked} style={{ ...styles.btn(post.isLiked ? 'ghost' : 'secondary'), padding: '6px 12px', fontSize: '12px', flex: 1, color: post.isLiked ? themeColors.linkedin : '' }}>
                                         <ThumbsUp size={14} /> {post.isLiked ? 'Liked' : 'Like'}
                                       </button>
                                       {!post.isCommented && (
@@ -1320,9 +1360,9 @@ export default function LeadWarmerTab(props: Props) {
                                   </div>
                                 ))
                               ) : lead.postsFetched ? (
-                                <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: THEME.radius.md, border: `1px dashed ${THEME.colors.border}`, color: THEME.colors.text.muted, fontSize: '13px', width: '100%', textAlign: 'center' }}>No posts found recently.</div>
+                                <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: t.radius.md, border: `1px dashed ${themeColors.border}`, color: themeColors.text.muted, fontSize: '13px', width: '100%', textAlign: 'center' }}>No posts found recently.</div>
                               ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: THEME.radius.md, border: `1px dashed ${THEME.colors.border}`, width: '100%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: t.radius.md, border: `1px dashed ${themeColors.border}`, width: '100%' }}>
                                   <button onClick={() => fetchPosts([lead.id])} style={styles.btn('secondary')}><Download size={14} /> Fetch Recent Posts</button>
                                 </div>
                               )}
@@ -1330,16 +1370,16 @@ export default function LeadWarmerTab(props: Props) {
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               {lead.postsFetched ? (
-                                <span style={{ color: 'white', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={14} color={THEME.colors.text.muted} /> {lead.posts?.length || 0} Posts</span>
+                                <span style={{ color: 'white', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={14} color={themeColors.text.muted} /> {lead.posts?.length || 0} Posts</span>
                               ) : (
-                                <span style={{ color: THEME.colors.text.muted, fontSize: '13px' }}>Posts not fetched</span>
+                                <span style={{ color: themeColors.text.muted, fontSize: '13px' }}>Posts not fetched</span>
                               )}
                             </div>
                           )}
                         </td>
                         <td style={{ ...styles.td, textAlign: 'right' }}>
-                          <button onClick={() => deleteLead(lead.id)} style={{ ...styles.btn('ghost'), color: THEME.colors.text.muted }} title="Remove Lead"
-                            onMouseEnter={e => e.currentTarget.style.color = THEME.colors.error} onMouseLeave={e => e.currentTarget.style.color = THEME.colors.text.muted}>
+                          <button onClick={() => deleteLead(lead.id)} style={{ ...styles.btn('ghost'), color: themeColors.text.muted }} title="Remove Lead"
+                            onMouseEnter={e => e.currentTarget.style.color = themeColors.error} onMouseLeave={e => e.currentTarget.style.color = themeColors.text.muted}>
                             <Trash2 size={18} />
                           </button>
                         </td>
@@ -1359,15 +1399,15 @@ export default function LeadWarmerTab(props: Props) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <h3 style={{ margin: '0 0 8px 0', color: 'white', fontSize: '18px' }}>Scheduled Warming Sequence Builder</h3>
-              <p style={{ margin: 0, color: THEME.colors.text.secondary, fontSize: '14px' }}>Automate multi-day engagement flows. Each day creates 1 bulk task per lead.</p>
+              <p style={{ margin: 0, color: themeColors.text.secondary, fontSize: '14px' }}>Automate multi-day engagement flows. Each day creates 1 bulk task per lead.</p>
             </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: THEME.radius.lg, border: `1px solid ${THEME.colors.border}` }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: t.radius.lg, border: `1px solid ${themeColors.border}` }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', color: THEME.colors.text.muted, marginBottom: '4px', fontWeight: 600 }}>DAYS TO WARM</label>
+                <label style={{ display: 'block', fontSize: '11px', color: themeColors.text.muted, marginBottom: '4px', fontWeight: 600 }}>DAYS TO WARM</label>
                 <input type="number" min="1" max="30" value={genDays} onChange={e => setGenDays(parseInt(e.target.value) || 1)} style={{ ...styles.input, width: '80px', padding: '8px' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', color: THEME.colors.text.muted, marginBottom: '4px', fontWeight: 600 }}>POSTS/DAY</label>
+                <label style={{ display: 'block', fontSize: '11px', color: themeColors.text.muted, marginBottom: '4px', fontWeight: 600 }}>POSTS/DAY</label>
                 <select value={genPostsPerDay} onChange={e => setGenPostsPerDay(parseInt(e.target.value))} style={{ ...styles.select, width: '100px', padding: '8px' }}>
                   {POSTS_PER_DAY_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
@@ -1383,14 +1423,14 @@ export default function LeadWarmerTab(props: Props) {
               <div key={step.id} style={{
                 display: 'flex', alignItems: 'flex-start', gap: '20px',
                 background: step.enabled ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.3)',
-                padding: '24px', borderRadius: THEME.radius.lg,
-                border: `1px solid ${step.enabled ? THEME.colors.border : 'transparent'}`,
-                opacity: step.enabled ? 1 : 0.6, transition: THEME.transitions.default
+                padding: '24px', borderRadius: t.radius.lg,
+                border: `1px solid ${step.enabled ? themeColors.border : 'transparent'}`,
+                opacity: step.enabled ? 1 : 0.6, transition: t.transitions.default
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '80px' }}>
-                  <label style={{ fontSize: '12px', color: THEME.colors.text.muted, fontWeight: 600 }}>TIMELINE</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: THEME.radius.md, border: `1px solid ${THEME.colors.border}`, padding: '8px' }}>
-                    <span style={{ color: THEME.colors.text.secondary, fontSize: '14px', marginRight: '4px' }}>Day</span>
+                  <label style={{ fontSize: '12px', color: themeColors.text.muted, fontWeight: 600 }}>TIMELINE</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: t.radius.md, border: `1px solid ${themeColors.border}`, padding: '8px' }}>
+                    <span style={{ color: themeColors.text.secondary, fontSize: '14px', marginRight: '4px' }}>Day</span>
                     <input type="number" min="1" value={step.day} onChange={e => {
                       const ns = [...sequenceSteps]; const s = ns.find(x => x.id === step.id);
                       if (s) s.day = parseInt(e.target.value) || 1; setSequenceSteps(ns);
@@ -1399,22 +1439,22 @@ export default function LeadWarmerTab(props: Props) {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '200px' }}>
-                  <label style={{ fontSize: '12px', color: THEME.colors.text.muted, fontWeight: 600 }}>TARGET POSTS</label>
-                  <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: THEME.radius.md, border: `1px solid ${THEME.colors.border}`, padding: '10px 12px', color: THEME.colors.primaryLight, fontSize: '13px', fontWeight: 600 }}>
+                  <label style={{ fontSize: '12px', color: themeColors.text.muted, fontWeight: 600 }}>TARGET POSTS</label>
+                  <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: t.radius.md, border: `1px solid ${themeColors.border}`, padding: '10px 12px', color: themeColors.primaryLight, fontSize: '13px', fontWeight: 600 }}>
                     Recent #{(step.postStartIndex ?? 0) + 1} to #{(step.postStartIndex ?? 0) + (step.postCount ?? 1)}
                   </div>
-                  <span style={{ fontSize: '11px', color: THEME.colors.text.muted }}>{step.postCount ?? 1} post(s)</span>
+                  <span style={{ fontSize: '11px', color: themeColors.text.muted }}>{step.postCount ?? 1} post(s)</span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                  <label style={{ fontSize: '12px', color: THEME.colors.text.muted, fontWeight: 600 }}>ACTIONS TO EXECUTE</label>
+                  <label style={{ fontSize: '12px', color: themeColors.text.muted, fontWeight: 600 }}>ACTIONS TO EXECUTE</label>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {(['like', 'comment'] as const).map(action => (
                       <button key={action} onClick={() => {
                         const ns = [...sequenceSteps]; const s = ns.find(x => x.id === step.id);
                         if (s) s.actions[action] = !s.actions[action]; setSequenceSteps(ns);
                       }} style={{ ...styles.btn(step.actions[action] ? 'primary' : 'secondary'), padding: '6px 12px', fontSize: '13px' }}>
-                        {step.actions[action] ? <CheckSquare size={14} /> : <Square size={14} color={THEME.colors.text.muted} />}
+                        {step.actions[action] ? <CheckSquare size={14} /> : <Square size={14} color={themeColors.text.muted} />}
                         {action.charAt(0).toUpperCase() + action.slice(1)}
                       </button>
                     ))}
@@ -1426,10 +1466,10 @@ export default function LeadWarmerTab(props: Props) {
                     <input type="checkbox" checked={step.enabled} onChange={e => {
                       const ns = [...sequenceSteps]; const s = ns.find(x => x.id === step.id);
                       if (s) s.enabled = e.target.checked; setSequenceSteps(ns);
-                    }} style={{ width: '18px', height: '18px', accentColor: THEME.colors.success }} />
-                    <span style={{ color: step.enabled ? THEME.colors.success : THEME.colors.text.muted, fontSize: '14px', fontWeight: 600 }}>{step.enabled ? 'Active' : 'Paused'}</span>
+                    }} style={{ width: '18px', height: '18px', accentColor: themeColors.success }} />
+                    <span style={{ color: step.enabled ? themeColors.success : themeColors.text.muted, fontSize: '14px', fontWeight: 600 }}>{step.enabled ? 'Active' : 'Paused'}</span>
                   </label>
-                  <button onClick={() => setSequenceSteps(sequenceSteps.filter(s => s.id !== step.id))} style={{ background: 'none', border: 'none', color: THEME.colors.error, cursor: 'pointer', padding: '8px', opacity: 0.8 }} title="Delete Step">
+                  <button onClick={() => setSequenceSteps(sequenceSteps.filter(s => s.id !== step.id))} style={{ background: 'none', border: 'none', color: themeColors.error, cursor: 'pointer', padding: '8px', opacity: 0.8 }} title="Delete Step">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -1457,23 +1497,23 @@ export default function LeadWarmerTab(props: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           <div style={styles.card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: THEME.radius.md }}>
-                <Zap size={24} color={THEME.colors.success} />
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: t.radius.md }}>
+                <Zap size={24} color={themeColors.success} />
               </div>
               <div>
                 <h3 style={{ margin: 0, color: 'white', fontSize: '18px' }}>Autopilot Engine</h3>
-                <p style={{ margin: '4px 0 0 0', color: THEME.colors.text.secondary, fontSize: '13px' }}>Run tasks automatically via CRON schedule</p>
+                <p style={{ margin: '4px 0 0 0', color: themeColors.text.secondary, fontSize: '13px' }}>Run tasks automatically via CRON schedule</p>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: THEME.radius.md, border: `1px solid ${THEME.colors.border}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: t.radius.md, border: `1px solid ${themeColors.border}` }}>
                 <div>
                   <h4 style={{ margin: 0, color: 'white', fontSize: '15px' }}>Enable Autopilot</h4>
-                  <p style={{ margin: '4px 0 0 0', color: THEME.colors.text.muted, fontSize: '13px' }}>Requires browser extension to be open</p>
+                  <p style={{ margin: '4px 0 0 0', color: themeColors.text.muted, fontSize: '13px' }}>Requires browser extension to be open</p>
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <div style={{ position: 'relative', width: '44px', height: '24px', background: autopilotEnabled ? THEME.colors.success : 'rgba(255,255,255,0.1)', borderRadius: '12px', transition: '0.3s' }}>
+                  <div style={{ position: 'relative', width: '44px', height: '24px', background: autopilotEnabled ? themeColors.success : 'rgba(255,255,255,0.1)', borderRadius: '12px', transition: '0.3s' }}>
                     <div style={{ position: 'absolute', top: '2px', left: autopilotEnabled ? '22px' : '2px', width: '20px', height: '20px', background: 'white', borderRadius: '50%', transition: '0.3s' }} />
                   </div>
                   <input type="checkbox" hidden checked={autopilotEnabled} onChange={e => setAutopilotEnabled(e.target.checked)} />
@@ -1481,26 +1521,26 @@ export default function LeadWarmerTab(props: Props) {
               </div>
 
               <div>
-                <label style={{ display: 'block', color: THEME.colors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>DAILY EXECUTION TIME</label>
+                <label style={{ display: 'block', color: themeColors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>DAILY EXECUTION TIME</label>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <input type="time" value={autopilotTime} onChange={e => setAutopilotTime(e.target.value)} style={{ ...styles.input, width: '150px' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: THEME.colors.text.muted, fontSize: '13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: themeColors.text.muted, fontSize: '13px' }}>
                     <AlertCircle size={14} /> Executes via CRON job.
                   </div>
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', color: THEME.colors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>MAX LEADS TO PROCESS DAILY</label>
+                <label style={{ display: 'block', color: themeColors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>MAX LEADS TO PROCESS DAILY</label>
                 <input type="number" min="1" max="100" value={profilesPerDay} onChange={e => setProfilesPerDay(parseInt(e.target.value) || 20)} style={{ ...styles.input, width: '150px' }} />
               </div>
 
               <div>
-                <label style={{ display: 'block', color: THEME.colors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>
+                <label style={{ display: 'block', color: themeColors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>
                   <Timer size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
                   DELAY BETWEEN LEAD BULK TASKS
                 </label>
-                <p style={{ margin: '0 0 8px 0', color: THEME.colors.text.muted, fontSize: '12px' }}>
+                <p style={{ margin: '0 0 8px 0', color: themeColors.text.muted, fontSize: '12px' }}>
                   Time gap between processing each lead. E.g., if 20 leads with 5 min delay = ~100 min total.
                 </p>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1519,24 +1559,24 @@ export default function LeadWarmerTab(props: Props) {
 
           <div style={styles.card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ background: 'rgba(105, 63, 233, 0.1)', padding: '10px', borderRadius: THEME.radius.md }}>
-                <Wand2 size={24} color={THEME.colors.primaryLight} />
+              <div style={{ background: 'rgba(105, 63, 233, 0.1)', padding: '10px', borderRadius: t.radius.md }}>
+                <Wand2 size={24} color={themeColors.primaryLight} />
               </div>
               <div>
                 <h3 style={{ margin: 0, color: 'white', fontSize: '18px' }}>Content Strategy</h3>
-                <p style={{ margin: '4px 0 0 0', color: THEME.colors.text.secondary, fontSize: '13px' }}>Configure how AI writes comments</p>
+                <p style={{ margin: '4px 0 0 0', color: themeColors.text.secondary, fontSize: '13px' }}>Configure how AI writes comments</p>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
-                <label style={{ display: 'block', color: THEME.colors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>YOUR BUSINESS CONTEXT (AI PROMPT)</label>
+                <label style={{ display: 'block', color: themeColors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>YOUR BUSINESS CONTEXT (AI PROMPT)</label>
                 <textarea value={businessContext} onChange={e => setBusinessContext(e.target.value)} style={{ ...styles.input, minHeight: '180px', resize: 'vertical', lineHeight: '1.5' }}
                   placeholder="E.g., I am a SaaS founder selling a B2B marketing tool. My goal is to build relationships with VPs of Marketing." />
               </div>
             </div>
 
-            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: `1px solid ${THEME.colors.border}`, display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: `1px solid ${themeColors.border}`, display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={saveSettings} disabled={savingSettings} style={styles.btn('primary', savingSettings)}>
                 {savingSettings ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save All Settings'}
               </button>
@@ -1550,24 +1590,24 @@ export default function LeadWarmerTab(props: Props) {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
           <div style={{ ...styles.card, width: '500px', padding: '32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}><Zap color={THEME.colors.warning} /> Instant Warm Up</h2>
-              <button onClick={() => setShowInstantModal(false)} style={{ background: 'none', border: 'none', color: THEME.colors.text.muted, cursor: 'pointer' }}><X size={24} /></button>
+              <h2 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}><Zap color={themeColors.warning} /> Instant Warm Up</h2>
+              <button onClick={() => setShowInstantModal(false)} style={{ background: 'none', border: 'none', color: themeColors.text.muted, cursor: 'pointer' }}><X size={24} /></button>
             </div>
 
-            <div style={{ marginBottom: '24px', background: 'rgba(245, 158, 11, 0.1)', border: `1px solid rgba(245, 158, 11, 0.3)`, padding: '16px', borderRadius: THEME.radius.md, color: THEME.colors.warning, fontSize: '14px' }}>
+            <div style={{ marginBottom: '24px', background: 'rgba(245, 158, 11, 0.1)', border: `1px solid rgba(245, 158, 11, 0.3)`, padding: '16px', borderRadius: t.radius.md, color: themeColors.warning, fontSize: '14px' }}>
               Instantly execute engagement for <strong>{selectedLeads.size} leads</strong>. Each lead = 1 bulk task sent to extension.
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
-                <label style={{ display: 'block', color: THEME.colors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>WHICH POSTS TO ENGAGE?</label>
+                <label style={{ display: 'block', color: themeColors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>WHICH POSTS TO ENGAGE?</label>
                 <select value={instantConfig.postTarget} onChange={e => setInstantConfig({ ...instantConfig, postTarget: e.target.value })} style={styles.select}>
                   {POST_TARGETS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
 
               <div>
-                <label style={{ display: 'block', color: THEME.colors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>ACTIONS TO EXECUTE</label>
+                <label style={{ display: 'block', color: themeColors.text.secondary, marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>ACTIONS TO EXECUTE</label>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button onClick={() => setInstantConfig({ ...instantConfig, like: !instantConfig.like })} style={{ ...styles.btn(instantConfig.like ? 'primary' : 'secondary'), flex: 1 }}>
                     {instantConfig.like ? <CheckSquare size={16} /> : <Square size={16} />} Like
@@ -1584,25 +1624,25 @@ export default function LeadWarmerTab(props: Props) {
               <div style={{ marginTop: '20px', padding: '14px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', border: `1px solid rgba(245, 158, 11, 0.3)` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Loader2 size={14} className="animate-spin" color={THEME.colors.warning} />
-                    <span style={{ fontSize: '13px', color: THEME.colors.warning, fontWeight: 600 }}>Processing...</span>
+                    <Loader2 size={14} className="animate-spin" color={themeColors.warning} />
+                    <span style={{ fontSize: '13px', color: themeColors.warning, fontWeight: 600 }}>Processing...</span>
                   </div>
                   <button onClick={cancelInstantWarmup} style={{ background: 'rgba(239, 68, 68, 0.2)', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <X size={12} color={THEME.colors.error} />
-                    <span style={{ color: THEME.colors.error, fontSize: '11px', fontWeight: 600 }}>Stop</span>
+                    <X size={12} color={themeColors.error} />
+                    <span style={{ color: themeColors.error, fontSize: '11px', fontWeight: 600 }}>Stop</span>
                   </button>
                 </div>
                 <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
                   <div style={{
                     width: instantProgress.total > 0 ? `${(instantProgress.current / instantProgress.total) * 100}%` : '100%',
                     height: '100%',
-                    background: THEME.colors.warning,
+                    background: themeColors.warning,
                     borderRadius: '4px',
                     transition: 'width 0.3s ease'
                   }} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: THEME.colors.text.secondary }}>{instantProgress.message}</span>
+                  <span style={{ fontSize: '12px', color: themeColors.text.secondary }}>{instantProgress.message}</span>
                   {instantProgress.total > 0 && (
                     <span style={{ fontSize: '12px', color: 'white', fontWeight: 600 }}>
                       {instantProgress.current} / {instantProgress.total}
@@ -1614,7 +1654,7 @@ export default function LeadWarmerTab(props: Props) {
 
             <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => { setShowInstantModal(false); setBulkEngaging(false); }} disabled={bulkEngaging} style={styles.btn('secondary')}>Cancel</button>
-              <button onClick={handleExecuteInstant} disabled={bulkEngaging} style={{ ...styles.btn('primary'), background: THEME.colors.warning }}>
+              <button onClick={handleExecuteInstant} disabled={bulkEngaging} style={{ ...styles.btn('primary'), background: themeColors.warning }}>
                 {bulkEngaging ? <><Loader2 size={16} className="animate-spin" /> Executing...</> : `Execute Now (${selectedLeads.size} Leads)`}
               </button>
             </div>

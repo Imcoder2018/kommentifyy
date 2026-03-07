@@ -2766,8 +2766,8 @@ function DashboardContent() {
         <div data-theme={theme} style={{
             fontFamily: 'system-ui, -apple-system, sans-serif',
             minHeight: '100vh',
-            background: theme === 'light' ? 'linear-gradient(135deg, #f8f9fc 0%, #eef1f8 100%)' : theme === 'dark' ? 'linear-gradient(135deg, #0a0a1a 0%, #111128 100%)' : 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)',
-            color: theme === 'light' ? '#1a1a2e' : 'white',
+            background: theme === 'light' ? 'linear-gradient(135deg, #f0f2f5 0%, #e4e7eb 100%)' : theme === 'dark' ? 'linear-gradient(135deg, #0a0a1a 0%, #111128 100%)' : 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%)',
+            color: theme === 'light' ? '#111827' : 'white',
             display: 'flex'
         }}>
             {/* Upgrade Plan Modal for Free Users */}
@@ -2954,7 +2954,7 @@ function DashboardContent() {
             {showLogsPopup && (
                 <>
                     <div onClick={() => setShowLogsPopup(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9997 }} />
-                    <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', zIndex: 9998, background: theme === 'light' ? '#fff' : '#1a1a3e', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '520px', maxHeight: '480px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+                    <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', zIndex: 9998, background: theme === 'light' ? '#ffffff' : '#1a1a3e', border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '520px', maxHeight: '480px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                             <span style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', theme === 'light' ? '#1a1a2e' : 'white', 14)} Live Activity Logs</span>
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -2966,7 +2966,7 @@ function DashboardContent() {
                                     style={{ padding: '4px 10px', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '6px', color: '#a78bfa', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
                                     Open Full View
                                 </button>
-                                <button onClick={() => setShowLogsPopup(false)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#666' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>✕</button>
+                                <button onClick={() => setShowLogsPopup(false)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>✕</button>
                             </div>
                         </div>
                         <div style={{ fontFamily: 'monospace', fontSize: '11px', lineHeight: '1.6' }}>
@@ -3001,12 +3001,12 @@ function DashboardContent() {
             {taskStatusExpanded && (
                 <>
                     <div onClick={() => setTaskStatusExpanded(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9997 }} />
-                    <div style={{ position: 'fixed', top: '72px', right: '440px', zIndex: 9998, background: theme === 'light' ? '#fff' : '#1a1a3e', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '380px', maxHeight: '400px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+                    <div style={{ position: 'fixed', top: '72px', right: '440px', zIndex: 9998, background: theme === 'light' ? '#ffffff' : '#1a1a3e', border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '380px', maxHeight: '400px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                             <span style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '700', fontSize: '14px' }}>
                                 {taskStatusExpanded === 'pending' ? 'Pending' : taskStatusExpanded === 'in_progress' ? 'In Progress' : taskStatusExpanded === 'completed' ? 'Completed' : 'Failed/Cancelled'} Tasks
                             </span>
-                            <button onClick={() => setTaskStatusExpanded(null)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#666' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>✕</button>
+                            <button onClick={() => setTaskStatusExpanded(null)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>✕</button>
                         </div>
                         {tasks.filter(t => {
                             if (taskStatusExpanded === 'pending') return t.status === 'pending';
@@ -3150,8 +3150,8 @@ function DashboardContent() {
             {/* Professional Sidebar */}
             <div style={{
                 width: sidebarCollapsed ? '80px' : '260px',
-                background: theme === 'light' ? 'rgba(255,255,255,0.97)' : 'rgba(15, 15, 35, 0.95)',
-                borderRight: theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.08)',
+                background: theme === 'light' ? '#ffffff' : 'rgba(15, 15, 35, 0.95)',
+                borderRight: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.08)',
                 height: '100vh',
                 position: 'fixed',
                 left: 0,
@@ -3215,23 +3215,23 @@ function DashboardContent() {
                 {/* Navigation */}
                 <div style={{ flex: 1, padding: '0 12px', overflowY: 'auto' }}>
                     {!sidebarCollapsed && (
-                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', marginBottom: '8px', paddingLeft: '12px', letterSpacing: '1.5px', fontWeight: '600' }}>
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.4)', marginBottom: '8px', paddingLeft: '12px', letterSpacing: '1.5px', fontWeight: '600' }}>
                             {t('sidebar.dashboard')}
                         </div>
                     )}
                     {navItems.filter(i => i.section === 'dashboard').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#5b21b6' : 'white') : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
                             {!sidebarCollapsed && item.label}
                         </button>
                     ))}
 
-                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.posts')}</div>}
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.posts')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'posts').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px', position: 'relative' }}>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#5b21b6' : 'white') : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px', position: 'relative' }}>
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
                             {!sidebarCollapsed && (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
@@ -3246,11 +3246,11 @@ function DashboardContent() {
                         </button>
                     ))}
 
-                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.comments')}</div>}
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.comments')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'comments').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px', position: 'relative' }}>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#5b21b6' : 'white') : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px', position: 'relative' }}>
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
                             {!sidebarCollapsed && (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
@@ -3265,18 +3265,18 @@ function DashboardContent() {
                         </button>
                     ))}
 
-                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.management')}</div>}
+                    {!sidebarCollapsed && <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.4)', margin: '18px 0 8px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>{t('sidebar.management')}</div>}
                     {sidebarCollapsed && <div style={{ margin: '10px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }} />}
                     {navItems.filter(i => i.section === 'management').map(item => (
                         <button key={item.id} onClick={() => handleTabChange(item.id)} title={sidebarCollapsed ? item.label : undefined}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', width: '100%', padding: sidebarCollapsed ? '14px' : '12px 16px', background: activeTab === item.id ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)' : 'transparent', color: activeTab === item.id ? (theme === 'light' ? '#5b21b6' : 'white') : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.6)'), border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent', borderRadius: '12px', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.2s ease', fontWeight: activeTab === item.id ? '600' : '500', fontSize: '14px', gap: '12px' }}>
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', flexShrink: 0 }}>{item.icon}</span>
                             {!sidebarCollapsed && item.label}
                         </button>
                     ))}
 
                     {!sidebarCollapsed && (
-                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
                             {t('sidebar.account')}
                         </div>
                     )}
@@ -3297,7 +3297,7 @@ function DashboardContent() {
                                 background: activeTab === item.id
                                     ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
                                     : 'transparent',
-                                color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'),
+                                color: activeTab === item.id ? (theme === 'light' ? '#5b21b6' : 'white') : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.6)'),
                                 border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent',
                                 borderRadius: '12px',
                                 cursor: 'pointer',
@@ -3314,7 +3314,7 @@ function DashboardContent() {
                     ))}
 
                     {!sidebarCollapsed && (
-                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme === 'light' ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.4)', margin: '24px 0 12px 12px', letterSpacing: '1.5px', fontWeight: '600' }}>
                             Settings
                         </div>
                     )}
@@ -3336,7 +3336,7 @@ function DashboardContent() {
                                 background: activeTab === item.id
                                     ? 'linear-gradient(135deg, rgba(105,63,233,0.3) 0%, rgba(139,92,246,0.2) 100%)'
                                     : 'transparent',
-                                color: activeTab === item.id ? (theme === 'light' ? '#693fe9' : 'white') : (theme === 'light' ? '#555' : 'rgba(255,255,255,0.6)'),
+                                color: activeTab === item.id ? (theme === 'light' ? '#5b21b6' : 'white') : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.6)'),
                                 border: activeTab === item.id ? '1px solid rgba(105,63,233,0.4)' : '1px solid transparent',
                                 borderRadius: '12px',
                                 cursor: 'pointer',
@@ -3428,12 +3428,12 @@ function DashboardContent() {
                         <h1 style={{
                             fontSize: '32px',
                             fontWeight: '800',
-                            color: 'white',
+                            color: theme === 'light' ? '#111827' : 'white',
                             margin: '0 0 8px 0',
                         }}>
                             {t(`headers.${activeTab}`, activeTab)}
                         </h1>
-                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '15px', margin: 0 }}>
+                        <p style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.6)', fontSize: '15px', margin: 0 }}>
                             {t(`descriptions.${activeTab}`, '')}
                         </p>
                     </div>
@@ -3442,39 +3442,39 @@ function DashboardContent() {
                         {/* Extension Connection Status */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {extensionConnected ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(16,185,129,0.1)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: theme === 'light' ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.1)', borderRadius: '8px', border: theme === 'light' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(16,185,129,0.3)' }}>
                                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px rgba(16,185,129,0.6)', animation: 'pulse 2s infinite' }} />
-                                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#34d399' }}>Extension Connected</span>
-                                    {extensionLastSeen && <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>· {extensionLastSeen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                                    <span style={{ fontSize: '11px', fontWeight: '600', color: theme === 'light' ? '#059669' : '#34d399' }}>Extension Connected</span>
+                                    {extensionLastSeen && <span style={{ fontSize: '9px', color: theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.35)' }}>· {extensionLastSeen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: theme === 'light' ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '8px', border: theme === 'light' ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(239,68,68,0.3)' }}>
                                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }} />
-                                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#f87171' }}>Extension Offline</span>
+                                        <span style={{ fontSize: '11px', fontWeight: '600', color: theme === 'light' ? '#dc2626' : '#f87171' }}>Extension Offline</span>
                                         {extensionLastSeen && (() => {
                                             const ago = Math.floor((Date.now() - extensionLastSeen.getTime()) / 1000);
                                             const label = ago < 60 ? `${ago}s ago` : ago < 3600 ? `${Math.floor(ago / 60)}m ago` : ago < 86400 ? `${Math.floor(ago / 3600)}h ago` : `${Math.floor(ago / 86400)}d ago`;
-                                            return <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>· last seen {label}</span>;
+                                            return <span style={{ fontSize: '9px', color: theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.35)' }}>· last seen {label}</span>;
                                         })()}
                                     </div>
                                     <button
                                         onClick={checkExtensionConnectivity}
                                         style={{
                                             padding: '4px 8px',
-                                            background: 'rgba(255,255,255,0.1)',
-                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            background: theme === 'light' ? '#ffffff' : 'rgba(255,255,255,0.1)',
+                                            border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.2)',
                                             borderRadius: '6px',
-                                            color: 'rgba(255,255,255,0.8)',
+                                            color: theme === 'light' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
                                             fontSize: '10px',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s'
                                         }}
-                                        onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
-                                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                                        onMouseOver={e => { e.currentTarget.style.background = theme === 'light' ? '#f3f4f6' : 'rgba(255,255,255,0.15)'; }}
+                                        onMouseOut={e => { e.currentTarget.style.background = theme === 'light' ? '#ffffff' : 'rgba(255,255,255,0.1)'; }}
                                         title="Auto-checks every 15s. Click to check now."
                                     >
-                                        {miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', 'white', 11)} Retry
+                                        {miniIcon('M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15', theme === 'light' ? 'rgba(0,0,0,0.8)' : 'white', 11)} Retry
                                     </button>
                                 </div>
                             )}
@@ -3482,19 +3482,19 @@ function DashboardContent() {
                                 onClick={() => window.open('https://chromewebstore.google.com/detail/kommentify-linkedin-auto/laeckkpjacbodjglcnenggpdpehkacei', '_blank')}
                                 style={{
                                     padding: '4px 8px',
-                                    background: 'rgba(59,130,246,0.1)',
-                                    border: '1px solid rgba(59,130,246,0.3)',
+                                    background: theme === 'light' ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.1)',
+                                    border: theme === 'light' ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(59,130,246,0.3)',
                                     borderRadius: '6px',
-                                    color: '#60a5fa',
+                                    color: theme === 'light' ? '#2563eb' : '#60a5fa',
                                     fontSize: '10px',
                                     fontWeight: '600',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s'
                                 }}
-                                onMouseOver={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
-                                onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)'; }}
+                                onMouseOver={e => { e.currentTarget.style.background = theme === 'light' ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.2)'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = theme === 'light' ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.1)'; }}
                             >
-                                {miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', 'white', 12)} Get Extension
+                                {miniIcon('M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z', theme === 'light' ? '#2563eb' : 'white', 12)} Get Extension
                             </button>
                         </div>
                         {/* Sidebar Toggle Buttons */}
@@ -3502,54 +3502,71 @@ function DashboardContent() {
                             <button
                                 onClick={() => { setShowSettingsSidebar(!showSettingsSidebar); setShowSourcesSidebar(false); }}
                                 style={{
-                                    padding: '6px 10px',
-                                    background: showSettingsSidebar ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.08)',
-                                    border: `1px solid ${showSettingsSidebar ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                                    padding: '8px',
+                                    background: showSettingsSidebar ? 'rgba(139,92,246,0.3)' : (theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'),
+                                    border: `1px solid ${showSettingsSidebar ? 'rgba(139,92,246,0.6)' : (theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)')}`,
                                     borderRadius: '8px',
-                                    color: showSettingsSidebar ? '#c4b5fd' : 'rgba(255,255,255,0.7)',
+                                    color: showSettingsSidebar ? '#7c3aed' : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.7)'),
                                     fontSize: '10px',
                                     fontWeight: '600',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    justifyContent: 'center'
                                 }}
-                                onMouseOver={e => { e.currentTarget.style.background = showSettingsSidebar ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.12)'; }}
-                                onMouseOut={e => { e.currentTarget.style.background = showSettingsSidebar ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.08)'; }}
+                                onMouseOver={e => { e.currentTarget.style.background = showSettingsSidebar ? 'rgba(139,92,246,0.4)' : (theme === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)'); }}
+                                onMouseOut={e => { e.currentTarget.style.background = showSettingsSidebar ? 'rgba(139,92,246,0.3)' : (theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'); }}
                                 title="Toggle Comment Settings"
                             >
-                                {miniIcon('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', showSettingsSidebar ? '#c4b5fd' : 'rgba(255,255,255,0.7)', 11)} Settings
+                                {miniIcon('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', showSettingsSidebar ? '#7c3aed' : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.7)'), 14)}
                             </button>
                             <button
                                 onClick={() => { setShowSourcesSidebar(!showSourcesSidebar); setShowSettingsSidebar(false); }}
                                 style={{
-                                    padding: '6px 10px',
-                                    background: showSourcesSidebar ? 'rgba(6,182,212,0.3)' : 'rgba(255,255,255,0.08)',
-                                    border: `1px solid ${showSourcesSidebar ? 'rgba(6,182,212,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                                    padding: '8px',
+                                    background: showSourcesSidebar ? 'rgba(6,182,212,0.3)' : (theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'),
+                                    border: `1px solid ${showSourcesSidebar ? 'rgba(6,182,212,0.6)' : (theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)')}`,
                                     borderRadius: '8px',
-                                    color: showSourcesSidebar ? '#22d3ee' : 'rgba(255,255,255,0.7)',
+                                    color: showSourcesSidebar ? '#0891b2' : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.7)'),
                                     fontSize: '10px',
                                     fontWeight: '600',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    justifyContent: 'center'
                                 }}
-                                onMouseOver={e => { e.currentTarget.style.background = showSourcesSidebar ? 'rgba(6,182,212,0.4)' : 'rgba(255,255,255,0.12)'; }}
-                                onMouseOut={e => { e.currentTarget.style.background = showSourcesSidebar ? 'rgba(6,182,212,0.3)' : 'rgba(255,255,255,0.08)'; }}
+                                onMouseOver={e => { e.currentTarget.style.background = showSourcesSidebar ? 'rgba(6,182,212,0.4)' : (theme === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)'); }}
+                                onMouseOut={e => { e.currentTarget.style.background = showSourcesSidebar ? 'rgba(6,182,212,0.3)' : (theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'); }}
                                 title="Toggle Style Sources"
                             >
-                                {miniIcon('M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z', showSourcesSidebar ? '#22d3ee' : 'rgba(255,255,255,0.7)', 11)} Sources
+                                {miniIcon('M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z', showSourcesSidebar ? '#0891b2' : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.7)'), 14)}
                             </button>
                         </div>
                         {/* Theme Toggle */}
-                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', background: theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)', borderRadius: '10px', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
                             {(['current', 'light', 'dark'] as const).map(t => (
                                 <button key={t} onClick={() => { setTheme(t); localStorage.setItem('dashboard-theme', t); }}
-                                    style={{ padding: '8px 14px', background: theme === t ? 'rgba(105,63,233,0.6)' : 'transparent', color: theme === t ? 'white' : 'rgba(255,255,255,0.6)', border: 'none', fontSize: '12px', fontWeight: theme === t ? '700' : '500', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                    {t === 'current' ? 'Current' : t === 'light' ? 'Light' : 'Dark'}
+                                    style={{ 
+                                        padding: '8px', 
+                                        background: theme === t ? 'rgba(105,63,233,0.6)' : 'transparent', 
+                                        color: theme === t ? 'white' : (theme === 'light' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)'), 
+                                        border: 'none', 
+                                        fontSize: '12px', 
+                                        fontWeight: theme === t ? '700' : '500', 
+                                        cursor: 'pointer', 
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        minWidth: '36px'
+                                    }}
+                                    title={t === 'current' ? 'Current Theme' : t === 'light' ? 'Light Theme' : 'Dark Theme'}
+                                >
+                                    {t === 'current' ? miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', theme === t ? 'white' : (theme === 'light' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)'), 14) : 
+                                     t === 'light' ? miniIcon('M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z', theme === 'light' ? (t === 'light' ? 'white' : 'rgba(0,0,0,0.6)') : (t === 'light' ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.6)'), 14) :
+                                     miniIcon('M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z', theme === 'dark' ? (t === 'dark' ? 'white' : 'rgba(255,255,255,0.6)') : (t === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.6)'), 14)}
                                 </button>
                             ))}
                         </div>
@@ -3564,29 +3581,29 @@ function DashboardContent() {
                     top: '100px',
                     width: '380px',
                     maxHeight: 'calc(100vh - 140px)',
-                    background: 'rgba(17, 24, 39, 0.98)',
+                    background: theme === 'light' ? '#ffffff' : 'rgba(17, 24, 39, 0.98)',
                     backdropFilter: 'blur(12px)',
                     borderRadius: '16px',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.08)',
                     borderRight: '3px solid #3b82f6',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                    boxShadow: theme === 'light' ? '0 8px 32px rgba(0, 0, 0, 0.12)' : '0 8px 32px rgba(0, 0, 0, 0.4)',
                     padding: '20px',
                     overflowY: 'auto',
                     zIndex: 100,
                     transition: 'right 0.3s ease',
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <h3 style={{ color: theme === 'light' ? '#111827' : 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {miniIcon('M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', '#3b82f6', 18)}
                             Comment Settings
                         </h3>
-                        <button onClick={() => setShowSettingsSidebar(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>×</button>
+                        <button onClick={() => setShowSettingsSidebar(false)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>×</button>
                     </div>
 
                     {/* Comment Goal */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Comment Goal</label>
-                        <select value={csGoal} onChange={e => setCsGoal(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Comment Goal</label>
+                        <select value={csGoal} onChange={e => setCsGoal(e.target.value)} style={{ width: '100%', padding: '10px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }}>
                             <option value="AddValue">Add Value</option>
                             <option value="ShareExperience">Experience</option>
                             <option value="AskQuestion">Question</option>
@@ -3598,8 +3615,8 @@ function DashboardContent() {
 
                     {/* Tone of Voice */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Tone of Voice</label>
-                        <select value={csTone} onChange={e => setCsTone(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Tone of Voice</label>
+                        <select value={csTone} onChange={e => setCsTone(e.target.value)} style={{ width: '100%', padding: '10px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }}>
                             <option value="Professional">Professional</option>
                             <option value="Friendly">Friendly</option>
                             <option value="ThoughtProvoking">Thought Provoking</option>
@@ -3611,8 +3628,8 @@ function DashboardContent() {
 
                     {/* Length */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Length</label>
-                        <select value={csLength} onChange={e => setCsLength(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Length</label>
+                        <select value={csLength} onChange={e => setCsLength(e.target.value)} style={{ width: '100%', padding: '10px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }}>
                             <option value="Brief">Brief (≤100)</option>
                             <option value="Short">Short (≤300)</option>
                             <option value="Mid">Medium (≤600)</option>
@@ -3622,8 +3639,8 @@ function DashboardContent() {
 
                     {/* Style */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Style</label>
-                        <select value={csStyle} onChange={e => setCsStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Style</label>
+                        <select value={csStyle} onChange={e => setCsStyle(e.target.value)} style={{ width: '100%', padding: '10px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }}>
                             <option value="direct">Direct (Single paragraph)</option>
                             <option value="structured">Structured (2-3 paragraphs)</option>
                             <option value="storyteller">Storyteller (Personal anecdote)</option>
@@ -3636,48 +3653,48 @@ function DashboardContent() {
 
                     {/* Expertise */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Your Expertise</label>
-                        <input type="text" value={csExpertise || ''} onChange={e => setCsExpertise(e.target.value)} placeholder="e.g., SaaS Marketing" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Your Expertise</label>
+                        <input type="text" value={csExpertise || ''} onChange={e => setCsExpertise(e.target.value)} placeholder="e.g., SaaS Marketing" style={{ width: '100%', padding: '10px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }} />
                     </div>
 
                     {/* Background */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Background (Optional)</label>
-                        <input type="text" value={csBackground || ''} onChange={e => setCsBackground(e.target.value)} placeholder="e.g., Scaled 3 startups" style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }} />
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>Background (Optional)</label>
+                        <input type="text" value={csBackground || ''} onChange={e => setCsBackground(e.target.value)} placeholder="e.g., Scaled 3 startups" style={{ width: '100%', padding: '10px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }} />
                     </div>
 
                     {/* Use Selected Profiles' Comment Style */}
-                    <div style={{ marginBottom: '12px', padding: '12px', background: 'rgba(139,92,246,0.1)', borderRadius: '8px', border: '1px solid rgba(139,92,246,0.2)' }}>
+                    <div style={{ marginBottom: '12px', padding: '12px', background: theme === 'light' ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.1)', borderRadius: '8px', border: theme === 'light' ? '1px solid rgba(139,92,246,0.2)' : '1px solid rgba(139,92,246,0.2)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <label style={{ color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Use Selected Profiles' Comment Style</label>
-                            <div onClick={() => setCsUseProfileStyle(!csUseProfileStyle)} style={{ width: '44px', height: '24px', borderRadius: '12px', background: csUseProfileStyle ? '#8b5cf6' : 'rgba(255,255,255,0.2)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            <label style={{ color: theme === 'light' ? '#111827' : 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Use Selected Profiles' Comment Style</label>
+                            <div onClick={() => setCsUseProfileStyle(!csUseProfileStyle)} style={{ width: '44px', height: '24px', borderRadius: '12px', background: csUseProfileStyle ? '#8b5cf6' : theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }}>
                                 <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: csUseProfileStyle ? '22px' : '2px', transition: 'all 0.2s' }} />
                             </div>
                         </div>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '6px 0 0 0' }}>
+                        <p style={{ color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '6px 0 0 0' }}>
                             Use comment styles from your selected profiles
                         </p>
                     </div>
 
                     {/* Auto Decide for Each Post */}
-                    <div style={{ marginBottom: '12px', padding: '12px', background: 'rgba(168,85,247,0.1)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.2)' }}>
+                    <div style={{ marginBottom: '12px', padding: '12px', background: theme === 'light' ? 'rgba(168,85,247,0.08)' : 'rgba(168,85,247,0.1)', borderRadius: '8px', border: theme === 'light' ? '1px solid rgba(168,85,247,0.2)' : '1px solid rgba(168,85,247,0.2)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <label style={{ color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Auto Decide for Each Post</label>
-                            <div onClick={() => setAutoDecideEnabled(!autoDecideEnabled)} style={{ width: '44px', height: '24px', borderRadius: '12px', background: autoDecideEnabled ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255,255,255,0.2)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            <label style={{ color: theme === 'light' ? '#111827' : 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Auto Decide for Each Post</label>
+                            <div onClick={() => setAutoDecideEnabled(!autoDecideEnabled)} style={{ width: '44px', height: '24px', borderRadius: '12px', background: autoDecideEnabled ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }}>
                                 <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: autoDecideEnabled ? '22px' : '2px', transition: 'all 0.2s' }} />
                             </div>
                         </div>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '6px 0 0 0' }}>
+                        <p style={{ color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontSize: '11px', margin: '6px 0 0 0' }}>
                             Turn ON to let AI auto-select the best settings per post.
                         </p>
                     </div>
 
                     {/* AI Button Behavior */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>AI Button Behavior</label>
-                        <select value={csAutoPost} onChange={e => setCsAutoPost(e.target.value)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}>
-                            <option value="manual" style={{ background: '#1a1a3e' }}>Manual Review</option>
-                            <option value="auto" style={{ background: '#1a1a3e' }}>Auto Post</option>
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>AI Button Behavior</label>
+                        <select value={csAutoPost} onChange={e => setCsAutoPost(e.target.value)} style={{ width: '100%', padding: '10px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }}>
+                            <option value="manual" style={{ background: theme === 'light' ? '#ffffff' : '#1a1a3e' }}>Manual Review</option>
+                            <option value="auto" style={{ background: theme === 'light' ? '#ffffff' : '#1a1a3e' }}>Auto Post</option>
                         </select>
                     </div>
                 </div>
@@ -3689,19 +3706,19 @@ function DashboardContent() {
                     top: '100px',
                     width: '340px',
                     maxHeight: 'calc(100vh - 140px)',
-                    background: 'rgba(17, 24, 39, 0.98)',
+                    background: theme === 'light' ? '#ffffff' : 'rgba(17, 24, 39, 0.98)',
                     backdropFilter: 'blur(12px)',
                     borderRadius: '16px',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.08)',
                     borderRight: '3px solid #8b5cf6',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                    boxShadow: theme === 'light' ? '0 8px 32px rgba(0, 0, 0, 0.12)' : '0 8px 32px rgba(0, 0, 0, 0.4)',
                     padding: '20px',
                     overflowY: 'auto',
                     zIndex: 100,
                     transition: 'right 0.3s ease',
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <h3 style={{ color: theme === 'light' ? '#111827' : 'white', fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#8b5cf6', 18)}
                             Style Sources
                             {commentStyleProfiles.length > 0 && (
@@ -3710,19 +3727,19 @@ function DashboardContent() {
                                 </span>
                             )}
                         </h3>
-                        <button onClick={() => setShowSourcesSidebar(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>×</button>
+                        <button onClick={() => setShowSourcesSidebar(false)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>×</button>
                     </div>
 
                     {/* Add LinkedIn Profile Input */}
                     <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>
-                            {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', 'rgba(255,255,255,0.5)', 12)}
+                        <label style={{ color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '6px', display: 'block', textTransform: 'uppercase' }}>
+                            {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', 12)}
                             Add LinkedIn Profile
                         </label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <div style={{ position: 'relative', flex: 1 }}>
-                                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>
-                                    {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', 'rgba(255,255,255,0.4)', 14)}
+                                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>
+                                    {miniIcon('M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.4)', 14)}
                                 </span>
                                 <input
                                     type="text"
@@ -3730,7 +3747,7 @@ function DashboardContent() {
                                     onChange={e => setCommentStyleUrl(e.target.value)}
                                     onKeyDown={e => { if (e.key === 'Enter') scrapeCommentStyle(); }}
                                     placeholder="linkedin.com/in/username"
-                                    style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '13px' }}
+                                    style={{ width: '100%', padding: '10px 12px 10px 36px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.05)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px' }}
                                 />
                             </div>
                             <button
@@ -3750,16 +3767,16 @@ function DashboardContent() {
 
                     {/* Status Message */}
                     {commentStyleStatus && (
-                        <div style={{ marginBottom: '12px', padding: '8px 12px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? 'rgba(239,68,68,0.1)' : 'rgba(139, 92, 246, 0.1)', border: `1px solid ${commentStyleStatus.includes('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(139, 92, 246, 0.3)'}`, borderRadius: '8px', color: commentStyleStatus.includes('Error') ? '#f87171' : '#a78bfa', fontSize: '11px' }}>
+                        <div style={{ marginBottom: '12px', padding: '8px 12px', background: commentStyleStatus.includes('Error') || commentStyleStatus.includes('Failed') ? (theme === 'light' ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.1)') : (theme === 'light' ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.1)'), border: `1px solid ${commentStyleStatus.includes('Error') ? (theme === 'light' ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.3)') : (theme === 'light' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.3)')}`, borderRadius: '8px', color: commentStyleStatus.includes('Error') ? (theme === 'light' ? '#dc2626' : '#f87171') : (theme === 'light' ? '#7c3aed' : '#a78bfa'), fontSize: '11px' }}>
                             {commentStyleStatus}
                         </div>
                     )}
 
                     {/* Training Banner */}
                     {commentStyleProfiles.some((p: any) => p.isSelected) && (
-                        <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(139,92,246,0.1)', borderRadius: '8px', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ marginBottom: '12px', padding: '10px', background: theme === 'light' ? 'rgba(139,92,246,0.08)' : 'rgba(139,92,246,0.1)', borderRadius: '8px', border: '1px solid rgba(139,92,246,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8b5cf6', boxShadow: '0 0 8px rgba(139,92,246,0.6)' }} />
-                            <span style={{ color: '#a78bfa', fontSize: '12px', fontWeight: '600' }}>
+                            <span style={{ color: theme === 'light' ? '#7c3aed' : '#a78bfa', fontSize: '12px', fontWeight: '600' }}>
                                 <strong>{commentStyleProfiles.filter((p: any) => p.isSelected).length}</strong> profile{commentStyleProfiles.filter((p: any) => p.isSelected).length > 1 ? 's' : ''} training active
                             </span>
                         </div>
@@ -3769,12 +3786,12 @@ function DashboardContent() {
                     {sharedCommentProfiles.length > 0 && (
                         <div style={{ marginBottom: '12px' }}>
                             <div
-                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '8px 12px', background: 'rgba(245,158,11,0.1)', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(245,158,11,0.2)' }}
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '8px 12px', background: theme === 'light' ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.1)', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(245,158,11,0.2)' }}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', fontSize: '13px', fontWeight: '600' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme === 'light' ? '#111827' : 'white', fontSize: '13px', fontWeight: '600' }}>
                                     {miniIcon('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', '#fbbf24', 14)}
                                     Kommentify Shared
-                                    <span style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px' }}>
+                                    <span style={{ background: theme === 'light' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)', color: '#fbbf24', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px' }}>
                                         {sharedCommentProfiles.length}
                                     </span>
                                 </div>
@@ -3791,9 +3808,9 @@ function DashboardContent() {
                                                 alignItems: 'center',
                                                 gap: '6px',
                                                 padding: '6px 10px',
-                                                background: isSelected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.03)',
+                                                background: isSelected ? (theme === 'light' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.2)') : (theme === 'light' ? '#f3f4f6' : 'rgba(255,255,255,0.03)'),
                                                 borderRadius: '6px',
-                                                border: `1px solid ${isSelected ? 'rgba(245, 158, 11, 0.5)' : 'rgba(255,255,255,0.08)'}`,
+                                                border: `1px solid ${isSelected ? (theme === 'light' ? 'rgba(245, 158, 11, 0.5)' : 'rgba(245, 158, 11, 0.5)') : (theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)')}`,
                                             }}
                                         >
                                             <input
@@ -3829,7 +3846,7 @@ function DashboardContent() {
                                                 }}
                                                 style={{ accentColor: '#f59e0b', width: '12px', height: '12px', cursor: 'pointer', margin: 0 }}
                                             />
-                                            <span style={{ color: isSelected ? '#fbbf24' : 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '500', cursor: 'pointer' }}>
+                                            <span style={{ color: isSelected ? (theme === 'light' ? '#d97706' : '#fbbf24') : (theme === 'light' ? '#374151' : 'rgba(255,255,255,0.7)'), fontSize: '11px', fontWeight: '500', cursor: 'pointer' }}>
                                                 {p.profileName || p.profileId}
                                             </span>
                                             {/* View All Comments Popup button for shared profiles */}

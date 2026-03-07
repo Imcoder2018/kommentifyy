@@ -35,7 +35,14 @@ export const LinkedInSelectors = {
     postUrn: 'data-urn',
     postText: 'div.fie-impression-container div.update-components-text',
     postTextSpans: 'div.fie-impression-container div.update-components-text span',
-    postAuthor: 'div.update-components-actor__meta a span span:nth-child(1) span span:nth-child(1)',
+    // Updated postAuthor selectors - 2025 LinkedIn UI structure
+    postAuthor: 'span.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]',
+    postAuthorFallbacks: [
+        'span.update-components-actor__title span[dir="ltr"] span[aria-hidden="true"]',  // 2025 UI
+        'div.update-components-actor__meta a span span:nth-child(1) span span:nth-child(1)',  // Legacy
+        '.update-components-actor__title',  // Simple fallback
+        '[aria-label^="View:"]',  // From aria-label on author link
+    ],
     postHashtags: 'a[href*="https://www.linkedin.com/search/results/all/?keywords="]',
 
     // Post content selectors (updated with new LinkedIn UI - 2024+)
@@ -50,9 +57,12 @@ export const LinkedInSelectors = {
         '.update-components-text',
         '.break-words',
         // NEW: 2025 LinkedIn UI - Based on provided page structure
-        'p[data-view-name="feed-commentary"]',           // Post text container
-        'p[data-view-name="feed-commentary"] span',     // Spans inside post text
-        'span[data-view-name="feed-commentary"] span',  // Alternative span structure
+        'p[data-view-name="feed-commentary"]',           // Post text container (legacy fallback)
+        'p[data-view-name="feed-commentary"] span',     // Spans inside post text (legacy fallback)
+        'span[data-view-name="feed-commentary"] span',  // Alternative span structure (legacy fallback)
+        // Corrected selectors matching actual Element.md structure
+        'div.update-components-text .break-words',      // Actual post text container
+        'div.update-components-text .break-words span[dir="ltr"]', // Actual text spans
     ],
 
     // Post container selectors (updated with new LinkedIn UI - 2024+)

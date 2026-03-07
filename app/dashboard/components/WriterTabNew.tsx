@@ -41,6 +41,11 @@ const DEPTH_OPTIONS = [
 ];
 
 export default function WriterTabNew(props: any) {
+    const dateInputRef = useRef<HTMLInputElement>(null);
+    const timeInputRef = useRef<HTMLInputElement>(null);
+    const plannerDateInputRef = useRef<HTMLInputElement>(null);
+    const plannerTimeInputRef = useRef<HTMLInputElement>(null);
+
     const {
         // Core
         t, user, usage, router, miniIcon, showToast, setActiveTab, isFreePlan, showUpgradeModal, setShowUpgradeModal, dashLang, isDeveloper,
@@ -92,7 +97,7 @@ export default function WriterTabNew(props: any) {
         linkedInOpened: boolean;
     }>({ show: false, postId: null, countdown: 30, linkedInOpened: false });
 
-    // Handle removing a LinkedIn API scheduled post
+    // Handle removing a LinkedIn API scheduled post - removes from frontend only
     const handleRemoveLinkedInScheduledPost = async (post: any) => {
         if (!post.id) return;
 
@@ -105,15 +110,16 @@ export default function WriterTabNew(props: any) {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ id: post.id }),
                 });
-                // Reload scheduled posts
+                // Reload scheduled posts to update the list
                 loadScheduledPosts?.();
+                showToast('Removed But needs manual removal from Linkedin', 'warning');
             }
         } catch (e) {
             console.error('Failed to delete scheduled post:', e);
+            // Still try to reload
+            loadScheduledPosts?.();
+            showToast('Removed But needs manual removal from Linkedin', 'warning');
         }
-
-        // Show notification for 30 seconds
-        setLinkedInRemovalNotification({ show: true, postId: post.id, countdown: 30, linkedInOpened: false });
     };
 
     // Countdown effect for notification
@@ -1550,17 +1556,29 @@ export default function WriterTabNew(props: any) {
                                 onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
                                 {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 10)} History
                             </button>
-                            {/* DATE Picker - Using label */}
-                            <label htmlFor="writer-date-input" style={{ flex: 1, height: '38px', padding: '0 12px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '10px', color: writerScheduleDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {writerScheduleDate ? new Date(writerScheduleDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '📅 Select Date'}
-                            </label>
-                            <input type="date" id="writer-date-input" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)} style={{ display: 'none' }} />
+                            {/* DATE Picker - Styled native input */}
+                            <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+                                <input ref={dateInputRef} type="date" value={writerScheduleDate} onChange={e => setWriterScheduleDate(e.target.value)} onClick={() => dateInputRef.current?.showPicker?.()}
+                                    style={{
+                                        width: '100%', height: '38px', padding: '0 12px',
+                                        background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '10px',
+                                        color: writerScheduleDate ? 'white' : 'rgba(255,255,255,0.6)',
+                                        fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                                        outline: 'none', opacity: 1, position: 'relative', pointerEvents: 'auto'
+                                    }} />
+                            </div>
 
-                            {/* TIME Picker - Using label */}
-                            <label htmlFor="writer-time-input" style={{ flex: 1, height: '38px', padding: '0 12px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '10px', color: writerScheduleTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {writerScheduleTime ? writerScheduleTime : '🕐 Select Time'}
-                            </label>
-                            <input type="time" id="writer-time-input" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)} style={{ display: 'none' }} />
+                            {/* TIME Picker - Styled native input */}
+                            <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+                                <input ref={timeInputRef} type="time" value={writerScheduleTime} onChange={e => setWriterScheduleTime(e.target.value)} onClick={() => timeInputRef.current?.showPicker?.()}
+                                    style={{
+                                        width: '100%', height: '38px', padding: '0 12px',
+                                        background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '10px',
+                                        color: writerScheduleTime ? 'white' : 'rgba(255,255,255,0.6)',
+                                        fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                                        outline: 'none', opacity: 1, position: 'relative', pointerEvents: 'auto'
+                                    }} />
+                            </div>
                             <button onClick={schedulePost}
                                 style={{ padding: '6px 10px', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: '6px', color: '#c4b5fd', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>
                                 {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#c4b5fd', 9)} Schedule
@@ -1753,8 +1771,17 @@ export default function WriterTabNew(props: any) {
                     {/* Scheduled Posts Summary */}
                     {writerScheduledPosts && writerScheduledPosts.length > 0 && (
                         <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px' }}>
-                            <div style={{ color: '#34d399', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>
-                                {writerScheduledPosts.length} Post{writerScheduledPosts.length !== 1 ? 's' : ''} Scheduled
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <div style={{ color: '#34d399', fontSize: '13px', fontWeight: '600' }}>
+                                    {writerScheduledPosts.length} Post{writerScheduledPosts.length !== 1 ? 's' : ''} Scheduled
+                                </div>
+                                <a href="https://www.linkedin.com/share/management" target="_blank" rel="noopener noreferrer"
+                                    style={{ fontSize: '11px', color: '#fbbf24', textDecoration: 'none', fontWeight: '600' }}>
+                                    Manage on LinkedIn →
+                                </a>
+                            </div>
+                            <div style={{ color: '#fbbf24', fontSize: '11px', marginBottom: '8px', fontWeight: '500' }}>
+                                Remove posts from LinkedIn manually at: linkedin.com/share/management
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflowY: 'auto' }}>
                                 {writerScheduledPosts.slice(0, 20).map((post: any, idx: number) => {
@@ -1951,21 +1978,29 @@ export default function WriterTabNew(props: any) {
                                         <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
                                             Start Date
                                         </label>
-                                        <label htmlFor="planner-date-input" style={{ width: '100%', height: '48px', padding: '0 14px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '12px', color: plannerStartDate ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {plannerStartDate ? new Date(plannerStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '📅 Select Date'}
-                                        </label>
-                                        <input type="date" id="planner-date-input" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)} style={{ display: 'none' }} />
+                                        <input ref={plannerDateInputRef} type="date" value={plannerStartDate} onChange={e => setPlannerStartDate(e.target.value)} onClick={() => plannerDateInputRef.current?.showPicker?.()}
+                                            style={{
+                                                width: '100%', height: '48px', padding: '0 14px',
+                                                background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '12px',
+                                                color: plannerStartDate ? 'white' : 'rgba(255,255,255,0.6)',
+                                                fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                                                outline: 'none', opacity: 1, position: 'relative', zIndex: 1, pointerEvents: 'auto'
+                                            }} />
                                     </div>
 
-                                    {/* Publish Time - Simple button */}
+                                    {/* Publish Time - Styled native input */}
                                     <div>
                                         <label style={{ color: '#a78bfa', fontSize: '11px', fontWeight: '700', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>
                                             Publish Time
                                         </label>
-                                        <label htmlFor="planner-time-input" style={{ width: '100%', height: '48px', padding: '0 14px', background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '12px', color: plannerPublishTime ? 'white' : 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {plannerPublishTime ? plannerPublishTime : '🕐 Select Time'}
-                                        </label>
-                                        <input type="time" id="planner-time-input" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)} style={{ display: 'none' }} />
+                                        <input ref={plannerTimeInputRef} type="time" value={plannerPublishTime} onChange={e => setPlannerPublishTime(e.target.value)} onClick={() => plannerTimeInputRef.current?.showPicker?.()}
+                                            style={{
+                                                width: '100%', height: '48px', padding: '0 14px',
+                                                background: 'rgba(167,139,250,0.15)', border: '2px solid rgba(167,139,250,0.5)', borderRadius: '12px',
+                                                color: plannerPublishTime ? 'white' : 'rgba(255,255,255,0.6)',
+                                                fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                                                outline: 'none', opacity: 1, position: 'relative', zIndex: 1, pointerEvents: 'auto'
+                                            }} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
@@ -2203,21 +2238,15 @@ export default function WriterTabNew(props: any) {
                         <div style={{ fontSize: '24px' }}>⚠️</div>
                         <div style={{ flex: 1 }}>
                             <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>
-                                Remove from LinkedIn
+                                LinkedIn Scheduled Post
                             </div>
                             <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', lineHeight: '1.5' }}>
-                                This post was scheduled on LinkedIn. Please manually remove it from <strong>LinkedIn Share Management</strong>.
+                                You have to manually remove scheduled posts from LinkedIn by visiting the link below:
                             </div>
-                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '8px' }}>
-                                {linkedInRemovalNotification.linkedInOpened ? (
-                                    <span style={{ color: '#4ade80', fontWeight: '600' }}>✓ LinkedIn opened for you</span>
-                                ) : (
-                                    <>Opening LinkedIn in <span style={{ fontWeight: '700', color: 'white' }}>{linkedInRemovalNotification.countdown - 15}</span> seconds...</>
-                                )}
-                            </div>
-                            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginTop: '4px' }}>
-                                This notification will close in {linkedInRemovalNotification.countdown} seconds.
-                            </div>
+                            <a href="https://www.linkedin.com/share/management" target="_blank" rel="noopener noreferrer"
+                                style={{ display: 'inline-block', marginTop: '8px', padding: '8px 16px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', fontSize: '13px', fontWeight: '600', borderRadius: '6px', textDecoration: 'none' }}>
+                                🔗 LinkedIn Share Management
+                            </a>
                         </div>
                         <button
                             onClick={() => setLinkedInRemovalNotification({ show: false, postId: null, countdown: 0, linkedInOpened: false })}

@@ -72,6 +72,7 @@ interface ExecutionLog {
   leadsProcessed: number;
   likesGiven: number;
   commentsGiven: number;
+  engagedCount?: number;
   status: 'completed' | 'failed' | 'running';
 }
 
@@ -235,6 +236,8 @@ export default function LeadWarmerTab(props: Props) {
   const [showInstantModal, setShowInstantModal] = useState(false);
   const [instantConfig, setInstantConfig] = useState({ postTarget: 'recent_1', like: true, comment: true });
   const [bulkEngaging, setBulkEngaging] = useState(false);
+  const [instantProgress, setInstantProgress] = useState({ current: 0, total: 0, message: '' });
+  const [instantCancelled, setInstantCancelled] = useState(false);
   const [autopilotGenerating, setAutopilotGenerating] = useState(false);
   const [autopilotProgress, setAutopilotProgress] = useState({ current: 0, total: 0, leadName: '' });
   // Autopilot processing state
@@ -283,7 +286,16 @@ export default function LeadWarmerTab(props: Props) {
           setBulkTaskDelay(data.settings.bulkTaskDelay || 5);
           try {
             const parsedSteps = JSON.parse(data.settings.sequenceSteps);
-            setSequenceSteps(parsedSteps.length ? parsedSteps : DEFAULT_SEQUENCE);
+            // Ensure all steps have required properties with defaults
+            const validatedSteps = parsedSteps.length ? parsedSteps.map((s: any) => ({
+              ...s,
+              postStartIndex: s.postStartIndex ?? 0,
+              postCount: s.postCount ?? 1,
+              day: s.day ?? 1,
+              enabled: s.enabled ?? true,
+              actions: s.actions ?? { like: true, comment: false, connect: false, message: false },
+            })) : DEFAULT_SEQUENCE;
+            setSequenceSteps(validatedSteps);
           } catch { setSequenceSteps(DEFAULT_SEQUENCE); }
         }
       }
@@ -319,8 +331,15 @@ export default function LeadWarmerTab(props: Props) {
         action: 'save_settings',
         campaignName, businessContext, profilesPerDay, sequenceSteps, autopilotEnabled, autopilotTime, bulkTaskDelay
       });
-      if (res.success) showToast?.('Settings saved successfully!', 'success');
-    } catch { showToast?.('Error saving settings', 'error'); }
+      if (res.success) {
+        showToast?.('Settings saved successfully!', 'success');
+      } else {
+        showToast?.(res.error || 'Error saving settings', 'error');
+      }
+    } catch (err) {
+      console.error('Save settings error:', err);
+      showToast?.('Error saving settings', 'error');
+    }
     finally { setSavingSettings(false); }
   };
 
@@ -426,16 +445,55 @@ export default function LeadWarmerTab(props: Props) {
     if (selectedLeads.size === 0) return showToast?.('Select leads to engage', 'error');
     if (!extensionConnected) return showToast?.('Extension not connected', 'error');
 
+    setInstantCancelled(false);
     setBulkEngaging(true);
     const selectedArr = Array.from(selectedLeads);
     const targetLeads = leads.filter(l => selectedArr.includes(l.id));
+
+    // Separate leads into those with posts and those without
+    const leadsWithPosts = targetLeads.filter(l => l.posts && l.posts.length > 0);
+    const leadsNeedingPostsCount = targetLeads.filter(l => !l.posts || l.posts.length === 0).length;
+
+    setInstantProgress({ current: 0, total: leadsWithPosts.length, message: 'Starting...' });
+
+    // If some leads need posts fetched, trigger fetch via backend
+    if (leadsNeedingPostsCount > 0) {
+      setInstantProgress(prev => ({ ...prev, message: `Fetching posts for ${leadsNeedingPostsCount} leads...` }));
+      showToast?.(`Fetching posts for ${leadsNeedingPostsCount} leads first...`, 'info');
+
+      try {
+        // Get leads that need posts
+        const leadsNeedingPosts = targetLeads.filter(l => !l.posts || l.posts.length === 0);
+        // Call backend to setup autopilot (which handles post fetching)
+        const res = await apiPost('/api/warm-leads', {
+          action: 'setup_autopilot',
+          leadIds: leadsNeedingPosts.map(l => l.id),
+          businessContext,
+          postsPerLead: 3,
+        });
+
+        if (res.success) {
+          showToast?.(`Posts fetch queued for ${leadsNeedingPostsCount} leads. Will process after posts are fetched.`, 'info');
+        }
+      } catch (err) {
+        console.error('Auto-fetch error:', err);
+      }
+    }
+
+    // Process leads that already have posts
     let successCount = 0;
     let failCount = 0;
 
-    for (let i = 0; i < targetLeads.length; i++) {
-      const lead = targetLeads[i];
+    for (let i = 0; i < leadsWithPosts.length; i++) {
+      // Check if cancelled
+      if (instantCancelled) {
+        showToast?.('Instant warmup cancelled', 'info');
+        break;
+      }
+
+      const lead = leadsWithPosts[i];
+      setInstantProgress({ current: i + 1, total: leadsWithPosts.length, message: `Processing ${lead.firstName || 'lead'}...` });
       const posts = lead.posts || [];
-      if (posts.length === 0) { failCount++; continue; }
 
       // Determine which posts to engage based on instantConfig.postTarget
       const postTargetNum = parseInt(instantConfig.postTarget.replace('recent_', '').replace('random_', '').replace('all', '999'));
@@ -501,10 +559,30 @@ export default function LeadWarmerTab(props: Props) {
     } catch { /* best effort */ }
 
     setBulkEngaging(false);
+    setInstantProgress({ current: 0, total: 0, message: '' });
     setShowInstantModal(false);
-    showToast?.(`Queued ${successCount} bulk tasks (${failCount} skipped - no posts). Extension will process them.`, 'success');
+
+    // Build appropriate message
+    if (instantCancelled) {
+      // Already showed cancelled toast
+    } else if (leadsNeedingPostsCount > 0 && successCount > 0) {
+      showToast?.(`Processed ${successCount} leads with posts. ${leadsNeedingPostsCount} leads queued for post fetch.`, 'success');
+    } else if (leadsNeedingPostsCount > 0) {
+      showToast?.(`${leadsNeedingPostsCount} leads queued for post fetch. Will process after posts are fetched.`, 'info');
+    } else {
+      showToast?.(`Queued ${successCount} bulk tasks (${failCount} skipped). Extension will process them.`, 'success');
+    }
+
     setSelectedLeads(new Set());
     loadLeads(true);
+  };
+
+  // Cancel instant warmup
+  const cancelInstantWarmup = () => {
+    setInstantCancelled(true);
+    setBulkEngaging(false);
+    setInstantProgress({ current: 0, total: 0, message: '' });
+    showToast?.('Instant warmup cancelled', 'info');
   };
 
   // Schedule selected leads as autopilot with full automation
@@ -878,7 +956,7 @@ export default function LeadWarmerTab(props: Props) {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
                           <span style={{ color: THEME.colors.text.secondary, fontSize: '11px' }}>Engaged</span>
-                          <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '13px' }}>{log.likesGiven + log.commentsGiven}</span>
+                          <span style={{ color: THEME.colors.success, fontWeight: 700, fontSize: '13px' }}>{log.engagedCount ?? (log.likesGiven + log.commentsGiven)}</span>
                         </div>
                       </div>
                     </div>
@@ -1296,7 +1374,7 @@ export default function LeadWarmerTab(props: Props) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {sequenceSteps.sort((a, b) => a.day - b.day).map((step) => (
+            {sequenceSteps.sort((a, b) => (a.day || 0) - (b.day || 0)).map((step) => (
               <div key={step.id} style={{
                 display: 'flex', alignItems: 'flex-start', gap: '20px',
                 background: step.enabled ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.3)',
@@ -1318,9 +1396,9 @@ export default function LeadWarmerTab(props: Props) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '200px' }}>
                   <label style={{ fontSize: '12px', color: THEME.colors.text.muted, fontWeight: 600 }}>TARGET POSTS</label>
                   <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: THEME.radius.md, border: `1px solid ${THEME.colors.border}`, padding: '10px 12px', color: THEME.colors.primaryLight, fontSize: '13px', fontWeight: 600 }}>
-                    Recent #{step.postStartIndex + 1} to #{step.postStartIndex + step.postCount}
+                    Recent #{(step.postStartIndex ?? 0) + 1} to #{(step.postStartIndex ?? 0) + (step.postCount ?? 1)}
                   </div>
-                  <span style={{ fontSize: '11px', color: THEME.colors.text.muted }}>{step.postCount} post(s)</span>
+                  <span style={{ fontSize: '11px', color: THEME.colors.text.muted }}>{step.postCount ?? 1} post(s)</span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
@@ -1355,8 +1433,8 @@ export default function LeadWarmerTab(props: Props) {
 
             <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button onClick={() => {
-                const lastDay = sequenceSteps.length > 0 ? Math.max(...sequenceSteps.map(s => s.day)) : 0;
-                const lastEnd = sequenceSteps.length > 0 ? Math.max(...sequenceSteps.map(s => s.postStartIndex + s.postCount)) : 0;
+                const lastDay = sequenceSteps.length > 0 ? Math.max(...sequenceSteps.map(s => s.day || 0)) : 0;
+                const lastEnd = sequenceSteps.length > 0 ? Math.max(...sequenceSteps.map(s => (s.postStartIndex ?? 0) + (s.postCount ?? 1))) : 0;
                 setSequenceSteps([...sequenceSteps, { id: Math.random().toString(), day: lastDay + 1, actions: { like: true, comment: false, connect: false, message: false }, postTarget: `recent_${lastEnd + 1}`, postStartIndex: lastEnd, postCount: 1, enabled: true }]);
               }} style={styles.btn('secondary')}>
                 <Plus size={16} /> Add Custom Step
@@ -1496,8 +1574,41 @@ export default function LeadWarmerTab(props: Props) {
               </div>
             </div>
 
+            {/* Progress bar for instant warmup */}
+            {bulkEngaging && (
+              <div style={{ marginTop: '20px', padding: '14px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', border: `1px solid rgba(245, 158, 11, 0.3)` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Loader2 size={14} className="animate-spin" color={THEME.colors.warning} />
+                    <span style={{ fontSize: '13px', color: THEME.colors.warning, fontWeight: 600 }}>Processing...</span>
+                  </div>
+                  <button onClick={cancelInstantWarmup} style={{ background: 'rgba(239, 68, 68, 0.2)', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <X size={12} color={THEME.colors.error} />
+                    <span style={{ color: THEME.colors.error, fontSize: '11px', fontWeight: 600 }}>Stop</span>
+                  </button>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
+                  <div style={{
+                    width: instantProgress.total > 0 ? `${(instantProgress.current / instantProgress.total) * 100}%` : '100%',
+                    height: '100%',
+                    background: THEME.colors.warning,
+                    borderRadius: '4px',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: THEME.colors.text.secondary }}>{instantProgress.message}</span>
+                  {instantProgress.total > 0 && (
+                    <span style={{ fontSize: '12px', color: 'white', fontWeight: 600 }}>
+                      {instantProgress.current} / {instantProgress.total}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button onClick={() => setShowInstantModal(false)} style={styles.btn('secondary')}>Cancel</button>
+              <button onClick={() => { setShowInstantModal(false); setBulkEngaging(false); }} disabled={bulkEngaging} style={styles.btn('secondary')}>Cancel</button>
               <button onClick={handleExecuteInstant} disabled={bulkEngaging} style={{ ...styles.btn('primary'), background: THEME.colors.warning }}>
                 {bulkEngaging ? <><Loader2 size={16} className="animate-spin" /> Executing...</> : `Execute Now (${selectedLeads.size} Leads)`}
               </button>

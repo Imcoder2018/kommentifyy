@@ -59,8 +59,27 @@ export async function GET(request: NextRequest) {
       // Build execution history from engagement logs
       const executionHistory: any[] = [];
       const logsByDate: Record<string, any> = {};
+      const leadIdsByDate: Record<string, Set<string>> = {};
+      const engagedLeadIdsByDate: Record<string, Set<string>> = {};
+
       for (const log of engagementLogs) {
         const dateKey = new Date(log.createdAt).toISOString().split('T')[0];
+
+        // Initialize sets for unique lead counting
+        if (!leadIdsByDate[dateKey]) {
+          leadIdsByDate[dateKey] = new Set();
+          engagedLeadIdsByDate[dateKey] = new Set();
+        }
+
+        // Track unique leads processed
+        if (log.leadId) {
+          leadIdsByDate[dateKey].add(log.leadId);
+
+          // Track engaged leads (those with like or comment actions)
+          if (log.action === 'like' || log.action === 'comment' || log.action === 'ai_comment_generated') {
+            engagedLeadIdsByDate[dateKey].add(log.leadId);
+          }
+        }
 
         // Categorize: autopilot_setup, bulk, ai_comment_generated, scheduled_engagement are "Autopilot", everything else is "Instant Execution"
         const isScheduled = log.action === 'bulk' || log.action === 'autopilot_setup' || log.action === 'ai_comment_generated' || log.action === 'scheduled_engagement';
@@ -70,17 +89,24 @@ export async function GET(request: NextRequest) {
             id: log.id,
             date: log.createdAt,
             type: isScheduled ? 'scheduled' : 'instant',
-            leadsProcessed: 0,
             likesGiven: 0,
             commentsGiven: 0,
             status: log.status === 'completed' ? 'completed' : log.status === 'failed' ? 'failed' : 'running',
           };
         }
-        logsByDate[dateKey].leadsProcessed++;
         if (log.action === 'like') logsByDate[dateKey].likesGiven++;
         if (log.action === 'comment' || log.action === 'ai_comment_generated') logsByDate[dateKey].commentsGiven++;
       }
-      Object.values(logsByDate).forEach((e: any) => executionHistory.push(e));
+
+      // Build execution history with unique lead counts
+      for (const dateKey of Object.keys(logsByDate)) {
+        const entry = logsByDate[dateKey];
+        executionHistory.push({
+          ...entry,
+          leadsProcessed: leadIdsByDate[dateKey]?.size || 0,
+          engagedCount: engagedLeadIdsByDate[dateKey]?.size || 0,
+        });
+      }
 
       // Get autopilot sessions from leads with engagementType 'scheduled'
       // Include posts for target post info
@@ -317,7 +343,7 @@ export async function POST(request: NextRequest) {
 
     // Save/update settings
     if (action === 'save_settings') {
-      const { campaignName, businessContext, campaignGoal, sequenceSteps, profilesPerDay, postsPerLead, bulkTaskLimit, scheduleEnabled, scheduleTimes, autopilotEnabled, bulkTaskDelay } = body;
+      const { campaignName, businessContext, campaignGoal, sequenceSteps, profilesPerDay, postsPerLead, bulkTaskLimit, scheduleEnabled, scheduleTimes, autopilotEnabled, autopilotTime, bulkTaskDelay } = body;
       const settings = await (prisma as any).warmLeadsSettings.upsert({
         where: { userId: payload.userId },
         create: {
@@ -332,6 +358,7 @@ export async function POST(request: NextRequest) {
           scheduleEnabled: scheduleEnabled || false,
           scheduleTimes: typeof scheduleTimes === 'string' ? scheduleTimes : JSON.stringify(scheduleTimes || []),
           autopilotEnabled: autopilotEnabled || false,
+          autopilotTime: autopilotTime || '09:00',
           bulkTaskDelay: bulkTaskDelay || 5,
         },
         update: {
@@ -345,6 +372,7 @@ export async function POST(request: NextRequest) {
           scheduleEnabled: scheduleEnabled !== undefined ? scheduleEnabled : undefined,
           scheduleTimes: scheduleTimes ? (typeof scheduleTimes === 'string' ? scheduleTimes : JSON.stringify(scheduleTimes)) : undefined,
           autopilotEnabled: autopilotEnabled !== undefined ? autopilotEnabled : undefined,
+          autopilotTime: autopilotTime !== undefined ? autopilotTime : undefined,
           bulkTaskDelay: bulkTaskDelay !== undefined ? bulkTaskDelay : undefined,
         },
       });

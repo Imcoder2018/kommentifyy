@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function CommenterTab(props: any) {
     const {
@@ -18,8 +18,10 @@ export default function CommenterTab(props: any) {
     const [sortOrder, setSortOrder] = useState('desc');
     const [searchQuery, setSearchQuery] = useState('');
     const [actionStates, setActionStates] = useState<Record<string, any>>({});
+    const [deletingAll, setDeletingAll] = useState(false);
     const [aiGeneratedComments, setAiGeneratedComments] = useState<Record<string, string>>({});
     const [generatingComment, setGeneratingComment] = useState<string | null>(null);
+    const [commentError, setCommentError] = useState<Record<string, string>>({});
     const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
     const [pendingCommentData, setPendingCommentData] = useState<{ postId: string; post: any } | null>(null);
     const [overlaySettings, setOverlaySettings] = useState<{ mode: string; goal?: string; tone?: string; length?: string; style?: string; reasoning?: string } | null>(null);
@@ -34,9 +36,21 @@ export default function CommenterTab(props: any) {
     }>({ phase: 'idle', total: 0, processed: 0, currentComment: '' });
     const [engagementDelay, setEngagementDelay] = useState(10000); // Default 10 seconds
 
+    // Use ref for cancellation check to avoid closure issues
+    const autoEngagingRef = useRef(false);
+
+    // Timeout constants for consistency
+    const TIMEOUT = {
+        DEBOUNCE_SEARCH: 500,
+        POST_CAPTURE_DELAY: 3000,
+        TASK_CHECK_DELAY: 5000,
+        AUTO_ENGAGE_DELAY: 15000,
+        REFRESH_AFTER_ACTION: 2000,
+    } as const;
+
     useEffect(() => {
         loadCapturedPosts();
-    }, [capturedPage, sortBy, sortOrder]);
+    }, [capturedPage, sortBy, sortOrder, searchQuery]);
 
     // Debounced search
     useEffect(() => {
@@ -46,12 +60,15 @@ export default function CommenterTab(props: any) {
             } else {
                 setCapturedPage(1);
             }
-        }, 500);
+        }, TIMEOUT.DEBOUNCE_SEARCH);
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
     // Track if we've already refreshed for a given capture
-    const [lastRefreshKey, setLastRefreshKey] = useState<number>(0);
+    // Removed unused lastRefreshKey state
+
+    // Track pending capture command IDs for auto-refresh
+    const [pendingCaptureIds, setPendingCaptureIds] = useState<string[]>([]);
 
     // Listen for task completion events and auto-refresh captured posts
     useEffect(() => {
@@ -64,54 +81,75 @@ export default function CommenterTab(props: any) {
             // Skip if we're already engaging
             if (autoEngaging) return;
 
+            // Check if we have pending capture IDs to track
+            if (pendingCaptureIds.length === 0) {
+                console.log('📝 COMMENTER: No pending capture IDs to track');
+                return;
+            }
+
             try {
-                const now = Date.now();
+                console.log('📝 COMMENTER: Checking completion for command IDs:', pendingCaptureIds);
 
-                const res = await fetch('/api/extension/command', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
+                // Check each pending capture command ID for completion
+                for (const commandId of pendingCaptureIds) {
+                    const res = await fetch(`/api/extension/command?commandId=${encodeURIComponent(commandId)}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
 
-                if (data.success && data.commands) {
-                    // Find recently completed capture commands (within last 60 seconds)
-                    const recentCapture = data.commands.find((cmd: any) =>
-                        ['linkedin_get_feed_api', 'linkedin_search_posts_api', 'linkedin_get_trending_api'].includes(cmd.command) &&
-                        cmd.status === 'completed' &&
-                        (now - new Date(cmd.createdAt).getTime()) < 60000
-                    );
+                    if (data.success && data.command) {
+                        const cmd = data.command;
+                        console.log('📝 COMMENTER: Command status:', cmd.command, cmd.status);
 
-                    if (recentCapture) {
-                        console.log('📝 COMMENTER: Capture task completed, refreshing posts...');
-                        showToast('Capture complete! Refreshing posts...', 'info');
+                        // Check if this is a capture command that completed
+                        if (['linkedin_get_feed_api', 'linkedin_search_posts_api', 'linkedin_get_trending_api'].includes(cmd.command) &&
+                            cmd.status === 'completed') {
 
-                        // Small delay to let posts be saved to DB
-                        await new Promise(r => setTimeout(r, 3000));
+                            console.log('📝 COMMENTER: Capture task completed, refreshing posts...');
+                            showToast('Capture complete! Refreshing posts...', 'info');
 
-                        // Refresh posts
-                        await loadCapturedPosts();
+                            // Small delay to let posts be saved to DB
+                            await new Promise(r => setTimeout(r, TIMEOUT.POST_CAPTURE_DELAY));
 
-                        // If auto-engage is enabled, trigger it
-                        if (autoLikeEnabled || autoCommentEnabled) {
-                            const minLikes = commenterCfg?.minLikes || 0;
-                            const minComments = commenterCfg?.minComments || 0;
+                            // Refresh posts
+                            await loadCapturedPosts();
 
-                            const freshRes = await fetch(`/api/scraped-posts?page=1&limit=20&sortBy=scrapedAt&sortOrder=desc`, {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            const freshData = await freshRes.json();
+                            // Remove this command ID from pending list
+                            setPendingCaptureIds(prev => prev.filter(id => id !== commandId));
 
-                            if (freshData.success && freshData.posts?.length > 0) {
-                                const qualifyingPosts = freshData.posts.filter((p: any) =>
-                                    (p.likes || 0) >= minLikes && (p.comments || 0) >= minComments
-                                );
+                            // If auto-engage is enabled, trigger it
+                            if (autoLikeEnabled || autoCommentEnabled) {
+                                const minLikes = commenterCfg?.minLikes || 0;
+                                const minComments = commenterCfg?.minComments || 0;
 
-                                if (qualifyingPosts.length > 0) {
-                                    showToast(`Found ${qualifyingPosts.length} qualifying posts. Starting auto-engage...`, 'info');
-                                    await autoEngageWithPosts(qualifyingPosts);
-                                } else {
-                                    showToast('No posts matching filters found', 'warning');
+                                const freshRes = await fetch(`/api/scraped-posts?page=1&limit=20&sortBy=scrapedAt&sortOrder=desc`, {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                const freshData = await freshRes.json();
+
+                                if (freshData.success && freshData.posts?.length > 0) {
+                                    const qualifyingPosts = freshData.posts.filter((p: any) =>
+                                        (p.likes || 0) >= minLikes && (p.comments || 0) >= minComments
+                                    );
+
+                                    if (qualifyingPosts.length > 0) {
+                                        showToast(`Found ${qualifyingPosts.length} qualifying posts. Starting auto-engage...`, 'info');
+                                        setAutoEngaging(true);
+                                        autoEngagingRef.current = true;
+                                        await autoEngageWithPosts(qualifyingPosts);
+                                    } else {
+                                        showToast('No posts matching filters found', 'warning');
+                                    }
                                 }
                             }
+
+                            // Only process one completed command at a time
+                            break;
+                        } else if (cmd.status === 'failed') {
+                            console.log('📝 COMMENTER: Capture task failed:', cmd.error);
+                            showToast(`Capture failed: ${cmd.error || 'Unknown error'}`, 'error');
+                            // Remove failed command from tracking
+                            setPendingCaptureIds(prev => prev.filter(id => id !== commandId));
                         }
                     }
                 }
@@ -124,7 +162,7 @@ export default function CommenterTab(props: any) {
         const handleTaskCreated = () => {
             console.log('📝 COMMENTER: Task created, scheduling refresh check...');
             // First check after 5 seconds, then poll for up to 60 seconds
-            setTimeout(handleTaskCompletion, 5000);
+            setTimeout(handleTaskCompletion, TIMEOUT.TASK_CHECK_DELAY);
             // Set up polling to catch delayed completions
             pollingInterval = setInterval(handleTaskCompletion, 5000);
             // Stop polling after 60 seconds
@@ -139,7 +177,7 @@ export default function CommenterTab(props: any) {
             window.removeEventListener('kommentify-task-created', handleTaskCreated);
             if (pollingInterval) clearInterval(pollingInterval);
         };
-    }, [autoLikeEnabled, autoCommentEnabled, autoEngaging, commenterCfg]);
+    }, [autoLikeEnabled, autoCommentEnabled, autoEngaging, commenterCfg, pendingCaptureIds, capturedPage, sortBy, sortOrder, searchQuery]);
 
     const loadCapturedPosts = async () => {
         setCapturedLoading(true);
@@ -232,6 +270,7 @@ export default function CommenterTab(props: any) {
         }
 
         setAutoEngaging(true);
+        autoEngagingRef.current = true;
         setEngagementProgress({ phase: 'generating', total: unengagedPosts.length, processed: 0, currentComment: '' });
         showToast(`Preparing bulk engagement for ${unengagedPosts.length} posts...`, 'info');
 
@@ -239,6 +278,13 @@ export default function CommenterTab(props: any) {
             // Step 1: Generate AI comments for all posts first (if enabled)
             const postsWithComments = [];
             for (let i = 0; i < unengagedPosts.length; i++) {
+                // Check if cancelled using ref (avoids closure issue)
+                if (!autoEngagingRef.current) {
+                    console.log('📝 COMMENTER: Auto-engage cancelled during generation');
+                    showToast('Auto-engage cancelled', 'info');
+                    return;
+                }
+
                 const post = unengagedPosts[i];
                 const activityUrn = extractUrnFromUrl(post.postUrl);
                 let commentText = '';
@@ -328,9 +374,10 @@ export default function CommenterTab(props: any) {
             showToast('Error: ' + e.message, 'error');
         } finally {
             setAutoEngaging(false);
+            autoEngagingRef.current = false;
             setEngagementProgress({ phase: 'idle', total: 0, processed: 0, currentComment: '' });
             // Refresh posts to show updated state
-            setTimeout(() => loadCapturedPosts(), 3000);
+            setTimeout(() => loadCapturedPosts(), TIMEOUT.POST_CAPTURE_DELAY);
         }
     };
 
@@ -362,6 +409,8 @@ export default function CommenterTab(props: any) {
 
                 if (qualifyingPosts.length > 0) {
                     showToast(`Found ${qualifyingPosts.length} qualifying posts. Starting auto-engage...`, 'info');
+                    setAutoEngaging(true);
+                    autoEngagingRef.current = true;
                     await autoEngageWithPosts(qualifyingPosts);
                 } else {
                     console.log('📝 COMMENTER: No qualifying posts - showing warning');
@@ -463,7 +512,9 @@ export default function CommenterTab(props: any) {
             const data = await res.json();
 
             if (!data.success || !data.content) {
-                showToast(data.error || 'Failed to generate comment', 'error');
+                const errorMsg = data.error || 'Failed to generate comment';
+                setCommentError(prev => ({ ...prev, [postId]: errorMsg }));
+                showToast(errorMsg, 'error');
                 return;
             }
 
@@ -476,7 +527,9 @@ export default function CommenterTab(props: any) {
             // User can click "Send" button manually to send
             showToast('AI comment generated! Edit and click Send to post.', 'success');
         } catch (e: any) {
-            showToast('Error: ' + e.message, 'error');
+            const errorMsg = e.message || 'Unknown error occurred';
+            setCommentError(prev => ({ ...prev, [postId]: errorMsg }));
+            showToast('Error: ' + errorMsg, 'error');
         } finally {
             setGeneratingComment(null);
         }
@@ -551,7 +604,7 @@ export default function CommenterTab(props: any) {
                 setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'success' }));
                 showToast(`${action.charAt(0).toUpperCase() + action.slice(1)} task sent!`, 'success');
                 window.dispatchEvent(new CustomEvent('kommentify-task-created'));
-                setTimeout(() => loadCapturedPosts(), 2000);
+                setTimeout(() => loadCapturedPosts(), TIMEOUT.REFRESH_AFTER_ACTION);
             } else {
                 setActionStates(prev => ({ ...prev, [`${postId}-${action}`]: 'error' }));
                 showToast(data.error || 'Failed', 'error');
@@ -688,9 +741,35 @@ export default function CommenterTab(props: any) {
                             style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '11px', resize: 'vertical' }} />
                     </div>
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Count</h4>
-                        <input type="number" min={1} max={50} value={commenterCfg.totalPosts || 20} onChange={e => setCommenterCfg((p: any) => ({ ...p, totalPosts: parseInt(e.target.value) || 20 }))}
-                            style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }} />
+                        <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Number of Posts to pick</h4>
+                        {(() => {
+                            // Check if filters are active
+                            const hasFilters = (commenterCfg?.minLikes > 0) || (commenterCfg?.minComments > 0) || (commenterCfg?.searchKeywords?.trim());
+                            const maxPosts = hasFilters ? 10 : 20;
+                            return (
+                                <>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={maxPosts}
+                                        value={commenterCfg.totalPosts || 20}
+                                        onChange={e => {
+                                            const val = parseInt(e.target.value) || 1;
+                                            // Enforce max limit
+                                            const clampedVal = Math.min(Math.max(1, val), maxPosts);
+                                            setCommenterCfg((p: any) => ({ ...p, totalPosts: clampedVal }));
+                                            if (val > maxPosts) {
+                                                showToast(`Max ${maxPosts} posts with active filters`, 'info');
+                                            }
+                                        }}
+                                        style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', textAlign: 'center' }}
+                                    />
+                                    <div style={{ marginTop: '6px', fontSize: '10px', color: hasFilters ? '#f59e0b' : 'rgba(255,255,255,0.5)' }}>
+                                        {hasFilters ? `⚠️ Max: ${maxPosts} (filters active)` : `Max: ${maxPosts} (no filters)`}
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 8px 0' }}>Auto-Engage</h4>
@@ -713,24 +792,25 @@ export default function CommenterTab(props: any) {
                                 }}>
                                 {autoCommentEnabled ? '✓' : '○'} Auto-Comment
                             </button>
-                            {/* Delay Setting */}
+                            {/* Delay Setting - in seconds */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                                 <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>Delay:</span>
                                 <input
                                     type="number"
-                                    min={1000}
-                                    max={60000}
-                                    step={1000}
-                                    value={engagementDelay}
-                                    onChange={(e) => setEngagementDelay(parseInt(e.target.value) || 10000)}
+                                    min={1}
+                                    max={60}
+                                    step={1}
+                                    value={engagementDelay / 1000}
+                                    onChange={(e) => setEngagementDelay((parseInt(e.target.value) || 10) * 1000)}
                                     disabled={autoEngaging}
+                                    aria-label="Delay between posts in seconds"
                                     style={{
-                                        width: '70px', padding: '6px', background: 'rgba(255,255,255,0.08)',
+                                        width: '60px', padding: '6px', background: 'rgba(255,255,255,0.08)',
                                         border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px',
                                         color: 'white', fontSize: '11px', textAlign: 'center'
                                     }}
                                 />
-                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>ms/post</span>
+                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>sec/post</span>
                             </div>
                         </div>
                     </div>
@@ -739,15 +819,37 @@ export default function CommenterTab(props: any) {
                 {/* Progress Bar for Auto-Engage */}
                 {autoEngaging && (
                     <div style={{ marginBottom: '12px', padding: '12px', background: 'rgba(168,85,247,0.1)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                             <span style={{ color: '#c4b5fd', fontSize: '12px', fontWeight: '600' }}>
                                 {engagementProgress.phase === 'generating' ? '🤖 Generating AI Comments...' :
                                  engagementProgress.phase === 'engaging' ? '🔥 Auto-Engaging Posts...' :
                                  '⏳ Processing...'}
                             </span>
-                            <span style={{ color: '#c4b5fd', fontSize: '12px' }}>
-                                {engagementProgress.processed}/{engagementProgress.total}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ color: '#c4b5fd', fontSize: '12px' }}>
+                                    {engagementProgress.processed}/{engagementProgress.total}
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        setAutoEngaging(false);
+                                        autoEngagingRef.current = false;
+                                        setEngagementProgress({ phase: 'idle', total: 0, processed: 0, currentComment: '' });
+                                        showToast('Auto-engage cancelled', 'info');
+                                    }}
+                                    style={{
+                                        padding: '4px 10px',
+                                        background: 'rgba(220,38,38,0.8)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        fontSize: '10px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    ⏹ Stop
+                                </button>
+                            </div>
                         </div>
                         <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
                             <div style={{
@@ -770,7 +872,7 @@ export default function CommenterTab(props: any) {
                 {/* Step 1: Capture */}
                 <div style={{ background: 'linear-gradient(135deg, rgba(0,119,181,0.1), rgba(0,160,220,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,119,181,0.2)' }}>
                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14)} Step 1: Capture
+                        {miniIcon ? miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', '#60a5fa', 14) : '🔍'} Step 1: Capture
                         {(autoLikeEnabled || autoCommentEnabled) && (
                             <span style={{ marginLeft: 'auto', fontSize: '10px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', padding: '2px 8px', borderRadius: '10px' }}>
                                 Auto {autoLikeEnabled && autoCommentEnabled ? 'Like+Comment' : autoLikeEnabled ? 'Like' : 'Comment'} ON
@@ -791,20 +893,25 @@ export default function CommenterTab(props: any) {
                                 const data = await res.json();
                                 console.log('📝 COMMENTER: Task created:', data.commandId, 'userId:', data._debug?.userId);
                                 if (data.success) {
+                                    // Track this command ID for completion detection
+                                    if (data.commandId) {
+                                        setPendingCaptureIds(prev => [...prev, data.commandId]);
+                                        console.log('📝 COMMENTER: Tracking command ID:', data.commandId);
+                                    }
                                     const captureMsg = 'Feed capture sent!';
                                     showToast((autoLikeEnabled || autoCommentEnabled) ? `${captureMsg} Auto-engage will start shortly...` : captureMsg, 'success');
                                     window.dispatchEvent(new CustomEvent('kommentify-task-created'));
                                     // Auto-trigger engagement after capture if auto-like or auto-comment is enabled
                                     if (autoLikeEnabled || autoCommentEnabled) {
                                         console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
-                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 15000);
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), TIMEOUT.AUTO_ENGAGE_DELAY);
                                     }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
                             style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #0077b5, #00a0dc)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                            {miniIcon('M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4', 'white', 12)} Capture Feed
+                            {miniIcon ? miniIcon('M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4', 'white', 12) : '📥'} Capture Feed
                         </button>
                         <button onClick={async () => {
                             const token = localStorage.getItem('authToken');
@@ -820,20 +927,25 @@ export default function CommenterTab(props: any) {
                                 });
                                 const data = await res.json();
                                 if (data.success) {
+                                    // Track this command ID for completion detection
+                                    if (data.commandId) {
+                                        setPendingCaptureIds(prev => [...prev, data.commandId]);
+                                        console.log('📝 COMMENTER: Tracking command ID:', data.commandId);
+                                    }
                                     const captureMsg = 'Search capture sent! Check results in a moment.';
                                     showToast(autoLikeEnabled ? `${captureMsg} Auto-engage will start shortly...` : captureMsg, 'success');
                                     window.dispatchEvent(new CustomEvent('kommentify-task-created'));
                                     // Auto-trigger engagement after capture if enabled
                                     if (autoLikeEnabled || autoCommentEnabled) {
                                         console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
-                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 15000);
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), TIMEOUT.AUTO_ENGAGE_DELAY);
                                     }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
                             style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                            {miniIcon('M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', 'white', 12)} Search Posts
+                            {miniIcon ? miniIcon('M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', 'white', 12) : '🔍'} Search Posts
                         </button>
                         <button onClick={async () => {
                             const token = localStorage.getItem('authToken');
@@ -843,24 +955,29 @@ export default function CommenterTab(props: any) {
                                 const res = await fetch('/api/extension/command', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                                    body: JSON.stringify({ command: 'linkedin_get_trending_api', data: { count: 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
+                                    body: JSON.stringify({ command: 'linkedin_get_trending_api', data: { count: commenterCfg?.totalPosts || 20, minLikes: commenterCfg?.minLikes || 0, minComments: commenterCfg?.minComments || 0 } })
                                 });
                                 const data = await res.json();
                                 if (data.success) {
+                                    // Track this command ID for completion detection
+                                    if (data.commandId) {
+                                        setPendingCaptureIds(prev => [...prev, data.commandId]);
+                                        console.log('📝 COMMENTER: Tracking command ID:', data.commandId);
+                                    }
                                     const captureMsg = 'Trending capture sent! Check results in a moment.';
                                     showToast(autoLikeEnabled ? `${captureMsg} Auto-engage will start shortly...` : captureMsg, 'success');
                                     window.dispatchEvent(new CustomEvent('kommentify-task-created'));
                                     // Auto-trigger engagement after capture if enabled
                                     if (autoLikeEnabled || autoCommentEnabled) {
                                         console.log('📝 COMMENTER: Scheduling auto-engage in 5 seconds...');
-                                        setTimeout(() => triggerAutoEngageAfterCapture(token), 15000);
+                                        setTimeout(() => triggerAutoEngageAfterCapture(token), TIMEOUT.AUTO_ENGAGE_DELAY);
                                     }
                                 }
                                 else showToast(data.error || 'Failed', 'error');
                             } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
                         }}
                             style={{ padding: '10px 12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                            {miniIcon('M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', 'white', 12)} Trending
+                            {miniIcon ? miniIcon('M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', 'white', 12) : '📈'} Trending
                         </button>
                     </div>
                 </div>
@@ -876,7 +993,7 @@ export default function CommenterTab(props: any) {
                 {/* Step 2: Engage */}
                 <div style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(124,58,237,0.05))', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(168,85,247,0.2)', marginTop: '16px' }}>
                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {miniIcon('M13 10V3L4 14h7v7l9-11h-7z', '#c4b5fd', 14)} Step 2: Engage
+                        {miniIcon ? miniIcon('M13 10V3L4 14h7v7l9-11h-7z', '#c4b5fd', 14) : '⚡'} Step 2: Engage
                     </h4>
                 </div>
 
@@ -890,9 +1007,19 @@ export default function CommenterTab(props: any) {
                                 placeholder="Search posts..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                aria-label="Search captured posts"
                                 style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }}
                             />
                             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>🔍</span>
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    aria-label="Clear search"
+                                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
                         <select
                             value={sortBy}
@@ -923,6 +1050,7 @@ export default function CommenterTab(props: any) {
                                     if (!confirm(`Delete all ${capturedPosts.length} captured posts?`)) return;
                                     const token = localStorage.getItem('authToken');
                                     if (!token) return;
+                                    setDeletingAll(true);
                                     try {
                                         const res = await fetch('/api/scraped-posts', {
                                             method: 'DELETE',
@@ -937,14 +1065,17 @@ export default function CommenterTab(props: any) {
                                             showToast(data.error || 'Failed to delete', 'error');
                                         }
                                     } catch (e: any) { showToast('Error: ' + e.message, 'error'); }
+                                    finally { setDeletingAll(false); }
                                 }}
-                                    style={{ padding: '8px 12px', background: 'rgba(220,38,38,0.2)', color: '#fca5a5', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '6px', fontWeight: '600', fontSize: '11px', cursor: 'pointer' }}>
-                                    🗑 Delete All
+                                    disabled={deletingAll}
+                                    aria-label="Delete all captured posts"
+                                    style={{ padding: '8px 12px', background: deletingAll ? 'rgba(220,38,38,0.4)' : 'rgba(220,38,38,0.2)', color: '#fca5a5', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '6px', fontWeight: '600', fontSize: '11px', cursor: deletingAll ? 'wait' : 'pointer', opacity: deletingAll ? 0.7 : 1 }}>
+                                    {deletingAll ? '⏳ Deleting...' : '🗑 Delete All'}
                                 </button>
                             )}
                             {/* Auto-Engage All Button */}
                             {(autoLikeEnabled || autoCommentEnabled) && capturedPosts.length > 0 && (
-                                <button onClick={() => autoEngageWithPosts(capturedPosts)} disabled={autoEngaging}
+                                <button onClick={() => { setAutoEngaging(true); autoEngagingRef.current = true; autoEngageWithPosts(capturedPosts); }} disabled={autoEngaging}
                                     style={{
                                         padding: '8px 16px', background: autoEngaging ? 'rgba(220,38,38,0.4)' : 'linear-gradient(135deg, #dc2626, #b91c1c)',
                                         color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px',
@@ -959,15 +1090,37 @@ export default function CommenterTab(props: any) {
                     {/* Progress Bar for Auto-Engage in Captured Posts */}
                     {autoEngaging && (
                         <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(168,85,247,0.1)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.3)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                                 <span style={{ color: '#c4b5fd', fontSize: '12px', fontWeight: '600' }}>
                                     {engagementProgress.phase === 'generating' ? '🤖 Generating AI Comments...' :
                                      engagementProgress.phase === 'engaging' ? '🔥 Auto-Engaging Posts...' :
                                      '⏳ Processing...'}
                                 </span>
-                                <span style={{ color: '#c4b5fd', fontSize: '12px' }}>
-                                    {engagementProgress.processed}/{engagementProgress.total}
-                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ color: '#c4b5fd', fontSize: '12px' }}>
+                                        {engagementProgress.processed}/{engagementProgress.total}
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setAutoEngaging(false);
+                                            autoEngagingRef.current = false;
+                                            setEngagementProgress({ phase: 'idle', total: 0, processed: 0, currentComment: '' });
+                                            showToast('Auto-engage cancelled', 'info');
+                                        }}
+                                        style={{
+                                            padding: '4px 10px',
+                                            background: 'rgba(220,38,38,0.8)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            fontSize: '10px',
+                                            fontWeight: '600',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        ⏹ Stop
+                                    </button>
+                                </div>
                             </div>
                             <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
                                 <div style={{
@@ -1076,6 +1229,7 @@ export default function CommenterTab(props: any) {
                                                         <button
                                                             onClick={() => handleAction(postId, 'comment', post, aiGeneratedComments[postId])}
                                                             disabled={actionStates[`${postId}-comment`] === 'loading'}
+                                                            aria-label="Send comment"
                                                             style={{ padding: '4px 8px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: actionStates[`${postId}-comment`] === 'loading' ? 'not-allowed' : 'pointer' }}>
                                                             {actionStates[`${postId}-comment`] === 'loading' ? '...' : '🚀 Send'}
                                                         </button>
@@ -1085,8 +1239,27 @@ export default function CommenterTab(props: any) {
                                                     value={aiGeneratedComments[postId]}
                                                     onChange={(e) => setAiGeneratedComments(prev => ({ ...prev, [postId]: e.target.value }))}
                                                     rows={3}
+                                                    aria-label="Edit AI generated comment"
                                                     style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: '6px', color: '#1a1a1a', fontSize: '11px', fontFamily: '-apple-system,system-ui,sans-serif', resize: 'vertical' }}
                                                 />
+                                            </div>
+                                        )}
+
+                                        {/* Error Display for AI Comment Generation */}
+                                        {commentError[postId] && (
+                                            <div style={{ padding: '8px', background: 'rgba(220,38,38,0.1)', borderTop: '1px solid rgba(220,38,38,0.3)' }}>
+                                                <div style={{ color: '#fca5a5', fontSize: '10px', fontWeight: '600', marginBottom: '4px' }}>
+                                                    ⚠️ Error generating comment
+                                                </div>
+                                                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px' }}>
+                                                    {commentError[postId]}
+                                                </div>
+                                                <button
+                                                    onClick={() => { setCommentError(prev => ({ ...prev, [postId]: '' })); generateAiComment(postId, post); }}
+                                                    style={{ marginTop: '6px', padding: '4px 8px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}
+                                                >
+                                                    🔄 Retry
+                                                </button>
                                             </div>
                                         )}
 

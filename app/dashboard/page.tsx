@@ -2916,15 +2916,17 @@ function DashboardContent() {
                 display: 'flex',
                 gap: '6px',
                 padding: '6px 10px',
-                background: 'rgba(0,0,0,0.25)',
+                background: theme === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.25)',
+                border: theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : 'none',
                 borderRadius: '12px',
-                backdropFilter: 'blur(6px)'
+                backdropFilter: 'blur(6px)',
+                boxShadow: theme === 'light' ? '0 2px 12px rgba(0,0,0,0.1)' : 'none'
             }}>
                 {[
-                    { key: 'pending', label: 'Pending', count: tasks.filter(t => t.status === 'pending').length, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)' },
-                    { key: 'in_progress', label: 'In Progress', count: tasks.filter(t => t.status === 'in_progress').length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.3)' },
-                    { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed' || t.status === 'completed_manual').length, color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)' },
-                    { key: 'failed', label: 'Failed', count: tasks.filter(t => t.status === 'failed' || t.status === 'cancelled').length, color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)' },
+                    { key: 'pending', label: 'Pending', count: tasks.filter(t => t.status === 'pending').length, color: theme === 'light' ? '#d97706' : '#f59e0b', bg: theme === 'light' ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)', border: theme === 'light' ? 'rgba(245,158,11,0.4)' : 'rgba(245,158,11,0.3)' },
+                    { key: 'in_progress', label: 'In Progress', count: tasks.filter(t => t.status === 'in_progress').length, color: theme === 'light' ? '#2563eb' : '#3b82f6', bg: theme === 'light' ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.15)', border: theme === 'light' ? 'rgba(59,130,246,0.4)' : 'rgba(59,130,246,0.3)' },
+                    { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed' || t.status === 'completed_manual').length, color: theme === 'light' ? '#059669' : '#10b981', bg: theme === 'light' ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.15)', border: theme === 'light' ? 'rgba(16,185,129,0.4)' : 'rgba(16,185,129,0.3)' },
+                    { key: 'failed', label: 'Failed', count: tasks.filter(t => t.status === 'failed' || t.status === 'cancelled').length, color: theme === 'light' ? '#dc2626' : '#ef4444', bg: theme === 'light' ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.15)', border: theme === 'light' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.3)' },
                 ].map(s => {
                     const isPendingWithCountdown = s.key === 'pending' && pendingCountdown;
                     const isInProgressWithCountdown = s.key === 'in_progress' && pendingCountdown;
@@ -2934,19 +2936,19 @@ function DashboardContent() {
                         <div style={{ fontSize: '18px', fontWeight: '800', color: s.color, lineHeight: 1.2 }}>{s.count}</div>
                         <div style={{ fontSize: '10px', color: s.color, fontWeight: '600', opacity: 0.9, whiteSpace: 'nowrap' }}>{s.label}</div>
                         {isPendingWithCountdown && (
-                            <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '700', marginTop: '4px', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)', background: 'rgba(251,191,36,0.2)', padding: '2px 6px', borderRadius: '4px' }}>{pendingCountdown}</div>
+                            <div style={{ fontSize: '11px', color: theme === 'light' ? '#b45309' : '#fbbf24', fontWeight: '700', marginTop: '4px', whiteSpace: 'nowrap', textShadow: theme === 'light' ? 'none' : '0 1px 2px rgba(0,0,0,0.5)', background: theme === 'light' ? 'rgba(251,191,36,0.3)' : 'rgba(251,191,36,0.2)', padding: '2px 6px', borderRadius: '4px' }}>{pendingCountdown}</div>
                         )}
                         {isInProgressWithCountdown && (
-                            <div style={{ fontSize: '11px', color: '#60a5fa', fontWeight: '700', marginTop: '4px', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(0,0,0,0.5)', background: 'rgba(96,165,250,0.2)', padding: '2px 6px', borderRadius: '4px' }}>{pendingCountdown}</div>
+                            <div style={{ fontSize: '11px', color: theme === 'light' ? '#1d4ed8' : '#60a5fa', fontWeight: '700', marginTop: '4px', whiteSpace: 'nowrap', textShadow: theme === 'light' ? 'none' : '0 1px 2px rgba(0,0,0,0.5)', background: theme === 'light' ? 'rgba(96,165,250,0.3)' : 'rgba(96,165,250,0.2)', padding: '2px 6px', borderRadius: '4px' }}>{pendingCountdown}</div>
                         )}
                     </div>
                     );
                 })}
                 {/* Logs box */}
                 <div onClick={() => { if (liveActivityLogs.length === 0) loadLiveActivity(); setShowLogsPopup(true); }}
-                    style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: showLogsPopup ? 'scale(1.05)' : 'scale(1)' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '800', color: '#a78bfa', lineHeight: 1 }}>{liveActivityLogs.length > 0 ? liveActivityLogs.length : miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', '#a78bfa', 16)}</div>
-                    <div style={{ fontSize: '9px', color: '#a78bfa', fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>Logs</div>
+                    style={{ background: theme === 'light' ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.15)', border: `1px solid ${theme === 'light' ? 'rgba(246,0.139,92,4)' : 'rgba(139,92,246,0.3)'}`, borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s', backdropFilter: 'blur(10px)', transform: showLogsPopup ? 'scale(1.05)' : 'scale(1)' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '800', color: theme === 'light' ? '#7c3aed' : '#a78bfa', lineHeight: 1 }}>{liveActivityLogs.length > 0 ? liveActivityLogs.length : miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', theme === 'light' ? '#7c3aed' : '#a78bfa', 16)}</div>
+                    <div style={{ fontSize: '9px', color: theme === 'light' ? '#7c3aed' : '#a78bfa', fontWeight: '600', opacity: 0.8, whiteSpace: 'nowrap' }}>Logs</div>
                 </div>
             </div>
 
@@ -2954,16 +2956,16 @@ function DashboardContent() {
             {showLogsPopup && (
                 <>
                     <div onClick={() => setShowLogsPopup(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9997 }} />
-                    <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', zIndex: 9998, background: theme === 'light' ? '#ffffff' : '#1a1a3e', border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '520px', maxHeight: '480px', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+                    <div style={{ position: 'fixed', top: '72px', left: '50%', transform: 'translateX(-50%)', zIndex: 9998, background: theme === 'light' ? '#ffffff' : '#1a1a3e', border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', padding: '16px', width: '520px', maxHeight: '480px', overflowY: 'auto', boxShadow: theme === 'light' ? '0 4px 20px rgba(0,0,0,0.15)' : '0 12px 40px rgba(0,0,0,0.5)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                             <span style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7z M2 12h20', theme === 'light' ? '#1a1a2e' : 'white', 14)} Live Activity Logs</span>
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                 <button onClick={() => loadLiveActivity()} disabled={liveActivityLoading}
-                                    style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer' }}>
+                                    style={{ padding: '4px 10px', background: theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: theme === 'light' ? '#374151' : 'rgba(255,255,255,0.7)', fontSize: '10px', cursor: 'pointer' }}>
                                     {liveActivityLoading ? '...' : 'Refresh'}
                                 </button>
                                 <button onClick={() => { handleTabChange('activity'); setShowLogsPopup(false); }}
-                                    style={{ padding: '4px 10px', background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '6px', color: '#a78bfa', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
+                                    style={{ padding: '4px 10px', background: theme === 'light' ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '6px', color: theme === 'light' ? '#7c3aed' : '#a78bfa', fontSize: '10px', cursor: 'pointer', fontWeight: '600' }}>
                                     Open Full View
                                 </button>
                                 <button onClick={() => setShowLogsPopup(false)} style={{ background: 'none', border: 'none', color: theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '18px' }}>✕</button>
@@ -2971,22 +2973,22 @@ function DashboardContent() {
                         </div>
                         <div style={{ fontFamily: 'monospace', fontSize: '11px', lineHeight: '1.6' }}>
                             {liveActivityLogs.length === 0 ? (
-                                <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '30px', fontSize: '12px' }}>
+                                <div style={{ color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '30px', fontSize: '12px' }}>
                                     No activity logs yet. Extension will log actions here in real-time.
                                 </div>
                             ) : (
                                 liveActivityLogs.slice(0, 50).map((log: any) => {
                                     const icons: any = { like: 'L', comment: 'C', share: 'S', follow: 'F', connect: 'K', post: 'P', delay: 'D', start: '>', stop: 'X', error: '!', info: 'i' };
-                                    const colors: any = { success: '#34d399', warning: '#fbbf24', error: '#f87171', info: 'rgba(255,255,255,0.6)' };
+                                    const colors: any = { success: theme === 'light' ? '#059669' : '#34d399', warning: theme === 'light' ? '#d97706' : '#fbbf24', error: theme === 'light' ? '#dc2626' : '#f87171', info: theme === 'light' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.6)' };
                                     const icon = icons[log.action] || 'i';
                                     const color = colors[log.level] || colors.info;
                                     const time = new Date(log.createdAt).toLocaleTimeString();
                                     const date = new Date(log.createdAt).toLocaleDateString();
                                     return (
-                                        <div key={log.id} style={{ display: 'flex', gap: '8px', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                            <span style={{ color: 'rgba(255,255,255,0.25)', minWidth: '55px', fontSize: '9px' }}>{time}</span>
-                                            <span>{icon}</span>
-                                            <span style={{ color: '#a78bfa', fontSize: '9px', minWidth: '55px' }}>{log.taskType}</span>
+                                        <div key={log.id} style={{ display: 'flex', gap: '8px', padding: '4px 0', borderBottom: theme === 'light' ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.04)' }}>
+                                            <span style={{ color: theme === 'light' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.25)', minWidth: '55px', fontSize: '9px' }}>{time}</span>
+                                            <span style={{ color: theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>{icon}</span>
+                                            <span style={{ color: theme === 'light' ? '#7c3aed' : '#a78bfa', fontSize: '9px', minWidth: '55px' }}>{log.taskType}</span>
                                             <span style={{ color, flex: 1 }}>{log.message}</span>
                                         </div>
                                     );
@@ -3015,7 +3017,7 @@ function DashboardContent() {
                             if (taskStatusExpanded === 'failed') return t.status === 'failed' || t.status === 'cancelled';
                             return false;
                         }).length === 0 ? (
-                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No tasks</div>
+                            <div style={{ color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No tasks</div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {tasks.filter(t => {
@@ -3025,12 +3027,12 @@ function DashboardContent() {
                                     if (taskStatusExpanded === 'failed') return t.status === 'failed' || t.status === 'cancelled';
                                     return false;
                                 }).map((task: any) => (
-                                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                    <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)', padding: '10px 12px', borderRadius: '10px', border: theme === 'light' ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)' }}>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ color: theme === 'light' ? '#1a1a2e' : 'white', fontWeight: '600', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {task.command === 'post_to_linkedin' ? 'Post to LinkedIn' : task.command === 'scrape_feed_now' ? 'Quick Capture' : task.command === 'scrape_profile' ? 'Scrape Profile' : task.command === 'linkedin_get_feed_api' ? 'Capture Feed' : task.command === 'linkedin_search_posts_api' ? 'Search Posts' : task.command === 'linkedin_get_trending_api' ? 'Trending' : task.command === 'start_bulk_commenting' ? 'Bulk Commenting' : task.command === 'start_import_automation' ? 'Import Automation' : task.command}
                                             </div>
-                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{task.createdAt ? new Date(task.createdAt).toLocaleString() : ''}</div>
+                                            <div style={{ color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', fontSize: '10px' }}>{task.createdAt ? new Date(task.createdAt).toLocaleString() : ''}</div>
                                         </div>
                                         {(task.status === 'pending' || task.status === 'in_progress') && (
                                             <button onClick={async (e) => {
@@ -3050,7 +3052,7 @@ function DashboardContent() {
                                                 onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.9)')}
                                                 onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
                                                 onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-                                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap', transition: 'all 0.15s ease' }}>
+                                                style={{ background: theme === 'light' ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.15)', border: theme === 'light' ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: theme === 'light' ? '#dc2626' : '#f87171', padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap', transition: 'all 0.15s ease' }}>
                                                 Stop
                                             </button>
                                         )}

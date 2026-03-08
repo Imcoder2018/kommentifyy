@@ -1090,10 +1090,10 @@ export default function LeadWarmerTab(props: Props) {
       {activeTab === 'pipeline' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Workflow Steps Guide */}
-          <div style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)', borderRadius: t.radius.lg, border: `1px solid ${themeColors.border}`, padding: '16px 20px' }}>
+          <div style={{ background: theme === 'light' ? '#ffffff' : 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)', borderRadius: t.radius.lg, border: `1px solid ${themeColors.border}`, padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
               <Zap size={16} color={themeColors.primaryLight} />
-              <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>How It Works</span>
+              <span style={{ color: themeColors.text.primary, fontWeight: 700, fontSize: '14px' }}>How It Works</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0', flexWrap: 'wrap' }}>
               {[
@@ -1107,7 +1107,7 @@ export default function LeadWarmerTab(props: Props) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `${item.color}15`, padding: '6px 12px', borderRadius: '20px', border: `1px solid ${item.color}30` }}>
                     <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: item.color, color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.step}</span>
                     <item.icon size={12} color={item.color} />
-                    <span style={{ color: 'white', fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
+                    <span style={{ color: themeColors.text.primary, fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
                   </div>
                   {idx < 4 && <ChevronRight size={14} color={themeColors.text.muted} style={{ margin: '0 4px' }} />}
                 </div>
@@ -1422,25 +1422,25 @@ export default function LeadWarmerTab(props: Props) {
             {sequenceSteps.sort((a, b) => (a.day || 0) - (b.day || 0)).map((step) => (
               <div key={step.id} style={{
                 display: 'flex', alignItems: 'flex-start', gap: '20px',
-                background: step.enabled ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.3)',
+                background: step.enabled ? (theme === 'light' ? '#ffffff' : 'rgba(30, 41, 59, 0.8)') : (theme === 'light' ? '#f9fafb' : 'rgba(30, 41, 59, 0.3)'),
                 padding: '24px', borderRadius: t.radius.lg,
                 border: `1px solid ${step.enabled ? themeColors.border : 'transparent'}`,
                 opacity: step.enabled ? 1 : 0.6, transition: t.transitions.default
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '80px' }}>
                   <label style={{ fontSize: '12px', color: themeColors.text.muted, fontWeight: 600 }}>TIMELINE</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.3)', borderRadius: t.radius.md, border: `1px solid ${themeColors.border}`, padding: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', background: theme === 'light' ? '#f3f4f6' : 'rgba(0,0,0,0.3)', borderRadius: t.radius.md, border: `1px solid ${themeColors.border}`, padding: '8px' }}>
                     <span style={{ color: themeColors.text.secondary, fontSize: '14px', marginRight: '4px' }}>Day</span>
                     <input type="number" min="1" value={step.day} onChange={e => {
                       const ns = [...sequenceSteps]; const s = ns.find(x => x.id === step.id);
                       if (s) s.day = parseInt(e.target.value) || 1; setSequenceSteps(ns);
-                    }} style={{ background: 'transparent', border: 'none', color: 'white', width: '100%', fontSize: '14px', fontWeight: 600, outline: 'none' }} />
+                    }} style={{ background: 'transparent', border: 'none', color: themeColors.text.primary, width: '100%', fontSize: '14px', fontWeight: 600, outline: 'none' }} />
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '200px' }}>
                   <label style={{ fontSize: '12px', color: themeColors.text.muted, fontWeight: 600 }}>TARGET POSTS</label>
-                  <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: t.radius.md, border: `1px solid ${themeColors.border}`, padding: '10px 12px', color: themeColors.primaryLight, fontSize: '13px', fontWeight: 600 }}>
+                  <div style={{ background: theme === 'light' ? '#f3f4f6' : 'rgba(0,0,0,0.3)', borderRadius: t.radius.md, border: `1px solid ${themeColors.border}`, padding: '10px 12px', color: themeColors.primaryLight, fontSize: '13px', fontWeight: 600 }}>
                     Recent #{(step.postStartIndex ?? 0) + 1} to #{(step.postStartIndex ?? 0) + (step.postCount ?? 1)}
                   </div>
                   <span style={{ fontSize: '11px', color: themeColors.text.muted }}>{step.postCount ?? 1} post(s)</span>

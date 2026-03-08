@@ -142,7 +142,7 @@ export default function MonthlyPlans({ plans, billingCycle, formatNumber, getYea
     const filteredPlans = plans.filter(p => !p.isDefaultFreePlan).sort((a, b) => a.price - b.price);
 
     return (
-        <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(filteredPlans.length, 4)}, 1fr)`, gap: '20px', marginBottom: '40px' }}>
+        <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '40px' }}>
             {filteredPlans.map((plan, index) => {
                 const planIndex = filteredPlans.findIndex(p => p.id === plan.id);
                 const isPopular = planIndex === Math.floor(filteredPlans.length / 2) || filteredPlans.length === 1;

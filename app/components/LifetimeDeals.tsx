@@ -139,8 +139,18 @@ interface LifetimeDealsProps {
 }
 
 export default function LifetimeDeals({ lifetimeDeals, loading, formatNumber, soldLifetimeSpots = 0, totalLifetimeSpots = 500 }: LifetimeDealsProps) {
+    // Responsive padding based on screen size
+    const [isMobile, setIsMobile] = React.useState(false);
+
+    React.useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     return (
-        <section id="pricing" className="section-padding" style={{ background: '#0a0a0a', padding: '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <section id="pricing" className="section-padding" style={{ background: '#0a0a0a', padding: isMobile ? '40px 16px' : '80px 60px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2))', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '8px 20px', borderRadius: '20px', marginBottom: '20px' }}>
@@ -182,7 +192,7 @@ export default function LifetimeDeals({ lifetimeDeals, loading, formatNumber, so
                         <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)' }}>Loading lifetime deals...</div>
                     </div>
                 ) : lifetimeDeals.length > 0 ? (
-                    <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(lifetimeDeals.length, 3)}, 1fr)`, gap: '24px', marginBottom: '40px' }}>
+                    <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '40px' }}>
                         {lifetimeDeals.sort((a, b) => a.price - b.price).map((plan, index) => {
                             const isPopular = index === Math.floor(lifetimeDeals.length / 2) || lifetimeDeals.length === 1;
                             const spotsLeft = plan.lifetimeSpotsRemaining ?? (plan.lifetimeMaxSpots ? plan.lifetimeMaxSpots - (plan.lifetimeSoldSpots ?? 0) : 100);

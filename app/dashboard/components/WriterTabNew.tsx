@@ -182,6 +182,8 @@ export default function WriterTabNew(props: any) {
     const [isEditingPost, setIsEditingPost] = useState(false);
     const [editedPostContent, setEditedPostContent] = useState('');
     const [originalPostContent, setOriginalPostContent] = useState('');
+    const contentEditableRef = useRef<HTMLDivElement>(null);
+    const contentEditableInitializedRef = useRef(false);
 
     // History popup state
     const [showHistoryPopup, setShowHistoryPopup] = useState(false);
@@ -271,6 +273,8 @@ export default function WriterTabNew(props: any) {
             setOriginalPostContent(writerContent);
             setInlineEditMode(true);
             setShowEditHint(false);
+            // Reset initialization flag for next edit session
+            contentEditableInitializedRef.current = false;
         }
     };
 
@@ -456,6 +460,15 @@ export default function WriterTabNew(props: any) {
         const depthOpt = DEPTH_OPTIONS.find(d => d.id === postDepth);
         if (depthOpt) setWriterLength(depthOpt.value);
     }, [postDepth]);
+
+    // Initialize contenteditable when entering inline edit mode
+    useEffect(() => {
+        if (inlineEditMode && contentEditableRef.current && !contentEditableInitializedRef.current) {
+            contentEditableRef.current.textContent = writerContent;
+            contentEditableRef.current.focus();
+            contentEditableInitializedRef.current = true;
+        }
+    }, [inlineEditMode]);
 
     // AI-powered post analysis (replaces heuristic)
     const analyzePost = async () => {
@@ -788,31 +801,31 @@ export default function WriterTabNew(props: any) {
     return (
         <div style={{ padding: 0 }}>
             {/* Voyager LinkedIn Profile Banner */}
-            <div style={{ background: 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.15)', marginBottom: '16px' }}>
+            <div style={{ background: props.theme === 'light' ? 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)' : 'linear-gradient(135deg, #0077b5 0%, #00a0dc 100%)', padding: '14px 18px', borderRadius: '14px', border: props.theme === 'light' ? '1px solid rgba(0,119,181,0.3)' : '1px solid rgba(255,255,255,0.15)', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                         {typeof voyagerData?.profilePicture === 'string' && voyagerData.profilePicture ? (
-                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)', background: `url(${voyagerData.profilePicture}) center/cover no-repeat` }} />
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, border: `2px solid ${props.theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.3)'}`, background: `url(${voyagerData.profilePicture}) center/cover no-repeat` }} />
                         ) : (
-                            <span style={{ flexShrink: 0 }}>{miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', 'white', 18)}</span>
+                            <span style={{ flexShrink: 0 }}>{miniIcon('M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71', props.theme === 'light' ? '#6b7280' : 'white', 18)}</span>
                         )}
                         {voyagerData ? (
                             <div style={{ minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ color: 'white', fontSize: '14px', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{voyagerData.name || 'LinkedIn Profile'}</span>
-                                    {voyagerData.followerCount && <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', flexShrink: 0 }}>{voyagerData.followerCount.toLocaleString()} followers</span>}
+                                    <span style={{ color: props.theme === 'light' ? '#1f2937' : 'white', fontSize: '14px', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{voyagerData.name || 'LinkedIn Profile'}</span>
+                                    {voyagerData.followerCount && <span style={{ color: props.theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.6)', fontSize: '12px', flexShrink: 0 }}>{voyagerData.followerCount.toLocaleString()} followers</span>}
                                 </div>
-                                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{voyagerData.headline || ''}</div>
+                                <div style={{ color: props.theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{voyagerData.headline || ''}</div>
                             </div>
                         ) : (
-                            <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>{voyagerLoading ? 'Loading...' : 'Connect extension to sync profile'}</span>
+                            <span style={{ color: props.theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.8)', fontSize: '14px' }}>{voyagerLoading ? 'Loading...' : 'Connect extension to sync profile'}</span>
                         )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, marginLeft: '12px' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={linkedInUseProfileData} onChange={e => toggleLinkedInProfileData(e.target.checked)}
                                 style={{ width: '14px', height: '14px', accentColor: '#0077b5' }} />
-                            <span style={{ color: 'white', fontSize: '13px' }}>Profile Data Active</span>
+                            <span style={{ color: props.theme === 'light' ? '#1f2937' : 'white', fontSize: '13px' }}>Profile Data Active</span>
                         </label>
                         {/* Topics, Data, Sync buttons removed per user request */}
                     </div>
@@ -1372,6 +1385,7 @@ export default function WriterTabNew(props: any) {
                                         ) : inlineEditMode ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                 <div
+                                                    ref={contentEditableRef}
                                                     contentEditable
                                                     suppressContentEditableWarning
                                                     onBlur={handleInlineEdit}
@@ -1391,12 +1405,6 @@ export default function WriterTabNew(props: any) {
                                                         whiteSpace: 'pre-wrap',
                                                         wordBreak: 'break-word',
                                                     }}
-                                                    ref={(el) => {
-                                                        if (el) {
-                                                            el.textContent = writerContent;
-                                                            el.focus();
-                                                        }
-                                                    }}
                                                 />
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span style={{ color: 'rgba(0,0,0,0.5)', fontSize: '12px' }}>
@@ -1410,7 +1418,7 @@ export default function WriterTabNew(props: any) {
                                         ) : (
                                             <>
                                                 <div
-                                                    onClick={() => setInlineEditMode(true)}
+                                                    onClick={toggleInlineEdit}
                                                     style={{
                                                         color: 'rgba(0,0,0,0.9)',
                                                         fontSize: isMobile ? '14px' : '16px',
@@ -1593,13 +1601,13 @@ export default function WriterTabNew(props: any) {
                 {/* Content Planner + Inspiration Sources */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {/* AI Content Planner */}
-                    <div style={{ background: 'linear-gradient(135deg, rgba(105,63,233,0.15) 0%, rgba(139,92,246,0.1) 100%)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(105,63,233,0.3)' }}>
+                    <div style={{ background: props.theme === 'light' ? 'linear-gradient(135deg, rgba(105,63,233,0.12) 0%, rgba(139,92,246,0.08) 100%)' : 'linear-gradient(135deg, rgba(105,63,233,0.15) 0%, rgba(139,92,246,0.1) 100%)', padding: '14px 18px', borderRadius: '14px', border: props.theme === 'light' ? '1px solid rgba(105,63,233,0.25)' : '1px solid rgba(105,63,233,0.3)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', '#a78bfa', 16)}
+                            {miniIcon('M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', props.theme === 'light' ? '#7c3aed' : '#a78bfa', 16)}
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ color: 'white', fontWeight: '700', fontSize: '14px' }}>AI Content Planner</span>
-                                <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Generate & schedule full calendar</span>
+                                <span style={{ color: props.theme === 'light' ? '#1f2937' : 'white', fontWeight: '700', fontSize: '14px' }}>AI Content Planner</span>
+                                <span style={{ color: props.theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.45)', fontSize: '13px' }}>Generate & schedule full calendar</span>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -1882,15 +1890,15 @@ export default function WriterTabNew(props: any) {
 
             {/* Content Planner Wizard Modal */}
             {plannerOpen && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-                    <div style={{ background: '#13132b', borderRadius: '20px', border: '1px solid rgba(105,63,233,0.4)', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '28px' }}>
+                <div style={{ position: 'fixed', inset: 0, background: props.theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+                    <div style={{ background: props.theme === 'light' ? '#ffffff' : '#13132b', borderRadius: '20px', border: props.theme === 'light' ? '1px solid rgba(105,63,233,0.3)' : '1px solid rgba(105,63,233,0.4)', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: props.theme === 'light' ? '0 8px 32px rgba(0,0,0,0.2)' : 'none' }}>
                         {/* Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <div>
-                                <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '800', margin: 0 }}>
+                                <h2 style={{ color: props.theme === 'light' ? '#1f2937' : 'white', fontSize: '18px', fontWeight: '800', margin: 0 }}>
                                     {plannerMode === '5days' ? '5-Day' : '20-Day'} AI Content Planner
                                 </h2>
-                                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '14px', marginTop: '3px' }}>
+                                <div style={{ color: props.theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.45)', fontSize: '14px', marginTop: '3px' }}>
                                     {plannerStep === 'context' && 'Step 1 of 3 — Add context & generate topics'}
                                     {plannerStep === 'select' && 'Step 2 of 3 — Select your topics'}
                                     {plannerStep === 'time' && 'Step 3 of 3 — Set schedule & generate posts'}
@@ -1900,7 +1908,7 @@ export default function WriterTabNew(props: any) {
                             </div>
                             {plannerStep !== 'generating' && (
                                 <button onClick={() => { plannerAbortRef.current = true; setPlannerOpen(false); }}
-                                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'white', fontSize: '16px', cursor: 'pointer' }}>X</button>
+                                    style={{ background: props.theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: props.theme === 'light' ? '#4b5563' : 'white', fontSize: '16px', cursor: 'pointer' }}>X</button>
                             )}
                         </div>
 
@@ -1908,23 +1916,23 @@ export default function WriterTabNew(props: any) {
                         {plannerStep === 'context' && (
                             <div>
                                 {linkedInProfile ? (
-                                    <div style={{ padding: '12px 14px', background: 'rgba(0,119,181,0.15)', border: '1px solid rgba(0,119,181,0.3)', borderRadius: '10px', marginBottom: '16px' }}>
-                                        <div style={{ color: '#60a5fa', fontSize: '14px', fontWeight: '700', marginBottom: '4px' }}>Profile Data Available</div>
-                                        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>{linkedInProfile.name} · {linkedInProfile.headline}</div>
-                                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginTop: '3px' }}>AI will use your profile data to personalise topics to your niche and expertise.</div>
+                                    <div style={{ padding: '12px 14px', background: props.theme === 'light' ? 'rgba(0,119,181,0.1)' : 'rgba(0,119,181,0.15)', border: props.theme === 'light' ? '1px solid rgba(0,119,181,0.25)' : '1px solid rgba(0,119,181,0.3)', borderRadius: '10px', marginBottom: '16px' }}>
+                                        <div style={{ color: props.theme === 'light' ? '#0369a1' : '#60a5fa', fontSize: '14px', fontWeight: '700', marginBottom: '4px' }}>Profile Data Available</div>
+                                        <div style={{ color: props.theme === 'light' ? '#1f2937' : 'rgba(255,255,255,0.7)', fontSize: '14px' }}>{linkedInProfile.name} · {linkedInProfile.headline}</div>
+                                        <div style={{ color: props.theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.4)', fontSize: '13px', marginTop: '3px' }}>AI will use your profile data to personalise topics to your niche and expertise.</div>
                                     </div>
                                 ) : (
-                                    <div style={{ padding: '12px 14px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '10px', marginBottom: '16px' }}>
-                                        <div style={{ color: '#fbbf24', fontSize: '14px' }}>No LinkedIn profile scanned. Topics will be generic. Scan your profile for personalised results.</div>
+                                    <div style={{ padding: '12px 14px', background: props.theme === 'light' ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.1)', border: props.theme === 'light' ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(245,158,11,0.25)', borderRadius: '10px', marginBottom: '16px' }}>
+                                        <div style={{ color: props.theme === 'light' ? '#b45309' : '#fbbf24', fontSize: '14px' }}>No LinkedIn profile scanned. Topics will be generic. Scan your profile for personalised results.</div>
                                     </div>
                                 )}
-                                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
-                                    Your context, goals & target audience <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: '400' }}>(optional but highly recommended)</span>
+                                <label style={{ color: props.theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
+                                    Your context, goals & target audience <span style={{ color: props.theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.35)', fontWeight: '400' }}>(optional but highly recommended)</span>
                                 </label>
                                 <textarea value={plannerContext} onChange={e => setPlannerContext(e.target.value)}
                                     placeholder={`Example:
 "I'm a SaaS founder targeting startup CTOs. My goal is to generate inbound leads for our DevOps tool. I want to position myself as a thought leader in developer productivity."`}
-                                    rows={5} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: 'white', fontSize: '13px', outline: 'none', resize: 'vertical', lineHeight: '1.6', boxSizing: 'border-box' }} />
+                                    rows={5} style={{ width: '100%', padding: '12px', background: props.theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.07)', border: props.theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: props.theme === 'light' ? '#1f2937' : 'white', fontSize: '13px', outline: 'none', resize: 'vertical', lineHeight: '1.6', boxSizing: 'border-box' }} />
                                 {plannerStatusMsg && <div style={{ marginTop: '10px', color: '#f87171', fontSize: '14px' }}>{plannerStatusMsg}</div>}
                                 <button onClick={generatePlannerTopics} disabled={plannerGeneratingTopics}
                                     style={{ marginTop: '16px', width: '100%', padding: '13px', background: plannerGeneratingTopics ? 'rgba(105,63,233,0.4)' : 'linear-gradient(135deg, #693fe9, #8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', cursor: plannerGeneratingTopics ? 'wait' : 'pointer' }}>
@@ -2090,17 +2098,17 @@ export default function WriterTabNew(props: any) {
 
             {/* History Popup Modal */}
             {showHistoryPopup && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowHistoryPopup(false)}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: '#1a1a3e', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '700px', width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ position: 'fixed', inset: 0, background: props.theme === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowHistoryPopup(false)}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: props.theme === 'light' ? '#ffffff' : '#1a1a3e', borderRadius: '16px', border: props.theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.15)', padding: '24px', maxWidth: '700px', width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: props.theme === 'light' ? '0 8px 32px rgba(0,0,0,0.2)' : 'none' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'white', 18)} AI Generated Posts History
+                            <h3 style={{ color: props.theme === 'light' ? '#1f2937' : 'white', fontSize: '18px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {miniIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', props.theme === 'light' ? '#7c3aed' : 'white', 18)} AI Generated Posts History
                             </h3>
-                            <button onClick={() => setShowHistoryPopup(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+                            <button onClick={() => setShowHistoryPopup(false)} style={{ background: props.theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: props.theme === 'light' ? '#4b5563' : 'white', fontSize: '14px', cursor: 'pointer' }}>✕</button>
                         </div>
 
                         {historyLoading ? (
-                            <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>Loading history...</div>
+                            <div style={{ textAlign: 'center', padding: '40px', color: props.theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)' }}>Loading history...</div>
                         ) : historyItems && historyItems.length > 0 ? (
                             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {historyItems
@@ -2203,13 +2211,13 @@ export default function WriterTabNew(props: any) {
                                 })}
                             </div>
                         ) : (
-                            <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
+                            <div style={{ textAlign: 'center', padding: '40px', color: props.theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)' }}>
                                 No AI generated posts in history yet.<br />
-                                <span style={{ fontSize: '12px' }}>Generate a post to see it here.</span>
+                                <span style={{ fontSize: '12px', color: props.theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.4)' }}>Generate a post to see it here.</span>
                             </div>
                         )}
 
-                        <button onClick={() => setShowHistoryPopup(false)} style={{ marginTop: '16px', width: '100%', padding: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer' }}>Close</button>
+                        <button onClick={() => setShowHistoryPopup(false)} style={{ marginTop: '16px', width: '100%', padding: '10px', background: props.theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)', border: props.theme === 'light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: props.theme === 'light' ? '#4b5563' : 'rgba(255,255,255,0.7)', fontSize: '14px', cursor: 'pointer' }}>Close</button>
                     </div>
                 </div>
             )}

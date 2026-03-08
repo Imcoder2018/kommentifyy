@@ -1774,7 +1774,7 @@ export default function CommentsTab(props: any) {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(0,0,0,0.5)',
+                background: theme === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.5)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1782,22 +1782,23 @@ export default function CommentsTab(props: any) {
                 padding: '20px'
             }}>
                 <div style={{
-                    background: '#1a1a3e',
+                    background: theme === 'light' ? '#ffffff' : '#1a1a3e',
                     borderRadius: '12px',
                     padding: '24px',
                     maxWidth: '600px',
                     width: '100%',
                     maxHeight: '80vh',
                     overflowY: 'auto',
-                    border: '1px solid rgba(255,255,255,0.1)'
+                    border: theme === 'light' ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: theme === 'light' ? '0 8px 32px rgba(0,0,0,0.2)' : 'none'
                 }}>
                     {/* Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <div>
-                            <h3 style={{ color: 'white', margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+                            <h3 style={{ color: theme === 'light' ? '#1a1a2e' : 'white', margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
                                 {viewingSharedProfile.profileName || viewingSharedProfile.profileId}
                             </h3>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '4px 0 0', fontSize: '12px' }}>
+                            <p style={{ color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.6)', margin: '4px 0 0', fontSize: '12px' }}>
                                 Shared Profile Comments ({sharedProfileComments.length})
                             </p>
                         </div>
@@ -1809,16 +1810,16 @@ export default function CommentsTab(props: any) {
                             style={{
                                 background: 'none',
                                 border: 'none',
-                                color: 'rgba(255,255,255,0.6)',
+                                color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.6)',
                                 cursor: 'pointer',
                                 fontSize: '20px',
                                 padding: '0'
                             }}
                             onMouseOver={(e: any) => {
-                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.color = theme === 'light' ? '#1a1a2e' : 'white';
                             }}
                             onMouseOut={(e: any) => {
-                                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                                e.currentTarget.style.color = theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.6)';
                             }}
                         >
                             ×
@@ -1827,28 +1828,28 @@ export default function CommentsTab(props: any) {
 
                     {/* Comments */}
                     {sharedCommentsLoading ? (
-                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.5)' }}>
+                        <div style={{ textAlign: 'center', padding: '40px 0', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)' }}>
                             <div style={{ ...styles.spinner, margin: '0 auto 12px' }} />
                             Loading comments...
                         </div>
                     ) : sharedProfileComments.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.4)' }}>
+                        <div style={{ textAlign: 'center', padding: '40px 0', color: theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.4)' }}>
                             No comments found for this profile.
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {sharedProfileComments.map((comment: any, i: number) => (
                                 <div key={i} style={{
-                                    background: comment.isTopComment ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)',
+                                    background: comment.isTopComment ? (theme === 'light' ? 'rgba(245,158,11,0.1)' : 'rgba(245,158,11,0.1)') : (theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'),
                                     padding: '12px',
                                     borderRadius: '8px',
-                                    border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                    border: `1px solid ${comment.isTopComment ? 'rgba(245,158,11,0.3)' : (theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)')}`,
                                 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{
-                                                background: comment.context === 'DIRECT COMMENT ON POST' ? 'rgba(16,185,129,0.2)' : 'rgba(59,130,246,0.2)',
-                                                color: comment.context === 'DIRECT COMMENT ON POST' ? '#34d399' : '#60a5fa',
+                                                background: comment.context === 'DIRECT COMMENT ON POST' ? (theme === 'light' ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.2)') : (theme === 'light' ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.2)'),
+                                                color: comment.context === 'DIRECT COMMENT ON POST' ? (theme === 'light' ? '#059669' : '#34d399') : (theme === 'light' ? '#2563eb' : '#60a5fa'),
                                                 fontSize: '9px',
                                                 padding: '2px 6px',
                                                 borderRadius: '4px',
@@ -1860,8 +1861,8 @@ export default function CommentsTab(props: any) {
                                             </div>
                                             {comment.isTopComment && (
                                                 <div style={{
-                                                    background: 'rgba(245,158,11,0.2)',
-                                                    color: '#fbbf24',
+                                                    background: theme === 'light' ? 'rgba(245,158,11,0.15)' : 'rgba(245,158,11,0.2)',
+                                                    color: theme === 'light' ? '#d97706' : '#fbbf24',
                                                     fontSize: '9px',
                                                     padding: '2px 6px',
                                                     borderRadius: '4px',
@@ -1874,7 +1875,7 @@ export default function CommentsTab(props: any) {
                                                 </div>
                                             )}
                                             <div style={{
-                                                color: 'rgba(255,255,255,0.9)',
+                                                color: theme === 'light' ? '#1f2937' : 'rgba(255,255,255,0.9)',
                                                 fontSize: '12px',
                                                 lineHeight: '1.5',
                                                 marginBottom: '8px'
@@ -1883,15 +1884,15 @@ export default function CommentsTab(props: any) {
                                             </div>
                                             {comment.postText && (
                                                 <div style={{
-                                                    color: 'rgba(255,255,255,0.5)',
+                                                    color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)',
                                                     fontSize: '11px',
                                                     lineHeight: '1.4',
                                                     padding: '8px',
-                                                    background: 'rgba(0,0,0,0.2)',
+                                                    background: theme === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(0,0,0,0.2)',
                                                     borderRadius: '6px',
-                                                    borderLeft: '3px solid rgba(255,255,255,0.1)'
+                                                    borderLeft: theme === 'light' ? '3px solid rgba(0,0,0,0.1)' : '3px solid rgba(255,255,255,0.1)'
                                                 }}>
-                                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px', marginBottom: '4px' }}>POST:</div>
+                                                    <div style={{ color: theme === 'light' ? '#9ca3af' : 'rgba(255,255,255,0.4)', fontSize: '9px', marginBottom: '4px' }}>POST:</div>
                                                     {comment.postText}
                                                 </div>
                                             )}

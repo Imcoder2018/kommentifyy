@@ -118,9 +118,9 @@ export default function TrendingPostsTab(props: any) {
     return (
                     <div>
                         {/* Scrape Feed Now — compact */}
-                        <div style={{ background: 'rgba(16,185,129,0.08)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '14px' }}>
+                        <div style={{ background: theme === 'light' ? 'rgba(16,185,129,0.06)' : 'rgba(16,185,129,0.08)', padding: '14px 16px', borderRadius: '14px', border: theme === 'light' ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(16,185,129,0.2)', marginBottom: '14px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                <h3 style={{ color: '#34d399', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', '#34d399', 14)} Scrape Feed Now</h3>
+                                <h3 style={{ color: theme === 'light' ? '#059669' : '#34d399', fontSize: '14px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>{miniIcon('M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z', theme === 'light' ? '#059669' : '#34d399', 14)} Scrape Feed Now</h3>
                                 <div style={{ display: 'flex', gap: '6px' }}>
                                     {feedScrapePolling && (
                                         <button onClick={stopFeedScrape}
@@ -156,22 +156,22 @@ export default function TrendingPostsTab(props: any) {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'auto auto auto 1fr', gap: '8px', alignItems: 'end', marginBottom: '10px' }}>
                                 <div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', 'rgba(255,255,255,0.5)', 11)} Duration</label>
-                                    <select value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))} style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M12 6v6l4 2', theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', 11)} Duration</label>
+                                    <select value={scheduleDuration} onChange={e => setScheduleDuration(parseInt(e.target.value))} style={{ padding: '6px 8px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.08)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: theme === 'light' ? '#1f2937' : 'white', fontSize: '12px' }}>
                                         <option value="1">1 min</option><option value="2">2 min</option><option value="3">3 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', '#ec4899', 11)} Min Likes</label>
-                                    <input type="number" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', theme === 'light' ? '#ec4899' : '#ec4899', 11)} Min Likes</label>
+                                    <input type="number" value={scheduleMinLikes} onChange={e => setScheduleMinLikes(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.08)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: theme === 'light' ? '#1f2937' : 'white', fontSize: '12px', outline: 'none' }} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', '#8b5cf6', 11)} Min Comments</label>
-                                    <input type="number" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z', theme === 'light' ? '#8b5cf6' : '#8b5cf6', 11)} Min Comments</label>
+                                    <input type="number" value={scheduleMinComments} onChange={e => setScheduleMinComments(parseInt(e.target.value) || 0)} min={0} style={{ width: '60px', padding: '6px 8px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.08)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: theme === 'light' ? '#1f2937' : 'white', fontSize: '12px', outline: 'none' }} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4', 'rgba(255,255,255,0.5)', 11)} Keywords</label>
-                                    <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="AI, startup, SaaS..." style={{ width: '100%', padding: '6px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', fontSize: '12px', outline: 'none' }} />
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: '600', marginBottom: '3px' }}>{miniIcon('M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4', theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', 11)} Keywords</label>
+                                    <input type="text" value={scheduleKeywords} onChange={e => setScheduleKeywords(e.target.value)} placeholder="AI, startup, SaaS..." style={{ width: '100%', padding: '6px 8px', background: theme === 'light' ? '#f9fafb' : 'rgba(255,255,255,0.08)', border: theme === 'light' ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: theme === 'light' ? '#1f2937' : 'white', fontSize: '12px', outline: 'none' }} />
                                 </div>
                             </div>
                             {/* Daily Schedule — compact inline */}
@@ -225,20 +225,20 @@ export default function TrendingPostsTab(props: any) {
                                 </div>
                                 {/* Progress details */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '10px' }}>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                    <div style={{ background: theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
                                         <div style={{ fontSize: '18px', fontWeight: '800', color: '#4ade80' }}>{feedScrapeStatus.data?.postsFound ?? 0}</div>
-                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Posts Found</div>
+                                        <div style={{ fontSize: '10px', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Posts Found</div>
                                     </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                    <div style={{ background: theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
                                         <div style={{ fontSize: '18px', fontWeight: '800', color: '#fbbf24' }}>{feedScrapeStatus.data?.qualifiedPosts ?? 0}</div>
-                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Qualified</div>
+                                        <div style={{ fontSize: '10px', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Qualified</div>
                                     </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                    <div style={{ background: theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
                                         <div style={{ fontSize: '18px', fontWeight: '800', color: '#a78bfa' }}>{feedScrapeStatus.data?.scrollCount ?? 0}</div>
-                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Scrolls</div>
+                                        <div style={{ fontSize: '10px', color: theme === 'light' ? '#6b7280' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>Scrolls</div>
                                     </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '18px', fontWeight: '800', color: 'rgba(255,255,255,0.8)' }}>
+                                    <div style={{ background: theme === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '18px', fontWeight: '800', color: theme === 'light' ? '#1f2937' : 'rgba(255,255,255,0.8)' }}>
                                             {feedScrapeStatus.data?.remainingSeconds != null
                                                 ? `${Math.floor(feedScrapeStatus.data.remainingSeconds / 60)}:${String(feedScrapeStatus.data.remainingSeconds % 60).padStart(2, '0')}`
                                                 : '--:--'}
